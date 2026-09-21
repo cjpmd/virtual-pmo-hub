@@ -42,7 +42,7 @@ const baseProjects: Project[] = Object.entries(namesByProgramme).flatMap(([progr
   return {
     id: name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,""), programmeId, portfolioId:portfolio.id, name,
     manager:managers[number%managers.length] ?? "Freya Walsh", sponsor:["Daniel Mercer","Aisha Wallace","Martin Lowe","Priya Nair","Rachel King"][programmeIndex] ?? "Daniel Mercer",
-    stage:stage ?? "Discover", state, priority:isRed?"Critical":isAmber?"High":number%3===0?"Moderate":"Low",
+    stage:name === "Ebbot (chatbot)" ? "Plan" : (stage ?? "Discover"), state, priority:isRed?"Critical":isAmber?"High":number%3===0?"Moderate":"Low",
     start:`${String((number%20)+1).padStart(2,"0")}/0${(number%7)+1}/2026`, finish:`${String((number%20)+1).padStart(2,"0")}/0${(number%3)+1}/2027`, baselineFinish:`${String((number%20)+1).padStart(2,"0")}/0${(number%3)+1}/2027`,
     budget:120000+(number%5)*85000, actual:70000+(number%5)*55000, forecast:125000+(number%5)*90000,
     businessCase:`Improve university services through ${name.toLowerCase()}.`, benefits:"Reduced operational effort, improved resilience and a better colleague experience.",
@@ -82,6 +82,14 @@ export const projects: Project[] = baseProjects.map(project => ["ebbot-chatbot",
       risks: project.id === "reduce-our-cyber-risk" ? [redRisk(`${project.id}-r1`), greenRisk(`${project.id}-r2`), greenRisk(`${project.id}-r3`)] : [greenRisk(`${project.id}-r1`),greenRisk(`${project.id}-r2`)],
       issues: project.id === "reduce-our-cyber-risk" ? [issue(`${project.id}-i1`,true),issue(`${project.id}-i2`)] : project.id === "ebbot-chatbot" ? [issue(`${project.id}-i1`)] : [] }
   : project);
+
+const ebbot=projects.find(project=>project.id==="ebbot-chatbot");
+if(ebbot){
+  ebbot.taskSource="Planner (Premium)";
+  ebbot.risks=[{...greenRisk("ebbot-amber-risk"),title:"Knowledge quality varies",description:"Several source articles need owners and review dates before the pilot expands.",probability:3,impact:4,score:12,owner:"Maya Harrison"}];
+  ebbot.issues=[];
+  ebbot.overdueTaskCount=3;
+}
 
 export const collections: Collection[] = [
   {id:"digital-committee",name:"Digital Committee",type:"Governance",projectIds:projects.slice(0,8).map(p=>p.id)},
