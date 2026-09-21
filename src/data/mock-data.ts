@@ -73,7 +73,7 @@ const riskThemes = [
 const issue = (id:string, high=false): Issue => ({ id, title:high?"Production readiness blocked":"Decision required", owner:"George Clarke", severity:high?"High":"Medium", status:"Open", dueDate:"30/09/2026" });
 const milestoneDates=[
   ["15/08/2026","15/08/2026","15/08/2026"],
-  ["12/09/2026","18/09/2026",undefined],
+  ["12/09/2026","12/09/2026","12/09/2026"],
   ["30/09/2026","30/09/2026",undefined],
   ["18/10/2026","27/10/2026",undefined],
   ["20/11/2026","20/11/2026",undefined],
@@ -89,20 +89,38 @@ const milestoneTitles:[string,MilestoneType][]=[
   ["GATE 1 - Ready to Deliver","Gate"],
   ["Benefits review","Key date"],
 ];
-const buildMilestones=(projectNumber:number,isRed:boolean):Milestone[]=>{
+const buildMilestones=(projectNumber:number,isRed:boolean,isAmber:boolean):Milestone[]=>{
   const count=3+(projectNumber%6);
+  // Each project runs to its own rhythm: delivered work sits further back and future work
+  // further out, so the portfolio delivery curve is a curve rather than one vertical step.
+  const doneShift=-(projectNumber%10)*6, aheadShift=(projectNumber%12)*13;
   return milestoneTitles.slice(0,count).map(([title,type],index)=>{
     const source=milestoneDates[index]??milestoneDates[0];
-    const baselineDate=index===0?shiftMockDate("28/08/2026",projectNumber%18):source?.[0]??"30/09/2026";
-    let forecastDate:string=source?.[1]??baselineDate;
-    const actualDate=index===0?shiftMockDate(baselineDate,projectNumber%4===0?2:projectNumber%3===0?-1:0):source?.[2];
-    if(isRed&&index===1)forecastDate="28/09/2026";
+    const shift=source?.[2]?doneShift:aheadShift;
+    let baselineDate=index===0?shiftMockDate("28/08/2026",(projectNumber%18)+doneShift):shiftMockDate(source?.[0]??"30/09/2026",shift);
+    let forecastDate:string=shiftMockDate(source?.[1]??source?.[0]??"30/09/2026",shift);
+    let actualDate:string|undefined=index===0
+      ?shiftMockDate(baselineDate,projectNumber%4===0?2:projectNumber%3===0?-1:0)
+      :(source?.[2]?shiftMockDate(source[2],shift):undefined);
+    // Only the exception projects carry a slipped gate: red has already missed it, amber is late but still ahead of today.
+    if(index===1&&(isRed||isAmber)){
+      baselineDate=shiftMockDate("12/09/2026",-(projectNumber%4)*5);
+      forecastDate=isRed?shiftMockDate("21/09/2026",-(3+(projectNumber%5)*4)):shiftMockDate("21/09/2026",5+(projectNumber%6)*8);
+      actualDate=undefined;
+    }
     const forecastMs=parseMockDate(forecastDate),baselineMs=parseMockDate(baselineDate),todayMs=parseMockDate("21/09/2026");
     const status:MilestoneStatus=actualDate?"Completed":forecastMs<todayMs?"Overdue":forecastMs>baselineMs?"Late":forecastMs-todayMs>30*86400000?"Future":"On Track";
     const historyDates=["24/07/2026","07/08/2026","21/08/2026","04/09/2026","18/09/2026"];
     const slipDays=Math.round((forecastMs-baselineMs)/86400000);
     return {id:`m-${projectNumber}-${index}`,title,type,owner:managers[(projectNumber+index)%managers.length]??"Freya Walsh",baselineDate,forecastDate,...(actualDate?{actualDate}:{}),status,reportToCommittee:type==="Gate"||isRed,forecastHistory:historyDates.map((reportingDate,point)=>({reportingDate,forecastDate:shiftMockDate(baselineDate,Math.max(0,Math.round(slipDays*(point/4))))}))};
   });
+};
+/** Approved budget with a forecast that reflects the project's health, and spend to date part way through it. */
+const spend=(number:number,isRed:boolean,isAmber:boolean)=>{
+  const budget=120000+(number%5)*85000;
+  const factor=isRed?1.14:isAmber?1.06:[1,0.97,1,0.94][number%4]??1;
+  const forecast=Math.round(budget*factor/500)*500;
+  return {budget,actual:Math.round(forecast*(0.34+(number%5)*0.09)/500)*500,forecast};
 };
 const parseMockDate=(value:string)=>{const [d=1,m=1,y=1970]=value.split("/").map(Number);return new Date(y,m-1,d).getTime()};
 const shiftMockDate=(value:string,days:number)=>{const date=new Date(parseMockDate(value)+days*86400000);return `${String(date.getDate()).padStart(2,"0")}/${String(date.getMonth()+1).padStart(2,"0")}/${date.getFullYear()}`};
@@ -122,10 +140,10 @@ const baseProjects: Project[] = Object.entries(allNamesByProgramme).flatMap(([pr
     tier: name === "Ebbot (chatbot)" ? "Medium" : isRed ? "Large" : tier,
     stage:name === "Ebbot (chatbot)" ? "Phase 3 - Design & Procure" : stage, state, priority:isRed?"Critical":isAmber?"High":number%3===0?"Moderate":"Low",
     start:`${String((number%20)+1).padStart(2,"0")}/0${(number%7)+1}/2026`, finish:`${String((number%20)+1).padStart(2,"0")}/0${(number%3)+1}/2027`, baselineFinish:`${String((number%20)+1).padStart(2,"0")}/0${(number%3)+1}/2027`,
-    budget:120000+(number%5)*85000, actual:70000+(number%5)*55000, forecast:125000+(number%5)*90000,
+    ...spend(number,isRed,isAmber),
     businessCase:`Improve university services through ${name.toLowerCase()}.`, benefits:"Reduced operational effort, improved resilience and a better colleague experience.",
     taskSource:number%3===0?"Planner (Premium)":number%3===1?"Planner (Basic)":"Native", collectionIds:[],
-    milestones:buildMilestones(number,isRed), taskCount:10+(number%9), overdueTaskCount:isRed?4:isAmber?3:Math.min(1,number%2),
+    milestones:buildMilestones(number,isRed,isAmber), taskCount:10+(number%9), overdueTaskCount:isRed?4:isAmber?3:Math.min(1,number%2),
     risks:isRed?[redRisk(`r-${number}`),{...greenRisk(`r-${number}-2`),title:"Recovery plan dependency",probability:3,impact:4,score:12}]:[
       {...greenRisk(`r-${number}`),title:riskThemes[number%riskThemes.length]?.[0]??"Supplier capacity",description:riskThemes[number%riskThemes.length]?.[1]??"Delivery capacity is being monitored.",owner:riskThemes[number%riskThemes.length]?.[2]??"Amelia Price",probability:(isAmber?3:2),impact:(isAmber?4:(number%3+2)) as 2|3|4,score:isAmber?12:2*(number%3+2)},
       ...(number%3===0?[{...greenRisk(`r-${number}-2`),title:"Benefits adoption",description:"Operational adoption may take longer than planned.",owner:"Layla Owen",probability:2 as const,impact:2 as const,score:4,response:"Reduce" as const,status:"Open" as const}]:[]),

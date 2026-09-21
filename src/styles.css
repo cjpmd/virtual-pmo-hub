@@ -69,6 +69,15 @@
   --color-health-bad-foreground: var(--health-bad-foreground);
   --color-table-head: var(--table-head);
   --color-overlay: var(--overlay);
+  --color-viz-good: var(--viz-good);
+  --color-viz-warning: var(--viz-warning);
+  --color-viz-serious: var(--viz-serious);
+  --color-viz-critical: var(--viz-critical);
+  --color-viz-ink: var(--viz-ink);
+  --color-viz-ink-muted: var(--viz-ink-muted);
+  --color-viz-grid: var(--viz-grid);
+  --color-viz-axis: var(--viz-axis);
+  --color-viz-track: var(--viz-track);
 }
 
 :root {
@@ -113,6 +122,48 @@
   --health-bad-foreground: oklch(0.43 0.16 25);
   --table-head: oklch(0.96 0.008 250);
   --overlay: oklch(0.15 0.02 255 / 45%);
+
+  /* ---- Data visualisation tokens (see src/lib/chart-theme.ts) ---------------
+   * Categorical hues are assigned in fixed order and never cycled; the ramp is a
+   * single hue for magnitude; status colours are reserved and never used as a
+   * series colour. Both modes are validated against their own chart surface with
+   * the palette validator (lightness band, chroma floor, CVD separation, contrast).
+   */
+  --viz-cat-1: oklch(0.5753 0.1626 255.53);
+  --viz-cat-2: oklch(0.6708 0.175 40.64);
+  --viz-cat-3: oklch(0.669 0.1408 162.11);
+  --viz-cat-4: oklch(0.7644 0.1612 75.12);
+  --viz-cat-5: oklch(0.7163 0.1412 357.39);
+  --viz-cat-6: oklch(0.5285 0.1798 142.5);
+  --viz-cat-7: oklch(0.4331 0.1671 283.62);
+  --viz-cat-8: oklch(0.6226 0.1909 24.91);
+  --viz-seq-1: oklch(0.905 0.0411 252.82);
+  --viz-seq-2: oklch(0.8578 0.0575 254.14);
+  --viz-seq-3: oklch(0.812 0.0788 253.4);
+  --viz-seq-4: oklch(0.764 0.097 253.24);
+  --viz-seq-5: oklch(0.717 0.1183 253.58);
+  --viz-seq-6: oklch(0.6708 0.1364 253.81);
+  --viz-seq-7: oklch(0.6221 0.1612 255.05);
+  --viz-seq-8: oklch(0.5753 0.1626 255.53);
+  --viz-seq-9: oklch(0.5275 0.1497 255.86);
+  --viz-seq-10: oklch(0.4796 0.1416 256.13);
+  --viz-seq-11: oklch(0.4327 0.1282 256.54);
+  --viz-seq-12: oklch(0.385 0.1183 256.65);
+  --viz-seq-13: oklch(0.3381 0.1027 256.88);
+  --viz-good: oklch(0.621 0.2073 142.56);
+  --viz-warning: oklch(0.811 0.1644 78.46);
+  --viz-serious: oklch(0.7172 0.1406 41.64);
+  --viz-critical: oklch(0.5748 0.1862 25.23);
+  --viz-positive: oklch(0.433 0.1473 142.5);
+  --viz-negative: oklch(0.5748 0.1862 25.23);
+  --viz-surface: oklch(1 0 0);
+  --viz-ink: oklch(0.24 0.035 254);
+  --viz-ink-muted: oklch(0.554 0.046 257.417);
+  --viz-grid: oklch(0.947 0.009 252);
+  --viz-axis: oklch(0.885 0.013 254);
+  --viz-track: oklch(0.955 0.007 252);
+  --viz-upstream: oklch(0.4331 0.1671 283.62);
+  --viz-downstream: oklch(0.6708 0.175 40.64);
 }
 
 .dark {
@@ -156,6 +207,43 @@
   --health-bad-foreground: oklch(0.9 0.08 25);
   --table-head: oklch(0.22 0.035 260);
   --overlay: oklch(0.05 0.01 255 / 65%);
+
+  /* Dark mode steps are selected against the dark chart surface, not flipped. */
+  --viz-cat-1: oklch(0.6221 0.1612 255.05);
+  --viz-cat-2: oklch(0.6221 0.1726 40.11);
+  --viz-cat-3: oklch(0.6212 0.1283 163.11);
+  --viz-cat-4: oklch(0.6699 0.1425 73.23);
+  --viz-cat-5: oklch(0.6224 0.1712 0.84);
+  --viz-cat-6: oklch(0.5285 0.1798 142.5);
+  --viz-cat-7: oklch(0.6696 0.1452 286.83);
+  --viz-cat-8: oklch(0.6693 0.1586 22.31);
+  --viz-seq-1: oklch(0.3381 0.1027 256.88);
+  --viz-seq-2: oklch(0.385 0.1183 256.65);
+  --viz-seq-3: oklch(0.4327 0.1282 256.54);
+  --viz-seq-4: oklch(0.4796 0.1416 256.13);
+  --viz-seq-5: oklch(0.5275 0.1497 255.86);
+  --viz-seq-6: oklch(0.5753 0.1626 255.53);
+  --viz-seq-7: oklch(0.6221 0.1612 255.05);
+  --viz-seq-8: oklch(0.6708 0.1364 253.81);
+  --viz-seq-9: oklch(0.717 0.1183 253.58);
+  --viz-seq-10: oklch(0.764 0.097 253.24);
+  --viz-seq-11: oklch(0.812 0.0788 253.4);
+  --viz-seq-12: oklch(0.8578 0.0575 254.14);
+  --viz-seq-13: oklch(0.905 0.0411 252.82);
+  --viz-good: oklch(0.621 0.2073 142.56);
+  --viz-warning: oklch(0.811 0.1644 78.46);
+  --viz-serious: oklch(0.7172 0.1406 41.64);
+  --viz-critical: oklch(0.5748 0.1862 25.23);
+  --viz-positive: oklch(0.621 0.2073 142.56);
+  --viz-negative: oklch(0.7 0.18 25);
+  --viz-surface: oklch(0.208 0.042 265.755);
+  --viz-ink: oklch(0.984 0.003 247.858);
+  --viz-ink-muted: oklch(0.704 0.04 256.788);
+  --viz-grid: oklch(0.272 0.038 262);
+  --viz-axis: oklch(0.34 0.04 261);
+  --viz-track: oklch(0.262 0.038 262);
+  --viz-upstream: oklch(0.6696 0.1452 286.83);
+  --viz-downstream: oklch(0.6221 0.1726 40.11);
 }
 
 @layer base {
@@ -169,4 +257,28 @@
     font-family: var(--font-sans);
     letter-spacing: 0;
   }
+}
+
+@layer base {
+  /* Figures line up column to column: every number in the product is tabular. */
+  .tabular, table td, table th, .font-display {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .viz-animate {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+}
+
+@keyframes viz-rise {
+  from { opacity: 0; transform: translateY(4px) }
+  to { opacity: 1; transform: none }
+}
+
+.viz-animate {
+  animation: viz-rise 320ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
