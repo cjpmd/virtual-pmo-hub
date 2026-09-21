@@ -1,3 +1,4 @@
+import { formatDate, displayUnit } from "@/lib/format";
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, CheckCircle2, PackageCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -55,7 +56,7 @@ export function BenefitsHandoverWizard({ project, close, onComplete }: { project
 
           <div className="mt-5 rounded-md border bg-muted/30 p-4 text-sm">
             <p className="text-xs font-semibold text-muted-foreground">Measures continuing after closure</p>
-            {benefit.measures.map(measure => <p key={measure.id} className="mt-1.5">{measure.name} · {measure.unit} · currently {measure.frequency.toLowerCase()} · next due {measure.nextDue}</p>)}
+            {benefit.measures.map(measure => <p key={measure.id} className="mt-1.5">{measure.name} · {displayUnit(measure.unit)} · currently {measure.frequency.toLowerCase()} · next due {formatDate(measure.nextDue)}</p>)}
           </div>
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2">

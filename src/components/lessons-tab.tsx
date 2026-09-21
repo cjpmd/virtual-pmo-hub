@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { BookOpenCheck, CheckCircle2, CircleAlert, ClipboardCheck, Plus, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -90,9 +91,9 @@ export function LessonsTab({ project }: { project: Project }) {
                 <p><strong className="text-foreground">Root cause:</strong> {lesson.rootCause}</p>
                 <p><strong className="text-foreground">Recommendation:</strong> {lesson.recommendation}</p>
               </div>
-              <p className="mt-2 text-[11px] text-muted-foreground">{"raisedBy" in lesson ? `${lesson.raisedBy} · ${lesson.date} · ` : ""}{lesson.applicability}{"sprint" in lesson && lesson.sprint ? ` · ${lesson.sprint}` : ""}{"status" in lesson ? ` · ${lesson.status}` : " · Identified"}</p>
+              <p className="mt-2 text-[11px] text-muted-foreground">{"raisedBy" in lesson ? `${lesson.raisedBy} · ${formatDate(lesson.date)} · ` : ""}{lesson.applicability}{"sprint" in lesson && lesson.sprint ? ` · ${lesson.sprint}` : ""}{"status" in lesson ? ` · ${lesson.status}` : " · Identified"}</p>
               {"actions" in lesson && lesson.actions.length > 0 && <div className="mt-2 rounded-md border bg-muted/30 p-3">
-                {lesson.actions.map(action => <p key={action.id} className="text-xs"><strong>Improvement action:</strong> {action.description} · {action.owner} · due {action.dueDate} · {action.status}{action.embeddedIn ? ` · embedded in ${action.embeddedIn}` : ""}</p>)}
+                {lesson.actions.map(action => <p key={action.id} className="text-xs"><strong>Improvement action:</strong> {action.description} · {action.owner} · due {formatDate(action.dueDate)} · {action.status}{action.embeddedIn ? ` · embedded in ${action.embeddedIn}` : ""}</p>)}
               </div>}
             </div>)}
           </div>}

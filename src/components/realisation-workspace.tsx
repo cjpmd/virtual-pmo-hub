@@ -1,3 +1,5 @@
+import { formatCurrency, formatDate, displayUnit } from "@/lib/format";
+import { formatCompactCurrency } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Area, AreaChart, CartesianGrid, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -10,7 +12,7 @@ import { filterBenefits, getBenefitsInRealisation, getMeasurementSchedule, getPo
 import { getBenefitHealth, getBenefits, getProgrammes, getStrategicObjectives } from "@/services/pmo";
 import { cn } from "@/lib/utils";
 
-const money = (value: number) => (Math.abs(value) >= 1_000_000 ? `£${(value / 1_000_000).toFixed(2)}m` : `£${Math.round(value / 1000)}k`);
+const money = formatCompactCurrency;
 const classifications: BenefitClassification[] = ["Cash-releasing", "Non-cash-releasing", "Qualitative", "Societal"];
 
 export function RealisationWorkspace() {
@@ -57,7 +59,7 @@ export function RealisationWorkspace() {
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis dataKey="period" tick={{ fontSize: 11 }} />
             <YAxis tickFormatter={value => money(Number(value))} tick={{ fontSize: 11 }} width={62} />
-            <Tooltip formatter={(value: number | string) => `£${Number(value).toLocaleString("en-GB")}`} />
+            <Tooltip formatter={(value: number | string) => formatCurrency(Number(value))} />
             <Legend wrapperStyle={{ fontSize: 12 }} />
             <Area type="monotone" dataKey="planned" name="Planned" stroke="var(--chart-2)" fill="url(#plannedFill)" strokeWidth={2} />
             <Line type="monotone" dataKey="forecast" name="Forecast" stroke="var(--chart-5)" strokeWidth={2} strokeDasharray="6 4" dot={false} />
@@ -83,7 +85,7 @@ export function RealisationWorkspace() {
               <td className="px-4 py-3">{item.measure.name}</td>
               <td className="px-4 py-3">{item.benefit.owner || <span className="text-health-warn-foreground">Unassigned</span>}</td>
               <td className="px-4 py-3">{item.measure.frequency}</td>
-              <td className="px-4 py-3">{item.dueDate}</td>
+              <td className="px-4 py-3">{formatDate(item.dueDate)}</td>
               <td className="px-4 py-3"><span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", item.state === "Overdue" ? "bg-health-bad/20 text-health-bad-foreground" : "bg-health-warn/25 text-health-warn-foreground")}>{item.state}{item.daysOverdue > 0 && ` · ${item.daysOverdue}d`}</span></td>
               <td className="px-4 py-3">{reminded.includes(item.measure.id)
                 ? <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-health-good-foreground"><CheckCircle2 className="size-4" />Reminder sent</span>
@@ -103,8 +105,8 @@ export function RealisationWorkspace() {
           return <div key={item.record.id} className="grid gap-3 p-5 lg:grid-cols-[1fr_auto]">
             <div>
               <p className="text-sm font-semibold"><Link to="/benefits/$benefitId" params={{ benefitId: item.benefit.id }} className="text-primary hover:underline">{item.benefit.reference}</Link> · {item.measure.name}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{item.record.period} · submitted by {item.record.submittedBy}{item.record.submittedDate ? ` on ${item.record.submittedDate}` : ""}</p>
-              <p className="mt-2 text-sm">Reported <strong>{item.record.actualValue.toLocaleString("en-GB")} {item.measure.unit}</strong> against a profile of {(item.measure.targetProfile.find(target => target.period === item.record.period)?.value ?? 0).toLocaleString("en-GB")} {item.measure.unit}.</p>
+              <p className="mt-1 text-xs text-muted-foreground">{item.record.period} · submitted by {item.record.submittedBy}{item.record.submittedDate ? ` on ${formatDate(item.record.submittedDate)}` : ""}</p>
+              <p className="mt-2 text-sm">Reported <strong>{item.record.actualValue.toLocaleString("en-GB")} {displayUnit(item.measure.unit)}</strong> against a profile of {(item.measure.targetProfile.find(target => target.period === item.record.period)?.value ?? 0).toLocaleString("en-GB")} {displayUnit(item.measure.unit)}.</p>
               <p className="mt-1 text-xs text-muted-foreground">{item.record.notes}</p>
               {item.record.queryNote && <p className="mt-1 text-xs font-medium text-health-warn-foreground">Query: {item.record.queryNote}</p>}
               <button onClick={() => setPreview(item)} className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"><FileText className="size-3.5" />{item.record.evidence}</button>
@@ -131,8 +133,8 @@ export function RealisationWorkspace() {
               <td className="px-4 py-3 text-muted-foreground">{row.projectNames}</td>
               <td className="px-4 py-3">{row.bauOwner === "Not agreed" ? <span className="text-health-bad-foreground">Not agreed</span> : row.bauOwner}</td>
               <td className="px-4 py-3 text-muted-foreground">{row.bauService}</td>
-              <td className="px-4 py-3">{row.nextReviewDate}</td>
-              <td className="px-4 py-3 text-muted-foreground">{row.postImplementationReviewDate}</td>
+              <td className="px-4 py-3">{formatDate(row.nextReviewDate)}</td>
+              <td className="px-4 py-3 text-muted-foreground">{formatDate(row.postImplementationReviewDate)}</td>
               <td className="px-4 py-3"><HealthPill health={getBenefitHealth(row.benefit)} /></td>
             </tr>)}
             {!inRealisation.length && <tr><td colSpan={7} className="px-4 py-10 text-center text-sm text-muted-foreground">No benefits are being tracked beyond project closure in this selection.</td></tr>}

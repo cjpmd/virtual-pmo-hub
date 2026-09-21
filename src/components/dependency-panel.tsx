@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/format";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { BellRing, CheckCircle2, CircleAlert, Handshake, ShieldAlert, TriangleAlert, X } from "lucide-react";
@@ -61,16 +62,16 @@ export function DependencyPanel({ dependency, overrides, onAccept, onRaise, clos
       <dl className="mt-5 grid grid-cols-2 gap-4 text-sm">
         <div><dt className="text-xs text-muted-foreground">Boundary</dt><dd className="mt-1 font-medium">{dependency.boundary}</dd></div>
         <div><dt className="text-xs text-muted-foreground">Criticality</dt><dd className="mt-1 font-medium">{dependency.criticality}</dd></div>
-        <div><dt className="text-xs text-muted-foreground">Required by</dt><dd className="mt-1 font-medium">{dependency.requiredBy}</dd></div>
+        <div><dt className="text-xs text-muted-foreground">Required by</dt><dd className="mt-1 font-medium">{formatDate(dependency.requiredBy)}</dd></div>
         <div><dt className="text-xs text-muted-foreground">Validation status</dt><dd className="mt-1 font-medium">{dependency.validation}</dd></div>
-        <div><dt className="text-xs text-muted-foreground">Raised</dt><dd className="mt-1 font-medium">{dependency.raisedDate} by {dependency.raisedBy}</dd></div>
+        <div><dt className="text-xs text-muted-foreground">Raised</dt><dd className="mt-1 font-medium">{formatDate(dependency.raisedDate)} by {dependency.raisedBy}</dd></div>
         <div><dt className="text-xs text-muted-foreground">Health</dt><dd className="mt-1"><HealthPill health={dependency.health} /></dd></div>
       </dl>
 
       <div className="mt-5 rounded-md border p-4">
         <p className="flex items-center gap-2 text-sm font-semibold">{dependency.health === "On Track" ? <CheckCircle2 className="size-4 text-health-good-foreground" /> : <CircleAlert className="size-4 text-health-warn-foreground" />}Health calculation</p>
         <p className="mt-2 text-sm text-muted-foreground">{dependency.healthReason}</p>
-        {dependency.giverMilestone && <p className="mt-2 text-xs text-muted-foreground">Giving milestone: {dependency.giverMilestone.title} · baseline {dependency.giverMilestone.baselineDate} · forecast {dependency.giverMilestone.forecastDate}</p>}
+        {dependency.giverMilestone && <p className="mt-2 text-xs text-muted-foreground">Giving milestone: {dependency.giverMilestone.title} · baseline {formatDate(dependency.giverMilestone.baselineDate)} · forecast {formatDate(dependency.giverMilestone.forecastDate)}</p>}
       </div>
 
       {dependency.health === "Off Track" && <div className="mt-4 rounded-md border border-health-bad/40 bg-health-bad/10 p-4">
@@ -85,9 +86,9 @@ export function DependencyPanel({ dependency, overrides, onAccept, onRaise, clos
 
       {linkedRisks.length > 0 && <div className="mt-5">
         <p className="text-sm font-semibold">Linked RAID items</p>
-        <div className="mt-2 space-y-2">{linkedRisks.map(({ risk, projectId }) => <Link key={risk.id} to="/projects/$projectId" params={{ projectId }} className="block rounded-md border p-3 hover:bg-accent/30">
+        <div className="mt-2 space-y-2">{linkedRisks.map(({ risk, projectId }) => <Link key={risk.id} to="/portfolio/projects/$projectId" params={{ projectId }} className="block rounded-md border p-3 hover:bg-accent/30">
           <p className="text-sm font-medium">{risk.title}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Score {risk.score} · {risk.owner} · review {risk.reviewDate}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Score {risk.score} · {risk.owner} · review {formatDate(risk.reviewDate)}</p>
         </Link>)}</div>
       </div>}
     </aside>

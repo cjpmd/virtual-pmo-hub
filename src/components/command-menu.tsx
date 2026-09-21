@@ -71,7 +71,7 @@ export function CommandMenu({ open, setOpen }: { open: boolean; setOpen: (open: 
           {projects.slice(0, 5).map((p) => (
             <CommandItem
               key={p.id}
-              onSelect={() => runCommand(() => navigate({ to: "/projects/$projectId", params: { projectId: p.id } }))}
+              onSelect={() => runCommand(() => navigate({ to: "/portfolio/projects/$projectId", params: { projectId: p.id } }))}
             >
               <FolderKanban className="mr-2 h-4 w-4" />
               <span>{p.name}</span>

@@ -63,3 +63,8 @@
 - [x] Add Dependency management: model, register, map, sync agenda and roadmap connectors
 - [x] Extend RAID to RAIDD with the decision log, forum meeting mode and assumption log
 - [x] Add Lessons Learned: project reviews, portfolio overview, improvement actions, matching at initiation and CSV import/export
+
+- [x] Restructure the information architecture into eight sections with horizontal sub-page tabs
+- [x] Rebuild the sidebar as a collapsible rail with flyouts, Favourites and Recent
+- [x] Add breadcrumbs and redirect every legacy route to its new address
+- [x] Add a settings service, shared formatters and a fourteen-section settings area

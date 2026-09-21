@@ -1,6 +1,7 @@
 import { benefits, collections, genericResources, issuedTasks, people, portfolio, programmes, projectRequests, projects, resourceAssignments, roadmaps, strategicObjectives } from "@/data/mock-data";
 import { defaultLifecyclePhases, defaultTierDefinitions } from "@/data/lifecycle";
-import type { GateCriterion, LifecyclePhase, ProjectStage, ProjectTier, TierDefinition, Benefit, BenefitMeasure, BookingType, GenericResource, Health, IssuedTask, Milestone, MilestoneStatus, Person, Portfolio, Programme, Project, ProjectRequest, ResourceAssignment as Assignment, ResourceTeam, Risk, Roadmap, RoadmapHealth, RoadmapItem, Task, TeamMember } from "@/data/types";
+import { getSettings } from "@/services/settings";
+import type { ChangeRequest, Issue, GateCriterion, LifecyclePhase, ProjectStage, ProjectTier, TierDefinition, Benefit, BenefitMeasure, BookingType, GenericResource, Health, IssuedTask, Milestone, MilestoneStatus, Person, Portfolio, Programme, Project, ProjectRequest, ResourceAssignment as Assignment, ResourceTeam, Risk, Roadmap, RoadmapHealth, RoadmapItem, Task, TeamMember } from "@/data/types";
 
 const rank: Record<Health,number> = {"Not Set":0,"On Track":1,"At Risk":2,"Off Track":3};
 const worst = (items: Health[]): Health => {
@@ -15,26 +16,30 @@ const parseDate = (value:string) => {
 const today = parseDate("21/09/2026");
 
 export function getScheduleHealth(project: Project): Health {
+  const thresholds=getSettings().health;
   if (project.milestones.some(m=>m.status==="Overdue")) return "Off Track";
   const baseline=parseDate(project.baselineFinish).getTime()-parseDate(project.start).getTime();
   const slip=parseDate(project.finish).getTime()-parseDate(project.baselineFinish).getTime();
-  if (baseline>0 && slip/baseline>0.1) return "Off Track";
-  if (project.taskCount && project.overdueTaskCount/project.taskCount>0.15) return "At Risk";
+  if (baseline>0 && slip/baseline>thresholds.scheduleSlipPercent/100) return "Off Track";
+  if (project.taskCount && project.overdueTaskCount/project.taskCount>thresholds.taskOverdueAtRiskPercent/100) return "At Risk";
   return "On Track";
 }
 export function getIssueHealth(project: Project): Health {
-  if (project.issues.some(i=>i.status==="Open"&&i.severity==="High") || project.risks.some(r=>r.status==="Open"&&r.score>=15)) return "Off Track";
-  if (project.issues.some(i=>i.status==="Open") || project.risks.some(r=>r.status==="Open"&&r.score>=10)) return "At Risk";
+  const thresholds=getSettings().health;
+  if (project.issues.some(i=>i.status==="Open"&&i.severity==="High") || project.risks.some(r=>r.status==="Open"&&r.score>=thresholds.riskScoreOffTrack)) return "Off Track";
+  if (project.issues.some(i=>i.status==="Open") || project.risks.some(r=>r.status==="Open"&&r.score>=thresholds.riskScoreAtRisk)) return "At Risk";
   return "On Track";
 }
 export function getFinancialHealth(project: Project): Health {
-  if (project.forecast > project.budget * 1.1) return "Off Track";
-  if (project.forecast > project.budget) return "At Risk";
+  const thresholds=getSettings().health;
+  if (project.forecast > project.budget * (1+thresholds.financialOffTrackPercent/100)) return "Off Track";
+  if (project.forecast > project.budget * (1+thresholds.financialAtRiskPercent/100)) return "At Risk";
   return "On Track";
 }
 export function getEffortHealth(project: Project): Health {
-  if (project.taskCount && project.overdueTaskCount / project.taskCount > 0.3) return "Off Track";
-  if (project.taskCount && project.overdueTaskCount / project.taskCount > 0.15) return "At Risk";
+  const thresholds=getSettings().health;
+  if (project.taskCount && project.overdueTaskCount / project.taskCount > thresholds.taskOverdueOffTrackPercent/100) return "Off Track";
+  if (project.taskCount && project.overdueTaskCount / project.taskCount > thresholds.taskOverdueAtRiskPercent/100) return "At Risk";
   return "On Track";
 }
 export function getProjectHealth(project: Project): Health { return project.healthOverride?.health ?? worst([getScheduleHealth(project),getFinancialHealth(project),getEffortHealth(project),getIssueHealth(project),getProjectBenefitHealth(project)]); }
@@ -204,7 +209,7 @@ export function getBenefitVariance(benefit:Benefit){
  for(let index2=0;index2<=current;index2+=1){const fraction=actual[index2];if(fraction!==undefined)achieved=fraction}
  return {expected,achieved,variancePercent:Math.round((achieved-expected)*100)};
 }
-export function isBenefitBehindProfile(benefit:Benefit){return getBenefitVariance(benefit).variancePercent<-20}
+export function isBenefitBehindProfile(benefit:Benefit){return getBenefitVariance(benefit).variancePercent< -getSettings().health.benefitBehindProfilePercent}
 export function isMeasurementOverdue(benefit:Benefit){return benefit.measures.some(measure=>parseDate(measure.nextDue)<today)}
 export function getBenefitPercent(benefit:Benefit){const planned=Math.abs(benefit.plannedTotalValue);return planned?Math.min(135,Math.round(Math.abs(getBenefitRealised(benefit))/planned*100)):0}
 export function getBenefitHealth(benefit:Benefit):Health{
@@ -266,3 +271,8 @@ export function getGateChecklist(project:Project,options?:{lessonsReviewed?:bool
     return options?.phaseReviewHeld?{criterion,status:"Pass" as const,detail:"A phase lessons review has been recorded for this phase."}:{criterion,status:"Fail" as const,detail:"No phase lessons review has been recorded for this phase."};
   });
 }
+
+export interface PortfolioIssue extends Issue { projectId: string; projectName: string; programmeId: string; programmeName: string }
+export function getPortfolioIssues():PortfolioIssue[]{return projects.flatMap(project=>{const programme=programmes.find(item=>item.id===project.programmeId);return project.issues.map(issue=>({...issue,projectId:project.id,projectName:project.name,programmeId:project.programmeId,programmeName:programme?.name??"Unassigned"}))})}
+export interface PortfolioChange extends ChangeRequest { projectId: string; projectName: string; programmeId: string; programmeName: string }
+export function getPortfolioChanges():PortfolioChange[]{return projects.flatMap(project=>{const programme=programmes.find(item=>item.id===project.programmeId);return (project.changes??[]).map(change=>({...change,projectId:project.id,projectName:project.name,programmeId:project.programmeId,programmeName:programme?.name??"Unassigned"}))})}

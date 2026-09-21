@@ -252,14 +252,14 @@ const draftBenefitRows:Record<string,Array<[string,BenefitClassification,Benefit
  ],
  req2:[
   ["Research storage capacity available on demand","Non-cash-releasing","Research","Daniel Mercer","Days to provision a research volume","18 days","2 days",64000,5,"obj-research"],
-  ["Avoided emergency capacity purchases","Cash-releasing","Efficiency","Martin Lowe","Unplanned storage spend per year","£72k","£0",45000,5,"obj-finance"],
+  ["Avoided emergency capacity purchases","Cash-releasing","Efficiency","Martin Lowe","Unplanned storage spend per year","72000","0",45000,5,"obj-finance"],
  ],
  req3:[
   ["Faster assessment turnaround for students","Qualitative","Student experience","Priya Nair","Days from submission to feedback","21 days","12 days",52000,5,"obj-student"],
-  ["Reduced print and invigilation cost","Cash-releasing","Efficiency","Martin Lowe","Annual print and invigilation spend","£48k","£19k",29000,5,"obj-finance"],
+  ["Reduced print and invigilation cost","Cash-releasing","Efficiency","Martin Lowe","Annual print and invigilation spend","48000","19000",29000,5,"obj-finance"],
  ],
  req4:[
-  ["Retired legacy telephony maintenance","Cash-releasing","Efficiency","Martin Lowe","Annual maintenance charge","£41k","£0",41000,5,"obj-finance"],
+  ["Retired legacy telephony maintenance","Cash-releasing","Efficiency","Martin Lowe","Annual maintenance charge","41000","0",41000,5,"obj-finance"],
  ],
  req5:[
   ["Meeting notes produced automatically","Qualitative","Efficiency","Rachel King","Minute-taking hours per month","120 hours","40 hours",17000,3,"obj-efficiency"],
@@ -303,7 +303,7 @@ const objectiveForCategory:Record<BenefitCategory,string>={Efficiency:"obj-effic
 const profiles=[{period:"Q1 Aug–Oct 2026",value:20},{period:"Q2 Nov 2026–Jan 2027",value:45},{period:"Q3 Feb–Apr 2027",value:70},{period:"Q4 May–Jul 2027",value:100}];
 export const benefits:Benefit[]=benefitTitles.map(([title,classification,category],index)=>{
  const id=`ben-${String(index+1).padStart(3,"0")}`,projectId=projectForBenefit(index),isDisbenefit=[4,19,20].includes(index),status:BenefitStatus=index<2?"Realised":index<6?"In realisation":index<10?"Planned":index<15?"Validated":"Identified";
- const overdue=[7,13].includes(index),unit=classification==="Cash-releasing"?"£":title.includes("contacts")?"contacts/month":title.includes("downtime")?"hours/quarter":title.includes("likelihood")?"risk score":"%";
+ const overdue=[7,13].includes(index),unit=classification==="Cash-releasing"?"currency":title.includes("contacts")?"contacts/month":title.includes("downtime")?"hours/quarter":title.includes("likelihood")?"risk score":"%";
  const baseline=title.includes("account provisioning")?72:title.includes("service desk contacts")?4200:title.includes("downtime")?18:title.includes("likelihood")?20:classification==="Cash-releasing"?0:10;
  const target=title.includes("account provisioning")?2:title.includes("service desk contacts")?3360:title.includes("downtime")?6:title.includes("likelihood")?8:classification==="Cash-releasing"?90000:100;
  const improvement=Math.abs(target-baseline),unitValue=unit==="contacts/month"?180:unit==="hours/quarter"?4000:unit==="risk score"?8000:1200;
@@ -363,7 +363,7 @@ benefits.push(...historicBenefitRows.map(([id,title,projectId,classification,cat
     beneficiaries:category==="Student experience"?["Students","Student Services"]:["University services"],owner,sro:["Priya Nair","Martin Lowe","Aisha Wallace"][index%3]??"Priya Nair",
     strategicObjectiveIds:[objectiveId],enablingProjects:[{projectId,attribution:100}],status:percent>=0.9?"Realised":"In realisation",confidence:percent>=0.9?"High":percent>=0.6?"Medium":"Low",
     eligibilityConfirmed:true,eligibilityConfirmedBy:"Elliot Reed",eligibilityConfirmedDate:"14/03/2026",plannedTotalValue,dependencies:["Service owner capacity"],
-    measures:[{id:`measure-${id}`,name:title,unit:classification==="Cash-releasing"?"£":"%",measurementMethod:"Compare validated operational data against the closure baseline.",dataSource:"DTS performance warehouse",frequency:"Quarterly",dataProvider:"Finance Business Partner",baselineValue:0,baselineDate:"31/03/2026",
+    measures:[{id:`measure-${id}`,name:title,unit:classification==="Cash-releasing"?"currency":"%",measurementMethod:"Compare validated operational data against the closure baseline.",dataSource:"DTS performance warehouse",frequency:"Quarterly",dataProvider:"Finance Business Partner",baselineValue:0,baselineDate:"31/03/2026",
       targetProfile:profiles.map((point,pointIndex)=>({period:point.period,value:Math.round(plannedTotalValue*(pointIndex+1)/4)})),
       nextDue:["28/09/2026","15/10/2026","30/09/2026","15/11/2026","25/09/2026","22/10/2026"][index]??"15/10/2026",
       records:[{id:`mr-${id}-1`,period:"Q1 Aug–Oct 2026",actualValue:Math.round(realised),evidence:`${id.toUpperCase()} realisation evidence.xlsx`,notes:"Post-closure measurement supplied by the BAU owner.",submittedBy:owner,submittedDate:"09/09/2026",validatedBy:"Elliot Reed",validatedDate:"16/09/2026",status:"Validated"}]}],

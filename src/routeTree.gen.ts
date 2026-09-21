@@ -16,11 +16,16 @@ import { Route as BenefitsRouteImport } from './routes/benefits'
 import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as DashboardsRouteImport } from './routes/dashboards'
 import { Route as DecisionsRouteImport } from './routes/decisions'
+import { Route as DeliveryRouteImport } from './routes/delivery'
 import { Route as DependenciesRouteImport } from './routes/dependencies'
+import { Route as GovernanceRouteImport } from './routes/governance'
+import { Route as HomeRouteImport } from './routes/home'
+import { Route as InsightsRouteImport } from './routes/insights'
 import { Route as LessonsRouteImport } from './routes/lessons'
 import { Route as MilestonesRouteImport } from './routes/milestones'
 import { Route as MyTimelineRouteImport } from './routes/my-timeline'
 import { Route as MyWorkRouteImport } from './routes/my-work'
+import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as ProgrammesRouteImport } from './routes/programmes'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as RequestsRouteImport } from './routes/requests'
@@ -30,24 +35,67 @@ import { Route as ResourceScenariosRouteImport } from './routes/resource-scenari
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as RisksRouteImport } from './routes/risks'
 import { Route as RoadmapsRouteImport } from './routes/roadmaps'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as TaskOverviewRouteImport } from './routes/task-overview'
 import { Route as BenefitsIndexRouteImport } from './routes/benefits.index'
 import { Route as BenefitsBenefitIdRouteImport } from './routes/benefits.$benefitId'
 import { Route as BenefitsDashboardRouteImport } from './routes/benefits.dashboard'
 import { Route as BenefitsMapRouteImport } from './routes/benefits.map'
 import { Route as BenefitsRealisationRouteImport } from './routes/benefits.realisation'
+import { Route as BenefitsRegisterRouteImport } from './routes/benefits.register'
 import { Route as CollectionsIndexRouteImport } from './routes/collections.index'
 import { Route as CollectionsCollectionIdRouteImport } from './routes/collections.$collectionId'
 import { Route as DecisionsIndexRouteImport } from './routes/decisions.index'
 import { Route as DecisionsForumRouteImport } from './routes/decisions.forum'
+import { Route as DeliveryIndexRouteImport } from './routes/delivery.index'
+import { Route as DeliveryDependenciesRouteImport } from './routes/delivery.dependencies'
+import { Route as DeliveryIssueTasksRouteImport } from './routes/delivery.issue-tasks'
+import { Route as DeliveryMilestonesRouteImport } from './routes/delivery.milestones'
+import { Route as DeliveryTasksRouteImport } from './routes/delivery.tasks'
 import { Route as DependenciesIndexRouteImport } from './routes/dependencies.index'
 import { Route as DependenciesMapRouteImport } from './routes/dependencies.map'
+import { Route as GovernanceIndexRouteImport } from './routes/governance.index'
+import { Route as GovernanceChangesRouteImport } from './routes/governance.changes'
+import { Route as GovernanceCommitteePacksRouteImport } from './routes/governance.committee-packs'
+import { Route as GovernanceForumRouteImport } from './routes/governance.forum'
+import { Route as GovernanceImprovementActionsRouteImport } from './routes/governance.improvement-actions'
+import { Route as GovernanceLessonsRouteImport } from './routes/governance.lessons'
+import { Route as GovernanceRaiddRouteImport } from './routes/governance.raidd'
+import { Route as HomeIndexRouteImport } from './routes/home.index'
+import { Route as HomeApprovalsRouteImport } from './routes/home.approvals'
+import { Route as HomeIssuedRouteImport } from './routes/home.issued'
+import { Route as HomeMyTimelineRouteImport } from './routes/home.my-timeline'
+import { Route as HomeMyWorkRouteImport } from './routes/home.my-work'
+import { Route as HomeNotificationsRouteImport } from './routes/home.notifications'
+import { Route as InsightsIndexRouteImport } from './routes/insights.index'
+import { Route as InsightsDashboardsRouteImport } from './routes/insights.dashboards'
+import { Route as InsightsReportsRouteImport } from './routes/insights.reports'
 import { Route as LessonsIndexRouteImport } from './routes/lessons.index'
 import { Route as LessonsActionsRouteImport } from './routes/lessons.actions'
+import { Route as PortfolioIndexRouteImport } from './routes/portfolio.index'
+import { Route as PortfolioCollectionsRouteImport } from './routes/portfolio.collections'
+import { Route as PortfolioProgrammesRouteImport } from './routes/portfolio.programmes'
+import { Route as PortfolioProjectsRouteImport } from './routes/portfolio.projects'
+import { Route as PortfolioRequestsRouteImport } from './routes/portfolio.requests'
+import { Route as PortfolioRoadmapRouteImport } from './routes/portfolio.roadmap'
 import { Route as ProgrammesIndexRouteImport } from './routes/programmes.index'
 import { Route as ProgrammesProgrammeIdRouteImport } from './routes/programmes.$programmeId'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
+import { Route as ResourcesIndexRouteImport } from './routes/resources.index'
+import { Route as ResourcesAllocationRouteImport } from './routes/resources.allocation'
+import { Route as ResourcesAssignmentsRouteImport } from './routes/resources.assignments'
+import { Route as ResourcesScenariosRouteImport } from './routes/resources.scenarios'
+import { Route as SettingsIndexRouteImport } from './routes/settings.index'
+import { Route as SettingsSectionRouteImport } from './routes/settings.$section'
+import { Route as DeliveryDependenciesIndexRouteImport } from './routes/delivery.dependencies.index'
+import { Route as DeliveryDependenciesMapRouteImport } from './routes/delivery.dependencies.map'
+import { Route as PortfolioCollectionsIndexRouteImport } from './routes/portfolio.collections.index'
+import { Route as PortfolioCollectionsCollectionIdRouteImport } from './routes/portfolio.collections.$collectionId'
+import { Route as PortfolioProgrammesIndexRouteImport } from './routes/portfolio.programmes.index'
+import { Route as PortfolioProgrammesProgrammeIdRouteImport } from './routes/portfolio.programmes.$programmeId'
+import { Route as PortfolioProjectsIndexRouteImport } from './routes/portfolio.projects.index'
+import { Route as PortfolioProjectsProjectIdRouteImport } from './routes/portfolio.projects.$projectId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -84,9 +132,29 @@ const DecisionsRoute = DecisionsRouteImport.update({
   path: '/decisions',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DeliveryRoute = DeliveryRouteImport.update({
+  id: '/delivery',
+  path: '/delivery',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DependenciesRoute = DependenciesRouteImport.update({
   id: '/dependencies',
   path: '/dependencies',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GovernanceRoute = GovernanceRouteImport.update({
+  id: '/governance',
+  path: '/governance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InsightsRoute = InsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LessonsRoute = LessonsRouteImport.update({
@@ -107,6 +175,11 @@ const MyTimelineRoute = MyTimelineRouteImport.update({
 const MyWorkRoute = MyWorkRouteImport.update({
   id: '/my-work',
   path: '/my-work',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PortfolioRoute = PortfolioRouteImport.update({
+  id: '/portfolio',
+  path: '/portfolio',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProgrammesRoute = ProgrammesRouteImport.update({
@@ -154,6 +227,11 @@ const RoadmapsRoute = RoadmapsRouteImport.update({
   path: '/roadmaps',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TaskOverviewRoute = TaskOverviewRouteImport.update({
   id: '/task-overview',
   path: '/task-overview',
@@ -184,6 +262,11 @@ const BenefitsRealisationRoute = BenefitsRealisationRouteImport.update({
   path: '/realisation',
   getParentRoute: () => BenefitsRoute,
 } as any)
+const BenefitsRegisterRoute = BenefitsRegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => BenefitsRoute,
+} as any)
 const CollectionsIndexRoute = CollectionsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -204,6 +287,31 @@ const DecisionsForumRoute = DecisionsForumRouteImport.update({
   path: '/forum',
   getParentRoute: () => DecisionsRoute,
 } as any)
+const DeliveryIndexRoute = DeliveryIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DeliveryRoute,
+} as any)
+const DeliveryDependenciesRoute = DeliveryDependenciesRouteImport.update({
+  id: '/dependencies',
+  path: '/dependencies',
+  getParentRoute: () => DeliveryRoute,
+} as any)
+const DeliveryIssueTasksRoute = DeliveryIssueTasksRouteImport.update({
+  id: '/issue-tasks',
+  path: '/issue-tasks',
+  getParentRoute: () => DeliveryRoute,
+} as any)
+const DeliveryMilestonesRoute = DeliveryMilestonesRouteImport.update({
+  id: '/milestones',
+  path: '/milestones',
+  getParentRoute: () => DeliveryRoute,
+} as any)
+const DeliveryTasksRoute = DeliveryTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => DeliveryRoute,
+} as any)
 const DependenciesIndexRoute = DependenciesIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -214,6 +322,88 @@ const DependenciesMapRoute = DependenciesMapRouteImport.update({
   path: '/map',
   getParentRoute: () => DependenciesRoute,
 } as any)
+const GovernanceIndexRoute = GovernanceIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => GovernanceRoute,
+} as any)
+const GovernanceChangesRoute = GovernanceChangesRouteImport.update({
+  id: '/changes',
+  path: '/changes',
+  getParentRoute: () => GovernanceRoute,
+} as any)
+const GovernanceCommitteePacksRoute =
+  GovernanceCommitteePacksRouteImport.update({
+    id: '/committee-packs',
+    path: '/committee-packs',
+    getParentRoute: () => GovernanceRoute,
+  } as any)
+const GovernanceForumRoute = GovernanceForumRouteImport.update({
+  id: '/forum',
+  path: '/forum',
+  getParentRoute: () => GovernanceRoute,
+} as any)
+const GovernanceImprovementActionsRoute =
+  GovernanceImprovementActionsRouteImport.update({
+    id: '/improvement-actions',
+    path: '/improvement-actions',
+    getParentRoute: () => GovernanceRoute,
+  } as any)
+const GovernanceLessonsRoute = GovernanceLessonsRouteImport.update({
+  id: '/lessons',
+  path: '/lessons',
+  getParentRoute: () => GovernanceRoute,
+} as any)
+const GovernanceRaiddRoute = GovernanceRaiddRouteImport.update({
+  id: '/raidd',
+  path: '/raidd',
+  getParentRoute: () => GovernanceRoute,
+} as any)
+const HomeIndexRoute = HomeIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => HomeRoute,
+} as any)
+const HomeApprovalsRoute = HomeApprovalsRouteImport.update({
+  id: '/approvals',
+  path: '/approvals',
+  getParentRoute: () => HomeRoute,
+} as any)
+const HomeIssuedRoute = HomeIssuedRouteImport.update({
+  id: '/issued',
+  path: '/issued',
+  getParentRoute: () => HomeRoute,
+} as any)
+const HomeMyTimelineRoute = HomeMyTimelineRouteImport.update({
+  id: '/my-timeline',
+  path: '/my-timeline',
+  getParentRoute: () => HomeRoute,
+} as any)
+const HomeMyWorkRoute = HomeMyWorkRouteImport.update({
+  id: '/my-work',
+  path: '/my-work',
+  getParentRoute: () => HomeRoute,
+} as any)
+const HomeNotificationsRoute = HomeNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => HomeRoute,
+} as any)
+const InsightsIndexRoute = InsightsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => InsightsRoute,
+} as any)
+const InsightsDashboardsRoute = InsightsDashboardsRouteImport.update({
+  id: '/dashboards',
+  path: '/dashboards',
+  getParentRoute: () => InsightsRoute,
+} as any)
+const InsightsReportsRoute = InsightsReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => InsightsRoute,
+} as any)
 const LessonsIndexRoute = LessonsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -223,6 +413,36 @@ const LessonsActionsRoute = LessonsActionsRouteImport.update({
   id: '/actions',
   path: '/actions',
   getParentRoute: () => LessonsRoute,
+} as any)
+const PortfolioIndexRoute = PortfolioIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PortfolioRoute,
+} as any)
+const PortfolioCollectionsRoute = PortfolioCollectionsRouteImport.update({
+  id: '/collections',
+  path: '/collections',
+  getParentRoute: () => PortfolioRoute,
+} as any)
+const PortfolioProgrammesRoute = PortfolioProgrammesRouteImport.update({
+  id: '/programmes',
+  path: '/programmes',
+  getParentRoute: () => PortfolioRoute,
+} as any)
+const PortfolioProjectsRoute = PortfolioProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => PortfolioRoute,
+} as any)
+const PortfolioRequestsRoute = PortfolioRequestsRouteImport.update({
+  id: '/requests',
+  path: '/requests',
+  getParentRoute: () => PortfolioRoute,
+} as any)
+const PortfolioRoadmapRoute = PortfolioRoadmapRouteImport.update({
+  id: '/roadmap',
+  path: '/roadmap',
+  getParentRoute: () => PortfolioRoute,
 } as any)
 const ProgrammesIndexRoute = ProgrammesIndexRouteImport.update({
   id: '/',
@@ -244,6 +464,82 @@ const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
   path: '/$projectId',
   getParentRoute: () => ProjectsRoute,
 } as any)
+const ResourcesIndexRoute = ResourcesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ResourcesRoute,
+} as any)
+const ResourcesAllocationRoute = ResourcesAllocationRouteImport.update({
+  id: '/allocation',
+  path: '/allocation',
+  getParentRoute: () => ResourcesRoute,
+} as any)
+const ResourcesAssignmentsRoute = ResourcesAssignmentsRouteImport.update({
+  id: '/assignments',
+  path: '/assignments',
+  getParentRoute: () => ResourcesRoute,
+} as any)
+const ResourcesScenariosRoute = ResourcesScenariosRouteImport.update({
+  id: '/scenarios',
+  path: '/scenarios',
+  getParentRoute: () => ResourcesRoute,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsSectionRoute = SettingsSectionRouteImport.update({
+  id: '/$section',
+  path: '/$section',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const DeliveryDependenciesIndexRoute =
+  DeliveryDependenciesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => DeliveryDependenciesRoute,
+  } as any)
+const DeliveryDependenciesMapRoute = DeliveryDependenciesMapRouteImport.update({
+  id: '/map',
+  path: '/map',
+  getParentRoute: () => DeliveryDependenciesRoute,
+} as any)
+const PortfolioCollectionsIndexRoute =
+  PortfolioCollectionsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => PortfolioCollectionsRoute,
+  } as any)
+const PortfolioCollectionsCollectionIdRoute =
+  PortfolioCollectionsCollectionIdRouteImport.update({
+    id: '/$collectionId',
+    path: '/$collectionId',
+    getParentRoute: () => PortfolioCollectionsRoute,
+  } as any)
+const PortfolioProgrammesIndexRoute =
+  PortfolioProgrammesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => PortfolioProgrammesRoute,
+  } as any)
+const PortfolioProgrammesProgrammeIdRoute =
+  PortfolioProgrammesProgrammeIdRouteImport.update({
+    id: '/$programmeId',
+    path: '/$programmeId',
+    getParentRoute: () => PortfolioProgrammesRoute,
+  } as any)
+const PortfolioProjectsIndexRoute = PortfolioProjectsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PortfolioProjectsRoute,
+} as any)
+const PortfolioProjectsProjectIdRoute =
+  PortfolioProjectsProjectIdRouteImport.update({
+    id: '/$projectId',
+    path: '/$projectId',
+    getParentRoute: () => PortfolioProjectsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -253,38 +549,86 @@ export interface FileRoutesByFullPath {
   '/collections': typeof CollectionsRouteWithChildren
   '/dashboards': typeof DashboardsRoute
   '/decisions': typeof DecisionsRouteWithChildren
+  '/delivery': typeof DeliveryRouteWithChildren
   '/dependencies': typeof DependenciesRouteWithChildren
+  '/governance': typeof GovernanceRouteWithChildren
+  '/home': typeof HomeRouteWithChildren
+  '/insights': typeof InsightsRouteWithChildren
   '/lessons': typeof LessonsRouteWithChildren
   '/milestones': typeof MilestonesRoute
   '/my-timeline': typeof MyTimelineRoute
   '/my-work': typeof MyWorkRoute
+  '/portfolio': typeof PortfolioRouteWithChildren
   '/programmes': typeof ProgrammesRouteWithChildren
   '/projects': typeof ProjectsRouteWithChildren
   '/requests': typeof RequestsRoute
   '/resource-allocation': typeof ResourceAllocationRoute
   '/resource-assignments': typeof ResourceAssignmentsRoute
   '/resource-scenarios': typeof ResourceScenariosRoute
-  '/resources': typeof ResourcesRoute
+  '/resources': typeof ResourcesRouteWithChildren
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
+  '/settings': typeof SettingsRouteWithChildren
   '/task-overview': typeof TaskOverviewRoute
   '/benefits/$benefitId': typeof BenefitsBenefitIdRoute
   '/benefits/dashboard': typeof BenefitsDashboardRoute
   '/benefits/map': typeof BenefitsMapRoute
   '/benefits/realisation': typeof BenefitsRealisationRoute
+  '/benefits/register': typeof BenefitsRegisterRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
   '/decisions/forum': typeof DecisionsForumRoute
+  '/delivery/dependencies': typeof DeliveryDependenciesRouteWithChildren
+  '/delivery/issue-tasks': typeof DeliveryIssueTasksRoute
+  '/delivery/milestones': typeof DeliveryMilestonesRoute
+  '/delivery/tasks': typeof DeliveryTasksRoute
   '/dependencies/map': typeof DependenciesMapRoute
+  '/governance/changes': typeof GovernanceChangesRoute
+  '/governance/committee-packs': typeof GovernanceCommitteePacksRoute
+  '/governance/forum': typeof GovernanceForumRoute
+  '/governance/improvement-actions': typeof GovernanceImprovementActionsRoute
+  '/governance/lessons': typeof GovernanceLessonsRoute
+  '/governance/raidd': typeof GovernanceRaiddRoute
+  '/home/approvals': typeof HomeApprovalsRoute
+  '/home/issued': typeof HomeIssuedRoute
+  '/home/my-timeline': typeof HomeMyTimelineRoute
+  '/home/my-work': typeof HomeMyWorkRoute
+  '/home/notifications': typeof HomeNotificationsRoute
+  '/insights/dashboards': typeof InsightsDashboardsRoute
+  '/insights/reports': typeof InsightsReportsRoute
   '/lessons/actions': typeof LessonsActionsRoute
+  '/portfolio/collections': typeof PortfolioCollectionsRouteWithChildren
+  '/portfolio/programmes': typeof PortfolioProgrammesRouteWithChildren
+  '/portfolio/projects': typeof PortfolioProjectsRouteWithChildren
+  '/portfolio/requests': typeof PortfolioRequestsRoute
+  '/portfolio/roadmap': typeof PortfolioRoadmapRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
+  '/resources/allocation': typeof ResourcesAllocationRoute
+  '/resources/assignments': typeof ResourcesAssignmentsRoute
+  '/resources/scenarios': typeof ResourcesScenariosRoute
+  '/settings/$section': typeof SettingsSectionRoute
   '/benefits/': typeof BenefitsIndexRoute
   '/collections/': typeof CollectionsIndexRoute
   '/decisions/': typeof DecisionsIndexRoute
+  '/delivery/': typeof DeliveryIndexRoute
   '/dependencies/': typeof DependenciesIndexRoute
+  '/governance/': typeof GovernanceIndexRoute
+  '/home/': typeof HomeIndexRoute
+  '/insights/': typeof InsightsIndexRoute
   '/lessons/': typeof LessonsIndexRoute
+  '/portfolio/': typeof PortfolioIndexRoute
   '/programmes/': typeof ProgrammesIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/resources/': typeof ResourcesIndexRoute
+  '/settings/': typeof SettingsIndexRoute
+  '/delivery/dependencies/map': typeof DeliveryDependenciesMapRoute
+  '/portfolio/collections/$collectionId': typeof PortfolioCollectionsCollectionIdRoute
+  '/portfolio/programmes/$programmeId': typeof PortfolioProgrammesProgrammeIdRoute
+  '/portfolio/projects/$projectId': typeof PortfolioProjectsProjectIdRoute
+  '/delivery/dependencies/': typeof DeliveryDependenciesIndexRoute
+  '/portfolio/collections/': typeof PortfolioCollectionsIndexRoute
+  '/portfolio/programmes/': typeof PortfolioProgrammesIndexRoute
+  '/portfolio/projects/': typeof PortfolioProjectsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -298,7 +642,6 @@ export interface FileRoutesByTo {
   '/resource-allocation': typeof ResourceAllocationRoute
   '/resource-assignments': typeof ResourceAssignmentsRoute
   '/resource-scenarios': typeof ResourceScenariosRoute
-  '/resources': typeof ResourcesRoute
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
   '/task-overview': typeof TaskOverviewRoute
@@ -306,19 +649,57 @@ export interface FileRoutesByTo {
   '/benefits/dashboard': typeof BenefitsDashboardRoute
   '/benefits/map': typeof BenefitsMapRoute
   '/benefits/realisation': typeof BenefitsRealisationRoute
+  '/benefits/register': typeof BenefitsRegisterRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
   '/decisions/forum': typeof DecisionsForumRoute
+  '/delivery/issue-tasks': typeof DeliveryIssueTasksRoute
+  '/delivery/milestones': typeof DeliveryMilestonesRoute
+  '/delivery/tasks': typeof DeliveryTasksRoute
   '/dependencies/map': typeof DependenciesMapRoute
+  '/governance/changes': typeof GovernanceChangesRoute
+  '/governance/committee-packs': typeof GovernanceCommitteePacksRoute
+  '/governance/forum': typeof GovernanceForumRoute
+  '/governance/improvement-actions': typeof GovernanceImprovementActionsRoute
+  '/governance/lessons': typeof GovernanceLessonsRoute
+  '/governance/raidd': typeof GovernanceRaiddRoute
+  '/home/approvals': typeof HomeApprovalsRoute
+  '/home/issued': typeof HomeIssuedRoute
+  '/home/my-timeline': typeof HomeMyTimelineRoute
+  '/home/my-work': typeof HomeMyWorkRoute
+  '/home/notifications': typeof HomeNotificationsRoute
+  '/insights/dashboards': typeof InsightsDashboardsRoute
+  '/insights/reports': typeof InsightsReportsRoute
   '/lessons/actions': typeof LessonsActionsRoute
+  '/portfolio/requests': typeof PortfolioRequestsRoute
+  '/portfolio/roadmap': typeof PortfolioRoadmapRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
+  '/resources/allocation': typeof ResourcesAllocationRoute
+  '/resources/assignments': typeof ResourcesAssignmentsRoute
+  '/resources/scenarios': typeof ResourcesScenariosRoute
+  '/settings/$section': typeof SettingsSectionRoute
   '/benefits': typeof BenefitsIndexRoute
   '/collections': typeof CollectionsIndexRoute
   '/decisions': typeof DecisionsIndexRoute
+  '/delivery': typeof DeliveryIndexRoute
   '/dependencies': typeof DependenciesIndexRoute
+  '/governance': typeof GovernanceIndexRoute
+  '/home': typeof HomeIndexRoute
+  '/insights': typeof InsightsIndexRoute
   '/lessons': typeof LessonsIndexRoute
+  '/portfolio': typeof PortfolioIndexRoute
   '/programmes': typeof ProgrammesIndexRoute
   '/projects': typeof ProjectsIndexRoute
+  '/resources': typeof ResourcesIndexRoute
+  '/settings': typeof SettingsIndexRoute
+  '/delivery/dependencies/map': typeof DeliveryDependenciesMapRoute
+  '/portfolio/collections/$collectionId': typeof PortfolioCollectionsCollectionIdRoute
+  '/portfolio/programmes/$programmeId': typeof PortfolioProgrammesProgrammeIdRoute
+  '/portfolio/projects/$projectId': typeof PortfolioProjectsProjectIdRoute
+  '/delivery/dependencies': typeof DeliveryDependenciesIndexRoute
+  '/portfolio/collections': typeof PortfolioCollectionsIndexRoute
+  '/portfolio/programmes': typeof PortfolioProgrammesIndexRoute
+  '/portfolio/projects': typeof PortfolioProjectsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -329,38 +710,86 @@ export interface FileRoutesById {
   '/collections': typeof CollectionsRouteWithChildren
   '/dashboards': typeof DashboardsRoute
   '/decisions': typeof DecisionsRouteWithChildren
+  '/delivery': typeof DeliveryRouteWithChildren
   '/dependencies': typeof DependenciesRouteWithChildren
+  '/governance': typeof GovernanceRouteWithChildren
+  '/home': typeof HomeRouteWithChildren
+  '/insights': typeof InsightsRouteWithChildren
   '/lessons': typeof LessonsRouteWithChildren
   '/milestones': typeof MilestonesRoute
   '/my-timeline': typeof MyTimelineRoute
   '/my-work': typeof MyWorkRoute
+  '/portfolio': typeof PortfolioRouteWithChildren
   '/programmes': typeof ProgrammesRouteWithChildren
   '/projects': typeof ProjectsRouteWithChildren
   '/requests': typeof RequestsRoute
   '/resource-allocation': typeof ResourceAllocationRoute
   '/resource-assignments': typeof ResourceAssignmentsRoute
   '/resource-scenarios': typeof ResourceScenariosRoute
-  '/resources': typeof ResourcesRoute
+  '/resources': typeof ResourcesRouteWithChildren
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
+  '/settings': typeof SettingsRouteWithChildren
   '/task-overview': typeof TaskOverviewRoute
   '/benefits/$benefitId': typeof BenefitsBenefitIdRoute
   '/benefits/dashboard': typeof BenefitsDashboardRoute
   '/benefits/map': typeof BenefitsMapRoute
   '/benefits/realisation': typeof BenefitsRealisationRoute
+  '/benefits/register': typeof BenefitsRegisterRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
   '/decisions/forum': typeof DecisionsForumRoute
+  '/delivery/dependencies': typeof DeliveryDependenciesRouteWithChildren
+  '/delivery/issue-tasks': typeof DeliveryIssueTasksRoute
+  '/delivery/milestones': typeof DeliveryMilestonesRoute
+  '/delivery/tasks': typeof DeliveryTasksRoute
   '/dependencies/map': typeof DependenciesMapRoute
+  '/governance/changes': typeof GovernanceChangesRoute
+  '/governance/committee-packs': typeof GovernanceCommitteePacksRoute
+  '/governance/forum': typeof GovernanceForumRoute
+  '/governance/improvement-actions': typeof GovernanceImprovementActionsRoute
+  '/governance/lessons': typeof GovernanceLessonsRoute
+  '/governance/raidd': typeof GovernanceRaiddRoute
+  '/home/approvals': typeof HomeApprovalsRoute
+  '/home/issued': typeof HomeIssuedRoute
+  '/home/my-timeline': typeof HomeMyTimelineRoute
+  '/home/my-work': typeof HomeMyWorkRoute
+  '/home/notifications': typeof HomeNotificationsRoute
+  '/insights/dashboards': typeof InsightsDashboardsRoute
+  '/insights/reports': typeof InsightsReportsRoute
   '/lessons/actions': typeof LessonsActionsRoute
+  '/portfolio/collections': typeof PortfolioCollectionsRouteWithChildren
+  '/portfolio/programmes': typeof PortfolioProgrammesRouteWithChildren
+  '/portfolio/projects': typeof PortfolioProjectsRouteWithChildren
+  '/portfolio/requests': typeof PortfolioRequestsRoute
+  '/portfolio/roadmap': typeof PortfolioRoadmapRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
+  '/resources/allocation': typeof ResourcesAllocationRoute
+  '/resources/assignments': typeof ResourcesAssignmentsRoute
+  '/resources/scenarios': typeof ResourcesScenariosRoute
+  '/settings/$section': typeof SettingsSectionRoute
   '/benefits/': typeof BenefitsIndexRoute
   '/collections/': typeof CollectionsIndexRoute
   '/decisions/': typeof DecisionsIndexRoute
+  '/delivery/': typeof DeliveryIndexRoute
   '/dependencies/': typeof DependenciesIndexRoute
+  '/governance/': typeof GovernanceIndexRoute
+  '/home/': typeof HomeIndexRoute
+  '/insights/': typeof InsightsIndexRoute
   '/lessons/': typeof LessonsIndexRoute
+  '/portfolio/': typeof PortfolioIndexRoute
   '/programmes/': typeof ProgrammesIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/resources/': typeof ResourcesIndexRoute
+  '/settings/': typeof SettingsIndexRoute
+  '/delivery/dependencies/map': typeof DeliveryDependenciesMapRoute
+  '/portfolio/collections/$collectionId': typeof PortfolioCollectionsCollectionIdRoute
+  '/portfolio/programmes/$programmeId': typeof PortfolioProgrammesProgrammeIdRoute
+  '/portfolio/projects/$projectId': typeof PortfolioProjectsProjectIdRoute
+  '/delivery/dependencies/': typeof DeliveryDependenciesIndexRoute
+  '/portfolio/collections/': typeof PortfolioCollectionsIndexRoute
+  '/portfolio/programmes/': typeof PortfolioProgrammesIndexRoute
+  '/portfolio/projects/': typeof PortfolioProjectsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -372,11 +801,16 @@ export interface FileRouteTypes {
     | '/collections'
     | '/dashboards'
     | '/decisions'
+    | '/delivery'
     | '/dependencies'
+    | '/governance'
+    | '/home'
+    | '/insights'
     | '/lessons'
     | '/milestones'
     | '/my-timeline'
     | '/my-work'
+    | '/portfolio'
     | '/programmes'
     | '/projects'
     | '/requests'
@@ -386,24 +820,67 @@ export interface FileRouteTypes {
     | '/resources'
     | '/risks'
     | '/roadmaps'
+    | '/settings'
     | '/task-overview'
     | '/benefits/$benefitId'
     | '/benefits/dashboard'
     | '/benefits/map'
     | '/benefits/realisation'
+    | '/benefits/register'
     | '/collections/$collectionId'
     | '/decisions/forum'
+    | '/delivery/dependencies'
+    | '/delivery/issue-tasks'
+    | '/delivery/milestones'
+    | '/delivery/tasks'
     | '/dependencies/map'
+    | '/governance/changes'
+    | '/governance/committee-packs'
+    | '/governance/forum'
+    | '/governance/improvement-actions'
+    | '/governance/lessons'
+    | '/governance/raidd'
+    | '/home/approvals'
+    | '/home/issued'
+    | '/home/my-timeline'
+    | '/home/my-work'
+    | '/home/notifications'
+    | '/insights/dashboards'
+    | '/insights/reports'
     | '/lessons/actions'
+    | '/portfolio/collections'
+    | '/portfolio/programmes'
+    | '/portfolio/projects'
+    | '/portfolio/requests'
+    | '/portfolio/roadmap'
     | '/programmes/$programmeId'
     | '/projects/$projectId'
+    | '/resources/allocation'
+    | '/resources/assignments'
+    | '/resources/scenarios'
+    | '/settings/$section'
     | '/benefits/'
     | '/collections/'
     | '/decisions/'
+    | '/delivery/'
     | '/dependencies/'
+    | '/governance/'
+    | '/home/'
+    | '/insights/'
     | '/lessons/'
+    | '/portfolio/'
     | '/programmes/'
     | '/projects/'
+    | '/resources/'
+    | '/settings/'
+    | '/delivery/dependencies/map'
+    | '/portfolio/collections/$collectionId'
+    | '/portfolio/programmes/$programmeId'
+    | '/portfolio/projects/$projectId'
+    | '/delivery/dependencies/'
+    | '/portfolio/collections/'
+    | '/portfolio/programmes/'
+    | '/portfolio/projects/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -417,7 +894,6 @@ export interface FileRouteTypes {
     | '/resource-allocation'
     | '/resource-assignments'
     | '/resource-scenarios'
-    | '/resources'
     | '/risks'
     | '/roadmaps'
     | '/task-overview'
@@ -425,19 +901,57 @@ export interface FileRouteTypes {
     | '/benefits/dashboard'
     | '/benefits/map'
     | '/benefits/realisation'
+    | '/benefits/register'
     | '/collections/$collectionId'
     | '/decisions/forum'
+    | '/delivery/issue-tasks'
+    | '/delivery/milestones'
+    | '/delivery/tasks'
     | '/dependencies/map'
+    | '/governance/changes'
+    | '/governance/committee-packs'
+    | '/governance/forum'
+    | '/governance/improvement-actions'
+    | '/governance/lessons'
+    | '/governance/raidd'
+    | '/home/approvals'
+    | '/home/issued'
+    | '/home/my-timeline'
+    | '/home/my-work'
+    | '/home/notifications'
+    | '/insights/dashboards'
+    | '/insights/reports'
     | '/lessons/actions'
+    | '/portfolio/requests'
+    | '/portfolio/roadmap'
     | '/programmes/$programmeId'
     | '/projects/$projectId'
+    | '/resources/allocation'
+    | '/resources/assignments'
+    | '/resources/scenarios'
+    | '/settings/$section'
     | '/benefits'
     | '/collections'
     | '/decisions'
+    | '/delivery'
     | '/dependencies'
+    | '/governance'
+    | '/home'
+    | '/insights'
     | '/lessons'
+    | '/portfolio'
     | '/programmes'
     | '/projects'
+    | '/resources'
+    | '/settings'
+    | '/delivery/dependencies/map'
+    | '/portfolio/collections/$collectionId'
+    | '/portfolio/programmes/$programmeId'
+    | '/portfolio/projects/$projectId'
+    | '/delivery/dependencies'
+    | '/portfolio/collections'
+    | '/portfolio/programmes'
+    | '/portfolio/projects'
   id:
     | '__root__'
     | '/'
@@ -447,11 +961,16 @@ export interface FileRouteTypes {
     | '/collections'
     | '/dashboards'
     | '/decisions'
+    | '/delivery'
     | '/dependencies'
+    | '/governance'
+    | '/home'
+    | '/insights'
     | '/lessons'
     | '/milestones'
     | '/my-timeline'
     | '/my-work'
+    | '/portfolio'
     | '/programmes'
     | '/projects'
     | '/requests'
@@ -461,24 +980,67 @@ export interface FileRouteTypes {
     | '/resources'
     | '/risks'
     | '/roadmaps'
+    | '/settings'
     | '/task-overview'
     | '/benefits/$benefitId'
     | '/benefits/dashboard'
     | '/benefits/map'
     | '/benefits/realisation'
+    | '/benefits/register'
     | '/collections/$collectionId'
     | '/decisions/forum'
+    | '/delivery/dependencies'
+    | '/delivery/issue-tasks'
+    | '/delivery/milestones'
+    | '/delivery/tasks'
     | '/dependencies/map'
+    | '/governance/changes'
+    | '/governance/committee-packs'
+    | '/governance/forum'
+    | '/governance/improvement-actions'
+    | '/governance/lessons'
+    | '/governance/raidd'
+    | '/home/approvals'
+    | '/home/issued'
+    | '/home/my-timeline'
+    | '/home/my-work'
+    | '/home/notifications'
+    | '/insights/dashboards'
+    | '/insights/reports'
     | '/lessons/actions'
+    | '/portfolio/collections'
+    | '/portfolio/programmes'
+    | '/portfolio/projects'
+    | '/portfolio/requests'
+    | '/portfolio/roadmap'
     | '/programmes/$programmeId'
     | '/projects/$projectId'
+    | '/resources/allocation'
+    | '/resources/assignments'
+    | '/resources/scenarios'
+    | '/settings/$section'
     | '/benefits/'
     | '/collections/'
     | '/decisions/'
+    | '/delivery/'
     | '/dependencies/'
+    | '/governance/'
+    | '/home/'
+    | '/insights/'
     | '/lessons/'
+    | '/portfolio/'
     | '/programmes/'
     | '/projects/'
+    | '/resources/'
+    | '/settings/'
+    | '/delivery/dependencies/map'
+    | '/portfolio/collections/$collectionId'
+    | '/portfolio/programmes/$programmeId'
+    | '/portfolio/projects/$projectId'
+    | '/delivery/dependencies/'
+    | '/portfolio/collections/'
+    | '/portfolio/programmes/'
+    | '/portfolio/projects/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -489,20 +1051,26 @@ export interface RootRouteChildren {
   CollectionsRoute: typeof CollectionsRouteWithChildren
   DashboardsRoute: typeof DashboardsRoute
   DecisionsRoute: typeof DecisionsRouteWithChildren
+  DeliveryRoute: typeof DeliveryRouteWithChildren
   DependenciesRoute: typeof DependenciesRouteWithChildren
+  GovernanceRoute: typeof GovernanceRouteWithChildren
+  HomeRoute: typeof HomeRouteWithChildren
+  InsightsRoute: typeof InsightsRouteWithChildren
   LessonsRoute: typeof LessonsRouteWithChildren
   MilestonesRoute: typeof MilestonesRoute
   MyTimelineRoute: typeof MyTimelineRoute
   MyWorkRoute: typeof MyWorkRoute
+  PortfolioRoute: typeof PortfolioRouteWithChildren
   ProgrammesRoute: typeof ProgrammesRouteWithChildren
   ProjectsRoute: typeof ProjectsRouteWithChildren
   RequestsRoute: typeof RequestsRoute
   ResourceAllocationRoute: typeof ResourceAllocationRoute
   ResourceAssignmentsRoute: typeof ResourceAssignmentsRoute
   ResourceScenariosRoute: typeof ResourceScenariosRoute
-  ResourcesRoute: typeof ResourcesRoute
+  ResourcesRoute: typeof ResourcesRouteWithChildren
   RisksRoute: typeof RisksRoute
   RoadmapsRoute: typeof RoadmapsRoute
+  SettingsRoute: typeof SettingsRouteWithChildren
   TaskOverviewRoute: typeof TaskOverviewRoute
 }
 
@@ -557,11 +1125,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DecisionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/delivery': {
+      id: '/delivery'
+      path: '/delivery'
+      fullPath: '/delivery'
+      preLoaderRoute: typeof DeliveryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dependencies': {
       id: '/dependencies'
       path: '/dependencies'
       fullPath: '/dependencies'
       preLoaderRoute: typeof DependenciesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/governance': {
+      id: '/governance'
+      path: '/governance'
+      fullPath: '/governance'
+      preLoaderRoute: typeof GovernanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/insights': {
+      id: '/insights'
+      path: '/insights'
+      fullPath: '/insights'
+      preLoaderRoute: typeof InsightsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lessons': {
@@ -590,6 +1186,13 @@ declare module '@tanstack/react-router' {
       path: '/my-work'
       fullPath: '/my-work'
       preLoaderRoute: typeof MyWorkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/portfolio': {
+      id: '/portfolio'
+      path: '/portfolio'
+      fullPath: '/portfolio'
+      preLoaderRoute: typeof PortfolioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/programmes': {
@@ -655,6 +1258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoadmapsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/task-overview': {
       id: '/task-overview'
       path: '/task-overview'
@@ -697,6 +1307,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BenefitsRealisationRouteImport
       parentRoute: typeof BenefitsRoute
     }
+    '/benefits/register': {
+      id: '/benefits/register'
+      path: '/register'
+      fullPath: '/benefits/register'
+      preLoaderRoute: typeof BenefitsRegisterRouteImport
+      parentRoute: typeof BenefitsRoute
+    }
     '/collections/': {
       id: '/collections/'
       path: '/'
@@ -725,6 +1342,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DecisionsForumRouteImport
       parentRoute: typeof DecisionsRoute
     }
+    '/delivery/': {
+      id: '/delivery/'
+      path: '/'
+      fullPath: '/delivery/'
+      preLoaderRoute: typeof DeliveryIndexRouteImport
+      parentRoute: typeof DeliveryRoute
+    }
+    '/delivery/dependencies': {
+      id: '/delivery/dependencies'
+      path: '/dependencies'
+      fullPath: '/delivery/dependencies'
+      preLoaderRoute: typeof DeliveryDependenciesRouteImport
+      parentRoute: typeof DeliveryRoute
+    }
+    '/delivery/issue-tasks': {
+      id: '/delivery/issue-tasks'
+      path: '/issue-tasks'
+      fullPath: '/delivery/issue-tasks'
+      preLoaderRoute: typeof DeliveryIssueTasksRouteImport
+      parentRoute: typeof DeliveryRoute
+    }
+    '/delivery/milestones': {
+      id: '/delivery/milestones'
+      path: '/milestones'
+      fullPath: '/delivery/milestones'
+      preLoaderRoute: typeof DeliveryMilestonesRouteImport
+      parentRoute: typeof DeliveryRoute
+    }
+    '/delivery/tasks': {
+      id: '/delivery/tasks'
+      path: '/tasks'
+      fullPath: '/delivery/tasks'
+      preLoaderRoute: typeof DeliveryTasksRouteImport
+      parentRoute: typeof DeliveryRoute
+    }
     '/dependencies/': {
       id: '/dependencies/'
       path: '/'
@@ -739,6 +1391,118 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DependenciesMapRouteImport
       parentRoute: typeof DependenciesRoute
     }
+    '/governance/': {
+      id: '/governance/'
+      path: '/'
+      fullPath: '/governance/'
+      preLoaderRoute: typeof GovernanceIndexRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/governance/changes': {
+      id: '/governance/changes'
+      path: '/changes'
+      fullPath: '/governance/changes'
+      preLoaderRoute: typeof GovernanceChangesRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/governance/committee-packs': {
+      id: '/governance/committee-packs'
+      path: '/committee-packs'
+      fullPath: '/governance/committee-packs'
+      preLoaderRoute: typeof GovernanceCommitteePacksRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/governance/forum': {
+      id: '/governance/forum'
+      path: '/forum'
+      fullPath: '/governance/forum'
+      preLoaderRoute: typeof GovernanceForumRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/governance/improvement-actions': {
+      id: '/governance/improvement-actions'
+      path: '/improvement-actions'
+      fullPath: '/governance/improvement-actions'
+      preLoaderRoute: typeof GovernanceImprovementActionsRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/governance/lessons': {
+      id: '/governance/lessons'
+      path: '/lessons'
+      fullPath: '/governance/lessons'
+      preLoaderRoute: typeof GovernanceLessonsRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/governance/raidd': {
+      id: '/governance/raidd'
+      path: '/raidd'
+      fullPath: '/governance/raidd'
+      preLoaderRoute: typeof GovernanceRaiddRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/home/': {
+      id: '/home/'
+      path: '/'
+      fullPath: '/home/'
+      preLoaderRoute: typeof HomeIndexRouteImport
+      parentRoute: typeof HomeRoute
+    }
+    '/home/approvals': {
+      id: '/home/approvals'
+      path: '/approvals'
+      fullPath: '/home/approvals'
+      preLoaderRoute: typeof HomeApprovalsRouteImport
+      parentRoute: typeof HomeRoute
+    }
+    '/home/issued': {
+      id: '/home/issued'
+      path: '/issued'
+      fullPath: '/home/issued'
+      preLoaderRoute: typeof HomeIssuedRouteImport
+      parentRoute: typeof HomeRoute
+    }
+    '/home/my-timeline': {
+      id: '/home/my-timeline'
+      path: '/my-timeline'
+      fullPath: '/home/my-timeline'
+      preLoaderRoute: typeof HomeMyTimelineRouteImport
+      parentRoute: typeof HomeRoute
+    }
+    '/home/my-work': {
+      id: '/home/my-work'
+      path: '/my-work'
+      fullPath: '/home/my-work'
+      preLoaderRoute: typeof HomeMyWorkRouteImport
+      parentRoute: typeof HomeRoute
+    }
+    '/home/notifications': {
+      id: '/home/notifications'
+      path: '/notifications'
+      fullPath: '/home/notifications'
+      preLoaderRoute: typeof HomeNotificationsRouteImport
+      parentRoute: typeof HomeRoute
+    }
+    '/insights/': {
+      id: '/insights/'
+      path: '/'
+      fullPath: '/insights/'
+      preLoaderRoute: typeof InsightsIndexRouteImport
+      parentRoute: typeof InsightsRoute
+    }
+    '/insights/dashboards': {
+      id: '/insights/dashboards'
+      path: '/dashboards'
+      fullPath: '/insights/dashboards'
+      preLoaderRoute: typeof InsightsDashboardsRouteImport
+      parentRoute: typeof InsightsRoute
+    }
+    '/insights/reports': {
+      id: '/insights/reports'
+      path: '/reports'
+      fullPath: '/insights/reports'
+      preLoaderRoute: typeof InsightsReportsRouteImport
+      parentRoute: typeof InsightsRoute
+    }
     '/lessons/': {
       id: '/lessons/'
       path: '/'
@@ -752,6 +1516,48 @@ declare module '@tanstack/react-router' {
       fullPath: '/lessons/actions'
       preLoaderRoute: typeof LessonsActionsRouteImport
       parentRoute: typeof LessonsRoute
+    }
+    '/portfolio/': {
+      id: '/portfolio/'
+      path: '/'
+      fullPath: '/portfolio/'
+      preLoaderRoute: typeof PortfolioIndexRouteImport
+      parentRoute: typeof PortfolioRoute
+    }
+    '/portfolio/collections': {
+      id: '/portfolio/collections'
+      path: '/collections'
+      fullPath: '/portfolio/collections'
+      preLoaderRoute: typeof PortfolioCollectionsRouteImport
+      parentRoute: typeof PortfolioRoute
+    }
+    '/portfolio/programmes': {
+      id: '/portfolio/programmes'
+      path: '/programmes'
+      fullPath: '/portfolio/programmes'
+      preLoaderRoute: typeof PortfolioProgrammesRouteImport
+      parentRoute: typeof PortfolioRoute
+    }
+    '/portfolio/projects': {
+      id: '/portfolio/projects'
+      path: '/projects'
+      fullPath: '/portfolio/projects'
+      preLoaderRoute: typeof PortfolioProjectsRouteImport
+      parentRoute: typeof PortfolioRoute
+    }
+    '/portfolio/requests': {
+      id: '/portfolio/requests'
+      path: '/requests'
+      fullPath: '/portfolio/requests'
+      preLoaderRoute: typeof PortfolioRequestsRouteImport
+      parentRoute: typeof PortfolioRoute
+    }
+    '/portfolio/roadmap': {
+      id: '/portfolio/roadmap'
+      path: '/roadmap'
+      fullPath: '/portfolio/roadmap'
+      preLoaderRoute: typeof PortfolioRoadmapRouteImport
+      parentRoute: typeof PortfolioRoute
     }
     '/programmes/': {
       id: '/programmes/'
@@ -781,6 +1587,104 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsProjectIdRouteImport
       parentRoute: typeof ProjectsRoute
     }
+    '/resources/': {
+      id: '/resources/'
+      path: '/'
+      fullPath: '/resources/'
+      preLoaderRoute: typeof ResourcesIndexRouteImport
+      parentRoute: typeof ResourcesRoute
+    }
+    '/resources/allocation': {
+      id: '/resources/allocation'
+      path: '/allocation'
+      fullPath: '/resources/allocation'
+      preLoaderRoute: typeof ResourcesAllocationRouteImport
+      parentRoute: typeof ResourcesRoute
+    }
+    '/resources/assignments': {
+      id: '/resources/assignments'
+      path: '/assignments'
+      fullPath: '/resources/assignments'
+      preLoaderRoute: typeof ResourcesAssignmentsRouteImport
+      parentRoute: typeof ResourcesRoute
+    }
+    '/resources/scenarios': {
+      id: '/resources/scenarios'
+      path: '/scenarios'
+      fullPath: '/resources/scenarios'
+      preLoaderRoute: typeof ResourcesScenariosRouteImport
+      parentRoute: typeof ResourcesRoute
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/$section': {
+      id: '/settings/$section'
+      path: '/$section'
+      fullPath: '/settings/$section'
+      preLoaderRoute: typeof SettingsSectionRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/delivery/dependencies/': {
+      id: '/delivery/dependencies/'
+      path: '/'
+      fullPath: '/delivery/dependencies/'
+      preLoaderRoute: typeof DeliveryDependenciesIndexRouteImport
+      parentRoute: typeof DeliveryDependenciesRoute
+    }
+    '/delivery/dependencies/map': {
+      id: '/delivery/dependencies/map'
+      path: '/map'
+      fullPath: '/delivery/dependencies/map'
+      preLoaderRoute: typeof DeliveryDependenciesMapRouteImport
+      parentRoute: typeof DeliveryDependenciesRoute
+    }
+    '/portfolio/collections/': {
+      id: '/portfolio/collections/'
+      path: '/'
+      fullPath: '/portfolio/collections/'
+      preLoaderRoute: typeof PortfolioCollectionsIndexRouteImport
+      parentRoute: typeof PortfolioCollectionsRoute
+    }
+    '/portfolio/collections/$collectionId': {
+      id: '/portfolio/collections/$collectionId'
+      path: '/$collectionId'
+      fullPath: '/portfolio/collections/$collectionId'
+      preLoaderRoute: typeof PortfolioCollectionsCollectionIdRouteImport
+      parentRoute: typeof PortfolioCollectionsRoute
+    }
+    '/portfolio/programmes/': {
+      id: '/portfolio/programmes/'
+      path: '/'
+      fullPath: '/portfolio/programmes/'
+      preLoaderRoute: typeof PortfolioProgrammesIndexRouteImport
+      parentRoute: typeof PortfolioProgrammesRoute
+    }
+    '/portfolio/programmes/$programmeId': {
+      id: '/portfolio/programmes/$programmeId'
+      path: '/$programmeId'
+      fullPath: '/portfolio/programmes/$programmeId'
+      preLoaderRoute: typeof PortfolioProgrammesProgrammeIdRouteImport
+      parentRoute: typeof PortfolioProgrammesRoute
+    }
+    '/portfolio/projects/': {
+      id: '/portfolio/projects/'
+      path: '/'
+      fullPath: '/portfolio/projects/'
+      preLoaderRoute: typeof PortfolioProjectsIndexRouteImport
+      parentRoute: typeof PortfolioProjectsRoute
+    }
+    '/portfolio/projects/$projectId': {
+      id: '/portfolio/projects/$projectId'
+      path: '/$projectId'
+      fullPath: '/portfolio/projects/$projectId'
+      preLoaderRoute: typeof PortfolioProjectsProjectIdRouteImport
+      parentRoute: typeof PortfolioProjectsRoute
+    }
   }
 }
 
@@ -789,6 +1693,7 @@ interface BenefitsRouteChildren {
   BenefitsDashboardRoute: typeof BenefitsDashboardRoute
   BenefitsMapRoute: typeof BenefitsMapRoute
   BenefitsRealisationRoute: typeof BenefitsRealisationRoute
+  BenefitsRegisterRoute: typeof BenefitsRegisterRoute
   BenefitsIndexRoute: typeof BenefitsIndexRoute
 }
 
@@ -797,6 +1702,7 @@ const BenefitsRouteChildren: BenefitsRouteChildren = {
   BenefitsDashboardRoute: BenefitsDashboardRoute,
   BenefitsMapRoute: BenefitsMapRoute,
   BenefitsRealisationRoute: BenefitsRealisationRoute,
+  BenefitsRegisterRoute: BenefitsRegisterRoute,
   BenefitsIndexRoute: BenefitsIndexRoute,
 }
 
@@ -832,6 +1738,39 @@ const DecisionsRouteWithChildren = DecisionsRoute._addFileChildren(
   DecisionsRouteChildren,
 )
 
+interface DeliveryDependenciesRouteChildren {
+  DeliveryDependenciesMapRoute: typeof DeliveryDependenciesMapRoute
+  DeliveryDependenciesIndexRoute: typeof DeliveryDependenciesIndexRoute
+}
+
+const DeliveryDependenciesRouteChildren: DeliveryDependenciesRouteChildren = {
+  DeliveryDependenciesMapRoute: DeliveryDependenciesMapRoute,
+  DeliveryDependenciesIndexRoute: DeliveryDependenciesIndexRoute,
+}
+
+const DeliveryDependenciesRouteWithChildren =
+  DeliveryDependenciesRoute._addFileChildren(DeliveryDependenciesRouteChildren)
+
+interface DeliveryRouteChildren {
+  DeliveryDependenciesRoute: typeof DeliveryDependenciesRouteWithChildren
+  DeliveryIssueTasksRoute: typeof DeliveryIssueTasksRoute
+  DeliveryMilestonesRoute: typeof DeliveryMilestonesRoute
+  DeliveryTasksRoute: typeof DeliveryTasksRoute
+  DeliveryIndexRoute: typeof DeliveryIndexRoute
+}
+
+const DeliveryRouteChildren: DeliveryRouteChildren = {
+  DeliveryDependenciesRoute: DeliveryDependenciesRouteWithChildren,
+  DeliveryIssueTasksRoute: DeliveryIssueTasksRoute,
+  DeliveryMilestonesRoute: DeliveryMilestonesRoute,
+  DeliveryTasksRoute: DeliveryTasksRoute,
+  DeliveryIndexRoute: DeliveryIndexRoute,
+}
+
+const DeliveryRouteWithChildren = DeliveryRoute._addFileChildren(
+  DeliveryRouteChildren,
+)
+
 interface DependenciesRouteChildren {
   DependenciesMapRoute: typeof DependenciesMapRoute
   DependenciesIndexRoute: typeof DependenciesIndexRoute
@@ -846,6 +1785,66 @@ const DependenciesRouteWithChildren = DependenciesRoute._addFileChildren(
   DependenciesRouteChildren,
 )
 
+interface GovernanceRouteChildren {
+  GovernanceChangesRoute: typeof GovernanceChangesRoute
+  GovernanceCommitteePacksRoute: typeof GovernanceCommitteePacksRoute
+  GovernanceForumRoute: typeof GovernanceForumRoute
+  GovernanceImprovementActionsRoute: typeof GovernanceImprovementActionsRoute
+  GovernanceLessonsRoute: typeof GovernanceLessonsRoute
+  GovernanceRaiddRoute: typeof GovernanceRaiddRoute
+  GovernanceIndexRoute: typeof GovernanceIndexRoute
+}
+
+const GovernanceRouteChildren: GovernanceRouteChildren = {
+  GovernanceChangesRoute: GovernanceChangesRoute,
+  GovernanceCommitteePacksRoute: GovernanceCommitteePacksRoute,
+  GovernanceForumRoute: GovernanceForumRoute,
+  GovernanceImprovementActionsRoute: GovernanceImprovementActionsRoute,
+  GovernanceLessonsRoute: GovernanceLessonsRoute,
+  GovernanceRaiddRoute: GovernanceRaiddRoute,
+  GovernanceIndexRoute: GovernanceIndexRoute,
+}
+
+const GovernanceRouteWithChildren = GovernanceRoute._addFileChildren(
+  GovernanceRouteChildren,
+)
+
+interface HomeRouteChildren {
+  HomeApprovalsRoute: typeof HomeApprovalsRoute
+  HomeIssuedRoute: typeof HomeIssuedRoute
+  HomeMyTimelineRoute: typeof HomeMyTimelineRoute
+  HomeMyWorkRoute: typeof HomeMyWorkRoute
+  HomeNotificationsRoute: typeof HomeNotificationsRoute
+  HomeIndexRoute: typeof HomeIndexRoute
+}
+
+const HomeRouteChildren: HomeRouteChildren = {
+  HomeApprovalsRoute: HomeApprovalsRoute,
+  HomeIssuedRoute: HomeIssuedRoute,
+  HomeMyTimelineRoute: HomeMyTimelineRoute,
+  HomeMyWorkRoute: HomeMyWorkRoute,
+  HomeNotificationsRoute: HomeNotificationsRoute,
+  HomeIndexRoute: HomeIndexRoute,
+}
+
+const HomeRouteWithChildren = HomeRoute._addFileChildren(HomeRouteChildren)
+
+interface InsightsRouteChildren {
+  InsightsDashboardsRoute: typeof InsightsDashboardsRoute
+  InsightsReportsRoute: typeof InsightsReportsRoute
+  InsightsIndexRoute: typeof InsightsIndexRoute
+}
+
+const InsightsRouteChildren: InsightsRouteChildren = {
+  InsightsDashboardsRoute: InsightsDashboardsRoute,
+  InsightsReportsRoute: InsightsReportsRoute,
+  InsightsIndexRoute: InsightsIndexRoute,
+}
+
+const InsightsRouteWithChildren = InsightsRoute._addFileChildren(
+  InsightsRouteChildren,
+)
+
 interface LessonsRouteChildren {
   LessonsActionsRoute: typeof LessonsActionsRoute
   LessonsIndexRoute: typeof LessonsIndexRoute
@@ -858,6 +1857,67 @@ const LessonsRouteChildren: LessonsRouteChildren = {
 
 const LessonsRouteWithChildren =
   LessonsRoute._addFileChildren(LessonsRouteChildren)
+
+interface PortfolioCollectionsRouteChildren {
+  PortfolioCollectionsCollectionIdRoute: typeof PortfolioCollectionsCollectionIdRoute
+  PortfolioCollectionsIndexRoute: typeof PortfolioCollectionsIndexRoute
+}
+
+const PortfolioCollectionsRouteChildren: PortfolioCollectionsRouteChildren = {
+  PortfolioCollectionsCollectionIdRoute: PortfolioCollectionsCollectionIdRoute,
+  PortfolioCollectionsIndexRoute: PortfolioCollectionsIndexRoute,
+}
+
+const PortfolioCollectionsRouteWithChildren =
+  PortfolioCollectionsRoute._addFileChildren(PortfolioCollectionsRouteChildren)
+
+interface PortfolioProgrammesRouteChildren {
+  PortfolioProgrammesProgrammeIdRoute: typeof PortfolioProgrammesProgrammeIdRoute
+  PortfolioProgrammesIndexRoute: typeof PortfolioProgrammesIndexRoute
+}
+
+const PortfolioProgrammesRouteChildren: PortfolioProgrammesRouteChildren = {
+  PortfolioProgrammesProgrammeIdRoute: PortfolioProgrammesProgrammeIdRoute,
+  PortfolioProgrammesIndexRoute: PortfolioProgrammesIndexRoute,
+}
+
+const PortfolioProgrammesRouteWithChildren =
+  PortfolioProgrammesRoute._addFileChildren(PortfolioProgrammesRouteChildren)
+
+interface PortfolioProjectsRouteChildren {
+  PortfolioProjectsProjectIdRoute: typeof PortfolioProjectsProjectIdRoute
+  PortfolioProjectsIndexRoute: typeof PortfolioProjectsIndexRoute
+}
+
+const PortfolioProjectsRouteChildren: PortfolioProjectsRouteChildren = {
+  PortfolioProjectsProjectIdRoute: PortfolioProjectsProjectIdRoute,
+  PortfolioProjectsIndexRoute: PortfolioProjectsIndexRoute,
+}
+
+const PortfolioProjectsRouteWithChildren =
+  PortfolioProjectsRoute._addFileChildren(PortfolioProjectsRouteChildren)
+
+interface PortfolioRouteChildren {
+  PortfolioCollectionsRoute: typeof PortfolioCollectionsRouteWithChildren
+  PortfolioProgrammesRoute: typeof PortfolioProgrammesRouteWithChildren
+  PortfolioProjectsRoute: typeof PortfolioProjectsRouteWithChildren
+  PortfolioRequestsRoute: typeof PortfolioRequestsRoute
+  PortfolioRoadmapRoute: typeof PortfolioRoadmapRoute
+  PortfolioIndexRoute: typeof PortfolioIndexRoute
+}
+
+const PortfolioRouteChildren: PortfolioRouteChildren = {
+  PortfolioCollectionsRoute: PortfolioCollectionsRouteWithChildren,
+  PortfolioProgrammesRoute: PortfolioProgrammesRouteWithChildren,
+  PortfolioProjectsRoute: PortfolioProjectsRouteWithChildren,
+  PortfolioRequestsRoute: PortfolioRequestsRoute,
+  PortfolioRoadmapRoute: PortfolioRoadmapRoute,
+  PortfolioIndexRoute: PortfolioIndexRoute,
+}
+
+const PortfolioRouteWithChildren = PortfolioRoute._addFileChildren(
+  PortfolioRouteChildren,
+)
 
 interface ProgrammesRouteChildren {
   ProgrammesProgrammeIdRoute: typeof ProgrammesProgrammeIdRoute
@@ -887,6 +1947,38 @@ const ProjectsRouteWithChildren = ProjectsRoute._addFileChildren(
   ProjectsRouteChildren,
 )
 
+interface ResourcesRouteChildren {
+  ResourcesAllocationRoute: typeof ResourcesAllocationRoute
+  ResourcesAssignmentsRoute: typeof ResourcesAssignmentsRoute
+  ResourcesScenariosRoute: typeof ResourcesScenariosRoute
+  ResourcesIndexRoute: typeof ResourcesIndexRoute
+}
+
+const ResourcesRouteChildren: ResourcesRouteChildren = {
+  ResourcesAllocationRoute: ResourcesAllocationRoute,
+  ResourcesAssignmentsRoute: ResourcesAssignmentsRoute,
+  ResourcesScenariosRoute: ResourcesScenariosRoute,
+  ResourcesIndexRoute: ResourcesIndexRoute,
+}
+
+const ResourcesRouteWithChildren = ResourcesRoute._addFileChildren(
+  ResourcesRouteChildren,
+)
+
+interface SettingsRouteChildren {
+  SettingsSectionRoute: typeof SettingsSectionRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
+}
+
+const SettingsRouteChildren: SettingsRouteChildren = {
+  SettingsSectionRoute: SettingsSectionRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
+}
+
+const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
+  SettingsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
@@ -895,20 +1987,26 @@ const rootRouteChildren: RootRouteChildren = {
   CollectionsRoute: CollectionsRouteWithChildren,
   DashboardsRoute: DashboardsRoute,
   DecisionsRoute: DecisionsRouteWithChildren,
+  DeliveryRoute: DeliveryRouteWithChildren,
   DependenciesRoute: DependenciesRouteWithChildren,
+  GovernanceRoute: GovernanceRouteWithChildren,
+  HomeRoute: HomeRouteWithChildren,
+  InsightsRoute: InsightsRouteWithChildren,
   LessonsRoute: LessonsRouteWithChildren,
   MilestonesRoute: MilestonesRoute,
   MyTimelineRoute: MyTimelineRoute,
   MyWorkRoute: MyWorkRoute,
+  PortfolioRoute: PortfolioRouteWithChildren,
   ProgrammesRoute: ProgrammesRouteWithChildren,
   ProjectsRoute: ProjectsRouteWithChildren,
   RequestsRoute: RequestsRoute,
   ResourceAllocationRoute: ResourceAllocationRoute,
   ResourceAssignmentsRoute: ResourceAssignmentsRoute,
   ResourceScenariosRoute: ResourceScenariosRoute,
-  ResourcesRoute: ResourcesRoute,
+  ResourcesRoute: ResourcesRouteWithChildren,
   RisksRoute: RisksRoute,
   RoadmapsRoute: RoadmapsRoute,
+  SettingsRoute: SettingsRouteWithChildren,
   TaskOverviewRoute: TaskOverviewRoute,
 }
 export const routeTree = rootRouteImport

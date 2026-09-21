@@ -1,18 +1,8 @@
 import type { BenefitCategory, OptimismBiasSetting } from "./types";
+import { getSettings } from "@/services/settings";
 
-// Green Book style optimism bias uplifts applied to raw benefit estimates during appraisal.
-// Editable in Admin → Appraisal.
-export const defaultOptimismBias: OptimismBiasSetting[] = [
-  { category: "Efficiency", percentage: 20 },
-  { category: "Income", percentage: 30 },
-  { category: "Student experience", percentage: 25 },
-  { category: "Research", percentage: 25 },
-  { category: "Risk reduction", percentage: 15 },
-  { category: "Compliance", percentage: 10 },
-  { category: "Sustainability", percentage: 15 },
-];
-
-export const optimismBiasFor = (category: BenefitCategory, settings: OptimismBiasSetting[] = defaultOptimismBias) =>
+/** Optimism bias uplifts live in Settings → Benefits; these accessors read the live values. */
+export const getOptimismBias = (): OptimismBiasSetting[] => getSettings().benefits.optimismBias;
+export const optimismBiasFor = (category: BenefitCategory, settings: OptimismBiasSetting[] = getOptimismBias()) =>
   settings.find(item => item.category === category)?.percentage ?? 20;
-
-export const defaultAppraisalYears = 5;
+export const getAppraisalYears = () => getSettings().benefits.appraisalYears;

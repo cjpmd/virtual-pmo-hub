@@ -1,6 +1,7 @@
 import { improvementActions, lessonCategories, lessons, phaseLessonsReviews } from "@/data/lessons-data";
 import type { ImprovementAction, Lesson, LessonCategory, LessonType } from "@/data/types";
 import { getLifecyclePhases, getPhaseIndex, getProject, getProjects } from "@/services/pmo";
+import { formatDate } from "@/lib/format";
 
 const parseDate = (value: string) => { const [d = 1, m = 1, y = 1970] = value.split("/").map(Number); return new Date(y, m - 1, d); };
 const today = parseDate("21/09/2026");
@@ -104,7 +105,7 @@ export const lessonTypes: LessonType[] = ["Success", "Problem"];
 export const lessonCsvColumns = ["Reference", "Project", "Phase", "Sprint", "Type", "Category", "Summary", "What happened", "Impact", "Root cause", "Recommendation", "Applicability", "Project type tags", "Raised by", "Date", "Status"] as const;
 const escape = (value: string) => (/[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value);
 export function lessonsToCsv(items: ResolvedLesson[]) {
-  const rows = items.map(lesson => [lesson.reference, lesson.projectName, getPhaseFullName(lesson.phaseId), lesson.sprint ?? "", lesson.type, lesson.category, lesson.summary, lesson.whatHappened, lesson.impact, lesson.rootCause, lesson.recommendation, lesson.applicability, lesson.projectTypeTags.join("; "), lesson.raisedBy, lesson.date, lesson.status]);
+  const rows = items.map(lesson => [lesson.reference, lesson.projectName, getPhaseFullName(lesson.phaseId), lesson.sprint ?? "", lesson.type, lesson.category, lesson.summary, lesson.whatHappened, lesson.impact, lesson.rootCause, lesson.recommendation, lesson.applicability, lesson.projectTypeTags.join("; "), lesson.raisedBy, formatDate(lesson.date), lesson.status]);
   return [lessonCsvColumns.join(","), ...rows.map(row => row.map(cell => escape(String(cell))).join(","))].join("\n");
 }
 /** Minimal CSV reader that copes with quoted cells, as exported from a SharePoint list. */

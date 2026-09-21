@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
@@ -45,12 +46,12 @@ function Section({ title, note, items, icon, otherSide, otherOwner, onOpen }: {
         <div>
           <p className="text-sm font-medium">{item.reference} · {otherSide(item)}</p>
           <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{otherOwner(item)} · {item.type} · {item.boundary} · required by {item.requiredBy}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{otherOwner(item)} · {item.type} · {item.boundary} · required by {formatDate(item.requiredBy)}</p>
         </div>
         <span className={cn("justify-self-start rounded-full px-2.5 py-1 text-xs font-semibold sm:justify-self-auto", item.acceptance === "Confirmed" ? "bg-health-good/20 text-health-good-foreground" : item.acceptance === "Closed" ? "bg-muted text-muted-foreground" : "bg-health-warn/25 text-health-warn-foreground")}>{item.acceptance}</span>
         <HealthPill health={item.health} />
       </button>)}
-      {!items.length && <p className="p-8 text-center text-sm text-muted-foreground">Nothing recorded here yet. Add one from the <Link to="/dependencies" className="font-semibold text-primary hover:underline">dependency register</Link>.</p>}
+      {!items.length && <p className="p-8 text-center text-sm text-muted-foreground">Nothing recorded here yet. Add one from the <Link to="/delivery/dependencies" className="font-semibold text-primary hover:underline">dependency register</Link>.</p>}
     </div>
   </section>;
 }

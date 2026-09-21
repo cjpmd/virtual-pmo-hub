@@ -1,5 +1,6 @@
 import type { Benefit, BenefitClassification, BenefitMeasure, DraftBenefitProfile, MeasurementRecord, OptimismBiasSetting, Project, ProjectRequest } from "@/data/types";
-import { defaultOptimismBias, optimismBiasFor } from "@/data/settings";
+import { getOptimismBias, optimismBiasFor } from "@/data/settings";
+import { formatCurrency, formatNumber } from "@/lib/format";
 import {
   benefitPeriods, getBenefitCurve, getBenefitPercent, getBenefitRealised, getBenefitVariance, getBenefits, getNextMeasurementDue,
   getProgramme, getProgrammes, getProject, getProjects, getStrategicObjectives, isBenefitBehindProfile, isMeasurementOverdue,
@@ -164,7 +165,7 @@ export interface AppraisalResult {
   adjustedPaybackYears: number | undefined;
   lines: Array<{ draft: DraftBenefitProfile; raw: number; bias: number; adjusted: number }>;
 }
-export function appraise({ drafts, wholeLifeCost, years, settings = defaultOptimismBias }: AppraisalInput): AppraisalResult {
+export function appraise({ drafts, wholeLifeCost, years, settings = getOptimismBias() }: AppraisalInput): AppraisalResult {
   const lines = drafts.map(draft => {
     const raw = draft.annualValue * Math.min(draft.yearsCounted, years);
     const bias = optimismBiasFor(draft.category, settings);
@@ -186,11 +187,11 @@ export function appraise({ drafts, wholeLifeCost, years, settings = defaultOptim
     lines,
   };
 }
-export function appraiseRequest(request: ProjectRequest, settings: OptimismBiasSetting[] = defaultOptimismBias) {
+export function appraiseRequest(request: ProjectRequest, settings: OptimismBiasSetting[] = getOptimismBias()) {
   return appraise({ drafts: request.draftBenefits ?? [], wholeLifeCost: request.wholeLifeCost ?? request.estimatedCost, years: request.appraisalYears ?? 5, settings });
 }
 /** Prioritisation score: 60% adjusted value for money, 40% strategic alignment. */
-export function scoreRequest(request: ProjectRequest, settings: OptimismBiasSetting[] = defaultOptimismBias) {
+export function scoreRequest(request: ProjectRequest, settings: OptimismBiasSetting[] = getOptimismBias()) {
   const appraisal = appraiseRequest(request, settings);
   const valueScore = Math.max(0, Math.min(100, Math.round((appraisal.adjustedRatio / 3) * 100)));
   return { ...appraisal, valueScore, alignmentScore: request.alignment, priorityScore: Math.round(valueScore * 0.6 + request.alignment * 0.4) };
@@ -219,8 +220,8 @@ export function draftsFromBenefits(items: Benefit[]): DraftBenefitProfile[] {
       category: item.category,
       owner: item.owner || "Unassigned",
       measure: measure?.name ?? "No measure defined",
-      baseline: measure ? `${measure.baselineValue.toLocaleString("en-GB")} ${measure.unit}` : "—",
-      target: finalTarget === undefined ? "—" : `${finalTarget.toLocaleString("en-GB")} ${measure?.unit ?? ""}`.trim(),
+      baseline: measure ? (measure.unit === "currency" ? formatCurrency(measure.baselineValue) : `${formatNumber(measure.baselineValue)} ${measure.unit}`) : "—",
+      target: finalTarget === undefined ? "—" : (measure?.unit === "currency" ? formatCurrency(finalTarget) : `${formatNumber(finalTarget)} ${measure?.unit ?? ""}`.trim()),
       annualValue: Math.round(Math.max(0, item.plannedTotalValue) / 5),
       yearsCounted: 5,
       strategicObjectiveId: item.strategicObjectiveIds[0] ?? "",

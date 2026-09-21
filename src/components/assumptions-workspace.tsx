@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { CheckCircle2, CircleAlert, TriangleAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,7 +32,7 @@ export function AssumptionsWorkspace({ scope, compact = false }: { scope?: { pro
     setDraft({
       assumption,
       title: `${assumption.reference} invalidated: ${assumption.assumption}`,
-      description: `The assumption "${assumption.assumption}" has been invalidated.\n\nRationale recorded when it was raised: ${assumption.rationale}\n\nOwner: ${assumption.owner}. Validation was due ${assumption.validationDate}.`,
+      description: `The assumption "${assumption.assumption}" has been invalidated.\n\nRationale recorded when it was raised: ${assumption.rationale}\n\nOwner: ${assumption.owner}. Validation was due ${formatDate(assumption.validationDate)}.`,
       owner: assumption.owner,
       dueDate: "16/10/2026",
     });
@@ -53,7 +54,7 @@ export function AssumptionsWorkspace({ scope, compact = false }: { scope?: { pro
         {items.filter(item => item.status === "Open").map(item => <div key={item.id} className="grid gap-3 p-4 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
             <p className="text-sm font-medium">{item.reference} · {item.assumption}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{item.scopeName} · {item.owner} · validation due {item.validationDate}{item.overdue ? " · overdue" : ""}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{item.scopeName} · {item.owner} · validation due {formatDate(item.validationDate)}{item.overdue ? " · overdue" : ""}</p>
           </div>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={() => setStatuses(current => ({ ...current, [item.id]: "Validated" }))}><CheckCircle2 />Validate</Button>

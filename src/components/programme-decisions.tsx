@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { DecisionPanel } from "@/components/decision-panel";
 import { getDecisionsFor, getDecisionMetrics, type ResolvedDecision } from "@/services/decisions";
@@ -22,7 +23,7 @@ export function ProgrammeDecisions({ programmeId }: { programmeId: string }) {
           <p className="text-sm font-semibold">{item.reference} · {item.title}</p>
           <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", item.status === "Made" ? "bg-health-good/20 text-health-good-foreground" : item.overdue ? "bg-health-bad/20 text-health-bad-foreground" : item.status === "Pending" ? "bg-health-warn/25 text-health-warn-foreground" : "bg-muted text-muted-foreground")}>{item.status}{item.overdue ? " · overdue" : ""}</span>
         </div>
-        <p className="mt-1.5 text-xs text-muted-foreground">{item.scopeName} · {item.forum} · {item.decisionMaker} · needed by {item.neededBy}</p>
+        <p className="mt-1.5 text-xs text-muted-foreground">{item.scopeName} · {item.forum} · {item.decisionMaker} · needed by {formatDate(item.neededBy)}</p>
         <p className="mt-2 text-sm text-muted-foreground">{item.context}</p>
       </button>)}
       {!items.length && <p className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">No decisions recorded for this programme.</p>}
