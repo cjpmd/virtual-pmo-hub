@@ -1,6 +1,15 @@
-import type { Collection, Person, Portfolio, Programme, Project, Risk, Issue, Task, TeamMember, ChangeRequest, StatusReport, Milestone, MilestoneStatus, MilestoneType, Roadmap, IssuedTask, GenericResource, ResourceAssignment, ProjectRequest, ResourceTeam } from "./types";
+import type { Benefit, BenefitCategory, BenefitClassification, BenefitStatus, Collection, Person, Portfolio, Programme, Project, Risk, Issue, Task, TeamMember, ChangeRequest, StatusReport, Milestone, MilestoneStatus, MilestoneType, Roadmap, IssuedTask, GenericResource, ResourceAssignment, ProjectRequest, ResourceTeam, StrategicObjective } from "./types";
 
 export const portfolio: Portfolio = { id: "dts-2526", name: "DTS 2025/26", description: "The university’s strategic portfolio of digital, technology and service improvement work.", owner: "Chris McDonald", budget: 8_750_000 };
+
+export const strategicObjectives:StrategicObjective[]=[
+ {id:"obj-student",portfolioId:portfolio.id,title:"Outstanding student experience",description:"Create inclusive, reliable and responsive digital services for every student.",owner:"Priya Nair"},
+ {id:"obj-research",portfolioId:portfolio.id,title:"Research excellence and capability",description:"Provide secure, scalable digital capability for world-class research.",owner:"Daniel Mercer"},
+ {id:"obj-finance",portfolioId:portfolio.id,title:"Financial sustainability",description:"Deliver demonstrable value and reduce avoidable technology costs.",owner:"Martin Lowe"},
+ {id:"obj-efficiency",portfolioId:portfolio.id,title:"Operational efficiency",description:"Simplify processes and release colleague capacity for higher-value work.",owner:"Rachel King"},
+ {id:"obj-cyber",portfolioId:portfolio.id,title:"Cyber resilience",description:"Reduce institutional exposure and improve recovery from disruption.",owner:"Aisha Wallace"},
+ {id:"obj-netzero",portfolioId:portfolio.id,title:"Net zero and sustainability",description:"Reduce the environmental impact of digital services and infrastructure.",owner:"Sophie Green"},
+];
 
 const personRows: Array<[string,string,string,string,ResourceTeam,string,number,number,number,string[]]> = [
   ["cm","Chris McDonald","Head of Programmes & Projects","CM","PMO","Rachel King",36,1,35,["Portfolio management","Governance"]],
