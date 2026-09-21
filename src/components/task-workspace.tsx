@@ -2,8 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Diamond,
   GripVertical,
   LayoutGrid,
@@ -32,19 +30,6 @@ const people = [
 const parseDate = (value: string) => {
   const [day = 1, month = 1, year = 1970] = value.split("/").map(Number);
   return new Date(year, month - 1, day);
-};
-
-const toInputDate = (value: string) => {
-  const date = parseDate(value);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
-const fromInputDate = (value: string) => {
-  const [year, month, day] = value.split("-");
-  return year && month && day ? `${day}/${month}/${year}` : value;
 };
 
 const initials = (name: string) =>
@@ -138,8 +123,8 @@ function GridView({ tasks, buckets, update }: { tasks: Task[]; buckets: string[]
                   />
                 </td>
                 <td className="px-1 py-2"><AssigneeEditor task={task} update={(patch) => update(task.id, patch)} /></td>
-                <td className="px-1 py-2"><input aria-label={`Start date for ${task.title}`} type="date" value={toInputDate(task.start)} onChange={(event) => update(task.id, { start: fromInputDate(event.target.value) })} className={fieldClass} /></td>
-                <td className="px-1 py-2"><input aria-label={`Finish date for ${task.title}`} type="date" value={toInputDate(task.finish)} onChange={(event) => update(task.id, { finish: fromInputDate(event.target.value) })} className={fieldClass} /></td>
+                <td className="px-1 py-2"><input aria-label={`Start date for ${task.title}`} inputMode="numeric" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" value={task.start} onChange={(event) => update(task.id, { start: event.target.value })} className={fieldClass} /></td>
+                <td className="px-1 py-2"><input aria-label={`Finish date for ${task.title}`} inputMode="numeric" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" value={task.finish} onChange={(event) => update(task.id, { finish: event.target.value })} className={fieldClass} /></td>
                 <td className="px-2 py-2">
                   <div className="flex items-center gap-2">
                     <input aria-label={`Completion for ${task.title}`} type="range" min="0" max="100" step="5" value={task.percentComplete} onChange={(event) => update(task.id, { percentComplete: Number(event.target.value) })} className="h-2 w-24 accent-primary" />
@@ -288,7 +273,12 @@ function TimelineView({ tasks }: { tasks: Task[] }) {
                   </div>
                 );
               })}
-              <svg className="pointer-events-none absolute inset-0 size-full overflow-visible" aria-label="Task dependencies">
+              <svg className="pointer-events-none absolute inset-0 z-10 size-full overflow-visible" aria-label="Task dependencies">
+                <defs>
+                  <marker id="dependency-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                    <path d="M 0 0 L 6 3 L 0 6 z" fill="currentColor" className="text-muted-foreground" />
+                  </marker>
+                </defs>
                 {tasks.flatMap((task, taskIndex) => task.dependencies.map((dependencyId) => {
                   const source = taskById.get(dependencyId);
                   if (!source) return null;
@@ -297,7 +287,7 @@ function TimelineView({ tasks }: { tasks: Task[] }) {
                   const sourceY = source.index * rowHeight + rowHeight / 2;
                   const targetY = taskIndex * rowHeight + rowHeight / 2;
                   const elbow = Math.max(sourceX + 8, targetX - 10);
-                  return <path key={`${dependencyId}-${task.id}`} d={`M ${sourceX} ${sourceY} H ${elbow} V ${targetY} H ${targetX}`} fill="none" stroke="currentColor" strokeWidth="1.5" className="text-muted-foreground/65" />;
+                  return <path key={`${dependencyId}-${task.id}`} d={`M ${sourceX} ${sourceY} H ${elbow} V ${targetY} H ${targetX - 3}`} fill="none" stroke="currentColor" strokeWidth="1.5" markerEnd="url(#dependency-arrow)" className="text-muted-foreground" />;
                 }))}
               </svg>
             </div>
