@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BriefcaseBusiness, ChevronLeft, ChevronRight, FolderKanban, Layers3, ListTodo, Menu, Moon, Search, Sun, UsersRound, X } from "lucide-react";
+import { BriefcaseBusiness, ChevronLeft, ChevronRight, FolderKanban, Layers3, ListTodo, Menu, Moon, Search, ShieldAlert, Sun, UsersRound, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 const nav=[
   {label:"Portfolio",to:"/",icon:BriefcaseBusiness}, {label:"Programmes",to:"/programmes",icon:Layers3}, {label:"Projects",to:"/projects",icon:FolderKanban},
-  {label:"Collections",to:"/collections",icon:Layers3}, {label:"Requests",to:"/requests",icon:ListTodo}, {label:"Resources",to:"/resources",icon:UsersRound}, {label:"My Work",to:"/my-work",icon:ListTodo},
+  {label:"Collections",to:"/collections",icon:Layers3}, {label:"Requests",to:"/requests",icon:ListTodo}, {label:"Resources",to:"/resources",icon:UsersRound}, {label:"Risks",to:"/risks",icon:ShieldAlert}, {label:"My Work",to:"/my-work",icon:ListTodo},
 ] as const;
 export function AppShell({children}:{children:ReactNode}){
   const [collapsed,setCollapsed]=useState(false),[mobileOpen,setMobileOpen]=useState(false),[dark,setDark]=useState(false);

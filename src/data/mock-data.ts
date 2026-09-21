@@ -30,6 +30,12 @@ const namesByProgramme: Record<string,string[]> = {
 
 const greenRisk = (id:string): Risk => ({ id, title:"Supplier capacity", description:"Delivery capacity is being monitored.", owner:"Amelia Price", probability:2, impact:3, score:6, response:"Reduce", status:"Open", reviewDate:"30/09/2026" });
 const redRisk = (id:string): Risk => ({ id, title:"Critical control gap", description:"Control remediation is behind the agreed plan.", owner:"Harrison Shaw", probability:4, impact:5, score:20, response:"Reduce", status:"Open", reviewDate:"23/09/2026" });
+const riskThemes = [
+  ["Key specialist availability", "A specialist role is shared with other priority work.", "Maya Harrison"],
+  ["Supplier lead time", "Lead times may affect the next planned delivery window.", "Amelia Price"],
+  ["Stakeholder decision delay", "A cross-service decision is needed before delivery can progress.", "George Clarke"],
+  ["Technical integration complexity", "The target service has more integration points than first estimated.", "Jacob Cole"],
+] as const;
 const issue = (id:string, high=false): Issue => ({ id, title:high?"Production readiness blocked":"Decision required", owner:"George Clarke", severity:high?"High":"Medium", status:"Open", dueDate:"30/09/2026" });
 const milestone = (id:string, overdue=false) => ({ id, title: overdue?"Technical design approval":"Next stage gate", dueDate:overdue?"12/09/2026":"30/10/2026", complete:false });
 
@@ -48,7 +54,10 @@ const baseProjects: Project[] = Object.entries(namesByProgramme).flatMap(([progr
     businessCase:`Improve university services through ${name.toLowerCase()}.`, benefits:"Reduced operational effort, improved resilience and a better colleague experience.",
     taskSource:number%3===0?"Planner (Premium)":number%3===1?"Planner (Basic)":"Native", collectionIds:[],
     milestones:[milestone(`m-${number}`,isRed)], taskCount:10+(number%9), overdueTaskCount:isRed?4:isAmber?3:Math.min(1,number%2),
-    risks:[isRed?redRisk(`r-${number}`):greenRisk(`r-${number}`)], issues:isRed?[issue(`i-${number}`,true)]:isAmber?[issue(`i-${number}`)]:[],
+    risks:isRed?[redRisk(`r-${number}`),{...greenRisk(`r-${number}-2`),title:"Recovery plan dependency",probability:3,impact:4,score:12}]:[
+      {...greenRisk(`r-${number}`),title:riskThemes[number%riskThemes.length]?.[0]??"Supplier capacity",description:riskThemes[number%riskThemes.length]?.[1]??"Delivery capacity is being monitored.",owner:riskThemes[number%riskThemes.length]?.[2]??"Amelia Price",probability:(isAmber?3:2),impact:(isAmber?4:(number%3+2)) as 2|3|4,score:isAmber?12:2*(number%3+2)},
+      ...(number%3===0?[{...greenRisk(`r-${number}-2`),title:"Benefits adoption",description:"Operational adoption may take longer than planned.",owner:"Layla Owen",probability:2 as const,impact:2 as const,score:4,response:"Reduce" as const,status:"Open" as const}]:[]),
+    ], issues:isRed?[issue(`i-${number}`,true)]:isAmber?[issue(`i-${number}`)]:[],
   } satisfies Project;
 }));
 
@@ -81,7 +90,11 @@ export const projects: Project[] = baseProjects.map(project => ["ebbot-chatbot",
   ? { ...project, tasks:detailedTasks.map(task=>({...task,id:`${project.id}-${task.id}`})), team:detailedTeam, changes:detailedChanges, reports:detailedReports,
       risks: project.id === "reduce-our-cyber-risk" ? [redRisk(`${project.id}-r1`), greenRisk(`${project.id}-r2`), greenRisk(`${project.id}-r3`)] : [greenRisk(`${project.id}-r1`),greenRisk(`${project.id}-r2`)],
       issues: project.id === "reduce-our-cyber-risk" ? [issue(`${project.id}-i1`,true),issue(`${project.id}-i2`)] : project.id === "ebbot-chatbot" ? [issue(`${project.id}-i1`)] : [] }
-  : project);
+  : {...project,team:[
+      {personId:["fw","gc","nb","er"][baseProjects.indexOf(project)%4]??"fw",role:"Project Manager",start:project.start,finish:project.finish,allocatedEffortHours:520+(baseProjects.indexOf(project)%4)*80},
+      {personId:["mh","jc","lo","hs","ec"][baseProjects.indexOf(project)%5]??"mh",role:"Team Member",start:project.start,finish:project.finish,allocatedEffortHours:280+(baseProjects.indexOf(project)%3)*90},
+      {personId:["ap","ob","sp","th","if"][baseProjects.indexOf(project)%5]??"ap",role:"Sponsor",start:project.start,finish:project.finish,allocatedEffortHours:55+(baseProjects.indexOf(project)%3)*15},
+    ]});
 
 const ebbot=projects.find(project=>project.id==="ebbot-chatbot");
 if(ebbot){
