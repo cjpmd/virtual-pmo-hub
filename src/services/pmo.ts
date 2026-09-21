@@ -7,7 +7,10 @@ const worst = (items: Health[]): Health => {
   for (const item of items) if ((rank[item] ?? 0) > (rank[result] ?? 0)) result = item;
   return result;
 };
-const parseDate = (value:string) => { const [d,m,y]=value.split("/").map(Number); return new Date(y,m-1,d); };
+const parseDate = (value:string) => {
+  const parts=value.split("/").map(Number);
+  return new Date(parts[2] ?? 1970,(parts[1] ?? 1)-1,parts[0] ?? 1);
+};
 const today = parseDate("21/09/2026");
 
 export function getScheduleHealth(project: Project): Health {
