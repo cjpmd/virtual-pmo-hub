@@ -7,3 +7,4 @@
 - [x] Verify desktop, mobile, interactions, and displayed calculations
 - [x] Build the full Project page using Ebbot as the primary demo record
 - [x] Build editable Grid, Board, and Timeline task views with simulated Planner sync
+- [ ] Build project Status tab, health trends, report side panel, draft summaries, overrides, and timeline
