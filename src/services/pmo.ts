@@ -2,7 +2,11 @@ import { collections, people, portfolio, programmes, projects } from "@/data/moc
 import type { Health, Portfolio, Programme, Project } from "@/data/types";
 
 const rank: Record<Health,number> = {"Not Set":0,"On Track":1,"At Risk":2,"Off Track":3};
-const worst = (items: Health[]): Health => items.length ? items.reduce((a,b)=>rank[b]>rank[a]?b:a,"Not Set" as Health) : "Not Set";
+const worst = (items: Health[]): Health => {
+  let result: Health = "Not Set";
+  for (const item of items) if ((rank[item] ?? 0) > (rank[result] ?? 0)) result = item;
+  return result;
+};
 const parseDate = (value:string) => { const [d,m,y]=value.split("/").map(Number); return new Date(y,m-1,d); };
 const today = parseDate("21/09/2026");
 

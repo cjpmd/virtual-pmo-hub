@@ -2,13 +2,14 @@ import type { Collection, Person, Portfolio, Programme, Project, Risk, Issue, Ta
 
 export const portfolio: Portfolio = { id: "dts-2526", name: "DTS 2025/26", description: "The university’s strategic portfolio of digital, technology and service improvement work.", owner: "Chris McDonald", budget: 8_750_000 };
 
-export const people: Person[] = [
+const personRows: Array<[string, string, string, string]> = [
   ["cm","Chris McDonald","Head of Programmes & Projects","CM"], ["ap","Amelia Price","Programme Manager","AP"], ["ob","Oliver Bennett","Programme Manager","OB"],
   ["sp","Sienna Patel","Programme Manager","SP"], ["th","Theo Hughes","Programme Manager","TH"], ["if","Imogen Foster","Programme Manager","IF"],
   ["fw","Freya Walsh","Senior Project Manager","FW"], ["gc","George Clarke","Project Manager","GC"], ["nb","Nadia Begum","Project Manager","NB"],
   ["er","Elliot Reed","Project Manager","ER"], ["mh","Maya Harrison","Business Analyst","MH"], ["jc","Jacob Cole","Technical Lead","JC"],
   ["lo","Layla Owen","Change Manager","LO"], ["hs","Harrison Shaw","Security Lead","HS"], ["ec","Eva Chen","Service Designer","EC"],
-].map(([id,name,jobTitle,initials]) => ({ id, name, jobTitle, initials }));
+];
+export const people: Person[] = personRows.map(([id,name,jobTitle,initials]) => ({ id, name, jobTitle, initials }));
 
 export const programmes: Programme[] = [
   { id:"standards", portfolioId:portfolio.id, name:"1. Standards, Governance & Best Practice", description:"Strengthening governance, assurance and consistent delivery standards across DTS.", manager:"Amelia Price", sponsor:"Daniel Mercer", start:"01/08/2025", end:"31/07/2027", budget:1450000, valueStatement:"Create trusted, repeatable ways of working that improve delivery confidence and decision quality." },
@@ -40,8 +41,8 @@ const baseProjects: Project[] = Object.entries(namesByProgramme).flatMap(([progr
   const stage = (["Discover","Define","Plan","Deliver","Deliver","Close"] as const)[number%6];
   return {
     id: name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,""), programmeId, portfolioId:portfolio.id, name,
-    manager:managers[number%managers.length], sponsor:["Daniel Mercer","Aisha Wallace","Martin Lowe","Priya Nair","Rachel King"][programmeIndex],
-    stage, state, priority:isRed?"Critical":isAmber?"High":number%3===0?"Moderate":"Low",
+    manager:managers[number%managers.length] ?? "Freya Walsh", sponsor:["Daniel Mercer","Aisha Wallace","Martin Lowe","Priya Nair","Rachel King"][programmeIndex] ?? "Daniel Mercer",
+    stage:stage ?? "Discover", state, priority:isRed?"Critical":isAmber?"High":number%3===0?"Moderate":"Low",
     start:`${String((number%20)+1).padStart(2,"0")}/0${(number%7)+1}/2026`, finish:`${String((number%20)+1).padStart(2,"0")}/0${(number%3)+1}/2027`, baselineFinish:`${String((number%20)+1).padStart(2,"0")}/0${(number%3)+1}/2027`,
     budget:120000+(number%5)*85000, actual:70000+(number%5)*55000, forecast:125000+(number%5)*90000,
     businessCase:`Improve university services through ${name.toLowerCase()}.`, benefits:"Reduced operational effort, improved resilience and a better colleague experience.",
