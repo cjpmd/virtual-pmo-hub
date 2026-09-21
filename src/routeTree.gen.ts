@@ -19,6 +19,7 @@ import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as RequestsRouteImport } from './routes/requests'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as RisksRouteImport } from './routes/risks'
+import { Route as RoadmapsRouteImport } from './routes/roadmaps'
 import { Route as CollectionsIndexRouteImport } from './routes/collections.index'
 import { Route as CollectionsCollectionIdRouteImport } from './routes/collections.$collectionId'
 import { Route as ProgrammesIndexRouteImport } from './routes/programmes.index'
@@ -76,6 +77,11 @@ const RisksRoute = RisksRouteImport.update({
   path: '/risks',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RoadmapsRoute = RoadmapsRouteImport.update({
+  id: '/roadmaps',
+  path: '/roadmaps',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CollectionsIndexRoute = CollectionsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/risks': typeof RisksRoute
+  '/roadmaps': typeof RoadmapsRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
@@ -133,6 +140,7 @@ export interface FileRoutesByTo {
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/risks': typeof RisksRoute
+  '/roadmaps': typeof RoadmapsRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
@@ -152,6 +160,7 @@ export interface FileRoutesById {
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/risks': typeof RisksRoute
+  '/roadmaps': typeof RoadmapsRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
@@ -172,6 +181,7 @@ export interface FileRouteTypes {
     | '/requests'
     | '/resources'
     | '/risks'
+    | '/roadmaps'
     | '/collections/$collectionId'
     | '/programmes/$programmeId'
     | '/projects/$projectId'
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/requests'
     | '/resources'
     | '/risks'
+    | '/roadmaps'
     | '/collections/$collectionId'
     | '/programmes/$programmeId'
     | '/projects/$projectId'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '/requests'
     | '/resources'
     | '/risks'
+    | '/roadmaps'
     | '/collections/$collectionId'
     | '/programmes/$programmeId'
     | '/projects/$projectId'
@@ -224,6 +236,7 @@ export interface RootRouteChildren {
   RequestsRoute: typeof RequestsRoute
   ResourcesRoute: typeof ResourcesRoute
   RisksRoute: typeof RisksRoute
+  RoadmapsRoute: typeof RoadmapsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -296,6 +309,13 @@ declare module '@tanstack/react-router' {
       path: '/risks'
       fullPath: '/risks'
       preLoaderRoute: typeof RisksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/roadmaps': {
+      id: '/roadmaps'
+      path: '/roadmaps'
+      fullPath: '/roadmaps'
+      preLoaderRoute: typeof RoadmapsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/collections/': {
@@ -396,6 +416,7 @@ const rootRouteChildren: RootRouteChildren = {
   RequestsRoute: RequestsRoute,
   ResourcesRoute: ResourcesRoute,
   RisksRoute: RisksRoute,
+  RoadmapsRoute: RoadmapsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
