@@ -13,10 +13,10 @@
 
 - [x] Build project and cross-project resource allocation views
 - [x] Build project RAID analysis and portfolio risk register
-- [ ] Upgrade shared boards with saved Table, Kanban, Timeline, Calendar and Chart views
-- [ ] Add advanced table editing, grouping, summaries, reordering, resizing and bulk actions
-- [ ] Add column types, conditional colouring and item side panels
-- [ ] Add mock board automations
-- [ ] Add notifications, command palette and favourites
-- [ ] Add dashboard builder seeded with DTS Portfolio
-- [ ] Standardise task and milestone status legend
+- [x] Upgrade shared boards with saved Table, Kanban, Timeline, Calendar and Chart views
+- [x] Add advanced table editing, grouping, summaries, reordering, resizing and bulk actions
+- [x] Add column types, conditional colouring and item side panels
+- [x] Add mock board automations
+- [x] Add notifications, command palette and favourites
+- [x] Add dashboard builder seeded with DTS Portfolio
+- [x] Standardise task and milestone status legend
