@@ -39,10 +39,10 @@
 - [x] Build My Timeline personal Gantt
 - [x] Build reusable single/bulk Issue task workflow and all launch points
 - [x] Complete route metadata audit and verify task workflows across desktop and mobile
-- [ ] Expand resource, generic-role, leave, skill, and assignment data
-- [ ] Build Resource Dashboard analytics
-- [ ] Build hierarchical Resource Assignments register and filters
-- [ ] Build 26-week Resource Allocation heat map and drag/reassign interactions
-- [ ] Build resource Scenario Planning impact modelling
-- [ ] Upgrade project Resources with booking, availability search, and staffing warnings
+- [x] Expand resource, generic-role, leave, skill, and assignment data
+- [x] Build Resource Dashboard analytics
+- [x] Build hierarchical Resource Assignments register and filters
+- [x] Build 26-week Resource Allocation heat map and drag/reassign interactions
+- [x] Build resource Scenario Planning impact modelling
+- [x] Upgrade project Resources with booking, availability search, and staffing warnings
 - [ ] Add resource navigation, metadata, and responsive workflow verification
