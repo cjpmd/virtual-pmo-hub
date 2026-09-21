@@ -1,8 +1,31 @@
 import type { BoardColumn, BoardRow } from "@/components/board-workspace";
 import type { Issue, Milestone, Project, Risk, Task } from "@/data/types";
-import { getIssueHealth, getProjectHealth, getScheduleHealth } from "@/services/pmo";
-export const projectColumns:BoardColumn[]=[{key:"title",label:"Project",type:"text",editable:true,summary:"count",width:260},{key:"status",label:"Health",type:"status",editable:true,options:["On Track","At Risk","Off Track","Not Set"],summary:"rag"},{key:"people",label:"Project manager",type:"people",editable:true},{key:"stage",label:"Stage",type:"status",editable:true,options:["Discover","Define","Plan","Deliver","Close"]},{key:"start",label:"Start",type:"date",editable:true},{key:"finish",label:"Finish",type:"date",editable:true},{key:"timeline",label:"Timeline",type:"timeline"},{key:"number",label:"Budget",type:"number",unit:"",summary:"sum"},{key:"forecast",label:"Forecast",type:"number",summary:"sum"},{key:"priority",label:"Priority",type:"priority",editable:true,options:["Low","Moderate","High","Critical"]},{key:"formula",label:"Variance",type:"formula"}];
-export const projectsToRows=(projects:Project[]):BoardRow[]=>projects.map(project=>({id:project.id,title:project.name,status:getProjectHealth(project),people:[project.manager],stage:project.stage,start:project.start,finish:project.finish,baselineFinish:project.baselineFinish,timeline:"",number:project.budget,forecast:project.forecast,priority:project.priority,formula:`£${Math.round((project.forecast-project.budget)/1000)}k`,group:project.programmeId}));
+import { getEffortHealth, getFinancialHealth, getIssueHealth, getProjectHealth, getProjectPortfolioDetails, getScheduleHealth } from "@/services/pmo";
+export const projectColumns:BoardColumn[]=[
+ {key:"title",label:"Project",type:"text",editable:true,summary:"count",width:260},
+ {key:"programme",label:"Programme",type:"text",width:230},
+ {key:"people",label:"Project manager",type:"people",editable:true},
+ {key:"stage",label:"Stage",type:"status",editable:true,options:["Discover","Define","Plan","Deliver","Close"]},
+ {key:"state",label:"State",type:"status",editable:true,options:["Proposed","Active","On Hold","Closed"]},
+ {key:"priority",label:"Priority",type:"priority",editable:true,options:["Low","Moderate","High","Critical"]},
+ {key:"status",label:"Overall",type:"status",options:["On Track","At Risk","Off Track","Not Set"],summary:"rag"},
+ {key:"scheduleHealth",label:"Schedule",type:"status",summary:"rag"},
+ {key:"financialHealth",label:"Financial",type:"status",summary:"rag"},
+ {key:"effortHealth",label:"Effort",type:"status",summary:"rag"},
+ {key:"issueHealth",label:"Issues",type:"status",summary:"rag"},
+ {key:"finish",label:"Finish",type:"date",editable:true},
+ {key:"budget",label:"Budget",type:"number",unit:"£",summary:"sum"},
+ {key:"actual",label:"Actual",type:"number",unit:"£",summary:"sum"},
+ {key:"forecast",label:"Forecast",type:"number",unit:"£",summary:"sum"},
+ {key:"variance",label:"Variance",type:"number",unit:"£",summary:"sum"},
+ {key:"activeRisks",label:"Active risks",type:"number",summary:"sum"},
+ {key:"activeIssues",label:"Active issues",type:"number",summary:"sum"},
+ {key:"taskSource",label:"Task source",type:"tags"},
+ {key:"collections",label:"Collections",type:"tags"},
+ {key:"nextMilestone",label:"Next milestone",type:"text",width:220},
+ {key:"lastReport",label:"Last status report",type:"date"},
+];
+export const projectsToRows=(projects:Project[]):BoardRow[]=>projects.map(project=>{const details=getProjectPortfolioDetails(project);return{id:project.id,title:project.name,programme:details.programmeName,people:[project.manager],manager:project.manager,stage:project.stage,state:project.state,priority:project.priority,status:getProjectHealth(project),scheduleHealth:getScheduleHealth(project),financialHealth:getFinancialHealth(project),effortHealth:getEffortHealth(project),issueHealth:getIssueHealth(project),start:project.start,finish:project.finish,baselineFinish:project.baselineFinish,budget:project.budget,actual:project.actual,forecast:project.forecast,variance:project.forecast-project.budget,activeRisks:project.risks.filter(item=>item.status==="Open").length,activeIssues:project.issues.filter(item=>item.status==="Open").length,taskSource:[project.taskSource],collections:details.collectionNames,nextMilestone:details.nextMilestone?`${details.nextMilestone.title} · ${details.nextMilestone.dueDate}`:"—",lastReport:details.latestReport?.reportingDate??"No report",statusReportOverdue:details.statusReportOverdue,digitalCommittee:project.collectionIds.includes("digital-committee"),timeline:"",group:details.programmeName}});
 export const taskColumns:BoardColumn[]=[{key:"title",label:"Task",type:"text",editable:true,summary:"count",width:280},{key:"deliveryStatus",label:"Status",type:"status",summary:"rag"},{key:"people",label:"Assignees",type:"people",editable:true},{key:"start",label:"Start",type:"date",editable:true},{key:"finish",label:"Finish",type:"date",editable:true},{key:"timeline",label:"Timeline",type:"timeline"},{key:"progress",label:"Progress",type:"progress",editable:true,summary:"average",unit:"%"},{key:"priority",label:"Priority",type:"priority",editable:true,options:["Low","Moderate","High","Critical"]},{key:"tags",label:"Bucket",type:"tags"},{key:"dependencies",label:"Dependencies",type:"dependency"},{key:"formula",label:"Checklist",type:"formula"}];
 const dateValue=(value:string)=>{const [day=1,month=1,year=1970]=value.split("/").map(Number);return new Date(year,month-1,day).getTime()};
 const today=dateValue("21/09/2026");
