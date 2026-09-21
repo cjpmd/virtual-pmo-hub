@@ -184,8 +184,8 @@ export const resourceAssignments: ResourceAssignment[] = people.flatMap((person,
   const secondary=assignmentProjects[(index+3)%assignmentProjects.length]??"windows-11-rollout";
   const overloaded=["fw","mh","jc"].includes(person.id);
   return [
-    {id:`ra-${person.id}-1`,resourceType:"Person" as const,resourceId:person.id,projectId:primary,role:person.jobTitle,start:"05/10/2026",end:"27/11/2026",hoursPerWeek:overloaded?20:6+(index%3)*2,bookingType:index%3===0?"Soft" as const:"Hard" as const},
-    {id:`ra-${person.id}-2`,resourceType:"Person" as const,resourceId:person.id,projectId:secondary,role:person.skills[0]?.name??person.jobTitle,start:"12/10/2026",end:"20/11/2026",hoursPerWeek:overloaded?18:3+(index%2)*2,bookingType:index%4===0?"Soft" as const:"Hard" as const},
+    {id:`ra-${person.id}-1`,resourceType:"Person" as const,resourceId:person.id,projectId:primary,role:person.jobTitle,start:"05/10/2026",end:"27/11/2026",hoursPerWeek:overloaded?20:3,bookingType:index%3===0?"Soft" as const:"Hard" as const},
+    {id:`ra-${person.id}-2`,resourceType:"Person" as const,resourceId:person.id,projectId:secondary,role:person.skills[0]?.name??person.jobTitle,start:"12/10/2026",end:"20/11/2026",hoursPerWeek:overloaded?18:2,bookingType:index%4===0?"Soft" as const:"Hard" as const},
   ];
 });
 resourceAssignments.push(
