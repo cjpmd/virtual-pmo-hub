@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as DashboardsRouteImport } from './routes/dashboards'
 import { Route as MilestonesRouteImport } from './routes/milestones'
+import { Route as MyTimelineRouteImport } from './routes/my-timeline'
 import { Route as MyWorkRouteImport } from './routes/my-work'
 import { Route as ProgrammesRouteImport } from './routes/programmes'
 import { Route as ProjectsRouteImport } from './routes/projects'
@@ -20,6 +21,7 @@ import { Route as RequestsRouteImport } from './routes/requests'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as RisksRouteImport } from './routes/risks'
 import { Route as RoadmapsRouteImport } from './routes/roadmaps'
+import { Route as TaskOverviewRouteImport } from './routes/task-overview'
 import { Route as CollectionsIndexRouteImport } from './routes/collections.index'
 import { Route as CollectionsCollectionIdRouteImport } from './routes/collections.$collectionId'
 import { Route as ProgrammesIndexRouteImport } from './routes/programmes.index'
@@ -45,6 +47,11 @@ const DashboardsRoute = DashboardsRouteImport.update({
 const MilestonesRoute = MilestonesRouteImport.update({
   id: '/milestones',
   path: '/milestones',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyTimelineRoute = MyTimelineRouteImport.update({
+  id: '/my-timeline',
+  path: '/my-timeline',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MyWorkRoute = MyWorkRouteImport.update({
@@ -80,6 +87,11 @@ const RisksRoute = RisksRouteImport.update({
 const RoadmapsRoute = RoadmapsRouteImport.update({
   id: '/roadmaps',
   path: '/roadmaps',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TaskOverviewRoute = TaskOverviewRouteImport.update({
+  id: '/task-overview',
+  path: '/task-overview',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CollectionsIndexRoute = CollectionsIndexRouteImport.update({
@@ -118,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/collections': typeof CollectionsRouteWithChildren
   '/dashboards': typeof DashboardsRoute
   '/milestones': typeof MilestonesRoute
+  '/my-timeline': typeof MyTimelineRoute
   '/my-work': typeof MyWorkRoute
   '/programmes': typeof ProgrammesRouteWithChildren
   '/projects': typeof ProjectsRouteWithChildren
@@ -125,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/resources': typeof ResourcesRoute
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
+  '/task-overview': typeof TaskOverviewRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
@@ -136,11 +150,13 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboards': typeof DashboardsRoute
   '/milestones': typeof MilestonesRoute
+  '/my-timeline': typeof MyTimelineRoute
   '/my-work': typeof MyWorkRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
+  '/task-overview': typeof TaskOverviewRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
@@ -154,6 +170,7 @@ export interface FileRoutesById {
   '/collections': typeof CollectionsRouteWithChildren
   '/dashboards': typeof DashboardsRoute
   '/milestones': typeof MilestonesRoute
+  '/my-timeline': typeof MyTimelineRoute
   '/my-work': typeof MyWorkRoute
   '/programmes': typeof ProgrammesRouteWithChildren
   '/projects': typeof ProjectsRouteWithChildren
@@ -161,6 +178,7 @@ export interface FileRoutesById {
   '/resources': typeof ResourcesRoute
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
+  '/task-overview': typeof TaskOverviewRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
@@ -175,6 +193,7 @@ export interface FileRouteTypes {
     | '/collections'
     | '/dashboards'
     | '/milestones'
+    | '/my-timeline'
     | '/my-work'
     | '/programmes'
     | '/projects'
@@ -182,6 +201,7 @@ export interface FileRouteTypes {
     | '/resources'
     | '/risks'
     | '/roadmaps'
+    | '/task-overview'
     | '/collections/$collectionId'
     | '/programmes/$programmeId'
     | '/projects/$projectId'
@@ -193,11 +213,13 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboards'
     | '/milestones'
+    | '/my-timeline'
     | '/my-work'
     | '/requests'
     | '/resources'
     | '/risks'
     | '/roadmaps'
+    | '/task-overview'
     | '/collections/$collectionId'
     | '/programmes/$programmeId'
     | '/projects/$projectId'
@@ -210,6 +232,7 @@ export interface FileRouteTypes {
     | '/collections'
     | '/dashboards'
     | '/milestones'
+    | '/my-timeline'
     | '/my-work'
     | '/programmes'
     | '/projects'
@@ -217,6 +240,7 @@ export interface FileRouteTypes {
     | '/resources'
     | '/risks'
     | '/roadmaps'
+    | '/task-overview'
     | '/collections/$collectionId'
     | '/programmes/$programmeId'
     | '/projects/$projectId'
@@ -230,6 +254,7 @@ export interface RootRouteChildren {
   CollectionsRoute: typeof CollectionsRouteWithChildren
   DashboardsRoute: typeof DashboardsRoute
   MilestonesRoute: typeof MilestonesRoute
+  MyTimelineRoute: typeof MyTimelineRoute
   MyWorkRoute: typeof MyWorkRoute
   ProgrammesRoute: typeof ProgrammesRouteWithChildren
   ProjectsRoute: typeof ProjectsRouteWithChildren
@@ -237,6 +262,7 @@ export interface RootRouteChildren {
   ResourcesRoute: typeof ResourcesRoute
   RisksRoute: typeof RisksRoute
   RoadmapsRoute: typeof RoadmapsRoute
+  TaskOverviewRoute: typeof TaskOverviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -267,6 +293,13 @@ declare module '@tanstack/react-router' {
       path: '/milestones'
       fullPath: '/milestones'
       preLoaderRoute: typeof MilestonesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-timeline': {
+      id: '/my-timeline'
+      path: '/my-timeline'
+      fullPath: '/my-timeline'
+      preLoaderRoute: typeof MyTimelineRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/my-work': {
@@ -316,6 +349,13 @@ declare module '@tanstack/react-router' {
       path: '/roadmaps'
       fullPath: '/roadmaps'
       preLoaderRoute: typeof RoadmapsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/task-overview': {
+      id: '/task-overview'
+      path: '/task-overview'
+      fullPath: '/task-overview'
+      preLoaderRoute: typeof TaskOverviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/collections/': {
@@ -410,6 +450,7 @@ const rootRouteChildren: RootRouteChildren = {
   CollectionsRoute: CollectionsRouteWithChildren,
   DashboardsRoute: DashboardsRoute,
   MilestonesRoute: MilestonesRoute,
+  MyTimelineRoute: MyTimelineRoute,
   MyWorkRoute: MyWorkRoute,
   ProgrammesRoute: ProgrammesRouteWithChildren,
   ProjectsRoute: ProjectsRouteWithChildren,
@@ -417,6 +458,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResourcesRoute: ResourcesRoute,
   RisksRoute: RisksRoute,
   RoadmapsRoute: RoadmapsRoute,
+  TaskOverviewRoute: TaskOverviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

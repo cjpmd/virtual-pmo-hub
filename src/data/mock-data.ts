@@ -1,4 +1,4 @@
-import type { Collection, Person, Portfolio, Programme, Project, Risk, Issue, Task, TeamMember, ChangeRequest, StatusReport, Milestone, MilestoneStatus, MilestoneType, Roadmap } from "./types";
+import type { Collection, Person, Portfolio, Programme, Project, Risk, Issue, Task, TeamMember, ChangeRequest, StatusReport, Milestone, MilestoneStatus, MilestoneType, Roadmap, IssuedTask } from "./types";
 
 export const portfolio: Portfolio = { id: "dts-2526", name: "DTS 2025/26", description: "The university’s strategic portfolio of digital, technology and service improvement work.", owner: "Chris McDonald", budget: 8_750_000 };
 
@@ -96,14 +96,14 @@ const baseProjects: Project[] = Object.entries(namesByProgramme).flatMap(([progr
 }));
 
 const detailedTasks: Task[] = [
-  { id:"t1", title:"Confirm service requirements", bucket:"Discovery", assignees:["Maya Harrison"], start:"01/09/2026", finish:"09/09/2026", percentComplete:100, priority:"High", isMilestone:false, checklistCount:5, dependencies:[] },
-  { id:"t2", title:"Complete solution design", bucket:"Design", assignees:["Jacob Cole"], start:"10/09/2026", finish:"23/09/2026", percentComplete:65, priority:"High", isMilestone:false, checklistCount:7, dependencies:["t1"] },
-  { id:"t3", title:"Design approval", bucket:"Design", assignees:["Amelia Price"], start:"24/09/2026", finish:"24/09/2026", percentComplete:0, priority:"Critical", isMilestone:true, checklistCount:2, dependencies:["t2"] },
-  { id:"t4", title:"Pilot with service desk", bucket:"Pilot", assignees:["Eva Chen","Layla Owen"], start:"28/09/2026", finish:"16/10/2026", percentComplete:0, priority:"Moderate", isMilestone:false, checklistCount:8, dependencies:["t3"] },
-  { id:"t5", title:"Prepare adoption materials", bucket:"Change", assignees:["Layla Owen"], start:"05/10/2026", finish:"23/10/2026", percentComplete:0, priority:"Moderate", isMilestone:false, checklistCount:6, dependencies:["t2"] },
-  { id:"t6", title:"Go-live readiness review", bucket:"Launch", assignees:["Freya Walsh"], start:"26/10/2026", finish:"26/10/2026", percentComplete:0, priority:"High", isMilestone:true, checklistCount:10, dependencies:["t4","t5"] },
-  { id:"t7", title:"Early-life support", bucket:"Launch", assignees:["George Clarke"], start:"02/11/2026", finish:"13/11/2026", percentComplete:0, priority:"Moderate", isMilestone:false, checklistCount:4, dependencies:["t6"] },
-  { id:"t8", title:"Benefits baseline", bucket:"Benefits", assignees:["Maya Harrison"], start:"16/11/2026", finish:"20/11/2026", percentComplete:0, priority:"Low", isMilestone:false, checklistCount:3, dependencies:["t6"] },
+  { id:"t1", title:"Confirm service requirements", bucket:"Discovery", assignees:["Maya Harrison"], start:"01/09/2026", finish:"09/09/2026", baselineFinish:"09/09/2026", percentComplete:100, estimatedEffortHours:28, priority:"High", isMilestone:false, checklistCount:5, dependencies:[] },
+  { id:"t2", title:"Complete solution design", bucket:"Design", assignees:["Jacob Cole"], start:"10/09/2026", finish:"23/09/2026", baselineFinish:"20/09/2026", percentComplete:65, estimatedEffortHours:64, priority:"High", isMilestone:false, checklistCount:7, dependencies:["t1"] },
+  { id:"t3", title:"Design approval", bucket:"Design", assignees:["Amelia Price"], start:"24/09/2026", finish:"24/09/2026", baselineFinish:"24/09/2026", percentComplete:0, estimatedEffortHours:6, priority:"Critical", isMilestone:true, checklistCount:2, dependencies:["t2"] },
+  { id:"t4", title:"Pilot with service desk", bucket:"Pilot", assignees:["Eva Chen","Layla Owen"], start:"28/09/2026", finish:"16/10/2026", baselineFinish:"16/10/2026", percentComplete:0, estimatedEffortHours:96, priority:"Moderate", isMilestone:false, checklistCount:8, dependencies:["t3"] },
+  { id:"t5", title:"Prepare adoption materials", bucket:"Change", assignees:["Layla Owen"], start:"05/10/2026", finish:"23/10/2026", baselineFinish:"23/10/2026", percentComplete:0, estimatedEffortHours:42, priority:"Moderate", isMilestone:false, checklistCount:6, dependencies:["t2"] },
+  { id:"t6", title:"Go-live readiness review", bucket:"Launch", assignees:["Freya Walsh"], start:"26/10/2026", finish:"26/10/2026", baselineFinish:"26/10/2026", percentComplete:0, estimatedEffortHours:8, priority:"High", isMilestone:true, checklistCount:10, dependencies:["t4","t5"] },
+  { id:"t7", title:"Early-life support", bucket:"Launch", assignees:["George Clarke"], start:"02/11/2026", finish:"13/11/2026", baselineFinish:"13/11/2026", percentComplete:0, estimatedEffortHours:72, priority:"Moderate", isMilestone:false, checklistCount:4, dependencies:["t6"] },
+  { id:"t8", title:"Benefits baseline", bucket:"Benefits", assignees:["Maya Harrison"], start:"16/11/2026", finish:"20/11/2026", baselineFinish:"20/11/2026", percentComplete:0, estimatedEffortHours:24, priority:"Low", isMilestone:false, checklistCount:3, dependencies:["t6"] },
 ];
 const detailedTeam: TeamMember[] = [
   {personId:"fw",role:"Project Manager",start:"01/08/2026",finish:"31/12/2026",allocatedEffortHours:480},
@@ -120,11 +120,16 @@ const detailedReports: StatusReport[] = [
   {id:"sr3",reportingDate:"21/08/2026",submitter:"Freya Walsh",overall:"On Track",schedule:"On Track",financial:"On Track",effort:"On Track",issue:"On Track",accomplished:"Project mobilisation complete.",planned:"Begin discovery interviews.",comments:"No exceptions to report."},
 ];
 
-export const projects: Project[] = baseProjects.map(project => ["ebbot-chatbot","reduce-our-cyber-risk","account-creation-automation"].includes(project.id)
+const taskTitles=["Confirm scope and outcomes","Complete technical design","Review data and controls","Prepare delivery plan","Run user validation","Complete readiness review","Publish handover guidance","Confirm benefits measures"];
+const taskBuckets=["Discovery","Design","Governance","Delivery","Testing","Launch","Change","Benefits"];
+const taskAssignees=["Chris McDonald","Freya Walsh","Maya Harrison","Jacob Cole","Eva Chen","Layla Owen","George Clarke","Nadia Begum"];
+const buildTasks=(project:Project,projectNumber:number):Task[]=>taskTitles.slice(0,6+(projectNumber%3)).map((title,index)=>{const start=shiftMockDate("25/08/2026",projectNumber%12+index*9);const baselineFinish=shiftMockDate(start,index%3===0?6:12);const finish=shiftMockDate(baselineFinish,(projectNumber+index)%7===0?5:0);const complete=index===0?100:index===1?(projectNumber%2?55:80):0;return{id:`${project.id}-task-${index+1}`,title,bucket:taskBuckets[index]??"Delivery",assignees:[taskAssignees[(projectNumber+index)%taskAssignees.length]??"Chris McDonald"],start,finish,baselineFinish,percentComplete:complete,estimatedEffortHours:12+index*8+(projectNumber%4)*4,priority:index===2&&project.priority==="Critical"?"Critical":index%3===0?"High":"Moderate",isMilestone:index===5,checklistCount:3+(index%5),checklist:["Confirm owner","Complete review","Record outcome"],dependencies:index?[`${project.id}-task-${index}`]:[]}});
+
+export const projects: Project[] = baseProjects.map((project,projectNumber) => ["ebbot-chatbot","reduce-our-cyber-risk","account-creation-automation"].includes(project.id)
   ? { ...project, tasks:detailedTasks.map(task=>({...task,id:`${project.id}-${task.id}`})), team:detailedTeam, changes:detailedChanges, reports:detailedReports,
       risks: project.id === "reduce-our-cyber-risk" ? [redRisk(`${project.id}-r1`), greenRisk(`${project.id}-r2`), greenRisk(`${project.id}-r3`)] : [greenRisk(`${project.id}-r1`),greenRisk(`${project.id}-r2`)],
       issues: project.id === "reduce-our-cyber-risk" ? [issue(`${project.id}-i1`,true),issue(`${project.id}-i2`)] : project.id === "ebbot-chatbot" ? [issue(`${project.id}-i1`)] : [] }
-  : {...project,team:[
+   : {...project,tasks:buildTasks(project,projectNumber),team:[
       {personId:["fw","gc","nb","er"][baseProjects.indexOf(project)%4]??"fw",role:"Project Manager",start:project.start,finish:project.finish,allocatedEffortHours:520+(baseProjects.indexOf(project)%4)*80},
       {personId:["mh","jc","lo","hs","ec"][baseProjects.indexOf(project)%5]??"mh",role:"Team Member",start:project.start,finish:project.finish,allocatedEffortHours:280+(baseProjects.indexOf(project)%3)*90},
       {personId:["ap","ob","sp","th","if"][baseProjects.indexOf(project)%5]??"ap",role:"Sponsor",start:project.start,finish:project.finish,allocatedEffortHours:55+(baseProjects.indexOf(project)%3)*15},
@@ -142,6 +147,15 @@ export const collections: Collection[] = [
   {id:"digital-committee",name:"Digital Committee",type:"Governance",projectIds:projects.slice(0,8).map(p=>p.id)},
   {id:"summer-priorities",name:"Summer Priorities 2026",type:"Priority set",projectIds:projects.slice(8,14).map(p=>p.id)},
   {id:"innovation-pot",name:"Innovation Pot",type:"Funding stream",potAmount:50000,projectIds:projects.slice(15,20).map(p=>p.id),awards:Object.fromEntries(projects.slice(15,20).map((p,i)=>[p.id,7000+i*1500]))},
+];
+
+export const issuedTasks: IssuedTask[] = [
+  {id:"issued-1",projectId:"ebbot-chatbot",title:"Confirm pilot data owners",description:"Confirm a named owner and review date for each pilot knowledge source.",issuer:"Amelia Price",assignee:"Chris McDonald",issuedDate:"17/09/2026",acknowledgementDue:"19/09/2026",dueDate:"25/09/2026",estimatedEffortHours:4,priority:"High",checklist:["Review source list","Confirm owners","Update project team"],attachments:["Pilot sources.xlsx"],status:"Issued",plannerSync:"Pending acceptance"},
+  {id:"issued-2",projectId:"reduce-our-cyber-risk",title:"Review control remediation evidence",description:"Review the latest evidence and identify any gaps before assurance.",issuer:"Harrison Shaw",assignee:"Chris McDonald",issuedDate:"18/09/2026",acknowledgementDue:"22/09/2026",dueDate:"29/09/2026",estimatedEffortHours:6,priority:"Critical",checklist:["Review evidence","Record gaps"],attachments:["Controls evidence.zip"],status:"Accepted",plannerSync:"Created in Planner"},
+  {id:"issued-3",projectId:"digital-landscape-mapping",title:"Provide service inventory return",description:"Submit the completed inventory for your service area.",issuer:"Chris McDonald",assignee:"Maya Harrison",issuedDate:"15/09/2026",acknowledgementDue:"18/09/2026",dueDate:"30/09/2026",estimatedEffortHours:3,priority:"Moderate",checklist:["Complete template","Validate owner","Return to PMO"],attachments:["Service inventory template.xlsx"],status:"Issued",plannerSync:"Not applicable"},
+  {id:"issued-4",projectId:"digital-landscape-mapping",title:"Provide service inventory return",description:"Submit the completed inventory for your service area.",issuer:"Chris McDonald",assignee:"Jacob Cole",issuedDate:"15/09/2026",acknowledgementDue:"18/09/2026",dueDate:"30/09/2026",estimatedEffortHours:3,priority:"Moderate",checklist:["Complete template","Validate owner","Return to PMO"],attachments:["Service inventory template.xlsx"],status:"Proposed new date",proposedDate:"05/10/2026",responseReason:"Technical release work takes priority this week.",plannerSync:"Not applicable"},
+  {id:"issued-5",projectId:"windows-11-rollout",title:"Confirm faculty deployment contacts",description:"Validate the named contacts for the next deployment wave.",issuer:"Chris McDonald",assignee:"Eva Chen",issuedDate:"16/09/2026",acknowledgementDue:"20/09/2026",dueDate:"24/09/2026",estimatedEffortHours:2,priority:"High",checklist:["Check contact list","Confirm availability"],attachments:[],status:"Declined",responseReason:"This belongs with the faculty engagement lead.",plannerSync:"Not applicable"},
+  {id:"issued-6",projectId:"account-creation-automation",title:"Validate exception scenarios",description:"Test and document the agreed exception scenarios.",issuer:"Chris McDonald",assignee:"Freya Walsh",issuedDate:"10/09/2026",acknowledgementDue:"13/09/2026",dueDate:"20/09/2026",estimatedEffortHours:8,priority:"High",checklist:["Run scenarios","Capture outcomes","Raise defects"],attachments:["Test scenarios.docx"],status:"In progress",plannerSync:"Created in Planner"},
 ];
 
 for (const collection of collections) for (const projectId of collection.projectIds) {
