@@ -22,4 +22,4 @@
 - [x] Standardise task and milestone status legend
 - [x] Expand the Projects portfolio table, KPIs and seeded views
 - [x] Add CSV export and the New project multi-step flow
-- [ ] Verify the complete Projects portfolio experience
+- [x] Verify the complete Projects portfolio experience
