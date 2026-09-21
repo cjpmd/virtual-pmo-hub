@@ -1,7 +1,8 @@
 export type Health = "On Track" | "At Risk" | "Off Track" | "Not Set";
 export type ProjectStage = string;
 export type ProjectTier = "Small" | "Medium" | "Large";
-export interface GateCriterion { id: string; label: string; tiers: ProjectTier[]; document?: string }
+export type GateCheckKey = "benefit-profiles-owned" | "benefit-baselines" | "benefits-handover" | "lessons-reviewed" | "phase-lessons-review";
+export interface GateCriterion { id: string; label: string; tiers: ProjectTier[]; document?: string; check?: GateCheckKey }
 export interface LifecyclePhase { id: string; name: string; shortName: string; description: string; gateName: string; criteria: GateCriterion[] }
 export interface TierDefinition { tier: ProjectTier; description: string; guideline: string }
 export type ProjectState = "Proposed" | "Active" | "On Hold" | "Closed";
@@ -17,7 +18,7 @@ export interface Person { id: string; name: string; jobTitle: string; initials: 
 export interface GenericResource { id: string; name: string; role: string; team: ResourceTeam; skills: ResourceSkill[]; needsStaffing: boolean }
 export type BookingType = "Soft" | "Hard";
 export interface ResourceAssignment { id: string; resourceType: "Person"|"Generic"; resourceId: string; projectId: string; taskId?: string; role: string; start: string; end: string; hoursPerWeek: number; bookingType: BookingType }
-export interface ProjectRequest { id: string; title: string; status: "New"|"In Review"|"On Hold"|"Approved"|"Rejected"; requester: string; sponsor: string; estimatedCost: number; estimatedBenefit: number; priority: Priority; alignment: number; themes: string[] }
+export interface ProjectRequest { id: string; title: string; status: "New"|"In Review"|"On Hold"|"Approved"|"Rejected"; requester: string; sponsor: string; estimatedCost: number; estimatedBenefit: number; priority: Priority; alignment: number; themes: string[]; wholeLifeCost?: number; appraisalYears?: number; draftBenefits?: DraftBenefitProfile[] }
 export type MilestoneType = "Delivery" | "Gate" | "Key date" | "External dependency";
 export type MilestoneStatus = "Overdue" | "Late" | "On Track" | "Future" | "Completed";
 export interface MilestoneForecastPoint { reportingDate: string; forecastDate: string }
@@ -55,7 +56,48 @@ export type BenefitStatus="Identified"|"Validated"|"Planned"|"In realisation"|"R
 export type BenefitConfidence="High"|"Medium"|"Low";
 export interface BenefitProjectLink { projectId:string; attribution:number }
 export interface BenefitTarget { period:string; value:number }
-export interface MeasurementRecord { id:string; period:string; actualValue:number; evidence:string; notes:string; submittedBy:string; validatedBy?:string; status:"Submitted"|"Validated"|"Queried" }
+export interface MeasurementRecord { id:string; period:string; actualValue:number; evidence:string; notes:string; submittedBy:string; submittedDate?:string; validatedBy?:string; validatedDate?:string; queryNote?:string; status:"Submitted"|"Validated"|"Queried" }
 export interface BenefitMeasure { id:string; name:string; unit:string; measurementMethod:string; dataSource:string; frequency:"Monthly"|"Quarterly"|"Annually"; dataProvider:string; baselineValue:number; baselineDate:string; targetProfile:BenefitTarget[]; nextDue:string; records:MeasurementRecord[] }
 export interface BenefitReview { id:string; date:string; type:"Scheduled review"|"Post-implementation review"; findings:string; lessonsLearned:string; reviewer:string }
-export interface Benefit { id:string; reference:string; title:string; description:string; type:BenefitType; classification:BenefitClassification; category:BenefitCategory; beneficiaries:string[]; owner:string; sro:string; strategicObjectiveIds:string[]; enablingProjects:BenefitProjectLink[]; status:BenefitStatus; confidence:BenefitConfidence; eligibilityConfirmed:boolean; eligibilityConfirmedBy?:string; eligibilityConfirmedDate?:string; plannedTotalValue:number; dependencies:string[]; measures:BenefitMeasure[]; reviews:BenefitReview[] }
+export interface Benefit { id:string; reference:string; title:string; description:string; type:BenefitType; classification:BenefitClassification; category:BenefitCategory; beneficiaries:string[]; owner:string; sro:string; strategicObjectiveIds:string[]; enablingProjects:BenefitProjectLink[]; status:BenefitStatus; confidence:BenefitConfidence; eligibilityConfirmed:boolean; eligibilityConfirmedBy?:string; eligibilityConfirmedDate?:string; plannedTotalValue:number; dependencies:string[]; measures:BenefitMeasure[]; reviews:BenefitReview[]; handover?:BenefitHandover }
+// ---- Benefits mapping (H2) ----
+export type BenefitMapNodeType="Project"|"Capability"|"Outcome"|"Benefit"|"Objective";
+export interface Capability { id:string; programmeId:string; title:string; description:string; owner:string; projectIds:string[] }
+export interface Outcome { id:string; programmeId:string; title:string; description:string; owner:string; capabilityIds:string[]; benefitIds:string[] }
+export interface BenefitMapLayout { nodeId:string; x:number; y:number }
+export interface BenefitMapSeed { id:string; name:string; programmeId:string; description:string; layout:BenefitMapLayout[] }
+
+// ---- Benefits handover & realisation (H2/H3) ----
+export interface BenefitHandover { bauOwner:string; bauService:string; frequency:BenefitMeasure["frequency"]; nextReviewDate:string; postImplementationReviewDate:string; confirmedBy:string; confirmedDate:string }
+
+// ---- Appraisal settings (H3) ----
+export interface OptimismBiasSetting { category:BenefitCategory; percentage:number }
+export interface DraftBenefitProfile { id:string; title:string; classification:BenefitClassification; category:BenefitCategory; owner:string; measure:string; baseline:string; target:string; annualValue:number; yearsCounted:number; strategicObjectiveId:string }
+
+// ---- Dependencies (I1) ----
+export type DependencyEndKind="Programme"|"Project"|"Milestone"|"External";
+export type DependencyType="Sequencing"|"Alignment"|"Information"|"Resource"|"External";
+export type DependencyBoundary="Within programme"|"Cross-programme"|"Cross-PM"|"Cross-portfolio";
+export type DependencyValidation="Inferred"|"Proposed"|"Confirmed"|"Closed"|"Broken";
+export interface DependencyEnd { kind:DependencyEndKind; programmeId?:string; projectId?:string; milestoneId?:string; externalName?:string; owner:string }
+export interface Dependency { id:string; reference:string; giver:DependencyEnd; receiver:DependencyEnd; type:DependencyType; description:string; requiredBy:string; criticality:"High"|"Medium"|"Low"; validation:DependencyValidation; giverAccepted:boolean; receiverAccepted:boolean; riskIds:string[]; issueIds:string[]; healthOverride?:Health; raisedDate:string; raisedBy:string }
+
+// ---- Decisions & assumptions (I2) ----
+export type DecisionForum="Project Board"|"Programme Board"|"Digital Committee"|"Architecture Review Board"|"Change Advisory Board";
+export type DecisionStatus="Pending"|"Made"|"Superseded"|"Reversed";
+export interface DecisionOption { id:string; title:string; pros:string[]; cons:string[] }
+export interface DecisionAction { id:string; description:string; owner:string; dueDate:string; status:"Open"|"In progress"|"Done" }
+export interface DecisionImpactEntry { impacted:boolean; note:string }
+export interface DecisionImpact { scope:DecisionImpactEntry; cost:DecisionImpactEntry; time:DecisionImpactEntry; benefits:DecisionImpactEntry }
+export interface Decision { id:string; reference:string; projectId?:string; programmeId?:string; title:string; context:string; options:DecisionOption[]; chosenOptionId?:string; rationale?:string; decisionMaker:string; forum:DecisionForum; neededBy:string; decisionDate?:string; status:DecisionStatus; impact:DecisionImpact; riskIds:string[]; issueIds:string[]; changeIds:string[]; dependencyIds:string[]; benefitIds:string[]; actions:DecisionAction[]; evidenceLink?:string; supersedesId?:string; supersededById?:string }
+export type AssumptionStatus="Open"|"Validated"|"Invalidated";
+export interface Assumption { id:string; reference:string; projectId?:string; programmeId?:string; assumption:string; owner:string; rationale:string; validationDate:string; status:AssumptionStatus; raisedIssueId?:string; notes?:string }
+
+// ---- Lessons learned (I3) ----
+export type LessonType="Success"|"Problem";
+export type LessonCategory="Project Management"|"Governance"|"Communication"|"Stakeholder Management"|"People & Roles"|"Resource Management"|"Training"|"Testing"|"Requirements"|"Architecture"|"Procurement"|"Vendor Management"|"Change Management & Adoption"|"Ways of Working"|"Support & Handover";
+export type LessonApplicability="This project only"|"Similar projects"|"All projects";
+export type LessonStatus="Identified"|"Action agreed"|"Embedded"|"Closed";
+export interface Lesson { id:string; reference:string; projectId:string; phaseId:string; sprint?:string; type:LessonType; category:LessonCategory; summary:string; whatHappened:string; impact:string; rootCause:string; recommendation:string; applicability:LessonApplicability; projectTypeTags:string[]; raisedBy:string; date:string; status:LessonStatus }
+export interface ImprovementAction { id:string; reference:string; lessonId:string; description:string; owner:string; dueDate:string; status:"Open"|"In progress"|"Done"; embeddedIn?:string }
+export interface PhaseLessonsReview { id:string; projectId:string; phaseId:string; date:string; facilitator:string; attendees:string[] }

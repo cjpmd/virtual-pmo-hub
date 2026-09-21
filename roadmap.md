@@ -53,3 +53,13 @@
 - [x] Build Benefit Profile page with lifecycle, charts, records, reviews, and side-panel measurement capture
 - [x] Add linked Benefits tabs to project and programme pages
 - [x] Verify Benefits metadata, interactions, desktop and mobile layouts
+
+- [x] Build the interactive Benefits Map with capability and outcome nodes, validation badges and workshop mode
+- [x] Rebuild Realisation with the cumulative S-curve, measurement chasing, PMO validation queue and post-closure tracking
+- [x] Build the Value Dashboard with portfolio return, forecasting accuracy and benefit performance
+- [x] Add optimism-bias appraisal to business cases and request prioritisation, editable in Admin
+- [x] Add benefit gate criteria, the project gate checklist and the benefits handover wizard at closure
+- [x] Add benefit health as a project and programme health dimension and to the committee pack
+- [x] Add Dependency management: model, register, map, sync agenda and roadmap connectors
+- [x] Extend RAID to RAIDD with the decision log, forum meeting mode and assumption log
+- [x] Add Lessons Learned: project reviews, portfolio overview, improvement actions, matching at initiation and CSV import/export
