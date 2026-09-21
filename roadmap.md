@@ -11,5 +11,5 @@
 
 - [x] Build Collections and the Digital Committee pack preview and snapshot flow
 
-- [ ] Build project and cross-project resource allocation views
-- [ ] Build project RAID analysis and portfolio risk register
+- [x] Build project and cross-project resource allocation views
+- [x] Build project RAID analysis and portfolio risk register

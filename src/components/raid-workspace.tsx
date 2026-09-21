@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 const band=(score:number)=>score>=15?"bg-health-bad/20 text-health-bad-foreground":score>=8?"bg-health-warn/25 text-health-warn-foreground":"bg-health-good/20 text-health-good-foreground";
 const riskColumns:Column<Risk>[]=[
-  {key:"title",label:"Risk",sortable:true,sortValue:r=>r.title,render:r=><div><p className="font-medium">{r.title}</p><p className="mt-0.5 max-w-md text-xs font-normal text-muted-foreground">{r.description}</p></div>},
+  {key:"title",label:"Risk",sortable:true,sortValue:r=>r.title,render:r=><div><p className="font-medium">{r.title}</p>{"projectName" in r&&typeof r.projectName==="string"&&<p className="mt-0.5 text-xs font-semibold text-primary">{r.projectName}</p>}<p className="mt-0.5 max-w-md text-xs font-normal text-muted-foreground">{r.description}</p></div>},
   {key:"owner",label:"Owner",render:r=>r.owner},{key:"probability",label:"Probability",sortable:true,sortValue:r=>r.probability,render:r=>`${r.probability}/5`},{key:"impact",label:"Impact",sortable:true,sortValue:r=>r.impact,render:r=>`${r.impact}/5`},
   {key:"score",label:"Score",sortable:true,sortValue:r=>r.score,render:r=><span className={cn("rounded-full px-2 py-1 text-xs font-semibold",band(r.score))}>{r.score}</span>},{key:"response",label:"Response",render:r=>r.response},{key:"review",label:"Review date",render:r=>r.reviewDate},
 ];
