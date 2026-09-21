@@ -1,5 +1,5 @@
 import { collections, people, portfolio, programmes, projects } from "@/data/mock-data";
-import type { Health, Person, Portfolio, Programme, Project, Risk, TeamMember } from "@/data/types";
+import type { Health, Milestone, Person, Portfolio, Programme, Project, Risk, TeamMember } from "@/data/types";
 
 const rank: Record<Health,number> = {"Not Set":0,"On Track":1,"At Risk":2,"Off Track":3};
 const worst = (items: Health[]): Health => {
@@ -14,7 +14,7 @@ const parseDate = (value:string) => {
 const today = parseDate("21/09/2026");
 
 export function getScheduleHealth(project: Project): Health {
-  if (project.milestones.some(m=>!m.complete && parseDate(m.dueDate)<today)) return "Off Track";
+  if (project.milestones.some(m=>m.status==="Overdue")) return "Off Track";
   const baseline=parseDate(project.baselineFinish).getTime()-parseDate(project.start).getTime();
   const slip=parseDate(project.finish).getTime()-parseDate(project.baselineFinish).getTime();
   if (baseline>0 && slip/baseline>0.1) return "Off Track";
@@ -67,7 +67,7 @@ export function getPeople(){ return people; }
 export function getProjectPortfolioDetails(project:Project){
   const programme=programmes.find(item=>item.id===project.programmeId);
   const collectionNames=collections.filter(item=>project.collectionIds.includes(item.id)).map(item=>item.name);
-  const nextMilestone=[...project.milestones].filter(item=>!item.complete).sort((a,b)=>parseDate(a.dueDate).getTime()-parseDate(b.dueDate).getTime())[0];
+  const nextMilestone=[...project.milestones].filter(item=>item.status!=="Completed").sort((a,b)=>parseDate(a.forecastDate).getTime()-parseDate(b.forecastDate).getTime())[0];
   const latestReport=[...(project.reports??[])].sort((a,b)=>parseDate(b.reportingDate).getTime()-parseDate(a.reportingDate).getTime())[0];
   const reportAgeDays=latestReport?Math.floor((today.getTime()-parseDate(latestReport.reportingDate).getTime())/86400000):Number.POSITIVE_INFINITY;
   return {programmeName:programme?.name??"Unassigned",collectionNames,nextMilestone,latestReport,statusReportOverdue:reportAgeDays>14};
@@ -76,6 +76,7 @@ export interface ProjectTeamMember extends TeamMember { person: Person; complete
 export interface ResourceAssignment extends TeamMember { projectId: string; projectName: string; programmeId: string; weeklyHours: number }
 export interface ResourceSummary { person: Person; assignments: ResourceAssignment[]; totalHours: number; currentWeeklyHours: number; peakWeeklyHours: number; overAllocated: boolean }
 export interface PortfolioRisk extends Risk { projectId: string; projectName: string; programmeId: string; programmeName: string }
+export interface PortfolioMilestone extends Milestone { projectId: string; projectName: string; programmeId: string; programmeName: string; slipDays: number }
 const daysBetween=(start:string,finish:string)=>Math.max(1,Math.round((parseDate(finish).getTime()-parseDate(start).getTime())/86400000)+1);
 const weeklyHours=(member:TeamMember)=>member.allocatedEffortHours/Math.max(1,daysBetween(member.start,member.finish)/7);
 const activeOn=(member:TeamMember,date:Date)=>parseDate(member.start)<=date&&parseDate(member.finish)>=date;
@@ -89,6 +90,17 @@ export function getResourceSummaries():ResourceSummary[]{
   return people.map(person=>{const personAssignments=assignments.filter(item=>item.personId===person.id);const weeklyTotals=weekStarts.map(week=>personAssignments.filter(item=>activeOn(item,week)).reduce((sum,item)=>sum+item.weeklyHours,0));const currentWeeklyHours=personAssignments.filter(item=>activeOn(item,today)).reduce((sum,item)=>sum+item.weeklyHours,0);const peakWeeklyHours=Math.max(0,...weeklyTotals);return{person,assignments:personAssignments,totalHours:personAssignments.reduce((sum,item)=>sum+item.allocatedEffortHours,0),currentWeeklyHours,peakWeeklyHours,overAllocated:peakWeeklyHours>37.5}}).filter(item=>item.assignments.length).sort((a,b)=>b.currentWeeklyHours-a.currentWeeklyHours);
 }
 export function getPortfolioRisks():PortfolioRisk[]{return projects.flatMap(project=>{const programme=programmes.find(item=>item.id===project.programmeId);return project.risks.map(risk=>({...risk,projectId:project.id,projectName:project.name,programmeId:project.programmeId,programmeName:programme?.name??"Unassigned"}))}).sort((a,b)=>b.score-a.score)}
+export function getPortfolioMilestones(programmeId?:string):PortfolioMilestone[]{return projects.filter(project=>!programmeId||project.programmeId===programmeId).flatMap(project=>{const programme=programmes.find(item=>item.id===project.programmeId);return project.milestones.map(milestone=>({...milestone,projectId:project.id,projectName:project.name,programmeId:project.programmeId,programmeName:programme?.name??"Unassigned",slipDays:Math.round((parseDate(milestone.forecastDate).getTime()-parseDate(milestone.baselineDate).getTime())/86400000)}))}).sort((a,b)=>parseDate(a.forecastDate).getTime()-parseDate(b.forecastDate).getTime())}
+export function getMilestoneMetrics(items=getPortfolioMilestones()){
+  const days=(value:string)=>Math.round((parseDate(value).getTime()-today.getTime())/86400000);
+  const completed=items.filter(item=>item.actualDate&&days(item.actualDate)>=-30&&days(item.actualDate)<=0).length;
+  const upcoming=items.filter(item=>item.status!=="Completed"&&days(item.forecastDate)>=0&&days(item.forecastDate)<=30).length;
+  const overdue=items.filter(item=>item.status==="Overdue").length;
+  const slipped=items.filter(item=>item.slipDays>0&&item.status!=="Completed").length;
+  const recentCompleted=items.filter(item=>item.actualDate&&days(item.actualDate)>=-90&&days(item.actualDate)<=0);
+  const hit=recentCompleted.filter(item=>parseDate(item.actualDate??item.forecastDate)<=parseDate(item.baselineDate)).length;
+  return {completed,upcoming,overdue,slipped,percentOnTime:recentCompleted.length?Math.round(hit/recentCompleted.length*100):0};
+}
 export function getProgrammeMetrics(programme: Programme){
   const items=getProjects(programme.id); return { projectCount:items.length, active:items.filter(p=>p.state==="Active").length, budget:items.reduce((s,p)=>s+p.budget,0), forecast:items.reduce((s,p)=>s+p.forecast,0), rag:{ green:items.filter(p=>getProjectHealth(p)==="On Track").length, amber:items.filter(p=>getProjectHealth(p)==="At Risk").length, red:items.filter(p=>getProjectHealth(p)==="Off Track").length } };
 }

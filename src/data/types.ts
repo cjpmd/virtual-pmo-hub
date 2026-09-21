@@ -7,7 +7,10 @@ export type HealthDimension = "overall" | "schedule" | "financial" | "effort" | 
 
 export interface HealthOverride { health: Health; reason: string }
 export interface Person { id: string; name: string; jobTitle: string; initials: string }
-export interface Milestone { id: string; title: string; dueDate: string; complete: boolean }
+export type MilestoneType = "Delivery" | "Gate" | "Key date" | "External dependency";
+export type MilestoneStatus = "Overdue" | "Late" | "On Track" | "Future" | "Completed";
+export interface MilestoneForecastPoint { reportingDate: string; forecastDate: string }
+export interface Milestone { id: string; title: string; type: MilestoneType; owner: string; baselineDate: string; forecastDate: string; actualDate?: string; status: MilestoneStatus; reportToCommittee: boolean; forecastHistory: MilestoneForecastPoint[] }
 export interface Risk { id: string; title: string; description: string; owner: string; probability: 1|2|3|4|5; impact: 1|2|3|4|5; score: number; response: "Avoid"|"Reduce"|"Transfer"|"Accept"; status: "Open"|"Closed"; reviewDate: string }
 export interface Issue { id: string; title: string; owner: string; severity: "Low"|"Medium"|"High"; status: "Open"|"Closed"; dueDate: string }
 export interface Task { id: string; title: string; bucket: string; assignees: string[]; start: string; finish: string; percentComplete: number; priority: Priority; isMilestone: boolean; checklistCount: number; dependencies: string[] }
