@@ -61,7 +61,7 @@ const buildMilestones=(projectNumber:number,isRed:boolean):Milestone[]=>{
     const source=milestoneDates[index]??milestoneDates[0];
     const baselineDate=source?.[0]??"30/09/2026";
     let forecastDate:string=source?.[1]??baselineDate;
-    const actualDate=source?.[2];
+    const actualDate=index===0?shiftMockDate("28/08/2026",projectNumber%18):source?.[2];
     if(isRed&&index===1)forecastDate="28/09/2026";
     const forecastMs=parseMockDate(forecastDate),baselineMs=parseMockDate(baselineDate),todayMs=parseMockDate("21/09/2026");
     const status:MilestoneStatus=actualDate?"Completed":forecastMs<todayMs?"Overdue":forecastMs>baselineMs?"Late":forecastMs-todayMs>30*86400000?"Future":"On Track";

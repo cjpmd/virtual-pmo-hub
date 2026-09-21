@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Bar, BarChart, CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { CalendarCheck, CalendarClock, Diamond, Gauge, History } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Diamond, History } from "lucide-react";
 import { BoardWorkspace, DeliveryStatusIcon, type SavedView } from "@/components/board-workspace";
 import { KpiCard, PageHeader } from "@/components/pmo-ui";
 import { milestoneColumns, milestonesToRows } from "@/lib/board-data";
