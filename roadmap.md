@@ -23,3 +23,9 @@
 - [x] Expand the Projects portfolio table, KPIs and seeded views
 - [x] Add CSV export and the New project multi-step flow
 - [x] Verify the complete Projects portfolio experience
+- [ ] Extend milestone model and mock data across every project
+- [ ] Add milestone services and portfolio analytics
+- [ ] Build Milestones page with KPIs, lists, timeline, charts, and saved views
+- [ ] Add milestone sections to portfolio, programme, project overview, and committee pack
+- [ ] Add Milestones navigation and route metadata
+- [ ] Verify milestone management across desktop and mobile
