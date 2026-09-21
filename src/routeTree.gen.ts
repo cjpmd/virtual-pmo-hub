@@ -17,6 +17,7 @@ import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as RequestsRouteImport } from './routes/requests'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as ProgrammesIndexRouteImport } from './routes/programmes.index'
+import { Route as ProgrammesProgrammeIdRouteImport } from './routes/programmes.$programmeId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -58,6 +59,11 @@ const ProgrammesIndexRoute = ProgrammesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ProgrammesRoute,
 } as any)
+const ProgrammesProgrammeIdRoute = ProgrammesProgrammeIdRouteImport.update({
+  id: '/$programmeId',
+  path: '/$programmeId',
+  getParentRoute: () => ProgrammesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/projects': typeof ProjectsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
+  '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/programmes/': typeof ProgrammesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/projects': typeof ProjectsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
+  '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/programmes': typeof ProgrammesIndexRoute
 }
 export interface FileRoutesById {
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/projects': typeof ProjectsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
+  '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/programmes/': typeof ProgrammesIndexRoute
 }
 export interface FileRouteTypes {
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/requests'
     | '/resources'
+    | '/programmes/$programmeId'
     | '/programmes/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/requests'
     | '/resources'
+    | '/programmes/$programmeId'
     | '/programmes'
   id:
     | '__root__'
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/requests'
     | '/resources'
+    | '/programmes/$programmeId'
     | '/programmes/'
   fileRoutesById: FileRoutesById
 }
@@ -189,14 +201,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProgrammesIndexRouteImport
       parentRoute: typeof ProgrammesRoute
     }
+    '/programmes/$programmeId': {
+      id: '/programmes/$programmeId'
+      path: '/$programmeId'
+      fullPath: '/programmes/$programmeId'
+      preLoaderRoute: typeof ProgrammesProgrammeIdRouteImport
+      parentRoute: typeof ProgrammesRoute
+    }
   }
 }
 
 interface ProgrammesRouteChildren {
+  ProgrammesProgrammeIdRoute: typeof ProgrammesProgrammeIdRoute
   ProgrammesIndexRoute: typeof ProgrammesIndexRoute
 }
 
 const ProgrammesRouteChildren: ProgrammesRouteChildren = {
+  ProgrammesProgrammeIdRoute: ProgrammesProgrammeIdRoute,
   ProgrammesIndexRoute: ProgrammesIndexRoute,
 }
 
