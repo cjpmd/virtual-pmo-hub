@@ -1,15 +1,30 @@
-import type { Collection, Person, Portfolio, Programme, Project, Risk, Issue, Task, TeamMember, ChangeRequest, StatusReport, Milestone, MilestoneStatus, MilestoneType, Roadmap, IssuedTask } from "./types";
+import type { Collection, Person, Portfolio, Programme, Project, Risk, Issue, Task, TeamMember, ChangeRequest, StatusReport, Milestone, MilestoneStatus, MilestoneType, Roadmap, IssuedTask, GenericResource, ResourceAssignment, ProjectRequest, ResourceTeam } from "./types";
 
 export const portfolio: Portfolio = { id: "dts-2526", name: "DTS 2025/26", description: "The university’s strategic portfolio of digital, technology and service improvement work.", owner: "Chris McDonald", budget: 8_750_000 };
 
-const personRows: Array<[string, string, string, string]> = [
-  ["cm","Chris McDonald","Head of Programmes & Projects","CM"], ["ap","Amelia Price","Programme Manager","AP"], ["ob","Oliver Bennett","Programme Manager","OB"],
-  ["sp","Sienna Patel","Programme Manager","SP"], ["th","Theo Hughes","Programme Manager","TH"], ["if","Imogen Foster","Programme Manager","IF"],
-  ["fw","Freya Walsh","Senior Project Manager","FW"], ["gc","George Clarke","Project Manager","GC"], ["nb","Nadia Begum","Project Manager","NB"],
-  ["er","Elliot Reed","Project Manager","ER"], ["mh","Maya Harrison","Business Analyst","MH"], ["jc","Jacob Cole","Technical Lead","JC"],
-  ["lo","Layla Owen","Change Manager","LO"], ["hs","Harrison Shaw","Security Lead","HS"], ["ec","Eva Chen","Service Designer","EC"],
+const personRows: Array<[string,string,string,string,ResourceTeam,string,number,number,number,string[]]> = [
+  ["cm","Chris McDonald","Head of Programmes & Projects","CM","PMO","Rachel King",36,1,35,["Portfolio management","Governance"]],
+  ["ap","Amelia Price","Programme Manager","AP","PMO","Chris McDonald",36,1,30,["Programme management","Governance"]],
+  ["ob","Oliver Bennett","Programme Manager","OB","Infrastructure","Chris McDonald",36,1,35,["Infrastructure","Business continuity"]],
+  ["sp","Sienna Patel","Programme Manager","SP","Applications","Chris McDonald",36,1,30,["Programme management","FinOps"]],
+  ["th","Theo Hughes","Programme Manager","TH","Applications","Chris McDonald",36,1,30,["Automation","Programme management"]],
+  ["if","Imogen Foster","Programme Manager","IF","PMO","Chris McDonald",28.8,.8,30,["Change management","Continuous improvement"]],
+  ["fw","Freya Walsh","Senior Project Manager","FW","PMO","Chris McDonald",36,1,25,["Project management","Governance"]],
+  ["gc","George Clarke","Project Manager","GC","PMO","Chris McDonald",36,1,25,["Project management","Agile delivery"]],
+  ["nb","Nadia Begum","Project Manager","NB","PMO","Chris McDonald",36,1,25,["Project management","Automation"]],
+  ["er","Elliot Reed","Project Manager","ER","PMO","Chris McDonald",28.8,.8,25,["Project management","Benefits management"]],
+  ["mh","Maya Harrison","Business Analyst","MH","Applications","Sienna Patel",36,1,20,["Business analysis","Data analysis"]],
+  ["jc","Jacob Cole","Technical Lead","JC","Infrastructure","Oliver Bennett",36,1,20,["Solution architecture","Networks"]],
+  ["lo","Layla Owen","Change Manager","LO","PMO","Chris McDonald",36,1,30,["Change management","Training"]],
+  ["hs","Harrison Shaw","Security Lead","HS","Cyber Security","Aisha Wallace",36,1,25,["Cyber security","Risk management"]],
+  ["ec","Eva Chen","Service Designer","EC","Applications","Sienna Patel",36,1,25,["Service design","User research"]],
+  ["ak","Aisha Khan","Network Engineer","AK","Infrastructure","Jacob Cole",36,1,30,["Networks","Azure"]],
+  ["db","Daniel Brooks","Cloud Engineer","DB","Infrastructure","Jacob Cole",36,1,30,["Azure","Infrastructure"]],
+  ["sr","Sofia Rahman","Security Analyst","SR","Cyber Security","Harrison Shaw",36,1,25,["Cyber security","Identity"]],
+  ["tw","Thomas Webb","Service Desk Analyst","TW","Service Desk","Nadia Begum",36,1,60,["Service operations","Microsoft 365"]],
+  ["pn","Priya Ncube","Service Desk Team Lead","PN","Service Desk","Nadia Begum",36,1,55,["Service operations","Change management"]],
 ];
-export const people: Person[] = personRows.map(([id,name,jobTitle,initials]) => ({ id, name, jobTitle, initials }));
+export const people: Person[] = personRows.map(([id,name,jobTitle,initials,team,lineManager,contractedHoursPerWeek,fte,bauPercentage,skills],index) => ({id,name,jobTitle,initials,team,lineManager,contractedHoursPerWeek,fte,bauPercentage,skills:skills.map((skill,skillIndex)=>({name:skill,level:Math.min(3,2+((index+skillIndex)%2)) as 2|3})),leave:index%5===0?[{id:`leave-${id}`,start:"19/10/2026",end:"23/10/2026",type:"Annual leave"}]:index%7===0?[{id:`leave-${id}`,start:"09/11/2026",end:"11/11/2026",type:"Training"}]:[] }));
 
 export const programmes: Programme[] = [
   { id:"standards", portfolioId:portfolio.id, name:"1. Standards, Governance & Best Practice", description:"Strengthening governance, assurance and consistent delivery standards across DTS.", manager:"Amelia Price", sponsor:"Daniel Mercer", start:"01/08/2025", end:"31/07/2027", budget:1450000, valueStatement:"Create trusted, repeatable ways of working that improve delivery confidence and decision quality." },
