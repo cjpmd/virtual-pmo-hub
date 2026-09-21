@@ -13,11 +13,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as MyWorkRouteImport } from './routes/my-work'
 import { Route as ProgrammesRouteImport } from './routes/programmes'
-import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as RequestsRouteImport } from './routes/requests'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as ProgrammesIndexRouteImport } from './routes/programmes.index'
 import { Route as ProgrammesProgrammeIdRouteImport } from './routes/programmes.$programmeId'
+import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -37,11 +37,6 @@ const MyWorkRoute = MyWorkRouteImport.update({
 const ProgrammesRoute = ProgrammesRouteImport.update({
   id: '/programmes',
   path: '/programmes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProjectsRoute = ProjectsRouteImport.update({
-  id: '/projects',
-  path: '/projects',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RequestsRoute = RequestsRouteImport.update({
@@ -64,27 +59,32 @@ const ProgrammesProgrammeIdRoute = ProgrammesProgrammeIdRouteImport.update({
   path: '/$programmeId',
   getParentRoute: () => ProgrammesRoute,
 } as any)
+const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/collections': typeof CollectionsRoute
   '/my-work': typeof MyWorkRoute
   '/programmes': typeof ProgrammesRouteWithChildren
-  '/projects': typeof ProjectsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/programmes/': typeof ProgrammesIndexRoute
+  '/projects/': typeof ProjectsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/collections': typeof CollectionsRoute
   '/my-work': typeof MyWorkRoute
-  '/projects': typeof ProjectsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/programmes': typeof ProgrammesIndexRoute
+  '/projects': typeof ProjectsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -92,11 +92,11 @@ export interface FileRoutesById {
   '/collections': typeof CollectionsRoute
   '/my-work': typeof MyWorkRoute
   '/programmes': typeof ProgrammesRouteWithChildren
-  '/projects': typeof ProjectsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/programmes/': typeof ProgrammesIndexRoute
+  '/projects/': typeof ProjectsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -105,32 +105,32 @@ export interface FileRouteTypes {
     | '/collections'
     | '/my-work'
     | '/programmes'
-    | '/projects'
     | '/requests'
     | '/resources'
     | '/programmes/$programmeId'
     | '/programmes/'
+    | '/projects/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/collections'
     | '/my-work'
-    | '/projects'
     | '/requests'
     | '/resources'
     | '/programmes/$programmeId'
     | '/programmes'
+    | '/projects'
   id:
     | '__root__'
     | '/'
     | '/collections'
     | '/my-work'
     | '/programmes'
-    | '/projects'
     | '/requests'
     | '/resources'
     | '/programmes/$programmeId'
     | '/programmes/'
+    | '/projects/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -138,9 +138,9 @@ export interface RootRouteChildren {
   CollectionsRoute: typeof CollectionsRoute
   MyWorkRoute: typeof MyWorkRoute
   ProgrammesRoute: typeof ProgrammesRouteWithChildren
-  ProjectsRoute: typeof ProjectsRoute
   RequestsRoute: typeof RequestsRoute
   ResourcesRoute: typeof ResourcesRoute
+  ProjectsIndexRoute: typeof ProjectsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -173,13 +173,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProgrammesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/projects': {
-      id: '/projects'
-      path: '/projects'
-      fullPath: '/projects'
-      preLoaderRoute: typeof ProjectsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/requests': {
       id: '/requests'
       path: '/requests'
@@ -208,6 +201,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProgrammesProgrammeIdRouteImport
       parentRoute: typeof ProgrammesRoute
     }
+    '/projects/': {
+      id: '/projects/'
+      path: '/projects'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof ProjectsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -230,9 +230,9 @@ const rootRouteChildren: RootRouteChildren = {
   CollectionsRoute: CollectionsRoute,
   MyWorkRoute: MyWorkRoute,
   ProgrammesRoute: ProgrammesRouteWithChildren,
-  ProjectsRoute: ProjectsRoute,
   RequestsRoute: RequestsRoute,
   ResourcesRoute: ResourcesRoute,
+  ProjectsIndexRoute: ProjectsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
