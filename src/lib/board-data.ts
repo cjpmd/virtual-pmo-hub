@@ -1,12 +1,14 @@
 import type { BoardColumn, BoardRow } from "@/components/board-workspace";
 import type { Issue, Project, Risk, Task } from "@/data/types";
 import type { PortfolioMilestone } from "@/services/pmo";
-import { getEffortHealth, getFinancialHealth, getIssueHealth, getProjectHealth, getProjectPortfolioDetails, getScheduleHealth } from "@/services/pmo";
+import { getStageNames, getEffortHealth, getFinancialHealth, getIssueHealth, getProjectHealth, getProjectPortfolioDetails, getScheduleHealth } from "@/services/pmo";
 export const projectColumns:BoardColumn[]=[
  {key:"title",label:"Project",type:"text",editable:true,summary:"count",width:260},
  {key:"programme",label:"Programme",type:"text",width:230},
  {key:"people",label:"Project manager",type:"people",editable:true},
- {key:"stage",label:"Stage",type:"status",editable:true,options:["Discover","Define","Plan","Deliver","Close"]},
+ {key:"stage",label:"Phase",type:"status",editable:true,options:getStageNames(),width:200},
+ {key:"tier",label:"Tier",type:"status",editable:true,options:["Small","Medium","Large"]},
+ {key:"projectOfficer",label:"Project officer",type:"text"},
  {key:"state",label:"State",type:"status",editable:true,options:["Proposed","Active","On Hold","Closed"]},
  {key:"priority",label:"Priority",type:"priority",editable:true,options:["Low","Moderate","High","Critical"]},
  {key:"status",label:"Overall",type:"status",options:["On Track","At Risk","Off Track","Not Set"],summary:"rag"},
@@ -26,7 +28,7 @@ export const projectColumns:BoardColumn[]=[
  {key:"nextMilestone",label:"Next milestone",type:"text",width:220},
  {key:"lastReport",label:"Last status report",type:"date"},
 ];
-export const projectsToRows=(projects:Project[]):BoardRow[]=>projects.map(project=>{const details=getProjectPortfolioDetails(project);return{id:project.id,title:project.name,programme:details.programmeName,people:[project.manager],manager:project.manager,stage:project.stage,state:project.state,priority:project.priority,status:getProjectHealth(project),scheduleHealth:getScheduleHealth(project),financialHealth:getFinancialHealth(project),effortHealth:getEffortHealth(project),issueHealth:getIssueHealth(project),start:project.start,finish:project.finish,baselineFinish:project.baselineFinish,budget:project.budget,actual:project.actual,forecast:project.forecast,variance:project.forecast-project.budget,activeRisks:project.risks.filter(item=>item.status==="Open").length,activeIssues:project.issues.filter(item=>item.status==="Open").length,taskSource:[project.taskSource],collections:details.collectionNames,nextMilestone:details.nextMilestone?`${details.nextMilestone.title} · ${details.nextMilestone.forecastDate}`:"—",lastReport:details.latestReport?.reportingDate??"No report",statusReportOverdue:details.statusReportOverdue,digitalCommittee:project.collectionIds.includes("digital-committee"),timeline:"",group:details.programmeName}});
+export const projectsToRows=(projects:Project[]):BoardRow[]=>projects.map(project=>{const details=getProjectPortfolioDetails(project);return{id:project.id,title:project.name,programme:details.programmeName,people:[project.manager],manager:project.manager,stage:project.stage,tier:project.tier,projectOfficer:project.projectOfficer??"Unassigned",state:project.state,priority:project.priority,status:getProjectHealth(project),scheduleHealth:getScheduleHealth(project),financialHealth:getFinancialHealth(project),effortHealth:getEffortHealth(project),issueHealth:getIssueHealth(project),start:project.start,finish:project.finish,baselineFinish:project.baselineFinish,budget:project.budget,actual:project.actual,forecast:project.forecast,variance:project.forecast-project.budget,activeRisks:project.risks.filter(item=>item.status==="Open").length,activeIssues:project.issues.filter(item=>item.status==="Open").length,taskSource:[project.taskSource],collections:details.collectionNames,nextMilestone:details.nextMilestone?`${details.nextMilestone.title} · ${details.nextMilestone.forecastDate}`:"—",lastReport:details.latestReport?.reportingDate??"No report",statusReportOverdue:details.statusReportOverdue,digitalCommittee:project.collectionIds.includes("digital-committee"),timeline:"",group:details.programmeName}});
 export const taskColumns:BoardColumn[]=[{key:"title",label:"Task",type:"text",editable:true,summary:"count",width:280},{key:"deliveryStatus",label:"Status",type:"status",summary:"rag"},{key:"people",label:"Assignees",type:"people",editable:true},{key:"start",label:"Start",type:"date",editable:true},{key:"finish",label:"Finish",type:"date",editable:true},{key:"timeline",label:"Timeline",type:"timeline"},{key:"progress",label:"Progress",type:"progress",editable:true,summary:"average",unit:"%"},{key:"priority",label:"Priority",type:"priority",editable:true,options:["Low","Moderate","High","Critical"]},{key:"tags",label:"Bucket",type:"tags"},{key:"dependencies",label:"Dependencies",type:"dependency"},{key:"formula",label:"Checklist",type:"formula"}];
 const dateValue=(value:string)=>{const [day=1,month=1,year=1970]=value.split("/").map(Number);return new Date(year,month-1,day).getTime()};
 const today=dateValue("21/09/2026");
