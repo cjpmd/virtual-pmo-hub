@@ -1,4 +1,5 @@
-import type { Benefit, BenefitCategory, BenefitClassification, BenefitStatus, Collection, Person, Portfolio, Programme, Project, Risk, Issue, Task, TeamMember, ChangeRequest, StatusReport, Milestone, MilestoneStatus, MilestoneType, Roadmap, IssuedTask, GenericResource, ResourceAssignment, ProjectRequest, ResourceTeam, StrategicObjective } from "./types";
+import type { Benefit, BenefitCategory, BenefitClassification, BenefitStatus, Collection, Person, Portfolio, Programme, Project, ProjectTier, Risk, Issue, Task, TeamMember, ChangeRequest, StatusReport, Milestone, MilestoneStatus, MilestoneType, Roadmap, IssuedTask, GenericResource, ResourceAssignment, ProjectRequest, ResourceTeam, StrategicObjective } from "./types";
+import { defaultLifecyclePhases, defaultStage } from "./lifecycle";
 
 export const portfolio: Portfolio = { id: "dts-2526", name: "DTS 2025/26", description: "The university’s strategic portfolio of digital, technology and service improvement work.", owner: "Chris McDonald", budget: 8_750_000 };
 
@@ -102,7 +103,9 @@ const baseProjects: Project[] = Object.entries(namesByProgramme).flatMap(([progr
   const isRed = name === "Reduce Our Cyber Risk" || name === "Network Refresh: Data Centre";
   const isAmber = name === "Ebbot (chatbot)" || [2,8,12,18,23].includes(number);
   const state = number % 9 === 0 ? "Proposed" : number % 11 === 0 ? "On Hold" : "Active";
-  const stage = (["Discover","Define","Plan","Deliver","Deliver","Close"] as const)[number%6];
+  const stage = defaultLifecyclePhases[number%6]?.name ?? defaultStage;
+  const tier: ProjectTier = number%5===0 ? "Large" : number%3===0 ? "Small" : "Medium";
+  const projectOfficer = ["Nadia Rahman","Owen Blake","Sofia Marsh"][number%3] ?? "Nadia Rahman";
   return {
     id: name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,""), programmeId, portfolioId:portfolio.id, name,
     manager:managers[number%managers.length] ?? "Freya Walsh", sponsor:["Daniel Mercer","Aisha Wallace","Martin Lowe","Priya Nair","Rachel King"][programmeIndex] ?? "Daniel Mercer",
