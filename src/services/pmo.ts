@@ -1,5 +1,6 @@
 import { benefits, collections, genericResources, issuedTasks, people, portfolio, programmes, projectRequests, projects, resourceAssignments, roadmaps, strategicObjectives } from "@/data/mock-data";
-import type { Benefit, BenefitMeasure, BookingType, GenericResource, Health, IssuedTask, Milestone, MilestoneStatus, Person, Portfolio, Programme, Project, ProjectRequest, ResourceAssignment as Assignment, ResourceTeam, Risk, Roadmap, RoadmapHealth, RoadmapItem, Task, TeamMember } from "@/data/types";
+import { defaultLifecyclePhases, defaultTierDefinitions } from "@/data/lifecycle";
+import type { GateCriterion, LifecyclePhase, ProjectStage, ProjectTier, TierDefinition, Benefit, BenefitMeasure, BookingType, GenericResource, Health, IssuedTask, Milestone, MilestoneStatus, Person, Portfolio, Programme, Project, ProjectRequest, ResourceAssignment as Assignment, ResourceTeam, Risk, Roadmap, RoadmapHealth, RoadmapItem, Task, TeamMember } from "@/data/types";
 
 const rank: Record<Health,number> = {"Not Set":0,"On Track":1,"At Risk":2,"Off Track":3};
 const worst = (items: Health[]): Health => {
@@ -145,3 +146,11 @@ export function getBenefitWarnings(items=benefits){const warnings:string[]=[];co
 export function getNextMeasurementDue(benefit:Benefit){return [...benefit.measures].sort((a,b)=>parseDate(a.nextDue).getTime()-parseDate(b.nextDue).getTime())[0]?.nextDue??"—"}
 export function getBenefitMetrics(items=benefits){const planned=items.reduce((sum,item)=>sum+Math.max(0,item.plannedTotalValue),0),realised=items.reduce((sum,item)=>sum+Math.max(0,getBenefitRealised(item)),0);return{count:items.length,planned,realised,percent:planned?Math.round(realised/planned*100):0,overdue:items.filter(item=>item.measures.some(measure=>parseDate(measure.nextDue)<today)).length,atRisk:items.filter(item=>getBenefitHealth(item)==="At Risk").length}}
 export function getMeasureActualSeries(measure:BenefitMeasure){return measure.targetProfile.map(target=>({period:target.period,target:target.value,actual:measure.records.find(record=>record.period===target.period)?.actualValue}))}
+// ---- Lifecycle & tiering ----
+export function getLifecyclePhases():LifecyclePhase[]{return defaultLifecyclePhases}
+export function getTierDefinitions():TierDefinition[]{return defaultTierDefinitions}
+export function getStageNames():string[]{return defaultLifecyclePhases.map(phase=>phase.name)}
+export function getPhaseIndex(stage:ProjectStage):number{const index=defaultLifecyclePhases.findIndex(phase=>phase.name===stage);return index<0?0:index}
+export function getStageProgress(stage:ProjectStage):number{const total=defaultLifecyclePhases.length;return Math.round(((getPhaseIndex(stage)+0.5)/total)*100)}
+export function getPhaseForStage(stage:ProjectStage):LifecyclePhase|undefined{return defaultLifecyclePhases.find(phase=>phase.name===stage)}
+export function getGateCriteria(stage:ProjectStage,tier:ProjectTier):GateCriterion[]{return getPhaseForStage(stage)?.criteria.filter(criterion=>criterion.tiers.includes(tier))??[]}
