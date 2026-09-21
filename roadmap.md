@@ -33,9 +33,9 @@
 - [x] Build the interactive Roadmaps timeline, grouping, key dates, and presentation mode
 - [x] Add Roadmaps navigation and route metadata
 - [x] Verify roadmap editing, zoom, regrouping, presentation, desktop, and mobile
-- [ ] Extend task and issued-task models, mock data, and task analytics services
-- [ ] Build portfolio Task Overview filters, KPIs, charts, table, and grouped Gantt
-- [ ] Build My Work acknowledgement trackers and grouped personal task register
-- [ ] Build My Timeline personal Gantt
-- [ ] Build reusable single/bulk Issue task workflow and all launch points
-- [ ] Complete route metadata audit and verify task workflows across desktop and mobile
+- [x] Extend task and issued-task models, mock data, and task analytics services
+- [x] Build portfolio Task Overview filters, KPIs, charts, table, and grouped Gantt
+- [x] Build My Work acknowledgement trackers and grouped personal task register
+- [x] Build My Timeline personal Gantt
+- [x] Build reusable single/bulk Issue task workflow and all launch points
+- [x] Complete route metadata audit and verify task workflows across desktop and mobile
