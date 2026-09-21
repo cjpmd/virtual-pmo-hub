@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/format";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { CheckCircle2, CircleDot, FileText, Lock, ThumbsDown, ThumbsUp, X } from "lucide-react";
@@ -43,8 +44,8 @@ export function DecisionPanel({ decision, all, outcome, onRecord, close }: {
 
       <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
         <span className={cn("rounded-full px-2.5 py-1 font-semibold", decision.status === "Made" ? "bg-health-good/20 text-health-good-foreground" : decision.status === "Pending" ? (decision.overdue ? "bg-health-bad/20 text-health-bad-foreground" : "bg-health-warn/25 text-health-warn-foreground") : "bg-muted text-muted-foreground")}>{decision.status}{decision.overdue ? " · overdue" : ""}</span>
-        <span className="text-muted-foreground">Needed by {decision.neededBy}</span>
-        {decision.decisionDate && <span className="text-muted-foreground">· Decided {decision.decisionDate}</span>}
+        <span className="text-muted-foreground">Needed by {formatDate(decision.neededBy)}</span>
+        {decision.decisionDate && <span className="text-muted-foreground">· Decided {formatDate(decision.decisionDate)}</span>}
         {readOnly && <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 font-semibold text-muted-foreground"><Lock className="size-3" />Read-only</span>}
       </div>
 
@@ -107,16 +108,16 @@ export function DecisionPanel({ decision, all, outcome, onRecord, close }: {
         <div className="mt-2 divide-y rounded-md border">
           {decision.actions.map(action => <div key={action.id} className="flex items-start gap-3 p-3">
             <CheckCircle2 className={cn("mt-0.5 size-4 shrink-0", action.status === "Done" ? "text-health-good-foreground" : "text-muted-foreground")} />
-            <div className="flex-1"><p className="text-sm">{action.description}</p><p className="mt-0.5 text-xs text-muted-foreground">{action.owner} · due {action.dueDate}</p></div>
+            <div className="flex-1"><p className="text-sm">{action.description}</p><p className="mt-0.5 text-xs text-muted-foreground">{action.owner} · due {formatDate(action.dueDate)}</p></div>
             <span className="text-xs font-semibold text-muted-foreground">{action.status}</span>
           </div>)}
         </div>
       </section>}
 
       <section className="mt-5 grid gap-3 sm:grid-cols-2 text-sm">
-        {decision.projectId && <Link to="/projects/$projectId" params={{ projectId: decision.projectId }} className="font-semibold text-primary hover:underline">Open the project →</Link>}
-        {decision.dependencyIds.length > 0 && <Link to="/dependencies" className="font-semibold text-primary hover:underline">{decision.dependencyIds.length} linked dependenc{decision.dependencyIds.length === 1 ? "y" : "ies"} →</Link>}
-        {decision.benefitIds.length > 0 && <Link to="/benefits" className="font-semibold text-primary hover:underline">{decision.benefitIds.length} linked benefit{decision.benefitIds.length === 1 ? "" : "s"} →</Link>}
+        {decision.projectId && <Link to="/portfolio/projects/$projectId" params={{ projectId: decision.projectId }} className="font-semibold text-primary hover:underline">Open the project →</Link>}
+        {decision.dependencyIds.length > 0 && <Link to="/delivery/dependencies" className="font-semibold text-primary hover:underline">{decision.dependencyIds.length} linked dependenc{decision.dependencyIds.length === 1 ? "y" : "ies"} →</Link>}
+        {decision.benefitIds.length > 0 && <Link to="/benefits/register" className="font-semibold text-primary hover:underline">{decision.benefitIds.length} linked benefit{decision.benefitIds.length === 1 ? "" : "s"} →</Link>}
         {decision.evidenceLink && <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><FileText className="size-3.5" />{decision.evidenceLink}</span>}
       </section>
     </aside>

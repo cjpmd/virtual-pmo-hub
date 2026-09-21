@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { CalendarDays, CheckCircle2, ClipboardList, Presentation, ThumbsDown, ThumbsUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -61,7 +62,7 @@ function Agenda({ items, recent, forum, meetingDate }: { items: ResolvedDecision
               <h3 className="mt-1 font-semibold">{item.title}</h3>
               <p className="mt-1 text-xs text-muted-foreground">{item.scopeName} · decision maker {item.decisionMaker}</p>
             </div>
-            <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", item.overdue ? "bg-health-bad/20 text-health-bad-foreground" : "bg-health-warn/25 text-health-warn-foreground")}>Needed by {item.neededBy}{item.overdue ? " · overdue" : ""}</span>
+            <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", item.overdue ? "bg-health-bad/20 text-health-bad-foreground" : "bg-health-warn/25 text-health-warn-foreground")}>Needed by {formatDate(item.neededBy)}{item.overdue ? " · overdue" : ""}</span>
           </div>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">{item.context}</p>
           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -80,7 +81,7 @@ function Agenda({ items, recent, forum, meetingDate }: { items: ResolvedDecision
       <h2 className="font-display text-lg font-semibold">Decisions made since the last meeting</h2>
       <div className="mt-3 divide-y">{recent.map(item => <div key={item.id} className="py-3">
         <p className="text-sm font-medium">{item.reference} · {item.title}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{item.decisionDate} · {item.decisionMaker} · chose “{item.chosenOption}”</p>
+        <p className="mt-1 text-xs text-muted-foreground">{formatDate(item.decisionDate)} · {item.decisionMaker} · chose “{item.chosenOption}”</p>
       </div>)}</div>
     </section>}
   </div>;
@@ -98,7 +99,7 @@ function MeetingMode({ items, outcomes, setOutcomes, meetingDate, forum }: { ite
     <section className="rounded-lg border bg-card p-6 shadow-sm">
       <p className="text-xs font-semibold uppercase text-primary">{forum} · {meetingDate} · item {index + 1} of {items.length}</p>
       <h2 className="mt-2 font-display text-2xl font-semibold">{item.title}</h2>
-      <p className="mt-1 text-sm text-muted-foreground">{item.scopeName} · needed by {item.neededBy} · decision maker {item.decisionMaker}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{item.scopeName} · needed by {formatDate(item.neededBy)} · decision maker {item.decisionMaker}</p>
       <p className="mt-4 text-base leading-7">{item.context}</p>
       <div className="mt-5 space-y-3">
         {item.options.map(option => <label key={option.id} className={cn("flex cursor-pointer gap-3 rounded-md border p-4", outcome?.optionId === option.id && "border-primary bg-primary/5")}>

@@ -1,6 +1,7 @@
 import { dependencies } from "@/data/dependencies-data";
 import type { Dependency, DependencyBoundary, DependencyEnd, DependencyType, Health, Milestone } from "@/data/types";
 import { getProgramme, getProject } from "@/services/pmo";
+import { getSettings } from "@/services/settings";
 
 const parseDate = (value: string) => { const [d = 1, m = 1, y = 1970] = value.split("/").map(Number); return new Date(y, m - 1, d); };
 const today = parseDate("21/09/2026");
@@ -63,7 +64,7 @@ export function getDependencyHealth(dependency: Dependency): Health {
     if (milestone.actualDate) return "On Track";
     const forecast = parseDate(milestone.forecastDate), requiredBy = parseDate(dependency.requiredBy);
     if (forecast > requiredBy) return "Off Track";
-    if (workingDaysBetween(forecast, requiredBy) <= 10) return "At Risk";
+    if (workingDaysBetween(forecast, requiredBy) <= getSettings().health.dependencyAtRiskWorkingDays) return "At Risk";
     return "On Track";
   }
   const requiredBy = parseDate(dependency.requiredBy);
@@ -77,7 +78,7 @@ export function getHealthReason(dependency: Dependency) {
   if (dependency.type === "Sequencing" && milestone && !milestone.actualDate) {
     const slip = workingDaysBetween(parseDate(dependency.requiredBy), parseDate(milestone.forecastDate));
     if (slip > 0) return `${milestone.title} is forecast ${slip} working days after the required-by date.`;
-    if (-slip <= 10) return `${milestone.title} is forecast only ${-slip} working days before the required-by date.`;
+    if (-slip <= getSettings().health.dependencyAtRiskWorkingDays) return `${milestone.title} is forecast only ${-slip} working days before the required-by date.`;
     return `${milestone.title} is forecast ${-slip} working days before the required-by date.`;
   }
   if (parseDate(dependency.requiredBy) < today && dependency.validation !== "Closed") return "The required-by date has passed.";

@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DependencyPanel, typeLegend, type AcceptanceState } from "@/components/dependency-panel";
@@ -136,7 +137,7 @@ export function DependencyMap() {
         {items.map(item => <button key={item.id} onClick={() => setSelected(item)} className="grid w-full gap-1 p-3 text-left hover:bg-accent/30 sm:grid-cols-[1fr_auto]">
           <div>
             <p className="text-sm font-medium">{item.reference} · {item.giverLabel} → {item.receiverLabel}</p>
-            <p className="text-xs text-muted-foreground">{item.type} · {item.boundary} · required by {item.requiredBy}</p>
+            <p className="text-xs text-muted-foreground">{item.type} · {item.boundary} · required by {formatDate(item.requiredBy)}</p>
           </div>
           <span className={cn("self-center rounded-full px-2.5 py-1 text-xs font-semibold", item.health === "Off Track" ? "bg-health-bad/20 text-health-bad-foreground" : item.health === "At Risk" ? "bg-health-warn/25 text-health-warn-foreground" : "bg-health-good/20 text-health-good-foreground")}>{item.health}</span>
         </button>)}

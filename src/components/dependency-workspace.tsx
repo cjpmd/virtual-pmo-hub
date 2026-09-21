@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { CalendarClock, CheckCircle2, ClipboardList, Handshake, ShieldAlert, TriangleAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ export function DependencyWorkspace() {
   });
   const raise = (dependency: ResolvedDependency, kind: "Risk" | "Issue") => setDraft({
     kind, dependency,
-    title: kind === "Risk" ? `${dependency.reference}: ${dependency.giverLabel} may not deliver by ${dependency.requiredBy}` : `${dependency.reference}: ${dependency.giverLabel} has not delivered by ${dependency.requiredBy}`,
+    title: kind === "Risk" ? `${dependency.reference}: ${dependency.giverLabel} may not deliver by ${formatDate(dependency.requiredBy)}` : `${dependency.reference}: ${dependency.giverLabel} has not delivered by ${formatDate(dependency.requiredBy)}`,
     description: `${dependency.description}\n\n${dependency.healthReason}\n\nGiving owner: ${dependency.giver.owner}. Receiving owner: ${dependency.receiver.owner}. Boundary: ${dependency.boundary}.`,
     owner: dependency.receiver.owner,
     dueDate: dependency.requiredBy,
@@ -112,7 +113,7 @@ function SyncAgenda({ agenda, close, onOpen }: { agenda: ReturnType<typeof getDe
           <div className="mt-3 space-y-2">
             {items.map(item => <button key={item.id} onClick={() => onOpen(item)} className="block w-full rounded-md border bg-background p-3 text-left hover:bg-accent/30">
               <p className="text-sm font-medium">{item.reference} · {item.giverLabel} → {item.receiverLabel}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{item.giverPm} → {item.receiverPm} · required by {item.requiredBy} · {item.type} · {item.criticality} criticality</p>
+              <p className="mt-1 text-xs text-muted-foreground">{item.giverPm} → {item.receiverPm} · required by {formatDate(item.requiredBy)} · {item.type} · {item.criticality} criticality</p>
               <p className="mt-1 text-xs text-muted-foreground">{item.healthReason}</p>
             </button>)}
             {!items.length && <p className="text-xs text-muted-foreground">Nothing to discuss in this section.</p>}

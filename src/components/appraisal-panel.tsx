@@ -1,15 +1,16 @@
+import { formatCompactCurrency } from "@/lib/format";
 import { useState } from "react";
 import { Calculator, Info, Percent } from "lucide-react";
 import type { DraftBenefitProfile, OptimismBiasSetting } from "@/data/types";
-import { defaultOptimismBias } from "@/data/settings";
+import { getOptimismBias } from "@/data/settings";
 import { appraise } from "@/services/benefits-value";
 import { getStrategicObjectives } from "@/services/pmo";
 import { cn } from "@/lib/utils";
 
-const money = (value: number) => (Math.abs(value) >= 1_000_000 ? `£${(value / 1_000_000).toFixed(2)}m` : `£${Math.round(value / 1000)}k`);
+const money = formatCompactCurrency;
 
 /** Whole-life appraisal with a Green Book style optimism bias adjustment (Prompt H3). */
-export function AppraisalPanel({ drafts, wholeLifeCost, years = 5, settings = defaultOptimismBias, alignment, compact = false }: {
+export function AppraisalPanel({ drafts, wholeLifeCost, years = 5, settings = getOptimismBias(), alignment, compact = false }: {
   drafts: DraftBenefitProfile[];
   wholeLifeCost: number;
   years?: number;

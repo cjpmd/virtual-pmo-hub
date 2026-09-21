@@ -1,6 +1,2 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { ResourceAllocation } from "@/components/resource-allocation";
-import { ResourceNav } from "@/components/resource-nav";
-import { PageHeader } from "@/components/pmo-ui";
-export const Route=createFileRoute("/resource-allocation")({head:()=>({meta:[{title:"Resource Allocation — Virtual PMO"},{name:"description",content:"Plan weekly people and skill capacity across the next 26 weeks."},{property:"og:title",content:"Resource Allocation — Virtual PMO"},{property:"og:description",content:"Plan weekly people and skill capacity across the next 26 weeks."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary_large_image"}]}),component:Page});
-function Page(){return <div className="space-y-7"><PageHeader eyebrow="Portfolio capacity" title="Resource Allocation" description="See pressure points, leave and demand across the next 26 weeks."/><ResourceNav/><ResourceAllocation/></div>}
+import { createFileRoute, redirect } from "@tanstack/react-router";
+export const Route=createFileRoute("/resource-allocation")({beforeLoad:()=>{throw redirect({to:"/resources/allocation",replace:true})}});
