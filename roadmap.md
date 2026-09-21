@@ -20,3 +20,6 @@
 - [x] Add notifications, command palette and favourites
 - [x] Add dashboard builder seeded with DTS Portfolio
 - [x] Standardise task and milestone status legend
+- [ ] Expand the Projects portfolio table, KPIs and seeded views
+- [ ] Add CSV export and the New project multi-step flow
+- [ ] Verify the complete Projects portfolio experience

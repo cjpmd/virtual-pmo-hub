@@ -36,7 +36,7 @@ export function getEffortHealth(project: Project): Health {
   if (project.taskCount && project.overdueTaskCount / project.taskCount > 0.15) return "At Risk";
   return "On Track";
 }
-export function getProjectHealth(project: Project): Health { return project.healthOverride?.health ?? worst([getScheduleHealth(project),getIssueHealth(project)]); }
+export function getProjectHealth(project: Project): Health { return project.healthOverride?.health ?? worst([getScheduleHealth(project),getFinancialHealth(project),getEffortHealth(project),getIssueHealth(project)]); }
 export function getProjects(programmeId?:string) { return projects.filter(p=>!programmeId||p.programmeId===programmeId); }
 export function getProject(id:string) { return projects.find(p=>p.id===id); }
 export function getProgrammes() { return programmes; }
@@ -64,6 +64,14 @@ export function getCollectionMetrics(id:string){
   };
 }
 export function getPeople(){ return people; }
+export function getProjectPortfolioDetails(project:Project){
+  const programme=programmes.find(item=>item.id===project.programmeId);
+  const collectionNames=collections.filter(item=>project.collectionIds.includes(item.id)).map(item=>item.name);
+  const nextMilestone=[...project.milestones].filter(item=>!item.complete).sort((a,b)=>parseDate(a.dueDate).getTime()-parseDate(b.dueDate).getTime())[0];
+  const latestReport=[...(project.reports??[])].sort((a,b)=>parseDate(b.reportingDate).getTime()-parseDate(a.reportingDate).getTime())[0];
+  const reportAgeDays=latestReport?Math.floor((today.getTime()-parseDate(latestReport.reportingDate).getTime())/86400000):Number.POSITIVE_INFINITY;
+  return {programmeName:programme?.name??"Unassigned",collectionNames,nextMilestone,latestReport,statusReportOverdue:reportAgeDays>14};
+}
 export interface ProjectTeamMember extends TeamMember { person: Person; completedHours: number; remainingHours: number; weeklyHours: number }
 export interface ResourceAssignment extends TeamMember { projectId: string; projectName: string; programmeId: string; weeklyHours: number }
 export interface ResourceSummary { person: Person; assignments: ResourceAssignment[]; totalHours: number; currentWeeklyHours: number; peakWeeklyHours: number; overAllocated: boolean }
