@@ -11,9 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AssumptionsRouteImport } from './routes/assumptions'
 import { Route as BenefitsRouteImport } from './routes/benefits'
 import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as DashboardsRouteImport } from './routes/dashboards'
+import { Route as DecisionsRouteImport } from './routes/decisions'
+import { Route as DependenciesRouteImport } from './routes/dependencies'
+import { Route as LessonsRouteImport } from './routes/lessons'
 import { Route as MilestonesRouteImport } from './routes/milestones'
 import { Route as MyTimelineRouteImport } from './routes/my-timeline'
 import { Route as MyWorkRouteImport } from './routes/my-work'
@@ -34,6 +38,12 @@ import { Route as BenefitsMapRouteImport } from './routes/benefits.map'
 import { Route as BenefitsRealisationRouteImport } from './routes/benefits.realisation'
 import { Route as CollectionsIndexRouteImport } from './routes/collections.index'
 import { Route as CollectionsCollectionIdRouteImport } from './routes/collections.$collectionId'
+import { Route as DecisionsIndexRouteImport } from './routes/decisions.index'
+import { Route as DecisionsForumRouteImport } from './routes/decisions.forum'
+import { Route as DependenciesIndexRouteImport } from './routes/dependencies.index'
+import { Route as DependenciesMapRouteImport } from './routes/dependencies.map'
+import { Route as LessonsIndexRouteImport } from './routes/lessons.index'
+import { Route as LessonsActionsRouteImport } from './routes/lessons.actions'
 import { Route as ProgrammesIndexRouteImport } from './routes/programmes.index'
 import { Route as ProgrammesProgrammeIdRouteImport } from './routes/programmes.$programmeId'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
@@ -49,6 +59,11 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AssumptionsRoute = AssumptionsRouteImport.update({
+  id: '/assumptions',
+  path: '/assumptions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BenefitsRoute = BenefitsRouteImport.update({
   id: '/benefits',
   path: '/benefits',
@@ -62,6 +77,21 @@ const CollectionsRoute = CollectionsRouteImport.update({
 const DashboardsRoute = DashboardsRouteImport.update({
   id: '/dashboards',
   path: '/dashboards',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DecisionsRoute = DecisionsRouteImport.update({
+  id: '/decisions',
+  path: '/decisions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DependenciesRoute = DependenciesRouteImport.update({
+  id: '/dependencies',
+  path: '/dependencies',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LessonsRoute = LessonsRouteImport.update({
+  id: '/lessons',
+  path: '/lessons',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MilestonesRoute = MilestonesRouteImport.update({
@@ -164,6 +194,36 @@ const CollectionsCollectionIdRoute = CollectionsCollectionIdRouteImport.update({
   path: '/$collectionId',
   getParentRoute: () => CollectionsRoute,
 } as any)
+const DecisionsIndexRoute = DecisionsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DecisionsRoute,
+} as any)
+const DecisionsForumRoute = DecisionsForumRouteImport.update({
+  id: '/forum',
+  path: '/forum',
+  getParentRoute: () => DecisionsRoute,
+} as any)
+const DependenciesIndexRoute = DependenciesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DependenciesRoute,
+} as any)
+const DependenciesMapRoute = DependenciesMapRouteImport.update({
+  id: '/map',
+  path: '/map',
+  getParentRoute: () => DependenciesRoute,
+} as any)
+const LessonsIndexRoute = LessonsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LessonsRoute,
+} as any)
+const LessonsActionsRoute = LessonsActionsRouteImport.update({
+  id: '/actions',
+  path: '/actions',
+  getParentRoute: () => LessonsRoute,
+} as any)
 const ProgrammesIndexRoute = ProgrammesIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -188,9 +248,13 @@ const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/assumptions': typeof AssumptionsRoute
   '/benefits': typeof BenefitsRouteWithChildren
   '/collections': typeof CollectionsRouteWithChildren
   '/dashboards': typeof DashboardsRoute
+  '/decisions': typeof DecisionsRouteWithChildren
+  '/dependencies': typeof DependenciesRouteWithChildren
+  '/lessons': typeof LessonsRouteWithChildren
   '/milestones': typeof MilestonesRoute
   '/my-timeline': typeof MyTimelineRoute
   '/my-work': typeof MyWorkRoute
@@ -209,16 +273,23 @@ export interface FileRoutesByFullPath {
   '/benefits/map': typeof BenefitsMapRoute
   '/benefits/realisation': typeof BenefitsRealisationRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
+  '/decisions/forum': typeof DecisionsForumRoute
+  '/dependencies/map': typeof DependenciesMapRoute
+  '/lessons/actions': typeof LessonsActionsRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/benefits/': typeof BenefitsIndexRoute
   '/collections/': typeof CollectionsIndexRoute
+  '/decisions/': typeof DecisionsIndexRoute
+  '/dependencies/': typeof DependenciesIndexRoute
+  '/lessons/': typeof LessonsIndexRoute
   '/programmes/': typeof ProgrammesIndexRoute
   '/projects/': typeof ProjectsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/assumptions': typeof AssumptionsRoute
   '/dashboards': typeof DashboardsRoute
   '/milestones': typeof MilestonesRoute
   '/my-timeline': typeof MyTimelineRoute
@@ -236,10 +307,16 @@ export interface FileRoutesByTo {
   '/benefits/map': typeof BenefitsMapRoute
   '/benefits/realisation': typeof BenefitsRealisationRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
+  '/decisions/forum': typeof DecisionsForumRoute
+  '/dependencies/map': typeof DependenciesMapRoute
+  '/lessons/actions': typeof LessonsActionsRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/benefits': typeof BenefitsIndexRoute
   '/collections': typeof CollectionsIndexRoute
+  '/decisions': typeof DecisionsIndexRoute
+  '/dependencies': typeof DependenciesIndexRoute
+  '/lessons': typeof LessonsIndexRoute
   '/programmes': typeof ProgrammesIndexRoute
   '/projects': typeof ProjectsIndexRoute
 }
@@ -247,9 +324,13 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/assumptions': typeof AssumptionsRoute
   '/benefits': typeof BenefitsRouteWithChildren
   '/collections': typeof CollectionsRouteWithChildren
   '/dashboards': typeof DashboardsRoute
+  '/decisions': typeof DecisionsRouteWithChildren
+  '/dependencies': typeof DependenciesRouteWithChildren
+  '/lessons': typeof LessonsRouteWithChildren
   '/milestones': typeof MilestonesRoute
   '/my-timeline': typeof MyTimelineRoute
   '/my-work': typeof MyWorkRoute
@@ -268,10 +349,16 @@ export interface FileRoutesById {
   '/benefits/map': typeof BenefitsMapRoute
   '/benefits/realisation': typeof BenefitsRealisationRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
+  '/decisions/forum': typeof DecisionsForumRoute
+  '/dependencies/map': typeof DependenciesMapRoute
+  '/lessons/actions': typeof LessonsActionsRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/benefits/': typeof BenefitsIndexRoute
   '/collections/': typeof CollectionsIndexRoute
+  '/decisions/': typeof DecisionsIndexRoute
+  '/dependencies/': typeof DependenciesIndexRoute
+  '/lessons/': typeof LessonsIndexRoute
   '/programmes/': typeof ProgrammesIndexRoute
   '/projects/': typeof ProjectsIndexRoute
 }
@@ -280,9 +367,13 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/assumptions'
     | '/benefits'
     | '/collections'
     | '/dashboards'
+    | '/decisions'
+    | '/dependencies'
+    | '/lessons'
     | '/milestones'
     | '/my-timeline'
     | '/my-work'
@@ -301,16 +392,23 @@ export interface FileRouteTypes {
     | '/benefits/map'
     | '/benefits/realisation'
     | '/collections/$collectionId'
+    | '/decisions/forum'
+    | '/dependencies/map'
+    | '/lessons/actions'
     | '/programmes/$programmeId'
     | '/projects/$projectId'
     | '/benefits/'
     | '/collections/'
+    | '/decisions/'
+    | '/dependencies/'
+    | '/lessons/'
     | '/programmes/'
     | '/projects/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin'
+    | '/assumptions'
     | '/dashboards'
     | '/milestones'
     | '/my-timeline'
@@ -328,19 +426,29 @@ export interface FileRouteTypes {
     | '/benefits/map'
     | '/benefits/realisation'
     | '/collections/$collectionId'
+    | '/decisions/forum'
+    | '/dependencies/map'
+    | '/lessons/actions'
     | '/programmes/$programmeId'
     | '/projects/$projectId'
     | '/benefits'
     | '/collections'
+    | '/decisions'
+    | '/dependencies'
+    | '/lessons'
     | '/programmes'
     | '/projects'
   id:
     | '__root__'
     | '/'
     | '/admin'
+    | '/assumptions'
     | '/benefits'
     | '/collections'
     | '/dashboards'
+    | '/decisions'
+    | '/dependencies'
+    | '/lessons'
     | '/milestones'
     | '/my-timeline'
     | '/my-work'
@@ -359,10 +467,16 @@ export interface FileRouteTypes {
     | '/benefits/map'
     | '/benefits/realisation'
     | '/collections/$collectionId'
+    | '/decisions/forum'
+    | '/dependencies/map'
+    | '/lessons/actions'
     | '/programmes/$programmeId'
     | '/projects/$projectId'
     | '/benefits/'
     | '/collections/'
+    | '/decisions/'
+    | '/dependencies/'
+    | '/lessons/'
     | '/programmes/'
     | '/projects/'
   fileRoutesById: FileRoutesById
@@ -370,9 +484,13 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  AssumptionsRoute: typeof AssumptionsRoute
   BenefitsRoute: typeof BenefitsRouteWithChildren
   CollectionsRoute: typeof CollectionsRouteWithChildren
   DashboardsRoute: typeof DashboardsRoute
+  DecisionsRoute: typeof DecisionsRouteWithChildren
+  DependenciesRoute: typeof DependenciesRouteWithChildren
+  LessonsRoute: typeof LessonsRouteWithChildren
   MilestonesRoute: typeof MilestonesRoute
   MyTimelineRoute: typeof MyTimelineRoute
   MyWorkRoute: typeof MyWorkRoute
@@ -404,6 +522,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/assumptions': {
+      id: '/assumptions'
+      path: '/assumptions'
+      fullPath: '/assumptions'
+      preLoaderRoute: typeof AssumptionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/benefits': {
       id: '/benefits'
       path: '/benefits'
@@ -423,6 +548,27 @@ declare module '@tanstack/react-router' {
       path: '/dashboards'
       fullPath: '/dashboards'
       preLoaderRoute: typeof DashboardsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/decisions': {
+      id: '/decisions'
+      path: '/decisions'
+      fullPath: '/decisions'
+      preLoaderRoute: typeof DecisionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dependencies': {
+      id: '/dependencies'
+      path: '/dependencies'
+      fullPath: '/dependencies'
+      preLoaderRoute: typeof DependenciesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lessons': {
+      id: '/lessons'
+      path: '/lessons'
+      fullPath: '/lessons'
+      preLoaderRoute: typeof LessonsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/milestones': {
@@ -565,6 +711,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CollectionsCollectionIdRouteImport
       parentRoute: typeof CollectionsRoute
     }
+    '/decisions/': {
+      id: '/decisions/'
+      path: '/'
+      fullPath: '/decisions/'
+      preLoaderRoute: typeof DecisionsIndexRouteImport
+      parentRoute: typeof DecisionsRoute
+    }
+    '/decisions/forum': {
+      id: '/decisions/forum'
+      path: '/forum'
+      fullPath: '/decisions/forum'
+      preLoaderRoute: typeof DecisionsForumRouteImport
+      parentRoute: typeof DecisionsRoute
+    }
+    '/dependencies/': {
+      id: '/dependencies/'
+      path: '/'
+      fullPath: '/dependencies/'
+      preLoaderRoute: typeof DependenciesIndexRouteImport
+      parentRoute: typeof DependenciesRoute
+    }
+    '/dependencies/map': {
+      id: '/dependencies/map'
+      path: '/map'
+      fullPath: '/dependencies/map'
+      preLoaderRoute: typeof DependenciesMapRouteImport
+      parentRoute: typeof DependenciesRoute
+    }
+    '/lessons/': {
+      id: '/lessons/'
+      path: '/'
+      fullPath: '/lessons/'
+      preLoaderRoute: typeof LessonsIndexRouteImport
+      parentRoute: typeof LessonsRoute
+    }
+    '/lessons/actions': {
+      id: '/lessons/actions'
+      path: '/actions'
+      fullPath: '/lessons/actions'
+      preLoaderRoute: typeof LessonsActionsRouteImport
+      parentRoute: typeof LessonsRoute
+    }
     '/programmes/': {
       id: '/programmes/'
       path: '/'
@@ -630,6 +818,47 @@ const CollectionsRouteWithChildren = CollectionsRoute._addFileChildren(
   CollectionsRouteChildren,
 )
 
+interface DecisionsRouteChildren {
+  DecisionsForumRoute: typeof DecisionsForumRoute
+  DecisionsIndexRoute: typeof DecisionsIndexRoute
+}
+
+const DecisionsRouteChildren: DecisionsRouteChildren = {
+  DecisionsForumRoute: DecisionsForumRoute,
+  DecisionsIndexRoute: DecisionsIndexRoute,
+}
+
+const DecisionsRouteWithChildren = DecisionsRoute._addFileChildren(
+  DecisionsRouteChildren,
+)
+
+interface DependenciesRouteChildren {
+  DependenciesMapRoute: typeof DependenciesMapRoute
+  DependenciesIndexRoute: typeof DependenciesIndexRoute
+}
+
+const DependenciesRouteChildren: DependenciesRouteChildren = {
+  DependenciesMapRoute: DependenciesMapRoute,
+  DependenciesIndexRoute: DependenciesIndexRoute,
+}
+
+const DependenciesRouteWithChildren = DependenciesRoute._addFileChildren(
+  DependenciesRouteChildren,
+)
+
+interface LessonsRouteChildren {
+  LessonsActionsRoute: typeof LessonsActionsRoute
+  LessonsIndexRoute: typeof LessonsIndexRoute
+}
+
+const LessonsRouteChildren: LessonsRouteChildren = {
+  LessonsActionsRoute: LessonsActionsRoute,
+  LessonsIndexRoute: LessonsIndexRoute,
+}
+
+const LessonsRouteWithChildren =
+  LessonsRoute._addFileChildren(LessonsRouteChildren)
+
 interface ProgrammesRouteChildren {
   ProgrammesProgrammeIdRoute: typeof ProgrammesProgrammeIdRoute
   ProgrammesIndexRoute: typeof ProgrammesIndexRoute
@@ -661,9 +890,13 @@ const ProjectsRouteWithChildren = ProjectsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  AssumptionsRoute: AssumptionsRoute,
   BenefitsRoute: BenefitsRouteWithChildren,
   CollectionsRoute: CollectionsRouteWithChildren,
   DashboardsRoute: DashboardsRoute,
+  DecisionsRoute: DecisionsRouteWithChildren,
+  DependenciesRoute: DependenciesRouteWithChildren,
+  LessonsRoute: LessonsRouteWithChildren,
   MilestonesRoute: MilestonesRoute,
   MyTimelineRoute: MyTimelineRoute,
   MyWorkRoute: MyWorkRoute,

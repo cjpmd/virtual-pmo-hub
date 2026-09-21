@@ -13,6 +13,7 @@ export const defaultLifecyclePhases: LifecyclePhase[] = [
       { id: "p1-c2", label: "Initial tier assessment completed", tiers: all, document: "Tiering assessment" },
       { id: "p1-c3", label: "Strategic alignment confirmed against portfolio objectives", tiers: mediumLarge },
       { id: "p1-c4", label: "Portfolio board noted the idea", tiers: largeOnly },
+      { id: "p1-lessons", label: "Phase lessons review completed", tiers: all, document: "Phase lessons review", check: "phase-lessons-review" },
     ],
   },
   {
@@ -23,8 +24,10 @@ export const defaultLifecyclePhases: LifecyclePhase[] = [
       { id: "p2-c2", label: "Full business case approved", tiers: mediumLarge, document: "Business case" },
       { id: "p2-c3", label: "Lightweight proposal approved by service owner (small projects only)", tiers: ["Small"], document: "One-page proposal" },
       { id: "p2-c4", label: "Funding source confirmed", tiers: all },
-      { id: "p2-c5", label: "Benefits profile drafted with owner and measures", tiers: mediumLarge, document: "Benefits profile" },
+      { id: "p2-c5", label: "Benefit profiles drafted with a named owner for each benefit", tiers: mediumLarge, document: "Benefits profile", check: "benefit-profiles-owned" },
       { id: "p2-c6", label: "Independent assurance review completed", tiers: largeOnly },
+      { id: "p2-c7", label: "Lessons from similar projects reviewed by the project manager", tiers: all, document: "Lessons review", check: "lessons-reviewed" },
+      { id: "p2-lessons", label: "Phase lessons review completed", tiers: all, document: "Phase lessons review", check: "phase-lessons-review" },
     ],
   },
   {
@@ -36,6 +39,8 @@ export const defaultLifecyclePhases: LifecyclePhase[] = [
       { id: "p3-c3", label: "Procurement route agreed and supplier contracted", tiers: mediumLarge, document: "Contract" },
       { id: "p3-c4", label: "Delivery plan baselined with milestones and resources", tiers: mediumLarge, document: "Delivery plan" },
       { id: "p3-c5", label: "Accessibility requirements agreed", tiers: all },
+      { id: "p3-c6", label: "Benefit baselines and target profiles agreed with measure owners", tiers: mediumLarge, document: "Benefit measure baselines", check: "benefit-baselines" },
+      { id: "p3-lessons", label: "Phase lessons review completed", tiers: all, document: "Phase lessons review", check: "phase-lessons-review" },
     ],
   },
   {
@@ -47,6 +52,7 @@ export const defaultLifecyclePhases: LifecyclePhase[] = [
       { id: "p4-c3", label: "User acceptance testing signed off by the business", tiers: mediumLarge, document: "UAT sign-off" },
       { id: "p4-c4", label: "Operational readiness and support model agreed", tiers: mediumLarge, document: "Service acceptance" },
       { id: "p4-c5", label: "Go-live and rollback plans rehearsed", tiers: largeOnly },
+      { id: "p4-lessons", label: "Phase lessons review completed", tiers: all, document: "Phase lessons review", check: "phase-lessons-review" },
     ],
   },
   {
@@ -58,6 +64,7 @@ export const defaultLifecyclePhases: LifecyclePhase[] = [
       { id: "p5-c3", label: "Documentation handed to the service desk", tiers: all, document: "Support handover" },
       { id: "p5-c4", label: "Early life support period agreed with the service owner", tiers: mediumLarge },
       { id: "p5-c5", label: "Benefits measurement baseline captured", tiers: mediumLarge },
+      { id: "p5-lessons", label: "Phase lessons review completed", tiers: all, document: "Phase lessons review", check: "phase-lessons-review" },
     ],
   },
   {
@@ -69,6 +76,8 @@ export const defaultLifecyclePhases: LifecyclePhase[] = [
       { id: "p6-c3", label: "Lessons learned captured and shared", tiers: all, document: "Lessons learned log" },
       { id: "p6-c4", label: "Final financial position reconciled", tiers: all },
       { id: "p6-c5", label: "Post-implementation review scheduled with benefit owners", tiers: mediumLarge },
+      { id: "p6-c6", label: "Benefits handover completed for every benefit still in realisation", tiers: all, document: "Benefits handover", check: "benefits-handover" },
+      { id: "p6-lessons", label: "Phase lessons review completed", tiers: all, document: "Phase lessons review", check: "phase-lessons-review" },
     ],
   },
 ];

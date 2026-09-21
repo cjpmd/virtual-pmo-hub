@@ -37,12 +37,12 @@ export function getEffortHealth(project: Project): Health {
   if (project.taskCount && project.overdueTaskCount / project.taskCount > 0.15) return "At Risk";
   return "On Track";
 }
-export function getProjectHealth(project: Project): Health { return project.healthOverride?.health ?? worst([getScheduleHealth(project),getFinancialHealth(project),getEffortHealth(project),getIssueHealth(project)]); }
+export function getProjectHealth(project: Project): Health { return project.healthOverride?.health ?? worst([getScheduleHealth(project),getFinancialHealth(project),getEffortHealth(project),getIssueHealth(project),getProjectBenefitHealth(project)]); }
 export function getProjects(programmeId?:string) { return projects.filter(p=>!programmeId||p.programmeId===programmeId); }
 export function getProject(id:string) { return projects.find(p=>p.id===id); }
 export function getProgrammes() { return programmes; }
 export function getProgramme(id:string) { return programmes.find(p=>p.id===id); }
-export function getProgrammeHealth(programme:Programme):Health { return programme.healthOverride?.health ?? worst(getProjects(programme.id).map(getProjectHealth)); }
+export function getProgrammeHealth(programme:Programme):Health { return programme.healthOverride?.health ?? worst([...getProjects(programme.id).map(getProjectHealth),getProgrammeBenefitHealth(programme)]); }
 export function getPortfolio():Portfolio { return portfolio; }
 export function getPortfolioHealth():Health { return portfolio.healthOverride?.health ?? worst(programmes.map(getProgrammeHealth)); }
 export function getCollections(){ return collections; }
@@ -138,9 +138,80 @@ export function getBenefits(){return benefits}
 export function getBenefit(id:string){return benefits.find(item=>item.id===id)}
 export function getProjectBenefits(projectId:string){return benefits.filter(item=>item.enablingProjects.some(link=>link.projectId===projectId))}
 export function getProgrammeBenefits(programmeId:string){const ids=new Set(getProjects(programmeId).map(item=>item.id));return benefits.filter(item=>item.enablingProjects.some(link=>ids.has(link.projectId)))}
-export function getBenefitRealised(benefit:Benefit){if(benefit.type==="Disbenefit")return benefit.measures.some(measure=>measure.records.length)?Math.round(benefit.plannedTotalValue*.65):0;const progress=benefit.measures.flatMap(measure=>measure.records).length?benefit.confidence==="Low"?.45:benefit.confidence==="Medium"?.68:.82:0;return Math.round(benefit.plannedTotalValue*progress)}
-export function getBenefitPercent(benefit:Benefit){const planned=Math.abs(benefit.plannedTotalValue);return planned?Math.min(100,Math.round(Math.abs(getBenefitRealised(benefit))/planned*100)):0}
-export function getBenefitHealth(benefit:Benefit):Health{if(!validateBenefitLifecycle(benefit).valid||benefit.confidence==="Low"||benefit.measures.some(measure=>parseDate(measure.nextDue)<today))return "At Risk";return getBenefitPercent(benefit)>=70?"On Track":"At Risk"}
+// ---- Benefit periods and realisation maths (Prompt H2/H3) ----
+export interface BenefitPeriod { period:string; start:string; end:string }
+export const benefitPeriods:BenefitPeriod[]=[
+ {period:"Q1 Aug–Oct 2026",start:"01/08/2026",end:"31/10/2026"},
+ {period:"Q2 Nov 2026–Jan 2027",start:"01/11/2026",end:"31/01/2027"},
+ {period:"Q3 Feb–Apr 2027",start:"01/02/2027",end:"30/04/2027"},
+ {period:"Q4 May–Jul 2027",start:"01/05/2027",end:"31/07/2027"},
+];
+export const getPeriodIndex=(period:string)=>benefitPeriods.findIndex(item=>item.period===period);
+const confidenceFactor=(confidence:Benefit["confidence"])=>confidence==="Low"?0.6:confidence==="Medium"?0.85:1;
+/** Fraction of the benefit's whole-life value expected by the end of each profile period. */
+export function getPlannedFractions(benefit:Benefit):number[]{
+ const measure=benefit.measures[0];
+ if(!measure||!measure.targetProfile.length)return benefitPeriods.map((_,index)=>(index+1)/benefitPeriods.length);
+ const baseline=measure.baselineValue,final=measure.targetProfile[measure.targetProfile.length-1]?.value??baseline;
+ const span=final-baseline;
+ return benefitPeriods.map(period=>{
+  const target=measure.targetProfile.find(item=>item.period===period.period);
+  if(!target)return 0;
+  return span===0?0:Math.max(0,Math.min(1,(target.value-baseline)/span));
+ });
+}
+/** Fraction actually evidenced in each period, from submitted or validated measurement records. */
+export function getActualFractions(benefit:Benefit):Array<number|undefined>{
+ const measure=benefit.measures[0];
+ if(!measure)return benefitPeriods.map(()=>undefined);
+ const baseline=measure.baselineValue,final=measure.targetProfile[measure.targetProfile.length-1]?.value??baseline;
+ const span=final-baseline;
+ return benefitPeriods.map(period=>{
+  const record=measure.records.find(item=>item.period===period.period&&item.status!=="Queried");
+  if(!record)return undefined;
+  return span===0?0:Math.max(0,Math.min(1.35,(record.actualValue-baseline)/span));
+ });
+}
+/** Cumulative planned, actual and forecast value for each profile period. */
+export function getBenefitCurve(benefit:Benefit){
+ const planned=getPlannedFractions(benefit),actual=getActualFractions(benefit),value=Math.abs(benefit.plannedTotalValue),factor=confidenceFactor(benefit.confidence);
+ let lastActual=0,lastActualIndex=-1;
+ actual.forEach((fraction,index)=>{if(fraction!==undefined){lastActual=fraction;lastActualIndex=index}});
+ return benefitPeriods.map((period,index)=>{
+  const plannedFraction=planned[index]??0,actualFraction=actual[index];
+  const plannedAtLastActual=planned[lastActualIndex]??0;
+  const forecastFraction=index<=lastActualIndex?lastActual:lastActual+Math.max(0,plannedFraction-plannedAtLastActual)*factor;
+  return {period:period.period,planned:Math.round(value*plannedFraction),actual:actualFraction===undefined?undefined:Math.round(value*actualFraction),forecast:Math.round(value*forecastFraction)};
+ });
+}
+export function getBenefitRealised(benefit:Benefit){
+ const actual=getActualFractions(benefit);
+ let latest:number|undefined;
+ for(const fraction of actual)if(fraction!==undefined)latest=fraction;
+ if(latest===undefined)return 0;
+ return Math.round(benefit.plannedTotalValue*latest);
+}
+/** How far the evidenced position sits behind the profile expected by today, as a percentage of whole-life value. */
+export function getBenefitVariance(benefit:Benefit){
+ const planned=getPlannedFractions(benefit),actual=getActualFractions(benefit);
+ const index=benefitPeriods.findIndex(period=>parseDate(period.start)<=today&&parseDate(period.end)>=today);
+ const current=index<0?benefitPeriods.length-1:index;
+ const period=benefitPeriods[current];
+ const elapsed=period?Math.max(0,Math.min(1,(today.getTime()-parseDate(period.start).getTime())/Math.max(1,parseDate(period.end).getTime()-parseDate(period.start).getTime()))):1;
+ const previousPlanned=planned[current-1]??0,currentPlanned=planned[current]??0;
+ const expected=previousPlanned+(currentPlanned-previousPlanned)*elapsed;
+ let achieved=0;
+ for(let index2=0;index2<=current;index2+=1){const fraction=actual[index2];if(fraction!==undefined)achieved=fraction}
+ return {expected,achieved,variancePercent:Math.round((achieved-expected)*100)};
+}
+export function isBenefitBehindProfile(benefit:Benefit){return getBenefitVariance(benefit).variancePercent<-20}
+export function isMeasurementOverdue(benefit:Benefit){return benefit.measures.some(measure=>parseDate(measure.nextDue)<today)}
+export function getBenefitPercent(benefit:Benefit){const planned=Math.abs(benefit.plannedTotalValue);return planned?Math.min(135,Math.round(Math.abs(getBenefitRealised(benefit))/planned*100)):0}
+export function getBenefitHealth(benefit:Benefit):Health{
+ if(benefit.confidence==="Low"||isBenefitBehindProfile(benefit))return "Off Track";
+ if(isMeasurementOverdue(benefit)||!validateBenefitLifecycle(benefit).valid)return "At Risk";
+ return "On Track";
+}
 export function validateBenefitLifecycle(benefit:Benefit){const messages:string[]=[];const progressed=["Validated","Planned","In realisation","Realised","Partially realised","Not realised","Closed"].includes(benefit.status);if(progressed&&(!benefit.owner||!benefit.eligibilityConfirmed))messages.push("Validated requires a benefit owner and confirmed eligibility.");if(["Planned","In realisation","Realised","Partially realised","Not realised","Closed"].includes(benefit.status)&&!benefit.measures.some(measure=>measure.baselineDate&&measure.targetProfile.length))messages.push("Planned requires a measure with a baseline and target profile.");if(["Realised","Partially realised"].includes(benefit.status)&&!benefit.reviews.some(review=>review.type==="Post-implementation review"))messages.push("Realised or Partially realised requires a post-implementation review.");return{valid:messages.length===0,messages}}
 export function getBenefitWarnings(items=benefits){const warnings:string[]=[];const names=new Map<string,string[]>();for(const benefit of items){const attribution=benefit.enablingProjects.reduce((sum,item)=>sum+item.attribution,0);if(attribution>100)warnings.push(`${benefit.reference} attribution totals ${attribution}%.`);for(const measure of benefit.measures){const key=measure.name.toLowerCase();names.set(key,[...(names.get(key)??[]),benefit.reference])}}for(const [name,refs] of names)if(refs.length>1)warnings.push(`Measure “${name}” is claimed by ${refs.join(" and ")}.`);return warnings}
 export function getNextMeasurementDue(benefit:Benefit){return [...benefit.measures].sort((a,b)=>parseDate(a.nextDue).getTime()-parseDate(b.nextDue).getTime())[0]?.nextDue??"—"}
@@ -154,3 +225,44 @@ export function getPhaseIndex(stage:ProjectStage):number{const index=defaultLife
 export function getStageProgress(stage:ProjectStage):number{const total=defaultLifecyclePhases.length;return Math.round(((getPhaseIndex(stage)+0.5)/total)*100)}
 export function getPhaseForStage(stage:ProjectStage):LifecyclePhase|undefined{return defaultLifecyclePhases.find(phase=>phase.name===stage)}
 export function getGateCriteria(stage:ProjectStage,tier:ProjectTier):GateCriterion[]{return getPhaseForStage(stage)?.criteria.filter(criterion=>criterion.tiers.includes(tier))??[]}
+
+// ---- Benefit health as a project and programme health dimension (Prompt H3) ----
+/** Benefits are unvalidated "past the Plan stage" once a project reaches Phase 3 or later. */
+const planStageIndex=2;
+export function getBenefitDimensionHealth(items:Benefit[],stageIndex:number):Health{
+  if(!items.length)return "Not Set";
+  if(items.some(benefit=>benefit.confidence==="Low"||isBenefitBehindProfile(benefit)))return "Off Track";
+  const unvalidated=stageIndex>=planStageIndex&&items.some(benefit=>benefit.status==="Identified"||!benefit.eligibilityConfirmed);
+  if(items.some(isMeasurementOverdue)||unvalidated)return "At Risk";
+  return "On Track";
+}
+export function getProjectBenefitHealth(project:Project):Health{return getBenefitDimensionHealth(getProjectBenefits(project.id),getPhaseIndex(project.stage))}
+export function getProgrammeBenefitHealth(programme:Programme):Health{const items=getProgrammeBenefits(programme.id);const stage=Math.max(0,...getProjects(programme.id).map(project=>getPhaseIndex(project.stage)));return getBenefitDimensionHealth(items,stage)}
+
+// ---- Configurable stage gate checklist (Prompt H3) ----
+export type GateCheckStatus="Pass"|"Fail"|"Manual";
+export interface GateChecklistItem { criterion:GateCriterion; status:GateCheckStatus; detail:string }
+export function getGateChecklist(project:Project,options?:{lessonsReviewed?:boolean;phaseReviewHeld?:boolean}):GateChecklistItem[]{
+  const items=getProjectBenefits(project.id);
+  return getGateCriteria(project.stage,project.tier).map(criterion=>{
+    if(!criterion.check)return {criterion,status:"Manual" as const,detail:"Confirmed manually by the project manager."};
+    if(criterion.check==="benefit-profiles-owned"){
+      if(!items.length)return {criterion,status:"Fail" as const,detail:"No benefit profiles are linked to this project."};
+      const unowned=items.filter(benefit=>!benefit.owner);
+      return unowned.length?{criterion,status:"Fail" as const,detail:`${unowned.length} of ${items.length} benefit profiles have no owner.`}:{criterion,status:"Pass" as const,detail:`${items.length} benefit profiles, each with a named owner.`};
+    }
+    if(criterion.check==="benefit-baselines"){
+      const missing=items.filter(benefit=>!benefit.measures.some(measure=>measure.baselineDate&&measure.targetProfile.length));
+      if(!items.length)return {criterion,status:"Fail" as const,detail:"No benefit profiles are linked to this project."};
+      return missing.length?{criterion,status:"Fail" as const,detail:`${missing.length} benefit${missing.length===1?"":"s"} without a baseline and target profile.`}:{criterion,status:"Pass" as const,detail:"Every benefit has a baseline and a target profile."};
+    }
+    if(criterion.check==="benefits-handover"){
+      const tracked=items.filter(benefit=>benefit.status!=="Closed"&&benefit.status!=="Not realised");
+      const missing=tracked.filter(benefit=>!benefit.handover);
+      if(!tracked.length)return {criterion,status:"Pass" as const,detail:"No benefits remain in realisation."};
+      return missing.length?{criterion,status:"Fail" as const,detail:`${missing.length} of ${tracked.length} benefits have no BAU owner or review schedule.`}:{criterion,status:"Pass" as const,detail:`All ${tracked.length} benefits handed over to a BAU owner.`};
+    }
+    if(criterion.check==="lessons-reviewed")return options?.lessonsReviewed?{criterion,status:"Pass" as const,detail:"The project manager has confirmed relevant lessons were reviewed."}:{criterion,status:"Fail" as const,detail:"Relevant lessons from similar projects have not been ticked as reviewed."};
+    return options?.phaseReviewHeld?{criterion,status:"Pass" as const,detail:"A phase lessons review has been recorded for this phase."}:{criterion,status:"Fail" as const,detail:"No phase lessons review has been recorded for this phase."};
+  });
+}

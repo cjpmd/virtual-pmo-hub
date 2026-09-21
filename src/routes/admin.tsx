@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/pmo-ui";
 import { getLifecyclePhases, getTierDefinitions } from "@/services/pmo";
+import { defaultAppraisalYears, defaultOptimismBias } from "@/data/settings";
+import type { OptimismBiasSetting } from "@/data/types";
 import type { LifecyclePhase, ProjectTier } from "@/data/types";
 import { cn } from "@/lib/utils";
 
-const title = "Admin · Lifecycle — Virtual PMO";
-const description = "Configure the DTS project lifecycle phases, exit gate criteria and project tiers.";
+const title = "Admin · Lifecycle & appraisal — Virtual PMO";
+const description = "Configure the DTS project lifecycle phases, exit gate criteria, project tiers and appraisal settings.";
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title }, { name: "description", content: description }, { property: "og:title", content: title }, { property: "og:description", content: description }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }),
   component: AdminPage,
@@ -18,6 +20,8 @@ export const Route = createFileRoute("/admin")({
 const allTiers: ProjectTier[] = ["Small", "Medium", "Large"];
 
 function AdminPage() {
+  const [bias, setBias] = useState<OptimismBiasSetting[]>(() => defaultOptimismBias.map(item => ({ ...item })));
+  const [years, setYears] = useState(defaultAppraisalYears);
   const [phases, setPhases] = useState<LifecyclePhase[]>(() => getLifecyclePhases().map(phase => ({ ...phase, criteria: phase.criteria.map(item => ({ ...item })) })));
   const [activeId, setActiveId] = useState(phases[0]?.id ?? "");
   const [newCriterion, setNewCriterion] = useState("");
@@ -93,6 +97,38 @@ function AdminPage() {
           <p className="mt-2 text-xs text-muted-foreground">{tier.guideline}</p>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">{tier.description}</p>
         </div>)}
+      </div>
+    </section>
+
+    <section className="rounded-lg border bg-card p-5 shadow-sm">
+      <h2 className="font-display text-lg font-semibold">Appraisal</h2>
+      <p className="mt-1 text-xs text-muted-foreground">Optimism bias uplifts applied to raw benefit estimates in business cases and project requests. Both raw and adjusted figures are always shown.</p>
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_260px]">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[420px] text-sm">
+            <thead><tr className="border-b text-xs text-muted-foreground"><th className="py-2 text-left font-semibold">Benefit category</th><th className="w-40 py-2 text-left font-semibold">Optimism bias</th><th className="py-2 text-left font-semibold">£100k raw becomes</th></tr></thead>
+            <tbody>
+              {bias.map(setting => <tr key={setting.category} className="border-b last:border-0">
+                <td className="py-3 pr-4">{setting.category}</td>
+                <td className="py-2">
+                  <div className="flex items-center gap-2">
+                    <Input type="number" min="0" max="80" value={setting.percentage} aria-label={`Optimism bias for ${setting.category}`}
+                      onChange={event => setBias(current => current.map(item => item.category === setting.category ? { ...item, percentage: Math.max(0, Math.min(80, Number(event.target.value))) } : item))} className="h-9 w-20" />
+                    <span className="text-xs text-muted-foreground">%</span>
+                  </div>
+                </td>
+                <td className="py-3 text-muted-foreground">£{Math.round(100000 * (1 - setting.percentage / 100)).toLocaleString("en-GB")}</td>
+              </tr>)}
+            </tbody>
+          </table>
+        </div>
+        <div className="space-y-4 rounded-md border p-4">
+          <label className="block space-y-1.5"><span className="text-xs font-semibold text-muted-foreground">Default appraisal period</span>
+            <div className="flex items-center gap-2"><Input type="number" min="1" max="15" value={years} onChange={event => setYears(Math.max(1, Math.min(15, Number(event.target.value))))} className="h-9 w-20" /><span className="text-xs text-muted-foreground">years</span></div>
+          </label>
+          <p className="text-xs leading-5 text-muted-foreground">Defaults follow Green Book practice: Efficiency 20%, Income 30%, Student experience 25%. Changing a value here changes every appraisal panel, the request prioritisation score and the forecasting accuracy baseline.</p>
+          <Button variant="outline" onClick={() => { setBias(defaultOptimismBias.map(item => ({ ...item }))); setYears(defaultAppraisalYears) }}>Reset to defaults</Button>
+        </div>
       </div>
     </section>
   </div>;
