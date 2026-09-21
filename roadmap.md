@@ -45,4 +45,4 @@
 - [x] Build 26-week Resource Allocation heat map and drag/reassign interactions
 - [x] Build resource Scenario Planning impact modelling
 - [x] Upgrade project Resources with booking, availability search, and staffing warnings
-- [ ] Add resource navigation, metadata, and responsive workflow verification
+- [x] Add resource navigation, metadata, and responsive workflow verification
