@@ -1,4 +1,4 @@
-import type { Collection, Person, Portfolio, Programme, Project, Risk, Issue, Task, TeamMember, ChangeRequest, StatusReport } from "./types";
+import type { Collection, Person, Portfolio, Programme, Project, Risk, Issue, Task, TeamMember, ChangeRequest, StatusReport, Milestone, MilestoneStatus, MilestoneType } from "./types";
 
 export const portfolio: Portfolio = { id: "dts-2526", name: "DTS 2025/26", description: "The university’s strategic portfolio of digital, technology and service improvement work.", owner: "Chris McDonald", budget: 8_750_000 };
 
@@ -37,7 +37,41 @@ const riskThemes = [
   ["Technical integration complexity", "The target service has more integration points than first estimated.", "Jacob Cole"],
 ] as const;
 const issue = (id:string, high=false): Issue => ({ id, title:high?"Production readiness blocked":"Decision required", owner:"George Clarke", severity:high?"High":"Medium", status:"Open", dueDate:"30/09/2026" });
-const milestone = (id:string, overdue=false) => ({ id, title: overdue?"Technical design approval":"Next stage gate", dueDate:overdue?"12/09/2026":"30/10/2026", complete:false });
+const milestoneDates=[
+  ["15/08/2026","15/08/2026","15/08/2026"],
+  ["12/09/2026","18/09/2026",undefined],
+  ["30/09/2026","30/09/2026",undefined],
+  ["18/10/2026","27/10/2026",undefined],
+  ["20/11/2026","20/11/2026",undefined],
+  ["15/12/2026","22/12/2026",undefined],
+  ["29/01/2027","29/01/2027",undefined],
+] as const;
+const milestoneTitles:[string,MilestoneType][]=[
+  ["Discovery outcomes agreed","Delivery"],
+  ["GATE 0 - Ready to Design","Gate"],
+  ["Design authority approval","Gate"],
+  ["Pilot service launch","Delivery"],
+  ["Supplier mobilisation","External dependency"],
+  ["GATE 1 - Ready to Deliver","Gate"],
+  ["Benefits review","Key date"],
+];
+const buildMilestones=(projectNumber:number,isRed:boolean):Milestone[]=>{
+  const count=3+(projectNumber%6);
+  return milestoneTitles.slice(0,count).map(([title,type],index)=>{
+    const source=milestoneDates[index]??milestoneDates[0];
+    const baselineDate=index===0?shiftMockDate("28/08/2026",projectNumber%18):source?.[0]??"30/09/2026";
+    let forecastDate:string=source?.[1]??baselineDate;
+    const actualDate=index===0?shiftMockDate(baselineDate,projectNumber%4===0?2:projectNumber%3===0?-1:0):source?.[2];
+    if(isRed&&index===1)forecastDate="28/09/2026";
+    const forecastMs=parseMockDate(forecastDate),baselineMs=parseMockDate(baselineDate),todayMs=parseMockDate("21/09/2026");
+    const status:MilestoneStatus=actualDate?"Completed":forecastMs<todayMs?"Overdue":forecastMs>baselineMs?"Late":forecastMs-todayMs>30*86400000?"Future":"On Track";
+    const historyDates=["24/07/2026","07/08/2026","21/08/2026","04/09/2026","18/09/2026"];
+    const slipDays=Math.round((forecastMs-baselineMs)/86400000);
+    return {id:`m-${projectNumber}-${index}`,title,type,owner:managers[(projectNumber+index)%managers.length]??"Freya Walsh",baselineDate,forecastDate,...(actualDate?{actualDate}:{}),status,reportToCommittee:type==="Gate"||isRed,forecastHistory:historyDates.map((reportingDate,point)=>({reportingDate,forecastDate:shiftMockDate(baselineDate,Math.max(0,Math.round(slipDays*(point/4))))}))};
+  });
+};
+const parseMockDate=(value:string)=>{const [d=1,m=1,y=1970]=value.split("/").map(Number);return new Date(y,m-1,d).getTime()};
+const shiftMockDate=(value:string,days:number)=>{const date=new Date(parseMockDate(value)+days*86400000);return `${String(date.getDate()).padStart(2,"0")}/${String(date.getMonth()+1).padStart(2,"0")}/${date.getFullYear()}`};
 
 const baseProjects: Project[] = Object.entries(namesByProgramme).flatMap(([programmeId,names], programmeIndex) => names.map((name,index) => {
   const number = programmeIndex*5+index;
@@ -53,7 +87,7 @@ const baseProjects: Project[] = Object.entries(namesByProgramme).flatMap(([progr
     budget:120000+(number%5)*85000, actual:70000+(number%5)*55000, forecast:125000+(number%5)*90000,
     businessCase:`Improve university services through ${name.toLowerCase()}.`, benefits:"Reduced operational effort, improved resilience and a better colleague experience.",
     taskSource:number%3===0?"Planner (Premium)":number%3===1?"Planner (Basic)":"Native", collectionIds:[],
-    milestones:[milestone(`m-${number}`,isRed)], taskCount:10+(number%9), overdueTaskCount:isRed?4:isAmber?3:Math.min(1,number%2),
+    milestones:buildMilestones(number,isRed), taskCount:10+(number%9), overdueTaskCount:isRed?4:isAmber?3:Math.min(1,number%2),
     risks:isRed?[redRisk(`r-${number}`),{...greenRisk(`r-${number}-2`),title:"Recovery plan dependency",probability:3,impact:4,score:12}]:[
       {...greenRisk(`r-${number}`),title:riskThemes[number%riskThemes.length]?.[0]??"Supplier capacity",description:riskThemes[number%riskThemes.length]?.[1]??"Delivery capacity is being monitored.",owner:riskThemes[number%riskThemes.length]?.[2]??"Amelia Price",probability:(isAmber?3:2),impact:(isAmber?4:(number%3+2)) as 2|3|4,score:isAmber?12:2*(number%3+2)},
       ...(number%3===0?[{...greenRisk(`r-${number}-2`),title:"Benefits adoption",description:"Operational adoption may take longer than planned.",owner:"Layla Owen",probability:2 as const,impact:2 as const,score:4,response:"Reduce" as const,status:"Open" as const}]:[]),
