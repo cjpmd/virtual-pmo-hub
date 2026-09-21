@@ -26,6 +26,16 @@ export function getIssueHealth(project: Project): Health {
   if (project.issues.some(i=>i.status==="Open") || project.risks.some(r=>r.status==="Open"&&r.score>=10)) return "At Risk";
   return "On Track";
 }
+export function getFinancialHealth(project: Project): Health {
+  if (project.forecast > project.budget * 1.1) return "Off Track";
+  if (project.forecast > project.budget) return "At Risk";
+  return "On Track";
+}
+export function getEffortHealth(project: Project): Health {
+  if (project.taskCount && project.overdueTaskCount / project.taskCount > 0.3) return "Off Track";
+  if (project.taskCount && project.overdueTaskCount / project.taskCount > 0.15) return "At Risk";
+  return "On Track";
+}
 export function getProjectHealth(project: Project): Health { return project.healthOverride?.health ?? worst([getScheduleHealth(project),getIssueHealth(project)]); }
 export function getProjects(programmeId?:string) { return projects.filter(p=>!programmeId||p.programmeId===programmeId); }
 export function getProject(id:string) { return projects.find(p=>p.id===id); }
