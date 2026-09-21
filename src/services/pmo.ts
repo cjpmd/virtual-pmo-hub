@@ -1,5 +1,5 @@
-import { collections, people, portfolio, programmes, projects } from "@/data/mock-data";
-import type { Health, Milestone, Person, Portfolio, Programme, Project, Risk, TeamMember } from "@/data/types";
+import { collections, people, portfolio, programmes, projects, roadmaps } from "@/data/mock-data";
+import type { Health, Milestone, Person, Portfolio, Programme, Project, Risk, Roadmap, RoadmapHealth, RoadmapItem, TeamMember } from "@/data/types";
 
 const rank: Record<Health,number> = {"Not Set":0,"On Track":1,"At Risk":2,"Off Track":3};
 const worst = (items: Health[]): Health => {
@@ -101,6 +101,12 @@ export function getMilestoneMetrics(items=getPortfolioMilestones()){
   const hit=recentCompleted.filter(item=>parseDate(item.actualDate??item.forecastDate)<=parseDate(item.baselineDate)).length;
   return {completed,upcoming,overdue,slipped,percentOnTime:recentCompleted.length?Math.round(hit/recentCompleted.length*100):0};
 }
+export interface ResolvedRoadmapItem extends RoadmapItem { start: string; finish: string; progress: number; health: RoadmapHealth; programmeId?: string; programmeName: string; projectManager: string; collectionNames: string[] }
+const roadmapHealth=(project:Project):RoadmapHealth=>project.state==="Closed"?"Done":getProjectHealth(project)==="Off Track"?"High risk":getProjectHealth(project)==="At Risk"?"At risk":getProjectHealth(project)==="On Track"?"On track":"Not set";
+const projectProgress=(project:Project)=>project.tasks?.length?Math.round(project.tasks.reduce((sum,task)=>sum+task.percentComplete,0)/project.tasks.length):({Discover:10,Define:25,Plan:40,Deliver:70,Close:95}[project.stage]);
+export function getRoadmaps():Roadmap[]{return roadmaps}
+export function getRoadmap(id:string):Roadmap|undefined{return roadmaps.find(roadmap=>roadmap.id===id)}
+export function getResolvedRoadmapItems(roadmap:Roadmap):ResolvedRoadmapItem[]{return roadmap.items.flatMap(item=>{const project=item.projectId?projects.find(candidate=>candidate.id===item.projectId):undefined;const programme=programmes.find(candidate=>candidate.id===(project?.programmeId??roadmap.rows.find(row=>row.id===item.rowId)?.programmeId));if(item.kind==="Linked"&&!project)return[];return[{...item,start:project?.start??item.start??"21/09/2026",finish:project?.finish??item.finish??"21/09/2026",progress:project?projectProgress(project):(item.progress??0),health:project?roadmapHealth(project):(item.health??"Not set"),programmeId:project?.programmeId??programme?.id,programmeName:programme?.name??"Unassigned",projectManager:project?.manager??item.owner??"Unassigned",collectionNames:collections.filter(collection=>(project?.collectionIds??item.collectionIds??[]).includes(collection.id)).map(collection=>collection.name)}]})}
 export function getProgrammeMetrics(programme: Programme){
   const items=getProjects(programme.id); return { projectCount:items.length, active:items.filter(p=>p.state==="Active").length, budget:items.reduce((s,p)=>s+p.budget,0), forecast:items.reduce((s,p)=>s+p.forecast,0), rag:{ green:items.filter(p=>getProjectHealth(p)==="On Track").length, amber:items.filter(p=>getProjectHealth(p)==="At Risk").length, red:items.filter(p=>getProjectHealth(p)==="Off Track").length } };
 }

@@ -27,3 +27,9 @@ export interface Project {
   tasks?: Task[]; team?: TeamMember[]; changes?: ChangeRequest[]; reports?: StatusReport[]; healthOverride?: HealthOverride;
 }
 export interface Collection { id: string; name: string; type: "Governance"|"Priority set"|"Funding stream"; projectIds: string[]; potAmount?: number; awards?: Record<string, number> }
+export type RoadmapHealth = "High risk" | "At risk" | "On track" | "Not set" | "Done";
+export type RoadmapGroupBy = "Programme" | "Collection" | "Priority" | "Project manager";
+export interface RoadmapRow { id: string; name: string; programmeId?: string; collectionId?: string }
+export interface RoadmapItem { id: string; rowId: string; title: string; kind: "Linked" | "Standalone"; projectId?: string; start?: string; finish?: string; progress?: number; health?: RoadmapHealth; owner?: string; priority?: Priority; collectionIds?: string[] }
+export interface RoadmapKeyDate { id: string; title: string; date: string; status: MilestoneStatus; owner: string }
+export interface Roadmap { id: string; name: string; owner: string; description: string; rows: RoadmapRow[]; items: RoadmapItem[]; keyDates: RoadmapKeyDate[] }
