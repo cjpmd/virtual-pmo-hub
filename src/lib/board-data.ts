@@ -7,7 +7,7 @@ export const projectColumns:BoardColumn[]=[
  {key:"programme",label:"Programme",type:"text",width:230},
  {key:"people",label:"Project manager",type:"people",editable:true},
  {key:"stage",label:"Phase",type:"status",editable:true,options:getStageNames(),width:200},
- {key:"tier",label:"Tier",type:"status",editable:true,options:["Small","Medium","Large"]},
+ {key:"tier",label:"Tier",type:"text"},
  {key:"projectOfficer",label:"Project officer",type:"text"},
  {key:"state",label:"State",type:"status",editable:true,options:["Proposed","Active","On Hold","Closed"]},
  {key:"priority",label:"Priority",type:"priority",editable:true,options:["Low","Moderate","High","Critical"]},
