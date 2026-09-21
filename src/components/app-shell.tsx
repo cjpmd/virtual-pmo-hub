@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Bell, BriefcaseBusiness, CalendarRange, CheckCheck, ChevronLeft, ChevronRight, Diamond, FlaskConical, FolderKanban, GanttChart, Gift, LayoutDashboard, Layers3, ListTodo, Menu, Moon, Rows3, Search, ShieldAlert, Star, Sun, UserRoundCheck, UsersRound, X } from "lucide-react";
+import { Bell, BriefcaseBusiness, CalendarRange, CheckCheck, ChevronLeft, ChevronRight, Diamond, FlaskConical, FolderKanban, GanttChart, Gift, LayoutDashboard, Layers3, ListTodo, Menu, Moon, Rows3, Search, Settings, ShieldAlert, Star, Sun, UserRoundCheck, UsersRound, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
