@@ -173,6 +173,35 @@ export const issuedTasks: IssuedTask[] = [
   {id:"issued-6",projectId:"account-creation-automation",title:"Validate exception scenarios",description:"Test and document the agreed exception scenarios.",issuer:"Chris McDonald",assignee:"Freya Walsh",issuedDate:"10/09/2026",acknowledgementDue:"13/09/2026",dueDate:"20/09/2026",estimatedEffortHours:8,priority:"High",checklist:["Run scenarios","Capture outcomes","Raise defects"],attachments:["Test scenarios.docx"],status:"In progress",plannerSync:"Created in Planner"},
 ];
 
+export const genericResources: GenericResource[] = [
+  {id:"generic-network",name:"Network Engineer (TBC)",role:"Network Engineer",team:"Infrastructure",skills:[{name:"Networks",level:3},{name:"Infrastructure",level:2}],needsStaffing:true},
+  {id:"generic-ba",name:"Business Analyst (TBC)",role:"Business Analyst",team:"Applications",skills:[{name:"Business analysis",level:3},{name:"Data analysis",level:2}],needsStaffing:true},
+];
+
+const assignmentProjects=["ebbot-chatbot","network-refresh-data-centre","reduce-our-cyber-risk","windows-11-rollout","account-creation-automation","service-desk-optimisation","digital-landscape-mapping","asset-management"];
+export const resourceAssignments: ResourceAssignment[] = people.flatMap((person,index)=>{
+  const primary=assignmentProjects[index%assignmentProjects.length]??"ebbot-chatbot";
+  const secondary=assignmentProjects[(index+3)%assignmentProjects.length]??"windows-11-rollout";
+  const overloaded=["fw","mh","jc"].includes(person.id);
+  return [
+    {id:`ra-${person.id}-1`,resourceType:"Person" as const,resourceId:person.id,projectId:primary,role:person.jobTitle,start:"05/10/2026",end:"27/11/2026",hoursPerWeek:overloaded?20:10+(index%4)*2,bookingType:index%3===0?"Soft" as const:"Hard" as const},
+    {id:`ra-${person.id}-2`,resourceType:"Person" as const,resourceId:person.id,projectId:secondary,role:person.skills[0]?.name??person.jobTitle,start:"12/10/2026",end:"20/11/2026",hoursPerWeek:overloaded?18:6+(index%3)*2,bookingType:index%4===0?"Soft" as const:"Hard" as const},
+  ];
+});
+resourceAssignments.push(
+  {id:"ra-generic-network",resourceType:"Generic",resourceId:"generic-network",projectId:"network-refresh-data-centre",role:"Network Engineer",start:"05/10/2026",end:"18/12/2026",hoursPerWeek:24,bookingType:"Soft"},
+  {id:"ra-generic-ba",resourceType:"Generic",resourceId:"generic-ba",projectId:"ebbot-chatbot",role:"Business Analyst",start:"02/11/2026",end:"18/12/2026",hoursPerWeek:18,bookingType:"Soft"},
+);
+
+export const projectRequests: ProjectRequest[] = [
+  {id:"req1",title:"Student mobile app refresh",status:"In Review",requester:"Maya Harrison",sponsor:"Priya Nair",estimatedCost:180000,estimatedBenefit:420000,priority:"High",alignment:88,themes:["Student experience"]},
+  {id:"req2",title:"Research storage expansion",status:"New",requester:"Jacob Cole",sponsor:"Daniel Mercer",estimatedCost:240000,estimatedBenefit:310000,priority:"Critical",alignment:91,themes:["Research"]},
+  {id:"req3",title:"Digital assessment pilot",status:"Approved",requester:"Eva Chen",sponsor:"Rachel King",estimatedCost:95000,estimatedBenefit:260000,priority:"High",alignment:84,themes:["Teaching"]},
+  {id:"req4",title:"Legacy telephony retirement",status:"On Hold",requester:"George Clarke",sponsor:"Martin Lowe",estimatedCost:130000,estimatedBenefit:190000,priority:"Moderate",alignment:67,themes:["Efficiency"]},
+  {id:"req5",title:"AI meeting assistant",status:"Rejected",requester:"Layla Owen",sponsor:"Priya Nair",estimatedCost:60000,estimatedBenefit:85000,priority:"Low",alignment:51,themes:["AI"]},
+  {id:"req6",title:"Identity proofing service",status:"In Review",requester:"Harrison Shaw",sponsor:"Aisha Wallace",estimatedCost:210000,estimatedBenefit:380000,priority:"Critical",alignment:93,themes:["Security"]},
+];
+
 for (const collection of collections) for (const projectId of collection.projectIds) {
   const project = projects.find(item=>item.id===projectId);
   if (project && !project.collectionIds.includes(collection.id)) project.collectionIds.push(collection.id);
