@@ -45,6 +45,24 @@ export function getProgrammeHealth(programme:Programme):Health { return programm
 export function getPortfolio():Portfolio { return portfolio; }
 export function getPortfolioHealth():Health { return portfolio.healthOverride?.health ?? worst(programmes.map(getProgrammeHealth)); }
 export function getCollections(){ return collections; }
+export function getCollection(id:string){ return collections.find(collection=>collection.id===id); }
+export function getCollectionProjects(id:string){
+  const collection=getCollection(id);
+  return collection ? projects.filter(project=>collection.projectIds.includes(project.id)) : [];
+}
+export function getCollectionMetrics(id:string){
+  const items=getCollectionProjects(id);
+  return {
+    projectCount:items.length,
+    budget:items.reduce((sum,project)=>sum+project.budget,0),
+    forecast:items.reduce((sum,project)=>sum+project.forecast,0),
+    rag:{
+      green:items.filter(project=>getProjectHealth(project)==="On Track").length,
+      amber:items.filter(project=>getProjectHealth(project)==="At Risk").length,
+      red:items.filter(project=>getProjectHealth(project)==="Off Track").length,
+    },
+  };
+}
 export function getPeople(){ return people; }
 export function getProgrammeMetrics(programme: Programme){
   const items=getProjects(programme.id); return { projectCount:items.length, active:items.filter(p=>p.state==="Active").length, budget:items.reduce((s,p)=>s+p.budget,0), forecast:items.reduce((s,p)=>s+p.forecast,0), rag:{ green:items.filter(p=>getProjectHealth(p)==="On Track").length, amber:items.filter(p=>getProjectHealth(p)==="At Risk").length, red:items.filter(p=>getProjectHealth(p)==="Off Track").length } };
