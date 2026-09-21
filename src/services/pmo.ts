@@ -102,7 +102,7 @@ export function getMilestoneMetrics(items=getPortfolioMilestones()){
   return {completed,upcoming,overdue,slipped,percentOnTime:recentCompleted.length?Math.round(hit/recentCompleted.length*100):0};
 }
 export interface ResolvedRoadmapItem extends RoadmapItem { start: string; finish: string; progress: number; health: RoadmapHealth; programmeId?: string; programmeName: string; projectManager: string; collectionNames: string[] }
-const roadmapHealth=(project:Project):RoadmapHealth=>project.state==="Closed"?"Done":getProjectHealth(project)==="Off Track"?"High risk":getProjectHealth(project)==="At Risk"?"At risk":getProjectHealth(project)==="On Track"?"On track":"Not set";
+const roadmapHealth=(project:Project):RoadmapHealth=>project.state==="Closed"?"Done":project.state==="Proposed"?"Not set":project.priority==="Critical"&&getProjectHealth(project)==="Off Track"?"High risk":project.priority==="High"||getProjectHealth(project)==="At Risk"?"At risk":"On track";
 const projectProgress=(project:Project)=>project.tasks?.length?Math.round(project.tasks.reduce((sum,task)=>sum+task.percentComplete,0)/project.tasks.length):({Discover:10,Define:25,Plan:40,Deliver:70,Close:95}[project.stage]);
 export function getRoadmaps():Roadmap[]{return roadmaps}
 export function getRoadmap(id:string):Roadmap|undefined{return roadmaps.find(roadmap=>roadmap.id===id)}
