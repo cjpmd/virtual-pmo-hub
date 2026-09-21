@@ -60,14 +60,14 @@ const buildMilestones=(projectNumber:number,isRed:boolean):Milestone[]=>{
   return milestoneTitles.slice(0,count).map(([title,type],index)=>{
     const source=milestoneDates[index]??milestoneDates[0];
     const baselineDate=source?.[0]??"30/09/2026";
-    let forecastDate=source?.[1]??baselineDate;
-    let actualDate=source?.[2];
+    let forecastDate:string=source?.[1]??baselineDate;
+    const actualDate=source?.[2];
     if(isRed&&index===1)forecastDate="28/09/2026";
     const forecastMs=parseMockDate(forecastDate),baselineMs=parseMockDate(baselineDate),todayMs=parseMockDate("21/09/2026");
     const status:MilestoneStatus=actualDate?"Completed":forecastMs<todayMs?"Overdue":forecastMs>baselineMs?"Late":forecastMs-todayMs>30*86400000?"Future":"On Track";
     const historyDates=["24/07/2026","07/08/2026","21/08/2026","04/09/2026","18/09/2026"];
     const slipDays=Math.round((forecastMs-baselineMs)/86400000);
-    return {id:`m-${projectNumber}-${index}`,title,type,owner:managers[(projectNumber+index)%managers.length]??"Freya Walsh",baselineDate,forecastDate,actualDate,status,reportToCommittee:type==="Gate"||isRed,forecastHistory:historyDates.map((reportingDate,point)=>({reportingDate,forecastDate:shiftMockDate(baselineDate,Math.max(0,Math.round(slipDays*(point/4))))}))};
+    return {id:`m-${projectNumber}-${index}`,title,type,owner:managers[(projectNumber+index)%managers.length]??"Freya Walsh",baselineDate,forecastDate,...(actualDate?{actualDate}:{}),status,reportToCommittee:type==="Gate"||isRed,forecastHistory:historyDates.map((reportingDate,point)=>({reportingDate,forecastDate:shiftMockDate(baselineDate,Math.max(0,Math.round(slipDays*(point/4))))}))};
   });
 };
 const parseMockDate=(value:string)=>{const [d=1,m=1,y=1970]=value.split("/").map(Number);return new Date(y,m-1,d).getTime()};
