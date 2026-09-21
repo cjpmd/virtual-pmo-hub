@@ -1,5 +1,5 @@
 import { collections, people, portfolio, programmes, projects } from "@/data/mock-data";
-import type { Health, Portfolio, Programme, Project } from "@/data/types";
+import type { Health, Person, Portfolio, Programme, Project, Risk, TeamMember } from "@/data/types";
 
 const rank: Record<Health,number> = {"Not Set":0,"On Track":1,"At Risk":2,"Off Track":3};
 const worst = (items: Health[]): Health => {
@@ -64,6 +64,23 @@ export function getCollectionMetrics(id:string){
   };
 }
 export function getPeople(){ return people; }
+export interface ProjectTeamMember extends TeamMember { person: Person; completedHours: number; remainingHours: number; weeklyHours: number }
+export interface ResourceAssignment extends TeamMember { projectId: string; projectName: string; programmeId: string; weeklyHours: number }
+export interface ResourceSummary { person: Person; assignments: ResourceAssignment[]; totalHours: number; currentWeeklyHours: number; peakWeeklyHours: number; overAllocated: boolean }
+export interface PortfolioRisk extends Risk { projectId: string; projectName: string; programmeId: string; programmeName: string }
+const daysBetween=(start:string,finish:string)=>Math.max(1,Math.round((parseDate(finish).getTime()-parseDate(start).getTime())/86400000)+1);
+const weeklyHours=(member:TeamMember)=>member.allocatedEffortHours/Math.max(1,daysBetween(member.start,member.finish)/7);
+const activeOn=(member:TeamMember,date:Date)=>parseDate(member.start)<=date&&parseDate(member.finish)>=date;
+export function getProjectTeam(project:Project):ProjectTeamMember[]{
+  const progress=project.tasks?.length?project.tasks.reduce((sum,task)=>sum+task.percentComplete,0)/(project.tasks.length*100):Math.min(0.9,project.actual/Math.max(1,project.forecast));
+  return (project.team??[]).flatMap(member=>{const person=people.find(item=>item.id===member.personId);if(!person)return[];const completedHours=Math.round(member.allocatedEffortHours*progress);return[{...member,person,completedHours,remainingHours:member.allocatedEffortHours-completedHours,weeklyHours:weeklyHours(member)}]});
+}
+export function getResourceSummaries():ResourceSummary[]{
+  const assignments:ResourceAssignment[]=projects.flatMap(project=>(project.team??[]).map(member=>({...member,projectId:project.id,projectName:project.name,programmeId:project.programmeId,weeklyHours:weeklyHours(member)})));
+  const weekStarts=Array.from({length:80},(_,index)=>new Date(2025,7,4+index*7));
+  return people.map(person=>{const personAssignments=assignments.filter(item=>item.personId===person.id);const weeklyTotals=weekStarts.map(week=>personAssignments.filter(item=>activeOn(item,week)).reduce((sum,item)=>sum+item.weeklyHours,0));const currentWeeklyHours=personAssignments.filter(item=>activeOn(item,today)).reduce((sum,item)=>sum+item.weeklyHours,0);const peakWeeklyHours=Math.max(0,...weeklyTotals);return{person,assignments:personAssignments,totalHours:personAssignments.reduce((sum,item)=>sum+item.allocatedEffortHours,0),currentWeeklyHours,peakWeeklyHours,overAllocated:peakWeeklyHours>37.5}}).filter(item=>item.assignments.length).sort((a,b)=>b.currentWeeklyHours-a.currentWeeklyHours);
+}
+export function getPortfolioRisks():PortfolioRisk[]{return projects.flatMap(project=>{const programme=programmes.find(item=>item.id===project.programmeId);return project.risks.map(risk=>({...risk,projectId:project.id,projectName:project.name,programmeId:project.programmeId,programmeName:programme?.name??"Unassigned"}))}).sort((a,b)=>b.score-a.score)}
 export function getProgrammeMetrics(programme: Programme){
   const items=getProjects(programme.id); return { projectCount:items.length, active:items.filter(p=>p.state==="Active").length, budget:items.reduce((s,p)=>s+p.budget,0), forecast:items.reduce((s,p)=>s+p.forecast,0), rag:{ green:items.filter(p=>getProjectHealth(p)==="On Track").length, amber:items.filter(p=>getProjectHealth(p)==="At Risk").length, red:items.filter(p=>getProjectHealth(p)==="Off Track").length } };
 }
