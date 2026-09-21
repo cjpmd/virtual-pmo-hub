@@ -8,3 +8,5 @@
 - [x] Build the full Project page using Ebbot as the primary demo record
 - [x] Build editable Grid, Board, and Timeline task views with simulated Planner sync
 - [x] Build project Status tab, health trends, report side panel, draft summaries, overrides, and timeline
+
+- [ ] Build Collections and the Digital Committee pack preview and snapshot flow
