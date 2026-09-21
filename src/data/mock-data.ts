@@ -108,8 +108,9 @@ const baseProjects: Project[] = Object.entries(namesByProgramme).flatMap(([progr
   const projectOfficer = ["Nadia Rahman","Owen Blake","Sofia Marsh"][number%3] ?? "Nadia Rahman";
   return {
     id: name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,""), programmeId, portfolioId:portfolio.id, name,
-    manager:managers[number%managers.length] ?? "Freya Walsh", sponsor:["Daniel Mercer","Aisha Wallace","Martin Lowe","Priya Nair","Rachel King"][programmeIndex] ?? "Daniel Mercer",
-    stage:name === "Ebbot (chatbot)" ? "Plan" : (stage ?? "Discover"), state, priority:isRed?"Critical":isAmber?"High":number%3===0?"Moderate":"Low",
+    manager:managers[number%managers.length] ?? "Freya Walsh", projectOfficer, sponsor:["Daniel Mercer","Aisha Wallace","Martin Lowe","Priya Nair","Rachel King"][programmeIndex] ?? "Daniel Mercer",
+    tier: name === "Ebbot (chatbot)" ? "Medium" : isRed ? "Large" : tier,
+    stage:name === "Ebbot (chatbot)" ? "Phase 3 - Design & Procure" : stage, state, priority:isRed?"Critical":isAmber?"High":number%3===0?"Moderate":"Low",
     start:`${String((number%20)+1).padStart(2,"0")}/0${(number%7)+1}/2026`, finish:`${String((number%20)+1).padStart(2,"0")}/0${(number%3)+1}/2027`, baselineFinish:`${String((number%20)+1).padStart(2,"0")}/0${(number%3)+1}/2027`,
     budget:120000+(number%5)*85000, actual:70000+(number%5)*55000, forecast:125000+(number%5)*90000,
     businessCase:`Improve university services through ${name.toLowerCase()}.`, benefits:"Reduced operational effort, improved resilience and a better colleague experience.",
