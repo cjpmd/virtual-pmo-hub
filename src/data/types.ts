@@ -6,7 +6,14 @@ export type TaskSource = "Native" | "Planner (Basic)" | "Planner (Premium)";
 export type HealthDimension = "overall" | "schedule" | "financial" | "effort" | "issue";
 
 export interface HealthOverride { health: Health; reason: string }
-export interface Person { id: string; name: string; jobTitle: string; initials: string }
+export type ResourceTeam = "Infrastructure" | "Applications" | "Cyber Security" | "Service Desk" | "PMO";
+export interface ResourceSkill { name: string; level: 1|2|3 }
+export interface LeaveEntry { id: string; start: string; end: string; type: "Annual leave"|"Training"|"Other" }
+export interface Person { id: string; name: string; jobTitle: string; initials: string; team: ResourceTeam; lineManager: string; contractedHoursPerWeek: number; fte: number; bauPercentage: number; skills: ResourceSkill[]; leave: LeaveEntry[] }
+export interface GenericResource { id: string; name: string; role: string; team: ResourceTeam; skills: ResourceSkill[]; needsStaffing: boolean }
+export type BookingType = "Soft" | "Hard";
+export interface ResourceAssignment { id: string; resourceType: "Person"|"Generic"; resourceId: string; projectId: string; taskId?: string; role: string; start: string; end: string; hoursPerWeek: number; bookingType: BookingType }
+export interface ProjectRequest { id: string; title: string; status: "New"|"In Review"|"On Hold"|"Approved"|"Rejected"; requester: string; sponsor: string; estimatedCost: number; estimatedBenefit: number; priority: Priority; alignment: number; themes: string[] }
 export type MilestoneType = "Delivery" | "Gate" | "Key date" | "External dependency";
 export type MilestoneStatus = "Overdue" | "Late" | "On Track" | "Future" | "Completed";
 export interface MilestoneForecastPoint { reportingDate: string; forecastDate: string }

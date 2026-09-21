@@ -18,6 +18,9 @@ import { Route as MyWorkRouteImport } from './routes/my-work'
 import { Route as ProgrammesRouteImport } from './routes/programmes'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as RequestsRouteImport } from './routes/requests'
+import { Route as ResourceAllocationRouteImport } from './routes/resource-allocation'
+import { Route as ResourceAssignmentsRouteImport } from './routes/resource-assignments'
+import { Route as ResourceScenariosRouteImport } from './routes/resource-scenarios'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as RisksRouteImport } from './routes/risks'
 import { Route as RoadmapsRouteImport } from './routes/roadmaps'
@@ -72,6 +75,21 @@ const ProjectsRoute = ProjectsRouteImport.update({
 const RequestsRoute = RequestsRouteImport.update({
   id: '/requests',
   path: '/requests',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResourceAllocationRoute = ResourceAllocationRouteImport.update({
+  id: '/resource-allocation',
+  path: '/resource-allocation',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResourceAssignmentsRoute = ResourceAssignmentsRouteImport.update({
+  id: '/resource-assignments',
+  path: '/resource-assignments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResourceScenariosRoute = ResourceScenariosRouteImport.update({
+  id: '/resource-scenarios',
+  path: '/resource-scenarios',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResourcesRoute = ResourcesRouteImport.update({
@@ -135,6 +153,9 @@ export interface FileRoutesByFullPath {
   '/programmes': typeof ProgrammesRouteWithChildren
   '/projects': typeof ProjectsRouteWithChildren
   '/requests': typeof RequestsRoute
+  '/resource-allocation': typeof ResourceAllocationRoute
+  '/resource-assignments': typeof ResourceAssignmentsRoute
+  '/resource-scenarios': typeof ResourceScenariosRoute
   '/resources': typeof ResourcesRoute
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
@@ -153,6 +174,9 @@ export interface FileRoutesByTo {
   '/my-timeline': typeof MyTimelineRoute
   '/my-work': typeof MyWorkRoute
   '/requests': typeof RequestsRoute
+  '/resource-allocation': typeof ResourceAllocationRoute
+  '/resource-assignments': typeof ResourceAssignmentsRoute
+  '/resource-scenarios': typeof ResourceScenariosRoute
   '/resources': typeof ResourcesRoute
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
@@ -175,6 +199,9 @@ export interface FileRoutesById {
   '/programmes': typeof ProgrammesRouteWithChildren
   '/projects': typeof ProjectsRouteWithChildren
   '/requests': typeof RequestsRoute
+  '/resource-allocation': typeof ResourceAllocationRoute
+  '/resource-assignments': typeof ResourceAssignmentsRoute
+  '/resource-scenarios': typeof ResourceScenariosRoute
   '/resources': typeof ResourcesRoute
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
@@ -198,6 +225,9 @@ export interface FileRouteTypes {
     | '/programmes'
     | '/projects'
     | '/requests'
+    | '/resource-allocation'
+    | '/resource-assignments'
+    | '/resource-scenarios'
     | '/resources'
     | '/risks'
     | '/roadmaps'
@@ -216,6 +246,9 @@ export interface FileRouteTypes {
     | '/my-timeline'
     | '/my-work'
     | '/requests'
+    | '/resource-allocation'
+    | '/resource-assignments'
+    | '/resource-scenarios'
     | '/resources'
     | '/risks'
     | '/roadmaps'
@@ -237,6 +270,9 @@ export interface FileRouteTypes {
     | '/programmes'
     | '/projects'
     | '/requests'
+    | '/resource-allocation'
+    | '/resource-assignments'
+    | '/resource-scenarios'
     | '/resources'
     | '/risks'
     | '/roadmaps'
@@ -259,6 +295,9 @@ export interface RootRouteChildren {
   ProgrammesRoute: typeof ProgrammesRouteWithChildren
   ProjectsRoute: typeof ProjectsRouteWithChildren
   RequestsRoute: typeof RequestsRoute
+  ResourceAllocationRoute: typeof ResourceAllocationRoute
+  ResourceAssignmentsRoute: typeof ResourceAssignmentsRoute
+  ResourceScenariosRoute: typeof ResourceScenariosRoute
   ResourcesRoute: typeof ResourcesRoute
   RisksRoute: typeof RisksRoute
   RoadmapsRoute: typeof RoadmapsRoute
@@ -328,6 +367,27 @@ declare module '@tanstack/react-router' {
       path: '/requests'
       fullPath: '/requests'
       preLoaderRoute: typeof RequestsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resource-allocation': {
+      id: '/resource-allocation'
+      path: '/resource-allocation'
+      fullPath: '/resource-allocation'
+      preLoaderRoute: typeof ResourceAllocationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resource-assignments': {
+      id: '/resource-assignments'
+      path: '/resource-assignments'
+      fullPath: '/resource-assignments'
+      preLoaderRoute: typeof ResourceAssignmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resource-scenarios': {
+      id: '/resource-scenarios'
+      path: '/resource-scenarios'
+      fullPath: '/resource-scenarios'
+      preLoaderRoute: typeof ResourceScenariosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/resources': {
@@ -455,6 +515,9 @@ const rootRouteChildren: RootRouteChildren = {
   ProgrammesRoute: ProgrammesRouteWithChildren,
   ProjectsRoute: ProjectsRouteWithChildren,
   RequestsRoute: RequestsRoute,
+  ResourceAllocationRoute: ResourceAllocationRoute,
+  ResourceAssignmentsRoute: ResourceAssignmentsRoute,
+  ResourceScenariosRoute: ResourceScenariosRoute,
   ResourcesRoute: ResourcesRoute,
   RisksRoute: RisksRoute,
   RoadmapsRoute: RoadmapsRoute,

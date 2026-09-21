@@ -1,15 +1,30 @@
-import type { Collection, Person, Portfolio, Programme, Project, Risk, Issue, Task, TeamMember, ChangeRequest, StatusReport, Milestone, MilestoneStatus, MilestoneType, Roadmap, IssuedTask } from "./types";
+import type { Collection, Person, Portfolio, Programme, Project, Risk, Issue, Task, TeamMember, ChangeRequest, StatusReport, Milestone, MilestoneStatus, MilestoneType, Roadmap, IssuedTask, GenericResource, ResourceAssignment, ProjectRequest, ResourceTeam } from "./types";
 
 export const portfolio: Portfolio = { id: "dts-2526", name: "DTS 2025/26", description: "The university’s strategic portfolio of digital, technology and service improvement work.", owner: "Chris McDonald", budget: 8_750_000 };
 
-const personRows: Array<[string, string, string, string]> = [
-  ["cm","Chris McDonald","Head of Programmes & Projects","CM"], ["ap","Amelia Price","Programme Manager","AP"], ["ob","Oliver Bennett","Programme Manager","OB"],
-  ["sp","Sienna Patel","Programme Manager","SP"], ["th","Theo Hughes","Programme Manager","TH"], ["if","Imogen Foster","Programme Manager","IF"],
-  ["fw","Freya Walsh","Senior Project Manager","FW"], ["gc","George Clarke","Project Manager","GC"], ["nb","Nadia Begum","Project Manager","NB"],
-  ["er","Elliot Reed","Project Manager","ER"], ["mh","Maya Harrison","Business Analyst","MH"], ["jc","Jacob Cole","Technical Lead","JC"],
-  ["lo","Layla Owen","Change Manager","LO"], ["hs","Harrison Shaw","Security Lead","HS"], ["ec","Eva Chen","Service Designer","EC"],
+const personRows: Array<[string,string,string,string,ResourceTeam,string,number,number,number,string[]]> = [
+  ["cm","Chris McDonald","Head of Programmes & Projects","CM","PMO","Rachel King",36,1,35,["Portfolio management","Governance"]],
+  ["ap","Amelia Price","Programme Manager","AP","PMO","Chris McDonald",36,1,30,["Programme management","Governance"]],
+  ["ob","Oliver Bennett","Programme Manager","OB","Infrastructure","Chris McDonald",36,1,35,["Infrastructure","Business continuity"]],
+  ["sp","Sienna Patel","Programme Manager","SP","Applications","Chris McDonald",36,1,30,["Programme management","FinOps"]],
+  ["th","Theo Hughes","Programme Manager","TH","Applications","Chris McDonald",36,1,30,["Automation","Programme management"]],
+  ["if","Imogen Foster","Programme Manager","IF","PMO","Chris McDonald",28.8,.8,30,["Change management","Continuous improvement"]],
+  ["fw","Freya Walsh","Senior Project Manager","FW","PMO","Chris McDonald",36,1,25,["Project management","Governance"]],
+  ["gc","George Clarke","Project Manager","GC","PMO","Chris McDonald",36,1,25,["Project management","Agile delivery"]],
+  ["nb","Nadia Begum","Project Manager","NB","PMO","Chris McDonald",36,1,25,["Project management","Automation"]],
+  ["er","Elliot Reed","Project Manager","ER","PMO","Chris McDonald",28.8,.8,25,["Project management","Benefits management"]],
+  ["mh","Maya Harrison","Business Analyst","MH","Applications","Sienna Patel",36,1,20,["Business analysis","Data analysis"]],
+  ["jc","Jacob Cole","Technical Lead","JC","Infrastructure","Oliver Bennett",36,1,20,["Solution architecture","Networks"]],
+  ["lo","Layla Owen","Change Manager","LO","PMO","Chris McDonald",36,1,30,["Change management","Training"]],
+  ["hs","Harrison Shaw","Security Lead","HS","Cyber Security","Aisha Wallace",36,1,25,["Cyber security","Risk management"]],
+  ["ec","Eva Chen","Service Designer","EC","Applications","Sienna Patel",36,1,25,["Service design","User research"]],
+  ["ak","Aisha Khan","Network Engineer","AK","Infrastructure","Jacob Cole",36,1,30,["Networks","Azure"]],
+  ["db","Daniel Brooks","Cloud Engineer","DB","Infrastructure","Jacob Cole",36,1,30,["Azure","Infrastructure"]],
+  ["sr","Sofia Rahman","Security Analyst","SR","Cyber Security","Harrison Shaw",36,1,25,["Cyber security","Identity"]],
+  ["tw","Thomas Webb","Service Desk Analyst","TW","Service Desk","Nadia Begum",36,1,60,["Service operations","Microsoft 365"]],
+  ["pn","Priya Ncube","Service Desk Team Lead","PN","Service Desk","Nadia Begum",36,1,55,["Service operations","Change management"]],
 ];
-export const people: Person[] = personRows.map(([id,name,jobTitle,initials]) => ({ id, name, jobTitle, initials }));
+export const people: Person[] = personRows.map(([id,name,jobTitle,initials,team,lineManager,contractedHoursPerWeek,fte,bauPercentage,skills],index) => ({id,name,jobTitle,initials,team,lineManager,contractedHoursPerWeek,fte,bauPercentage,skills:skills.map((skill,skillIndex)=>({name:skill,level:Math.min(3,2+((index+skillIndex)%2)) as 2|3})),leave:index%5===0?[{id:`leave-${id}`,start:"19/10/2026",end:"23/10/2026",type:"Annual leave"}]:index%7===0?[{id:`leave-${id}`,start:"09/11/2026",end:"11/11/2026",type:"Training"}]:[] }));
 
 export const programmes: Programme[] = [
   { id:"standards", portfolioId:portfolio.id, name:"1. Standards, Governance & Best Practice", description:"Strengthening governance, assurance and consistent delivery standards across DTS.", manager:"Amelia Price", sponsor:"Daniel Mercer", start:"01/08/2025", end:"31/07/2027", budget:1450000, valueStatement:"Create trusted, repeatable ways of working that improve delivery confidence and decision quality." },
@@ -156,6 +171,35 @@ export const issuedTasks: IssuedTask[] = [
   {id:"issued-4",projectId:"digital-landscape-mapping",title:"Provide service inventory return",description:"Submit the completed inventory for your service area.",issuer:"Chris McDonald",assignee:"Jacob Cole",issuedDate:"15/09/2026",acknowledgementDue:"18/09/2026",dueDate:"30/09/2026",estimatedEffortHours:3,priority:"Moderate",checklist:["Complete template","Validate owner","Return to PMO"],attachments:["Service inventory template.xlsx"],status:"Proposed new date",proposedDate:"05/10/2026",responseReason:"Technical release work takes priority this week.",plannerSync:"Not applicable"},
   {id:"issued-5",projectId:"windows-11-rollout",title:"Confirm faculty deployment contacts",description:"Validate the named contacts for the next deployment wave.",issuer:"Chris McDonald",assignee:"Eva Chen",issuedDate:"16/09/2026",acknowledgementDue:"20/09/2026",dueDate:"24/09/2026",estimatedEffortHours:2,priority:"High",checklist:["Check contact list","Confirm availability"],attachments:[],status:"Declined",responseReason:"This belongs with the faculty engagement lead.",plannerSync:"Not applicable"},
   {id:"issued-6",projectId:"account-creation-automation",title:"Validate exception scenarios",description:"Test and document the agreed exception scenarios.",issuer:"Chris McDonald",assignee:"Freya Walsh",issuedDate:"10/09/2026",acknowledgementDue:"13/09/2026",dueDate:"20/09/2026",estimatedEffortHours:8,priority:"High",checklist:["Run scenarios","Capture outcomes","Raise defects"],attachments:["Test scenarios.docx"],status:"In progress",plannerSync:"Created in Planner"},
+];
+
+export const genericResources: GenericResource[] = [
+  {id:"generic-network",name:"Network Engineer (TBC)",role:"Network Engineer",team:"Infrastructure",skills:[{name:"Networks",level:3},{name:"Infrastructure",level:2}],needsStaffing:true},
+  {id:"generic-ba",name:"Business Analyst (TBC)",role:"Business Analyst",team:"Applications",skills:[{name:"Business analysis",level:3},{name:"Data analysis",level:2}],needsStaffing:true},
+];
+
+const assignmentProjects=["ebbot-chatbot","network-refresh-data-centre","reduce-our-cyber-risk","windows-11-rollout","account-creation-automation","service-desk-optimisation","digital-landscape-mapping","asset-management"];
+export const resourceAssignments: ResourceAssignment[] = people.flatMap((person,index)=>{
+  const primary=assignmentProjects[index%assignmentProjects.length]??"ebbot-chatbot";
+  const secondary=assignmentProjects[(index+3)%assignmentProjects.length]??"windows-11-rollout";
+  const overloaded=["fw","mh","jc"].includes(person.id);
+  return [
+    {id:`ra-${person.id}-1`,resourceType:"Person" as const,resourceId:person.id,projectId:primary,role:person.jobTitle,start:"05/10/2026",end:"27/11/2026",hoursPerWeek:overloaded?20:3,bookingType:index%3===0?"Soft" as const:"Hard" as const},
+    {id:`ra-${person.id}-2`,resourceType:"Person" as const,resourceId:person.id,projectId:secondary,role:person.skills[0]?.name??person.jobTitle,start:"12/10/2026",end:"20/11/2026",hoursPerWeek:overloaded?18:2,bookingType:index%4===0?"Soft" as const:"Hard" as const},
+  ];
+});
+resourceAssignments.push(
+  {id:"ra-generic-network",resourceType:"Generic",resourceId:"generic-network",projectId:"network-refresh-data-centre",role:"Network Engineer",start:"05/10/2026",end:"18/12/2026",hoursPerWeek:24,bookingType:"Soft"},
+  {id:"ra-generic-ba",resourceType:"Generic",resourceId:"generic-ba",projectId:"ebbot-chatbot",role:"Business Analyst",start:"02/11/2026",end:"18/12/2026",hoursPerWeek:18,bookingType:"Soft"},
+);
+
+export const projectRequests: ProjectRequest[] = [
+  {id:"req1",title:"Student mobile app refresh",status:"In Review",requester:"Maya Harrison",sponsor:"Priya Nair",estimatedCost:180000,estimatedBenefit:420000,priority:"High",alignment:88,themes:["Student experience"]},
+  {id:"req2",title:"Research storage expansion",status:"New",requester:"Jacob Cole",sponsor:"Daniel Mercer",estimatedCost:240000,estimatedBenefit:310000,priority:"Critical",alignment:91,themes:["Research"]},
+  {id:"req3",title:"Digital assessment pilot",status:"Approved",requester:"Eva Chen",sponsor:"Rachel King",estimatedCost:95000,estimatedBenefit:260000,priority:"High",alignment:84,themes:["Teaching"]},
+  {id:"req4",title:"Legacy telephony retirement",status:"On Hold",requester:"George Clarke",sponsor:"Martin Lowe",estimatedCost:130000,estimatedBenefit:190000,priority:"Moderate",alignment:67,themes:["Efficiency"]},
+  {id:"req5",title:"AI meeting assistant",status:"Rejected",requester:"Layla Owen",sponsor:"Priya Nair",estimatedCost:60000,estimatedBenefit:85000,priority:"Low",alignment:51,themes:["AI"]},
+  {id:"req6",title:"Identity proofing service",status:"In Review",requester:"Harrison Shaw",sponsor:"Aisha Wallace",estimatedCost:210000,estimatedBenefit:380000,priority:"Critical",alignment:93,themes:["Security"]},
 ];
 
 for (const collection of collections) for (const projectId of collection.projectIds) {
