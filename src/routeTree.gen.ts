@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CollectionsRouteImport } from './routes/collections'
+import { Route as DashboardsRouteImport } from './routes/dashboards'
 import { Route as MyWorkRouteImport } from './routes/my-work'
 import { Route as ProgrammesRouteImport } from './routes/programmes'
 import { Route as ProjectsRouteImport } from './routes/projects'
@@ -32,6 +33,11 @@ const IndexRoute = IndexRouteImport.update({
 const CollectionsRoute = CollectionsRouteImport.update({
   id: '/collections',
   path: '/collections',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardsRoute = DashboardsRouteImport.update({
+  id: '/dashboards',
+  path: '/dashboards',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MyWorkRoute = MyWorkRouteImport.update({
@@ -98,6 +104,7 @@ const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/collections': typeof CollectionsRouteWithChildren
+  '/dashboards': typeof DashboardsRoute
   '/my-work': typeof MyWorkRoute
   '/programmes': typeof ProgrammesRouteWithChildren
   '/projects': typeof ProjectsRouteWithChildren
@@ -113,6 +120,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboards': typeof DashboardsRoute
   '/my-work': typeof MyWorkRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
@@ -128,6 +136,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/collections': typeof CollectionsRouteWithChildren
+  '/dashboards': typeof DashboardsRoute
   '/my-work': typeof MyWorkRoute
   '/programmes': typeof ProgrammesRouteWithChildren
   '/projects': typeof ProjectsRouteWithChildren
@@ -146,6 +155,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/collections'
+    | '/dashboards'
     | '/my-work'
     | '/programmes'
     | '/projects'
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/dashboards'
     | '/my-work'
     | '/requests'
     | '/resources'
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/collections'
+    | '/dashboards'
     | '/my-work'
     | '/programmes'
     | '/projects'
@@ -192,6 +204,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CollectionsRoute: typeof CollectionsRouteWithChildren
+  DashboardsRoute: typeof DashboardsRoute
   MyWorkRoute: typeof MyWorkRoute
   ProgrammesRoute: typeof ProgrammesRouteWithChildren
   ProjectsRoute: typeof ProjectsRouteWithChildren
@@ -214,6 +227,13 @@ declare module '@tanstack/react-router' {
       path: '/collections'
       fullPath: '/collections'
       preLoaderRoute: typeof CollectionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboards': {
+      id: '/dashboards'
+      path: '/dashboards'
+      fullPath: '/dashboards'
+      preLoaderRoute: typeof DashboardsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/my-work': {
@@ -348,6 +368,7 @@ const ProjectsRouteWithChildren = ProjectsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CollectionsRoute: CollectionsRouteWithChildren,
+  DashboardsRoute: DashboardsRoute,
   MyWorkRoute: MyWorkRoute,
   ProgrammesRoute: ProgrammesRouteWithChildren,
   ProjectsRoute: ProjectsRouteWithChildren,
