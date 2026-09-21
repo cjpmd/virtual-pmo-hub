@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BenefitsRouteImport } from './routes/benefits'
 import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as DashboardsRouteImport } from './routes/dashboards'
 import { Route as MilestonesRouteImport } from './routes/milestones'
@@ -25,6 +26,11 @@ import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as RisksRouteImport } from './routes/risks'
 import { Route as RoadmapsRouteImport } from './routes/roadmaps'
 import { Route as TaskOverviewRouteImport } from './routes/task-overview'
+import { Route as BenefitsIndexRouteImport } from './routes/benefits.index'
+import { Route as BenefitsBenefitIdRouteImport } from './routes/benefits.$benefitId'
+import { Route as BenefitsDashboardRouteImport } from './routes/benefits.dashboard'
+import { Route as BenefitsMapRouteImport } from './routes/benefits.map'
+import { Route as BenefitsRealisationRouteImport } from './routes/benefits.realisation'
 import { Route as CollectionsIndexRouteImport } from './routes/collections.index'
 import { Route as CollectionsCollectionIdRouteImport } from './routes/collections.$collectionId'
 import { Route as ProgrammesIndexRouteImport } from './routes/programmes.index'
@@ -35,6 +41,11 @@ import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projec
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BenefitsRoute = BenefitsRouteImport.update({
+  id: '/benefits',
+  path: '/benefits',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CollectionsRoute = CollectionsRouteImport.update({
@@ -112,6 +123,31 @@ const TaskOverviewRoute = TaskOverviewRouteImport.update({
   path: '/task-overview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BenefitsIndexRoute = BenefitsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => BenefitsRoute,
+} as any)
+const BenefitsBenefitIdRoute = BenefitsBenefitIdRouteImport.update({
+  id: '/$benefitId',
+  path: '/$benefitId',
+  getParentRoute: () => BenefitsRoute,
+} as any)
+const BenefitsDashboardRoute = BenefitsDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => BenefitsRoute,
+} as any)
+const BenefitsMapRoute = BenefitsMapRouteImport.update({
+  id: '/map',
+  path: '/map',
+  getParentRoute: () => BenefitsRoute,
+} as any)
+const BenefitsRealisationRoute = BenefitsRealisationRouteImport.update({
+  id: '/realisation',
+  path: '/realisation',
+  getParentRoute: () => BenefitsRoute,
+} as any)
 const CollectionsIndexRoute = CollectionsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -145,6 +181,7 @@ const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/benefits': typeof BenefitsRouteWithChildren
   '/collections': typeof CollectionsRouteWithChildren
   '/dashboards': typeof DashboardsRoute
   '/milestones': typeof MilestonesRoute
@@ -160,9 +197,14 @@ export interface FileRoutesByFullPath {
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
   '/task-overview': typeof TaskOverviewRoute
+  '/benefits/$benefitId': typeof BenefitsBenefitIdRoute
+  '/benefits/dashboard': typeof BenefitsDashboardRoute
+  '/benefits/map': typeof BenefitsMapRoute
+  '/benefits/realisation': typeof BenefitsRealisationRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
+  '/benefits/': typeof BenefitsIndexRoute
   '/collections/': typeof CollectionsIndexRoute
   '/programmes/': typeof ProgrammesIndexRoute
   '/projects/': typeof ProjectsIndexRoute
@@ -181,9 +223,14 @@ export interface FileRoutesByTo {
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
   '/task-overview': typeof TaskOverviewRoute
+  '/benefits/$benefitId': typeof BenefitsBenefitIdRoute
+  '/benefits/dashboard': typeof BenefitsDashboardRoute
+  '/benefits/map': typeof BenefitsMapRoute
+  '/benefits/realisation': typeof BenefitsRealisationRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
+  '/benefits': typeof BenefitsIndexRoute
   '/collections': typeof CollectionsIndexRoute
   '/programmes': typeof ProgrammesIndexRoute
   '/projects': typeof ProjectsIndexRoute
@@ -191,6 +238,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/benefits': typeof BenefitsRouteWithChildren
   '/collections': typeof CollectionsRouteWithChildren
   '/dashboards': typeof DashboardsRoute
   '/milestones': typeof MilestonesRoute
@@ -206,9 +254,14 @@ export interface FileRoutesById {
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
   '/task-overview': typeof TaskOverviewRoute
+  '/benefits/$benefitId': typeof BenefitsBenefitIdRoute
+  '/benefits/dashboard': typeof BenefitsDashboardRoute
+  '/benefits/map': typeof BenefitsMapRoute
+  '/benefits/realisation': typeof BenefitsRealisationRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
+  '/benefits/': typeof BenefitsIndexRoute
   '/collections/': typeof CollectionsIndexRoute
   '/programmes/': typeof ProgrammesIndexRoute
   '/projects/': typeof ProjectsIndexRoute
@@ -217,6 +270,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/benefits'
     | '/collections'
     | '/dashboards'
     | '/milestones'
@@ -232,9 +286,14 @@ export interface FileRouteTypes {
     | '/risks'
     | '/roadmaps'
     | '/task-overview'
+    | '/benefits/$benefitId'
+    | '/benefits/dashboard'
+    | '/benefits/map'
+    | '/benefits/realisation'
     | '/collections/$collectionId'
     | '/programmes/$programmeId'
     | '/projects/$projectId'
+    | '/benefits/'
     | '/collections/'
     | '/programmes/'
     | '/projects/'
@@ -253,15 +312,21 @@ export interface FileRouteTypes {
     | '/risks'
     | '/roadmaps'
     | '/task-overview'
+    | '/benefits/$benefitId'
+    | '/benefits/dashboard'
+    | '/benefits/map'
+    | '/benefits/realisation'
     | '/collections/$collectionId'
     | '/programmes/$programmeId'
     | '/projects/$projectId'
+    | '/benefits'
     | '/collections'
     | '/programmes'
     | '/projects'
   id:
     | '__root__'
     | '/'
+    | '/benefits'
     | '/collections'
     | '/dashboards'
     | '/milestones'
@@ -277,9 +342,14 @@ export interface FileRouteTypes {
     | '/risks'
     | '/roadmaps'
     | '/task-overview'
+    | '/benefits/$benefitId'
+    | '/benefits/dashboard'
+    | '/benefits/map'
+    | '/benefits/realisation'
     | '/collections/$collectionId'
     | '/programmes/$programmeId'
     | '/projects/$projectId'
+    | '/benefits/'
     | '/collections/'
     | '/programmes/'
     | '/projects/'
@@ -287,6 +357,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BenefitsRoute: typeof BenefitsRouteWithChildren
   CollectionsRoute: typeof CollectionsRouteWithChildren
   DashboardsRoute: typeof DashboardsRoute
   MilestonesRoute: typeof MilestonesRoute
@@ -311,6 +382,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/benefits': {
+      id: '/benefits'
+      path: '/benefits'
+      fullPath: '/benefits'
+      preLoaderRoute: typeof BenefitsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/collections': {
@@ -418,6 +496,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TaskOverviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/benefits/': {
+      id: '/benefits/'
+      path: '/'
+      fullPath: '/benefits/'
+      preLoaderRoute: typeof BenefitsIndexRouteImport
+      parentRoute: typeof BenefitsRoute
+    }
+    '/benefits/$benefitId': {
+      id: '/benefits/$benefitId'
+      path: '/$benefitId'
+      fullPath: '/benefits/$benefitId'
+      preLoaderRoute: typeof BenefitsBenefitIdRouteImport
+      parentRoute: typeof BenefitsRoute
+    }
+    '/benefits/dashboard': {
+      id: '/benefits/dashboard'
+      path: '/dashboard'
+      fullPath: '/benefits/dashboard'
+      preLoaderRoute: typeof BenefitsDashboardRouteImport
+      parentRoute: typeof BenefitsRoute
+    }
+    '/benefits/map': {
+      id: '/benefits/map'
+      path: '/map'
+      fullPath: '/benefits/map'
+      preLoaderRoute: typeof BenefitsMapRouteImport
+      parentRoute: typeof BenefitsRoute
+    }
+    '/benefits/realisation': {
+      id: '/benefits/realisation'
+      path: '/realisation'
+      fullPath: '/benefits/realisation'
+      preLoaderRoute: typeof BenefitsRealisationRouteImport
+      parentRoute: typeof BenefitsRoute
+    }
     '/collections/': {
       id: '/collections/'
       path: '/'
@@ -463,6 +576,26 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface BenefitsRouteChildren {
+  BenefitsBenefitIdRoute: typeof BenefitsBenefitIdRoute
+  BenefitsDashboardRoute: typeof BenefitsDashboardRoute
+  BenefitsMapRoute: typeof BenefitsMapRoute
+  BenefitsRealisationRoute: typeof BenefitsRealisationRoute
+  BenefitsIndexRoute: typeof BenefitsIndexRoute
+}
+
+const BenefitsRouteChildren: BenefitsRouteChildren = {
+  BenefitsBenefitIdRoute: BenefitsBenefitIdRoute,
+  BenefitsDashboardRoute: BenefitsDashboardRoute,
+  BenefitsMapRoute: BenefitsMapRoute,
+  BenefitsRealisationRoute: BenefitsRealisationRoute,
+  BenefitsIndexRoute: BenefitsIndexRoute,
+}
+
+const BenefitsRouteWithChildren = BenefitsRoute._addFileChildren(
+  BenefitsRouteChildren,
+)
+
 interface CollectionsRouteChildren {
   CollectionsCollectionIdRoute: typeof CollectionsCollectionIdRoute
   CollectionsIndexRoute: typeof CollectionsIndexRoute
@@ -507,6 +640,7 @@ const ProjectsRouteWithChildren = ProjectsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BenefitsRoute: BenefitsRouteWithChildren,
   CollectionsRoute: CollectionsRouteWithChildren,
   DashboardsRoute: DashboardsRoute,
   MilestonesRoute: MilestonesRoute,
