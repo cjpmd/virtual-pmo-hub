@@ -1,4 +1,5 @@
-import type { Benefit, BenefitCategory, BenefitClassification, BenefitStatus, Collection, Person, Portfolio, Programme, Project, Risk, Issue, Task, TeamMember, ChangeRequest, StatusReport, Milestone, MilestoneStatus, MilestoneType, Roadmap, IssuedTask, GenericResource, ResourceAssignment, ProjectRequest, ResourceTeam, StrategicObjective } from "./types";
+import type { Benefit, BenefitCategory, BenefitClassification, BenefitStatus, Collection, Person, Portfolio, Programme, Project, ProjectTier, Risk, Issue, Task, TeamMember, ChangeRequest, StatusReport, Milestone, MilestoneStatus, MilestoneType, Roadmap, IssuedTask, GenericResource, ResourceAssignment, ProjectRequest, ResourceTeam, StrategicObjective } from "./types";
+import { defaultLifecyclePhases, defaultStage } from "./lifecycle";
 
 export const portfolio: Portfolio = { id: "dts-2526", name: "DTS 2025/26", description: "The university’s strategic portfolio of digital, technology and service improvement work.", owner: "Chris McDonald", budget: 8_750_000 };
 
@@ -36,11 +37,11 @@ const personRows: Array<[string,string,string,string,ResourceTeam,string,number,
 export const people: Person[] = personRows.map(([id,name,jobTitle,initials,team,lineManager,contractedHoursPerWeek,fte,bauPercentage,skills],index) => ({id,name,jobTitle,initials,team,lineManager,contractedHoursPerWeek,fte,bauPercentage,skills:skills.map((skill,skillIndex)=>({name:skill,level:Math.min(3,2+((index+skillIndex)%2)) as 2|3})),leave:index%5===0?[{id:`leave-${id}`,start:"19/10/2026",end:"23/10/2026",type:"Annual leave"}]:index%7===0?[{id:`leave-${id}`,start:"09/11/2026",end:"11/11/2026",type:"Training"}]:[] }));
 
 export const programmes: Programme[] = [
-  { id:"standards", portfolioId:portfolio.id, name:"1. Standards, Governance & Best Practice", description:"Strengthening governance, assurance and consistent delivery standards across DTS.", manager:"Amelia Price", sponsor:"Daniel Mercer", start:"01/08/2025", end:"31/07/2027", budget:1450000, valueStatement:"Create trusted, repeatable ways of working that improve delivery confidence and decision quality." },
-  { id:"resilience", portfolioId:portfolio.id, name:"2. Resilience & Business Continuity", description:"Improving cyber security, infrastructure resilience and continuity of critical services.", manager:"Oliver Bennett", sponsor:"Aisha Wallace", start:"01/09/2025", end:"31/12/2027", budget:2380000, valueStatement:"Protect teaching, research and operations from disruption while reducing institutional risk." },
-  { id:"optimisation", portfolioId:portfolio.id, name:"3. Optimisation & Cost Management", description:"Modernising core services and improving the value delivered by technology investments.", manager:"Sienna Patel", sponsor:"Martin Lowe", start:"01/10/2025", end:"31/07/2027", budget:1720000, valueStatement:"Release capacity and reduce avoidable cost through a simpler, better-managed technology estate." },
-  { id:"automation", portfolioId:portfolio.id, name:"4. Efficiency, Automation & AI", description:"Using automation and responsible AI to create better staff and student experiences.", manager:"Theo Hughes", sponsor:"Priya Nair", start:"01/08/2025", end:"31/12/2027", budget:1910000, valueStatement:"Give colleagues time back and improve service quality through practical, responsible automation." },
-  { id:"people", portfolioId:portfolio.id, name:"5. People, Knowledge & Continuous Improvement", description:"Building digital capability, knowledge and a culture of continuous improvement.", manager:"Imogen Foster", sponsor:"Rachel King", start:"01/01/2026", end:"31/07/2027", budget:1290000, valueStatement:"Equip teams with the skills, insight and confidence to sustain digital improvement." },
+  { id:"standards", portfolioId:portfolio.id, name:"1. Standards, Governance & Best Practice", description:"Strengthening governance, assurance and consistent delivery standards across DTS.", manager:"Amelia Price", projectManager:"Harriet Vance", projectOfficer:"Nadia Rahman", sponsor:"Daniel Mercer", start:"01/08/2025", end:"31/07/2027", budget:1450000, valueStatement:"Create trusted, repeatable ways of working that improve delivery confidence and decision quality." },
+  { id:"resilience", portfolioId:portfolio.id, name:"2. Resilience & Business Continuity", description:"Improving cyber security, infrastructure resilience and continuity of critical services.", manager:"Oliver Bennett", projectManager:"Jacob Cole", projectOfficer:"Owen Blake", sponsor:"Aisha Wallace", start:"01/09/2025", end:"31/12/2027", budget:2380000, valueStatement:"Protect teaching, research and operations from disruption while reducing institutional risk." },
+  { id:"optimisation", portfolioId:portfolio.id, name:"3. Optimisation & Cost Management", description:"Modernising core services and improving the value delivered by technology investments.", manager:"Sienna Patel", projectManager:"Freya Walsh", projectOfficer:"Sofia Marsh", sponsor:"Martin Lowe", start:"01/10/2025", end:"31/07/2027", budget:1720000, valueStatement:"Release capacity and reduce avoidable cost through a simpler, better-managed technology estate." },
+  { id:"automation", portfolioId:portfolio.id, name:"4. Efficiency, Automation & AI", description:"Using automation and responsible AI to create better staff and student experiences.", manager:"Theo Hughes", projectManager:"Maya Harrison", projectOfficer:"Nadia Rahman", sponsor:"Priya Nair", start:"01/08/2025", end:"31/12/2027", budget:1910000, valueStatement:"Give colleagues time back and improve service quality through practical, responsible automation." },
+  { id:"people", portfolioId:portfolio.id, name:"5. People, Knowledge & Continuous Improvement", description:"Building digital capability, knowledge and a culture of continuous improvement.", manager:"Imogen Foster", projectManager:"Eva Chen", projectOfficer:"Owen Blake", sponsor:"Rachel King", start:"01/01/2026", end:"31/07/2027", budget:1290000, valueStatement:"Equip teams with the skills, insight and confidence to sustain digital improvement." },
 ];
 
 const managers = ["Freya Walsh","George Clarke","Nadia Begum","Elliot Reed","Amelia Price"];
@@ -102,11 +103,14 @@ const baseProjects: Project[] = Object.entries(namesByProgramme).flatMap(([progr
   const isRed = name === "Reduce Our Cyber Risk" || name === "Network Refresh: Data Centre";
   const isAmber = name === "Ebbot (chatbot)" || [2,8,12,18,23].includes(number);
   const state = number % 9 === 0 ? "Proposed" : number % 11 === 0 ? "On Hold" : "Active";
-  const stage = (["Discover","Define","Plan","Deliver","Deliver","Close"] as const)[number%6];
+  const stage = defaultLifecyclePhases[number%6]?.name ?? defaultStage;
+  const tier: ProjectTier = number%5===0 ? "Large" : number%3===0 ? "Small" : "Medium";
+  const projectOfficer = ["Nadia Rahman","Owen Blake","Sofia Marsh"][number%3] ?? "Nadia Rahman";
   return {
     id: name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,""), programmeId, portfolioId:portfolio.id, name,
-    manager:managers[number%managers.length] ?? "Freya Walsh", sponsor:["Daniel Mercer","Aisha Wallace","Martin Lowe","Priya Nair","Rachel King"][programmeIndex] ?? "Daniel Mercer",
-    stage:name === "Ebbot (chatbot)" ? "Plan" : (stage ?? "Discover"), state, priority:isRed?"Critical":isAmber?"High":number%3===0?"Moderate":"Low",
+    manager:managers[number%managers.length] ?? "Freya Walsh", projectOfficer, sponsor:["Daniel Mercer","Aisha Wallace","Martin Lowe","Priya Nair","Rachel King"][programmeIndex] ?? "Daniel Mercer",
+    tier: name === "Ebbot (chatbot)" ? "Medium" : isRed ? "Large" : tier,
+    stage:name === "Ebbot (chatbot)" ? "Phase 3 - Design & Procure" : stage, state, priority:isRed?"Critical":isAmber?"High":number%3===0?"Moderate":"Low",
     start:`${String((number%20)+1).padStart(2,"0")}/0${(number%7)+1}/2026`, finish:`${String((number%20)+1).padStart(2,"0")}/0${(number%3)+1}/2027`, baselineFinish:`${String((number%20)+1).padStart(2,"0")}/0${(number%3)+1}/2027`,
     budget:120000+(number%5)*85000, actual:70000+(number%5)*55000, forecast:125000+(number%5)*90000,
     businessCase:`Improve university services through ${name.toLowerCase()}.`, benefits:"Reduced operational effort, improved resilience and a better colleague experience.",

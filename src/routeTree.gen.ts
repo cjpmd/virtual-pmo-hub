@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as BenefitsRouteImport } from './routes/benefits'
 import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as DashboardsRouteImport } from './routes/dashboards'
@@ -41,6 +42,11 @@ import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projec
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BenefitsRoute = BenefitsRouteImport.update({
@@ -181,6 +187,7 @@ const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/benefits': typeof BenefitsRouteWithChildren
   '/collections': typeof CollectionsRouteWithChildren
   '/dashboards': typeof DashboardsRoute
@@ -211,6 +218,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/dashboards': typeof DashboardsRoute
   '/milestones': typeof MilestonesRoute
   '/my-timeline': typeof MyTimelineRoute
@@ -238,6 +246,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/benefits': typeof BenefitsRouteWithChildren
   '/collections': typeof CollectionsRouteWithChildren
   '/dashboards': typeof DashboardsRoute
@@ -270,6 +279,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/benefits'
     | '/collections'
     | '/dashboards'
@@ -300,6 +310,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/dashboards'
     | '/milestones'
     | '/my-timeline'
@@ -326,6 +337,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/benefits'
     | '/collections'
     | '/dashboards'
@@ -357,6 +369,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   BenefitsRoute: typeof BenefitsRouteWithChildren
   CollectionsRoute: typeof CollectionsRouteWithChildren
   DashboardsRoute: typeof DashboardsRoute
@@ -382,6 +395,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/benefits': {
@@ -640,6 +660,7 @@ const ProjectsRouteWithChildren = ProjectsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   BenefitsRoute: BenefitsRouteWithChildren,
   CollectionsRoute: CollectionsRouteWithChildren,
   DashboardsRoute: DashboardsRoute,
