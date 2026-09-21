@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as MyWorkRouteImport } from './routes/my-work'
 import { Route as ProgrammesRouteImport } from './routes/programmes'
+import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as RequestsRouteImport } from './routes/requests'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as ProgrammesIndexRouteImport } from './routes/programmes.index'
@@ -39,6 +40,11 @@ const ProgrammesRoute = ProgrammesRouteImport.update({
   path: '/programmes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsRoute = ProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RequestsRoute = RequestsRouteImport.update({
   id: '/requests',
   path: '/requests',
@@ -60,9 +66,9 @@ const ProgrammesProgrammeIdRoute = ProgrammesProgrammeIdRouteImport.update({
   getParentRoute: () => ProgrammesRoute,
 } as any)
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
-  id: '/projects/',
-  path: '/projects/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProjectsRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/collections': typeof CollectionsRoute
   '/my-work': typeof MyWorkRoute
   '/programmes': typeof ProgrammesRouteWithChildren
+  '/projects': typeof ProjectsRouteWithChildren
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
@@ -92,6 +99,7 @@ export interface FileRoutesById {
   '/collections': typeof CollectionsRoute
   '/my-work': typeof MyWorkRoute
   '/programmes': typeof ProgrammesRouteWithChildren
+  '/projects': typeof ProjectsRouteWithChildren
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
@@ -105,6 +113,7 @@ export interface FileRouteTypes {
     | '/collections'
     | '/my-work'
     | '/programmes'
+    | '/projects'
     | '/requests'
     | '/resources'
     | '/programmes/$programmeId'
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/collections'
     | '/my-work'
     | '/programmes'
+    | '/projects'
     | '/requests'
     | '/resources'
     | '/programmes/$programmeId'
@@ -138,9 +148,9 @@ export interface RootRouteChildren {
   CollectionsRoute: typeof CollectionsRoute
   MyWorkRoute: typeof MyWorkRoute
   ProgrammesRoute: typeof ProgrammesRouteWithChildren
+  ProjectsRoute: typeof ProjectsRouteWithChildren
   RequestsRoute: typeof RequestsRoute
   ResourcesRoute: typeof ResourcesRoute
-  ProjectsIndexRoute: typeof ProjectsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -173,6 +183,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProgrammesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects': {
+      id: '/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/requests': {
       id: '/requests'
       path: '/requests'
@@ -203,10 +220,10 @@ declare module '@tanstack/react-router' {
     }
     '/projects/': {
       id: '/projects/'
-      path: '/projects'
+      path: '/'
       fullPath: '/projects/'
       preLoaderRoute: typeof ProjectsIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ProjectsRoute
     }
   }
 }
@@ -225,14 +242,26 @@ const ProgrammesRouteWithChildren = ProgrammesRoute._addFileChildren(
   ProgrammesRouteChildren,
 )
 
+interface ProjectsRouteChildren {
+  ProjectsIndexRoute: typeof ProjectsIndexRoute
+}
+
+const ProjectsRouteChildren: ProjectsRouteChildren = {
+  ProjectsIndexRoute: ProjectsIndexRoute,
+}
+
+const ProjectsRouteWithChildren = ProjectsRoute._addFileChildren(
+  ProjectsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CollectionsRoute: CollectionsRoute,
   MyWorkRoute: MyWorkRoute,
   ProgrammesRoute: ProgrammesRouteWithChildren,
+  ProjectsRoute: ProjectsRouteWithChildren,
   RequestsRoute: RequestsRoute,
   ResourcesRoute: ResourcesRoute,
-  ProjectsIndexRoute: ProjectsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
