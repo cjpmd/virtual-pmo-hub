@@ -46,3 +46,10 @@
 - [x] Build resource Scenario Planning impact modelling
 - [x] Upgrade project Resources with booking, availability search, and staffing warnings
 - [x] Add resource navigation, metadata, and responsive workflow verification
+
+- [ ] Add Benefits Management data model and seeded objectives, benefits, measures, records, and reviews
+- [ ] Build Benefits navigation and four Benefits pages
+- [ ] Build Benefits Register with saved views and validation warnings
+- [ ] Build Benefit Profile page with lifecycle, charts, records, reviews, and side-panel measurement capture
+- [ ] Add linked Benefits tabs to project and programme pages
+- [ ] Verify Benefits metadata, interactions, desktop and mobile layouts
