@@ -1,0 +1,5 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { BenefitProfile } from "@/components/benefit-profile";
+import { getBenefit } from "@/services/pmo";
+export const Route=createFileRoute("/benefits/$benefitId")({head:({params})=>{const item=getBenefit(params.benefitId),title=item?`${item.reference}: ${item.title} — Virtual PMO`:"Benefit — Virtual PMO",description=item?.description??"Benefit profile and realisation evidence.";return{meta:[{title},{name:"description",content:description},{property:"og:title",content:title},{property:"og:description",content:description},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary_large_image"}]}},component:Page});
+function Page(){const {benefitId}=Route.useParams(),benefit=getBenefit(benefitId);return benefit?<BenefitProfile benefit={benefit}/>:<p>Benefit not found.</p>}

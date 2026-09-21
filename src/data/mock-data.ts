@@ -1,6 +1,15 @@
-import type { Collection, Person, Portfolio, Programme, Project, Risk, Issue, Task, TeamMember, ChangeRequest, StatusReport, Milestone, MilestoneStatus, MilestoneType, Roadmap, IssuedTask, GenericResource, ResourceAssignment, ProjectRequest, ResourceTeam } from "./types";
+import type { Benefit, BenefitCategory, BenefitClassification, BenefitStatus, Collection, Person, Portfolio, Programme, Project, Risk, Issue, Task, TeamMember, ChangeRequest, StatusReport, Milestone, MilestoneStatus, MilestoneType, Roadmap, IssuedTask, GenericResource, ResourceAssignment, ProjectRequest, ResourceTeam, StrategicObjective } from "./types";
 
 export const portfolio: Portfolio = { id: "dts-2526", name: "DTS 2025/26", description: "The university’s strategic portfolio of digital, technology and service improvement work.", owner: "Chris McDonald", budget: 8_750_000 };
+
+export const strategicObjectives:StrategicObjective[]=[
+ {id:"obj-student",portfolioId:portfolio.id,title:"Outstanding student experience",description:"Create inclusive, reliable and responsive digital services for every student.",owner:"Priya Nair"},
+ {id:"obj-research",portfolioId:portfolio.id,title:"Research excellence and capability",description:"Provide secure, scalable digital capability for world-class research.",owner:"Daniel Mercer"},
+ {id:"obj-finance",portfolioId:portfolio.id,title:"Financial sustainability",description:"Deliver demonstrable value and reduce avoidable technology costs.",owner:"Martin Lowe"},
+ {id:"obj-efficiency",portfolioId:portfolio.id,title:"Operational efficiency",description:"Simplify processes and release colleague capacity for higher-value work.",owner:"Rachel King"},
+ {id:"obj-cyber",portfolioId:portfolio.id,title:"Cyber resilience",description:"Reduce institutional exposure and improve recovery from disruption.",owner:"Aisha Wallace"},
+ {id:"obj-netzero",portfolioId:portfolio.id,title:"Net zero and sustainability",description:"Reduce the environmental impact of digital services and infrastructure.",owner:"Sophie Green"},
+];
 
 const personRows: Array<[string,string,string,string,ResourceTeam,string,number,number,number,string[]]> = [
   ["cm","Chris McDonald","Head of Programmes & Projects","CM","PMO","Rachel King",36,1,35,["Portfolio management","Governance"]],
@@ -201,6 +210,32 @@ export const projectRequests: ProjectRequest[] = [
   {id:"req5",title:"AI meeting assistant",status:"Rejected",requester:"Layla Owen",sponsor:"Priya Nair",estimatedCost:60000,estimatedBenefit:85000,priority:"Low",alignment:51,themes:["AI"]},
   {id:"req6",title:"Identity proofing service",status:"In Review",requester:"Harrison Shaw",sponsor:"Aisha Wallace",estimatedCost:210000,estimatedBenefit:380000,priority:"Critical",alignment:93,themes:["Security"]},
 ];
+
+const benefitProjectIds=["account-creation-automation","ebbot-chatbot","reduce-our-cyber-risk","improve-infrastructure-resilience-vxrail","windows-11-rollout","service-desk-optimisation","cloud-cost-management","digital-skills-academy","research-data-triage-ai"];
+const benefitTitles=[
+ ["Reduced staff time on account provisioning","Non-cash-releasing","Efficiency"],["Faster access for new students at enrolment","Qualitative","Student experience"],
+ ["Reduced service desk contacts","Non-cash-releasing","Efficiency"],["24/7 support availability for students","Qualitative","Student experience"],["Increased escalation handling for complex queries","Qualitative","Efficiency"],
+ ["Reduced likelihood of major cyber incident","Qualitative","Risk reduction"],["Compliance with cyber insurance requirements","Qualitative","Compliance"],
+ ["Reduced unplanned downtime","Non-cash-releasing","Risk reduction"],["Lower infrastructure energy consumption","Societal","Sustainability"],
+ ["Avoided extended support costs","Cash-releasing","Efficiency"],["Improved colleague device experience","Qualitative","Efficiency"],
+ ["Faster first-contact resolution","Non-cash-releasing","Student experience"],["Reduced repeat service desk contacts","Non-cash-releasing","Efficiency"],
+ ["Reduced avoidable cloud spend","Cash-releasing","Efficiency"],["Improved cloud cost ownership","Qualitative","Efficiency"],
+ ["Improved digital confidence","Qualitative","Efficiency"],["Wider access to digital learning","Societal","Student experience"],
+ ["Faster research data triage","Non-cash-releasing","Research"],["Increased research data quality","Qualitative","Research"],["Additional model assurance workload","Qualitative","Compliance"],["Temporary disruption during device migration","Qualitative","Student experience"],
+] as const satisfies ReadonlyArray<readonly[string,BenefitClassification,BenefitCategory]>;
+const projectForBenefit=(index:number)=>benefitProjectIds[[0,0,1,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,8,4][index]??0]??"ebbot-chatbot";
+const objectiveForCategory:Record<BenefitCategory,string>={Efficiency:"obj-efficiency","Student experience":"obj-student",Research:"obj-research","Risk reduction":"obj-cyber",Compliance:"obj-cyber",Sustainability:"obj-netzero",Income:"obj-finance"};
+const profiles=[{period:"Q1 Aug–Oct 2026",value:20},{period:"Q2 Nov 2026–Jan 2027",value:45},{period:"Q3 Feb–Apr 2027",value:70},{period:"Q4 May–Jul 2027",value:100}];
+export const benefits:Benefit[]=benefitTitles.map(([title,classification,category],index)=>{
+ const id=`ben-${String(index+1).padStart(3,"0")}`,projectId=projectForBenefit(index),isDisbenefit=[4,19,20].includes(index),status:BenefitStatus=index<2?"Realised":index<6?"In realisation":index<10?"Planned":index<15?"Validated":"Identified";
+ const overdue=[7,13].includes(index),unit=classification==="Cash-releasing"?"£":title.includes("contacts")?"contacts/month":title.includes("downtime")?"hours/quarter":title.includes("likelihood")?"risk score":"%";
+ const baseline=title.includes("account provisioning")?72:title.includes("service desk contacts")?4200:title.includes("downtime")?18:title.includes("likelihood")?20:classification==="Cash-releasing"?0:10;
+ const target=title.includes("account provisioning")?2:title.includes("service desk contacts")?3360:title.includes("downtime")?6:title.includes("likelihood")?8:classification==="Cash-releasing"?90000:100;
+ const records=status==="Identified"||status==="Validated"?[]:[{id:`mr-${id}-1`,period:"Q1 Aug–Oct 2026",actualValue:index%4===0?Math.round(target*.55):Math.round(target*.78),evidence:`${id.toUpperCase()} evidence.xlsx`,notes:index%4===0?"Progress is below the agreed profile.":"Evidence reviewed with the service owner.",submittedBy:"Maya Harrison",...(index%3?{validatedBy:"Elliot Reed"}:{}),status:index%3?"Validated" as const:"Submitted" as const}];
+ return {id,reference:id.toUpperCase(),title,description:`Outcome expected from ${projects.find(project=>project.id===projectId)?.name??"portfolio delivery"}, with ownership retained by the receiving service.`,type:isDisbenefit?"Disbenefit":"Benefit",classification,category,beneficiaries:category==="Student experience"?["Students","Service Desk"]:category==="Research"?["Researchers","Research Services"]:["DTS colleagues","University services"],owner:index===17?"":(["Priya Ncube","Maya Harrison","Aisha Wallace","Martin Lowe","Rachel King","Sophie Green"][index%6]??"Rachel King"),sro:["Priya Nair","Daniel Mercer","Aisha Wallace","Martin Lowe"][index%4]??"Priya Nair",strategicObjectiveIds:[objectiveForCategory[category],...(classification==="Cash-releasing"?["obj-finance"]:[])],enablingProjects:index===12?[{projectId,attribution:70},{projectId:"ebbot-chatbot",attribution:40}]:[{projectId,attribution:100}],status,confidence:index%5===0?"Low":index%3===0?"Medium":"High",eligibilityConfirmed:index<16,...(index<16?{eligibilityConfirmedBy:"Elliot Reed",eligibilityConfirmedDate:"14/08/2026"}:{}),plannedTotalValue:isDisbenefit?-Math.max(12000,target):classification==="Cash-releasing"?target:Math.max(12000,Math.round(target*1200)),dependencies:index%4===0?["Operational adoption","Reliable source data"]:["Service owner capacity"],measures:[{id:`measure-${id}`,name:index===2||index===12?"Service desk contacts":title.includes("provisioning")?"Provisioning elapsed time":title,unit,measurementMethod:"Compare validated operational data against the agreed baseline and quarterly profile.",dataSource:index%2?"Service management reporting":"DTS performance warehouse",frequency:index%3===0?"Monthly":"Quarterly",dataProvider:index%2?"Service Performance Team":"Finance Business Partner",baselineValue:baseline,baselineDate:"31/07/2026",targetProfile:profiles.map((point,pointIndex)=>({...point,value:Math.round(baseline+(target-baseline)*(pointIndex+1)/4)})),nextDue:overdue?"15/09/2026":`15/${index%2?"10":"11"}/2026`,records}],reviews:status==="Realised"?[{id:`review-${id}`,date:"12/09/2026",type:"Post-implementation review",findings:"The outcome is evidenced and sustained, with further adoption monitoring recommended.",lessonsLearned:"Agree data ownership before transition into realisation.",reviewer:"Elliot Reed"}]:[{id:`review-${id}`,date:"05/09/2026",type:"Scheduled review",findings:"Delivery remains aligned to the benefit profile.",lessonsLearned:"Maintain regular engagement with operational owners.",reviewer:"Chris McDonald"}]};
+});
+const closedBenefitProject=projects.find(project=>project.id==="service-desk-optimisation");
+if(closedBenefitProject)closedBenefitProject.state="Closed";
 
 for (const collection of collections) for (const projectId of collection.projectIds) {
   const project = projects.find(item=>item.id===projectId);

@@ -43,3 +43,15 @@ export interface RoadmapRow { id: string; name: string; programmeId?: string; co
 export interface RoadmapItem { id: string; rowId: string; title: string; kind: "Linked" | "Standalone"; projectId?: string; start?: string; finish?: string; progress?: number; health?: RoadmapHealth; owner?: string; priority?: Priority; collectionIds?: string[] }
 export interface RoadmapKeyDate { id: string; title: string; date: string; status: MilestoneStatus; owner: string }
 export interface Roadmap { id: string; name: string; owner: string; description: string; rows: RoadmapRow[]; items: RoadmapItem[]; keyDates: RoadmapKeyDate[] }
+export interface StrategicObjective { id:string; portfolioId:string; title:string; description:string; owner:string }
+export type BenefitType="Benefit"|"Disbenefit";
+export type BenefitClassification="Cash-releasing"|"Non-cash-releasing"|"Qualitative"|"Societal";
+export type BenefitCategory="Efficiency"|"Student experience"|"Research"|"Risk reduction"|"Compliance"|"Sustainability"|"Income";
+export type BenefitStatus="Identified"|"Validated"|"Planned"|"In realisation"|"Realised"|"Partially realised"|"Not realised"|"Closed";
+export type BenefitConfidence="High"|"Medium"|"Low";
+export interface BenefitProjectLink { projectId:string; attribution:number }
+export interface BenefitTarget { period:string; value:number }
+export interface MeasurementRecord { id:string; period:string; actualValue:number; evidence:string; notes:string; submittedBy:string; validatedBy?:string; status:"Submitted"|"Validated"|"Queried" }
+export interface BenefitMeasure { id:string; name:string; unit:string; measurementMethod:string; dataSource:string; frequency:"Monthly"|"Quarterly"|"Annually"; dataProvider:string; baselineValue:number; baselineDate:string; targetProfile:BenefitTarget[]; nextDue:string; records:MeasurementRecord[] }
+export interface BenefitReview { id:string; date:string; type:"Scheduled review"|"Post-implementation review"; findings:string; lessonsLearned:string; reviewer:string }
+export interface Benefit { id:string; reference:string; title:string; description:string; type:BenefitType; classification:BenefitClassification; category:BenefitCategory; beneficiaries:string[]; owner:string; sro:string; strategicObjectiveIds:string[]; enablingProjects:BenefitProjectLink[]; status:BenefitStatus; confidence:BenefitConfidence; eligibilityConfirmed:boolean; eligibilityConfirmedBy?:string; eligibilityConfirmedDate?:string; plannedTotalValue:number; dependencies:string[]; measures:BenefitMeasure[]; reviews:BenefitReview[] }
