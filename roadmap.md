@@ -28,4 +28,4 @@
 - [x] Build Milestones page with KPIs, lists, timeline, charts, and saved views
 - [x] Add milestone sections to portfolio, programme, project overview, and committee pack
 - [x] Add Milestones navigation and route metadata
-- [ ] Verify milestone management across desktop and mobile
+- [x] Verify milestone management across desktop and mobile
