@@ -16,6 +16,8 @@ import { Route as ProgrammesRouteImport } from './routes/programmes'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as RequestsRouteImport } from './routes/requests'
 import { Route as ResourcesRouteImport } from './routes/resources'
+import { Route as CollectionsIndexRouteImport } from './routes/collections.index'
+import { Route as CollectionsCollectionIdRouteImport } from './routes/collections.$collectionId'
 import { Route as ProgrammesIndexRouteImport } from './routes/programmes.index'
 import { Route as ProgrammesProgrammeIdRouteImport } from './routes/programmes.$programmeId'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
@@ -56,6 +58,16 @@ const ResourcesRoute = ResourcesRouteImport.update({
   path: '/resources',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CollectionsIndexRoute = CollectionsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CollectionsRoute,
+} as any)
+const CollectionsCollectionIdRoute = CollectionsCollectionIdRouteImport.update({
+  id: '/$collectionId',
+  path: '/$collectionId',
+  getParentRoute: () => CollectionsRoute,
+} as any)
 const ProgrammesIndexRoute = ProgrammesIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -79,39 +91,44 @@ const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/collections': typeof CollectionsRoute
+  '/collections': typeof CollectionsRouteWithChildren
   '/my-work': typeof MyWorkRoute
   '/programmes': typeof ProgrammesRouteWithChildren
   '/projects': typeof ProjectsRouteWithChildren
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
+  '/collections/$collectionId': typeof CollectionsCollectionIdRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
+  '/collections/': typeof CollectionsIndexRoute
   '/programmes/': typeof ProgrammesIndexRoute
   '/projects/': typeof ProjectsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/collections': typeof CollectionsRoute
   '/my-work': typeof MyWorkRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
+  '/collections/$collectionId': typeof CollectionsCollectionIdRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
+  '/collections': typeof CollectionsIndexRoute
   '/programmes': typeof ProgrammesIndexRoute
   '/projects': typeof ProjectsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/collections': typeof CollectionsRoute
+  '/collections': typeof CollectionsRouteWithChildren
   '/my-work': typeof MyWorkRoute
   '/programmes': typeof ProgrammesRouteWithChildren
   '/projects': typeof ProjectsRouteWithChildren
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
+  '/collections/$collectionId': typeof CollectionsCollectionIdRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
+  '/collections/': typeof CollectionsIndexRoute
   '/programmes/': typeof ProgrammesIndexRoute
   '/projects/': typeof ProjectsIndexRoute
 }
@@ -125,19 +142,22 @@ export interface FileRouteTypes {
     | '/projects'
     | '/requests'
     | '/resources'
+    | '/collections/$collectionId'
     | '/programmes/$programmeId'
     | '/projects/$projectId'
+    | '/collections/'
     | '/programmes/'
     | '/projects/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/collections'
     | '/my-work'
     | '/requests'
     | '/resources'
+    | '/collections/$collectionId'
     | '/programmes/$programmeId'
     | '/projects/$projectId'
+    | '/collections'
     | '/programmes'
     | '/projects'
   id:
@@ -149,15 +169,17 @@ export interface FileRouteTypes {
     | '/projects'
     | '/requests'
     | '/resources'
+    | '/collections/$collectionId'
     | '/programmes/$programmeId'
     | '/projects/$projectId'
+    | '/collections/'
     | '/programmes/'
     | '/projects/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CollectionsRoute: typeof CollectionsRoute
+  CollectionsRoute: typeof CollectionsRouteWithChildren
   MyWorkRoute: typeof MyWorkRoute
   ProgrammesRoute: typeof ProgrammesRouteWithChildren
   ProjectsRoute: typeof ProjectsRouteWithChildren
@@ -216,6 +238,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResourcesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/collections/': {
+      id: '/collections/'
+      path: '/'
+      fullPath: '/collections/'
+      preLoaderRoute: typeof CollectionsIndexRouteImport
+      parentRoute: typeof CollectionsRoute
+    }
+    '/collections/$collectionId': {
+      id: '/collections/$collectionId'
+      path: '/$collectionId'
+      fullPath: '/collections/$collectionId'
+      preLoaderRoute: typeof CollectionsCollectionIdRouteImport
+      parentRoute: typeof CollectionsRoute
+    }
     '/programmes/': {
       id: '/programmes/'
       path: '/'
@@ -247,6 +283,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface CollectionsRouteChildren {
+  CollectionsCollectionIdRoute: typeof CollectionsCollectionIdRoute
+  CollectionsIndexRoute: typeof CollectionsIndexRoute
+}
+
+const CollectionsRouteChildren: CollectionsRouteChildren = {
+  CollectionsCollectionIdRoute: CollectionsCollectionIdRoute,
+  CollectionsIndexRoute: CollectionsIndexRoute,
+}
+
+const CollectionsRouteWithChildren = CollectionsRoute._addFileChildren(
+  CollectionsRouteChildren,
+)
+
 interface ProgrammesRouteChildren {
   ProgrammesProgrammeIdRoute: typeof ProgrammesProgrammeIdRoute
   ProgrammesIndexRoute: typeof ProgrammesIndexRoute
@@ -277,7 +327,7 @@ const ProjectsRouteWithChildren = ProjectsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CollectionsRoute: CollectionsRoute,
+  CollectionsRoute: CollectionsRouteWithChildren,
   MyWorkRoute: MyWorkRoute,
   ProgrammesRoute: ProgrammesRouteWithChildren,
   ProjectsRoute: ProjectsRouteWithChildren,
