@@ -29,3 +29,7 @@
 - [x] Add milestone sections to portfolio, programme, project overview, and committee pack
 - [x] Add Milestones navigation and route metadata
 - [x] Verify milestone management across desktop and mobile
+- [ ] Add typed roadmap data and services with two seeded roadmaps
+- [ ] Build the interactive Roadmaps timeline, grouping, key dates, and presentation mode
+- [ ] Add Roadmaps navigation and route metadata
+- [ ] Verify roadmap editing, zoom, regrouping, presentation, desktop, and mobile
