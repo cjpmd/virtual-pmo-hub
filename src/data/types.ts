@@ -1,5 +1,9 @@
 export type Health = "On Track" | "At Risk" | "Off Track" | "Not Set";
-export type ProjectStage = "Discover" | "Define" | "Plan" | "Deliver" | "Close";
+export type ProjectStage = string;
+export type ProjectTier = "Small" | "Medium" | "Large";
+export interface GateCriterion { id: string; label: string; tiers: ProjectTier[]; document?: string }
+export interface LifecyclePhase { id: string; name: string; shortName: string; description: string; gateName: string; criteria: GateCriterion[] }
+export interface TierDefinition { tier: ProjectTier; description: string; guideline: string }
 export type ProjectState = "Proposed" | "Active" | "On Hold" | "Closed";
 export type Priority = "Low" | "Moderate" | "High" | "Critical";
 export type TaskSource = "Native" | "Planner (Basic)" | "Planner (Premium)";
@@ -24,7 +28,7 @@ export interface Task { id: string; title: string; bucket: string; assignees: st
 export type IssuedTaskStatus = "Issued" | "Accepted" | "Declined" | "Proposed new date" | "In progress" | "Done";
 export type PlannerSyncState = "Not applicable" | "Pending acceptance" | "Syncing" | "Created in Planner";
 export interface IssuedTask { id: string; projectId: string; title: string; description: string; issuer: string; assignee: string; issuedDate: string; acknowledgementDue: string; dueDate: string; estimatedEffortHours: number; priority: Priority; checklist: string[]; attachments: string[]; status: IssuedTaskStatus; responseReason?: string; proposedDate?: string; reminderSent?: string; plannerSync: PlannerSyncState }
-export interface TeamMember { personId: string; role: "Project Manager"|"Team Member"|"Sponsor"; start: string; finish: string; allocatedEffortHours: number }
+export interface TeamMember { personId: string; role: "Project Manager"|"Project Officer"|"Programme Manager"|"Team Member"|"Sponsor"; start: string; finish: string; allocatedEffortHours: number }
 export interface ChangeRequest { id: string; title: string; type: "Scope"|"Schedule"|"Cost"; costImpact: number; scheduleImpactDays: number; status: "Proposed"|"Approved"|"Rejected"; requestedBy: string }
 export interface StatusReport { id: string; reportingDate: string; submitter: string; overall: Health; schedule: Health; financial: Health; effort: Health; issue: Health; accomplished: string; planned: string; comments: string; overrideReasons?: Partial<Record<HealthDimension,string>> }
 export interface Portfolio { id: string; name: string; description: string; owner: string; budget: number; healthOverride?: HealthOverride }
