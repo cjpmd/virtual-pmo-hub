@@ -49,7 +49,7 @@ export function RealisationWorkspace() {
       <div className="h-80">
         <ResponsiveContainer>
           <AreaChart data={curve} margin={{ left: 8, right: 8 }}>
-            <defs><linearGradient id="plannedFill" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--chart-2)" stopOpacity={0.35} /><stop offset="95%" stopColor="var(--chart-2)" stopOpacity={0.02} /></linearGradient></defs>
+            <defs><linearGradient id="plannedFill" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--viz-cat-2)" stopOpacity={0.35} /><stop offset="95%" stopColor="var(--viz-cat-2)" stopOpacity={0.02} /></linearGradient></defs>
             <CartesianGrid />
             <XAxis dataKey="period" tick={{ fontSize: 11 }} />
             <YAxis tickFormatter={value => money(Number(value))} tick={{ fontSize: 11 }} width={62} />
@@ -63,7 +63,7 @@ export function RealisationWorkspace() {
       </div>
     </ChartCard>
 
-    <section className="rounded-lg border bg-card shadow-sm">
+    <section className="rounded-lg border border-border/70 bg-card shadow-sm">
       <header className="flex flex-wrap items-center gap-3 border-b p-5">
         <CalendarClock className="size-5 text-primary" />
         <div className="mr-auto"><h2 className="font-display text-lg font-semibold">Measurements due and overdue</h2><p className="mt-0.5 text-sm text-muted-foreground">Due this month or already past the agreed date.</p></div>
@@ -90,7 +90,7 @@ export function RealisationWorkspace() {
       </div>
     </section>
 
-    <section className="rounded-lg border bg-card shadow-sm">
+    <section className="rounded-lg border border-border/70 bg-card shadow-sm">
       <header className="flex items-center gap-3 border-b p-5"><ShieldCheck className="size-5 text-primary" /><div><h2 className="font-display text-lg font-semibold">PMO validation queue</h2><p className="mt-0.5 text-sm text-muted-foreground">Submitted measurement records awaiting validation.</p></div></header>
       <div className="divide-y">
         {queue.map(item => {
@@ -115,7 +115,7 @@ export function RealisationWorkspace() {
       </div>
     </section>
 
-    <section className="rounded-lg border bg-card shadow-sm">
+    <section className="rounded-lg border border-border/70 bg-card shadow-sm">
       <header className="flex items-center gap-3 border-b p-5"><TriangleAlert className="size-5 text-primary" /><div><h2 className="font-display text-lg font-semibold">Benefits in realisation</h2><p className="mt-0.5 text-sm text-muted-foreground">Still tracked after their enabling projects closed.</p></div></header>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[880px] text-left text-sm">

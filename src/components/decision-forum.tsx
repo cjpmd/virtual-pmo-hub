@@ -20,7 +20,7 @@ export function DecisionForumView() {
   const agenda = getForumAgenda(forum, all);
 
   return <div className="space-y-6">
-    <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-4 shadow-sm">
+    <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border/70 bg-card p-4 shadow-sm">
       <label className="flex flex-col gap-1 text-xs font-semibold text-muted-foreground">Forum
         <select value={forum} onChange={event => { setForum(event.target.value as DecisionForum); setMeetingMode(false); setOutcomes({}) }} className="h-9 min-w-56 rounded-md border border-input bg-background px-2 text-sm font-medium text-foreground">
           {decisionForums.map(item => <option key={item}>{item}</option>)}
@@ -50,7 +50,7 @@ export function DecisionForumView() {
 
 function Agenda({ items, recent, forum, meetingDate }: { items: ResolvedDecision[]; recent: ResolvedDecision[]; forum: DecisionForum; meetingDate: string }) {
   return <div className="space-y-5">
-    <section className="rounded-lg border bg-card p-6 shadow-sm">
+    <section className="rounded-lg border border-border/70 bg-card p-6 shadow-sm">
       <p className="text-xs font-semibold uppercase text-primary">Agenda</p>
       <h2 className="mt-1 font-display text-2xl font-semibold">{forum} · {meetingDate}</h2>
       <p className="mt-1 text-sm text-muted-foreground">Decisions required, with the context and options each one needs.</p>
@@ -77,7 +77,7 @@ function Agenda({ items, recent, forum, meetingDate }: { items: ResolvedDecision
         {!items.length && <li className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">No decisions are waiting for this forum.</li>}
       </ol>
     </section>
-    {recent.length > 0 && <section className="rounded-lg border bg-card p-5 shadow-sm">
+    {recent.length > 0 && <section className="rounded-lg border border-border/70 bg-card p-5 shadow-sm">
       <h2 className="font-display text-lg font-semibold">Decisions made since the last meeting</h2>
       <div className="mt-3 divide-y">{recent.map(item => <div key={item.id} className="py-3">
         <p className="text-sm font-medium">{item.reference} · {item.title}</p>
@@ -96,7 +96,7 @@ function MeetingMode({ items, outcomes, setOutcomes, meetingDate, forum }: { ite
     <div className="flex flex-wrap items-center gap-2">
       {items.map((entry, position) => <button key={entry.id} onClick={() => setIndex(position)} className={cn("rounded-full px-3 py-1 text-xs font-semibold", position === index ? "bg-primary text-primary-foreground" : outcomes[entry.id] ? "bg-health-good/20 text-health-good-foreground" : "bg-muted text-muted-foreground")}>{entry.reference}</button>)}
     </div>
-    <section className="rounded-lg border bg-card p-6 shadow-sm">
+    <section className="rounded-lg border border-border/70 bg-card p-6 shadow-sm">
       <p className="text-xs font-semibold uppercase text-primary">{forum} · {meetingDate} · item {index + 1} of {items.length}</p>
       <h2 className="mt-2 font-display text-2xl font-semibold">{item.title}</h2>
       <p className="mt-1 text-sm text-muted-foreground">{item.scopeName} · needed by {formatDate(item.neededBy)} · decision maker {item.decisionMaker}</p>

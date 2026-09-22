@@ -33,7 +33,7 @@ import { cn } from "@/lib/utils";
 export const Route=createFileRoute("/portfolio/projects/$projectId")({head:({params})=>{const p=getProject(params.projectId);const title=p?`${p.name} — Virtual PMO`:"Project — Virtual PMO";const description=p?.businessCase??"Project detail.";return{meta:[{title},{name:"description",content:description},{property:"og:title",content:title},{property:"og:description",content:description},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary_large_image"}]}},component:ProjectPage});
 const phases=getLifecyclePhases();
 const money = formatCompactCurrency;
-function Section({title,children,actions}:{title:string;children:React.ReactNode;actions?:React.ReactNode}){return <section className="rounded-lg border border-border bg-card p-5 shadow-sm"><div className="flex flex-wrap items-center justify-between gap-2"><h2 className="font-display text-lg font-semibold">{title}</h2>{actions}</div>{children}</section>}
+function Section({title,children,actions}:{title:string;children:React.ReactNode;actions?:React.ReactNode}){return <section className="rounded-lg border border-border/70 bg-card p-5 shadow-sm"><div className="flex flex-wrap items-center justify-between gap-2"><h2 className="font-display text-lg font-semibold">{title}</h2>{actions}</div>{children}</section>}
 
 function ProjectPage(){
  const {projectId}=Route.useParams();
@@ -88,7 +88,7 @@ function ProjectPage(){
   {tab==="benefits"&&<BenefitSummary items={benefits}/>}
   {tab==="raid"&&<RaidWorkspace risks={project.risks} issues={project.issues}/>}
   {tab==="dependencies"&&<DependencyTab projectId={project.id}/>}
-  {tab==="decisions"&&<div className="space-y-4">{decisions.map(item=><button key={item.id} onClick={()=>setOpenDecision(item)} className="block w-full rounded-lg border bg-card p-4 text-left shadow-sm hover:bg-accent/30">
+  {tab==="decisions"&&<div className="space-y-4">{decisions.map(item=><button key={item.id} onClick={()=>setOpenDecision(item)} className="block w-full rounded-lg border border-border/70 bg-card p-4 text-left shadow-sm hover:bg-accent/30">
     <div className="flex flex-wrap items-start justify-between gap-2"><p className="text-sm font-semibold">{item.reference} · {item.title}</p><span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold",item.status==="Made"?"bg-health-good/20 text-health-good-foreground":item.overdue?"bg-health-bad/20 text-health-bad-foreground":item.status==="Pending"?"bg-health-warn/25 text-health-warn-foreground":"bg-muted text-muted-foreground")}>{item.status}{item.overdue?" · overdue":""}</span></div>
     <p className="mt-1.5 text-xs text-muted-foreground">{item.forum} · {item.decisionMaker} · needed by {formatDate(item.neededBy)}{item.decisionDate?` · decided ${formatDate(item.decisionDate)}`:""}</p>
     <p className="mt-2 text-sm text-muted-foreground">{item.context}</p>

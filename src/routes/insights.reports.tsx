@@ -79,7 +79,7 @@ function Page() {
     </div>
 
     <div className="grid gap-4 lg:grid-cols-2">
-      {reports.map(report => <div key={report.id} className={cn("rounded-lg border bg-card p-5 shadow-sm", openId === report.id && "border-primary/40")}>
+      {reports.map(report => <div key={report.id} className={cn("rounded-lg border border-border/70 bg-card p-5 shadow-sm", openId === report.id && "border-primary/40")}>
         <div className="flex items-start justify-between gap-3">
           <div><h2 className="font-display text-base font-semibold">{report.name}</h2><p className="mt-1 text-sm text-muted-foreground">{report.description}</p></div>
           <FileText className="size-5 shrink-0 text-primary" />
@@ -92,7 +92,7 @@ function Page() {
       </div>)}
     </div>
 
-    {open && <section className="rounded-lg border bg-card shadow-sm">
+    {open && <section className="rounded-lg border border-border/70 bg-card shadow-sm">
       <header className="flex flex-wrap items-center gap-3 border-b p-5">
         <FileSpreadsheet className="size-5 text-primary" />
         <div className="mr-auto"><h2 className="font-display text-lg font-semibold">{open.name}</h2><p className="mt-0.5 text-sm text-muted-foreground">Run on {formatDate("21/09/2026", settings)} · showing the first {open.rows().length} rows</p></div>

@@ -38,7 +38,7 @@ function Page() {
       <KpiCard label="Your role" value={user?.role ?? "—"} detail={user?.name ?? ""} icon="budget" />
     </div>
 
-    <section className="rounded-lg border bg-card shadow-sm">
+    <section className="rounded-lg border border-border/70 bg-card shadow-sm">
       <header className="flex items-center gap-3 border-b p-5"><Gavel className="size-5 text-primary" /><div><h2 className="font-display text-lg font-semibold">Decisions awaiting approval</h2><p className="mt-0.5 text-sm text-muted-foreground">Open one to review the options and record the outcome.</p></div></header>
       <div className="divide-y">
         {pending.map(item => <button key={item.id} onClick={() => setOpen(item)} className="grid w-full gap-2 p-4 text-left hover:bg-accent/30 lg:grid-cols-[1fr_auto] lg:items-center">
@@ -52,7 +52,7 @@ function Page() {
       </div>
     </section>
 
-    <section className="rounded-lg border bg-card shadow-sm">
+    <section className="rounded-lg border border-border/70 bg-card shadow-sm">
       <header className="flex items-center gap-3 border-b p-5"><ShieldCheck className="size-5 text-primary" /><div><h2 className="font-display text-lg font-semibold">Measurements awaiting validation</h2><p className="mt-0.5 text-sm text-muted-foreground">Benefit evidence submitted by owners for PMO validation.</p></div></header>
       <div className="divide-y">
         {queue.map(item => {

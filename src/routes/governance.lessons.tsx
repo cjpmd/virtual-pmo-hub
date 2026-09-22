@@ -47,7 +47,7 @@ function Page() {
       <KpiCard label="Projects with no recent lessons" value={String(metrics.staleProjects)} detail="Nothing logged in 90 days" icon="health" />
     </div>
 
-    <section className="rounded-lg border bg-card p-5 shadow-sm">
+    <section className="rounded-lg border border-border/70 bg-card p-5 shadow-sm">
       <div className="flex items-center gap-2"><Repeat2 className="size-5 text-primary" /><div><h2 className="font-display text-lg font-semibold">Recurring themes</h2><p className="text-sm text-muted-foreground">Categories where the same kind of problem has appeared in three or more projects.</p></div></div>
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         {themes.map(theme => <ThemeCard key={theme.category} theme={theme} raised={raised.includes(theme.category)} onRaise={() => setRaised(current => [...current, theme.category])} />)}
@@ -63,7 +63,7 @@ function Page() {
       </div>
     </div>
 
-    <section className="rounded-lg border bg-card shadow-sm">
+    <section className="rounded-lg border border-border/70 bg-card shadow-sm">
       <header className="flex items-center gap-2 border-b p-5"><CircleAlert className="size-5 text-primary" /><div><h2 className="font-display text-lg font-semibold">Coverage</h2><p className="text-sm text-muted-foreground">Active projects and their last lessons review. Red where a phase gate passed without one.</p></div></header>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[780px] text-left text-sm">

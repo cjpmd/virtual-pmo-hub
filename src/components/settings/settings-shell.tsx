@@ -30,7 +30,7 @@ export const financeIcon = Banknote;
 export function SettingsShell({ active, children }: { active: string; children: ReactNode }) {
   return <div className="grid gap-6 lg:grid-cols-[264px_1fr]">
     <nav aria-label="Settings sections" className="lg:sticky lg:top-24 lg:self-start">
-      <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
+      <div className="overflow-hidden rounded-lg border border-border/70 bg-card shadow-sm">
         {settingsSections.map(section => {
           const Icon = section.icon;
           const current = section.id === active;
@@ -48,7 +48,7 @@ export function SettingsShell({ active, children }: { active: string; children: 
 }
 
 export function SettingsCard({ title, description, children, actions }: { title: string; description?: string; children: ReactNode; actions?: ReactNode }) {
-  return <section className="rounded-lg border bg-card p-5 shadow-sm">
+  return <section className="rounded-lg border border-border/70 bg-card p-5 shadow-sm">
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div><h2 className="font-display text-lg font-semibold">{title}</h2>{description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}</div>
       {actions}

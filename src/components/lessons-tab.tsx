@@ -43,7 +43,7 @@ export function LessonsTab({ project }: { project: Project }) {
   };
 
   return <div className="space-y-6">
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-card p-4 shadow-sm">
+    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border/70 bg-card p-4 shadow-sm">
       <BookOpenCheck className="size-5 text-primary" />
       <div className="mr-auto">
         <p className="text-sm font-semibold">{existing.length + drafts.length} lessons logged</p>
@@ -66,7 +66,7 @@ export function LessonsTab({ project }: { project: Project }) {
         const items = lessonsFor(phase.id);
         const held = reviewHeld(phase.id);
         const passed = index < currentIndex;
-        return <section key={phase.id} className="rounded-lg border bg-card shadow-sm">
+        return <section key={phase.id} className="rounded-lg border border-border/70 bg-card shadow-sm">
           <header className="flex flex-wrap items-center gap-3 border-b p-4">
             <span className={cn("grid size-7 shrink-0 place-items-center rounded-full text-xs font-semibold", index < currentIndex ? "bg-primary text-primary-foreground" : index === currentIndex ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground")}>{index + 1}</span>
             <div className="mr-auto min-w-0">

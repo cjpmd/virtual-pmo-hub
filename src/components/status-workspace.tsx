@@ -23,11 +23,11 @@ const dimensions: Array<{ key: HealthDimension; label: string }> = [
   { key: "issue", label: "Issues & risks" },
 ];
 const chartConfig = {
-  overall: { label: "Overall", color: "var(--chart-1)" },
-  schedule: { label: "Schedule", color: "var(--chart-2)" },
-  financial: { label: "Financial", color: "var(--chart-3)" },
-  effort: { label: "Effort", color: "var(--chart-4)" },
-  issue: { label: "Issues & risks", color: "var(--chart-5)" },
+  overall: { label: "Overall", color: "var(--viz-cat-1)" },
+  schedule: { label: "Schedule", color: "var(--viz-cat-2)" },
+  financial: { label: "Financial", color: "var(--viz-cat-3)" },
+  effort: { label: "Effort", color: "var(--viz-cat-4)" },
+  issue: { label: "Issues & risks", color: "var(--viz-cat-5)" },
 } satisfies ChartConfig;
 
 type HealthSet = Record<HealthDimension, Health>;
@@ -149,7 +149,7 @@ export function StatusWorkspace({ project, initialReports, calculated }: { proje
     </ChartCard>
     <section><div className="mb-4 flex items-center gap-2"><Clock3 className="size-4 text-primary"/><h3 className="font-display text-lg font-semibold">Report timeline</h3><span className="text-sm text-muted-foreground">{reports.length} submitted</span></div>
       <div className="relative space-y-4 before:absolute before:bottom-4 before:left-4 before:top-4 before:w-px before:bg-border sm:before:left-5">
-        {reports.map((report, index) => { const overallOverride=report.overrideReasons?.overall; return <article key={report.id} className="relative ml-9 rounded-lg border border-border bg-card p-5 shadow-sm sm:ml-12">
+        {reports.map((report, index) => { const overallOverride=report.overrideReasons?.overall; return <article key={report.id} className="relative ml-9 rounded-lg border border-border/70 bg-card p-5 shadow-sm sm:ml-12">
           <span className={cn("absolute -left-[2.1rem] top-5 grid size-7 place-items-center rounded-full border border-primary bg-background text-primary sm:-left-[2.75rem]", index === 0 && "bg-primary text-primary-foreground")}><FilePenLine className="size-3.5"/></span>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><div className="flex items-center gap-2"><CalendarDays className="size-4 text-muted-foreground"/><h4 className="font-semibold">{formatDate(report.reportingDate)}</h4>{index === 0 && <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold uppercase text-accent-foreground">Latest</span>}</div><p className="mt-1 text-xs text-muted-foreground">Submitted by {report.submitter}</p></div><div className="flex flex-wrap gap-1.5">{overallOverride ? <HealthPill health={report.overall} override={{ health: report.overall, reason: overallOverride }}/> : <HealthPill health={report.overall}/>}</div></div>
           <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">{dimensions.map(({ key, label }) => { const reason=report.overrideReasons?.[key]; return <div key={key} className="rounded-md bg-muted/60 p-2.5"><p className="mb-1.5 text-[10px] font-semibold uppercase text-muted-foreground">{label}</p>{reason ? <HealthPill health={report[key]} override={{ health: report[key], reason }}/> : <HealthPill health={report[key]}/>}</div>})}</div>

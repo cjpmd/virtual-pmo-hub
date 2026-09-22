@@ -17,7 +17,7 @@ export const Route = createFileRoute("/benefits/")({ head: () => ({ meta: [{ tit
 const money = formatCompactCurrency;
 
 function Panel({ title: heading, note, children, className }: { title: string; note?: string; children: React.ReactNode; className?: string }) {
-  return <section className={cn("rounded-lg border bg-card p-5 shadow-sm", className)}>
+  return <section className={cn("rounded-lg border border-border/70 bg-card p-5 shadow-sm", className)}>
     <h2 className="font-display text-lg font-semibold">{heading}</h2>
     {note && <p className="mt-1 text-sm text-muted-foreground">{note}</p>}
     {children}
@@ -60,7 +60,7 @@ function Dashboard() {
               <YAxis dataKey="name" type="category" width={170} tick={{ fontSize: 11 }} />
               <Tooltip formatter={(value: number | string) => formatCurrency(Number(value))} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="planned" name="Planned" fill="var(--chart-2)" radius={[0, 3, 3, 0]} />
+              <Bar dataKey="planned" name="Planned" fill="var(--viz-cat-2)" radius={[0, 3, 3, 0]} />
               <Bar dataKey="realised" name="Realised" fill="var(--primary)" radius={[0, 3, 3, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -122,7 +122,7 @@ function Dashboard() {
             <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-12} textAnchor="end" height={54} />
             <YAxis tickFormatter={value => `${value}%`} tick={{ fontSize: 11 }} width={46} />
             <Tooltip formatter={(value: number | string, name) => (name === "accuracy" ? `${value}% of planned realised` : formatCurrency(Number(value)))} />
-            <Bar dataKey="accuracy" name="Realised as % of planned" radius={[3, 3, 0, 0]}>{accuracy.map(row => <Cell key={row.name} fill={row.accuracy >= 90 ? "var(--health-good)" : row.accuracy >= 70 ? "var(--health-warn)" : "var(--health-bad)"} />)}</Bar>
+            <Bar dataKey="accuracy" name="Realised as % of planned" radius={[3, 3, 0, 0]}>{accuracy.map(row => <Cell key={row.name} fill={row.accuracy >= 90 ? "var(--viz-good)" : row.accuracy >= 70 ? "var(--viz-warning)" : "var(--viz-critical)"} />)}</Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>

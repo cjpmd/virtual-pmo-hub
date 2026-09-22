@@ -39,7 +39,7 @@ function Section({ title, note, items, icon, otherSide, otherOwner, onOpen }: {
   otherSide: (item: ResolvedDependency) => string; otherOwner: (item: ResolvedDependency) => string;
   onOpen: (item: ResolvedDependency) => void;
 }) {
-  return <section className="rounded-lg border bg-card shadow-sm">
+  return <section className="rounded-lg border border-border/70 bg-card shadow-sm">
     <header className="flex items-center gap-2 border-b p-4">{icon}<div><h2 className="font-display text-base font-semibold">{title}</h2><p className="text-xs text-muted-foreground">{note}</p></div><span className="ml-auto text-sm font-semibold text-muted-foreground">{items.length}</span></header>
     <div className="divide-y">
       {items.map(item => <button key={item.id} onClick={() => onOpen(item)} className="grid w-full gap-2 p-4 text-left hover:bg-accent/30 sm:grid-cols-[1fr_auto_auto] sm:items-center">

@@ -92,7 +92,7 @@ export function DependencyFocusList({ focus, node, jump, open }: {
   jump: (dependency: ResolvedDependency, side: "giver" | "receiver") => void;
   open: (dependency: ResolvedDependency) => void;
 }) {
-  return <aside className="flex max-h-[620px] flex-col overflow-hidden rounded-lg border bg-card shadow-sm">
+  return <aside className="flex max-h-[620px] flex-col overflow-hidden rounded-lg border border-border/70 bg-card shadow-sm">
     <header className="border-b p-4">
       <p className="font-display text-sm font-semibold">{node.label}</p>
       <p className="text-[11px] text-muted-foreground">{node.kind} · {node.sublabel}</p>

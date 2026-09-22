@@ -60,7 +60,7 @@ function Page() {
       <KpiCard label="Pending decisions" value={String(decisionMetrics.pending)} detail={`${decisionMetrics.overdue} overdue`} icon="forecast" />
     </div>
 
-    <nav aria-label="RAIDD registers" className="flex overflow-x-auto rounded-lg border bg-card p-1 shadow-sm">
+    <nav aria-label="RAIDD registers" className="flex overflow-x-auto rounded-lg border border-border/70 bg-card p-1 shadow-sm">
       {tabs.map(tab => {
         const Icon = tab.icon;
         return <button key={tab.id} onClick={() => setActive(tab.id)} className={cn("flex h-9 flex-1 min-w-32 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium transition-colors",
@@ -80,7 +80,7 @@ function Page() {
       <section>
         <h2 className="font-display text-lg font-semibold">Risks above appetite</h2>
         <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {risks.filter(item => item.score >= settings.risk.appetiteThreshold).slice(0, 12).map(risk => <Link key={`${risk.projectId}-${risk.id}`} to="/portfolio/projects/$projectId" params={{ projectId: risk.projectId }} className="rounded-md border bg-card p-3 hover:bg-accent/40">
+          {risks.filter(item => item.score >= settings.risk.appetiteThreshold).slice(0, 12).map(risk => <Link key={`${risk.projectId}-${risk.id}`} to="/portfolio/projects/$projectId" params={{ projectId: risk.projectId }} className="rounded-lg border border-border/70 bg-card p-3 hover:bg-accent/40">
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm font-medium">{risk.title}</p>
               <span className="shrink-0 rounded px-1.5 py-0.5 text-xs font-bold text-primary-foreground" style={{ background: bandFor(risk.score)?.colour }}>{risk.score}</span>
