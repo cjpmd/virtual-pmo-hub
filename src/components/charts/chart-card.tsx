@@ -91,7 +91,7 @@ export function ChartCard({ title, subtitle, info, aside, controls, timeRange, l
     : empty
       ? <ChartEmpty {...empty} />
       : <div className="viz-animate">{children}</div>;
-  return <section aria-labelledby={headingId} className={cn("flex flex-col rounded-lg border border-border/70 bg-card p-5 shadow-sm", className)}>
+  return <section aria-labelledby={headingId} className={cn("flex min-w-0 flex-col rounded-lg border border-border/70 bg-card p-5 shadow-sm", className)}>
     <header className="flex items-start justify-between gap-3">
       <div className="min-w-0">
         <div className="flex items-center gap-1.5">

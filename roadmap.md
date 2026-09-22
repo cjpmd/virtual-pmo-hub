@@ -69,8 +69,8 @@
 - [x] Add breadcrumbs and redirect every legacy route to its new address
 - [x] Add a settings service, shared formatters and a fourteen-section settings area
 
-- [ ] Consolidate Portfolio metric, chart, surface, status and table primitives
-- [ ] Align Portfolio, Delivery and Resources pages to the canonical design
-- [ ] Align Benefits and Governance pages to the canonical design
-- [ ] Align Home, Insights, detail workspaces and Settings to the canonical design
+- [x] Consolidate Portfolio metric, chart, surface, status and table primitives
+- [x] Align Portfolio, Delivery and Resources pages to the canonical design
+- [x] Align Benefits and Governance pages to the canonical design
+- [x] Align Home, Insights, detail workspaces and Settings to the canonical design
 - [ ] Verify representative pages in light/dark and desktop/mobile layouts

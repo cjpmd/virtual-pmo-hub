@@ -18,9 +18,9 @@ const money = formatCompactCurrency;
 
 function Panel({ title: heading, note, children, className }: { title: string; note?: string; children: React.ReactNode; className?: string }) {
   return <section className={cn("rounded-lg border border-border/70 bg-card p-5 shadow-sm", className)}>
-    <h2 className="font-display text-lg font-semibold">{heading}</h2>
-    {note && <p className="mt-1 text-sm text-muted-foreground">{note}</p>}
-    {children}
+    <h2 className="font-display text-sm font-semibold text-card-foreground">{heading}</h2>
+    {note && <p className="mt-0.5 text-xs text-muted-foreground">{note}</p>}
+    <div className="mt-4">{children}</div>
   </section>;
 }
 
@@ -52,10 +52,10 @@ function Dashboard() {
 
     <div className="grid gap-5 xl:grid-cols-[1.5fr_1fr]">
       <Panel title="Benefits by strategic objective" note="Planned against realised, showing which objectives the portfolio is actually moving.">
-        <div className="mt-5 h-[26rem]">
+        <div className="h-[26rem]">
           <ResponsiveContainer>
             <BarChart data={objectives} layout="vertical" margin={{ left: 8, right: 16 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <CartesianGrid />
               <XAxis type="number" tickFormatter={value => money(Number(value))} tick={{ fontSize: 11 }} />
               <YAxis dataKey="name" type="category" width={170} tick={{ fontSize: 11 }} />
               <Tooltip formatter={(value: number | string) => formatCurrency(Number(value))} />
@@ -67,16 +67,16 @@ function Dashboard() {
         </div>
       </Panel>
       <Panel title="Classification split" note="Where the planned value sits across the four benefit classifications.">
-        <div className="mt-5 h-72">
+        <div className="h-72">
           <ResponsiveContainer>
             <PieChart>
-              <Pie data={split} dataKey="value" nameKey="name" innerRadius={62} outerRadius={104} paddingAngle={2}>{split.map((_, index) => <Cell key={index} fill={`var(--chart-${index + 1})`} />)}</Pie>
+              <Pie data={split} dataKey="value" nameKey="name" innerRadius={62} outerRadius={104} paddingAngle={2}>{split.map((_, index) => <Cell key={index} fill={`var(--viz-cat-${index + 1})`} />)}</Pie>
               <Tooltip formatter={(value: number | string) => formatCurrency(Number(value))} />
             </PieChart>
           </ResponsiveContainer>
         </div>
         <div className="mt-2 space-y-2">{split.map((row, index) => <div key={row.name} className="flex items-center gap-2 text-sm">
-          <span className="size-2.5 rounded-full" style={{ background: `var(--chart-${index + 1})` }} />
+          <span className="size-2.5 rounded-full" style={{ background: `var(--viz-cat-${index + 1})` }} />
           <span className="flex-1">{row.name}</span>
           <span className="text-xs text-muted-foreground">{row.count} · {money(row.value)}</span>
         </div>)}</div>
@@ -84,7 +84,7 @@ function Dashboard() {
     </div>
 
     <Panel title="Portfolio return" note="Whole-life cost against whole-life benefit for each programme, with the benefit-cost ratio.">
-      <div className="mt-5 overflow-x-auto">
+      <div className="overflow-x-auto">
         <table className="w-full min-w-[720px] text-left text-sm">
           <thead className="bg-table-head text-xs text-muted-foreground"><tr><th className="h-11 px-4 font-semibold">Programme</th><th className="px-4 font-semibold">Whole-life cost</th><th className="px-4 font-semibold">Whole-life benefit</th><th className="px-4 font-semibold">Realised</th><th className="px-4 font-semibold">Benefit-cost ratio</th></tr></thead>
           <tbody>
