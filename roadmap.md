@@ -73,4 +73,4 @@
 - [x] Align Portfolio, Delivery and Resources pages to the canonical design
 - [x] Align Benefits and Governance pages to the canonical design
 - [x] Align Home, Insights, detail workspaces and Settings to the canonical design
-- [ ] Verify representative pages in light/dark and desktop/mobile layouts
+- [x] Verify representative pages in light/dark and desktop/mobile layouts
