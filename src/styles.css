@@ -282,3 +282,35 @@
 .viz-animate {
   animation: viz-rise 320ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
+
+/* Direct Recharts views inherit the Portfolio chart chrome. */
+.recharts-cartesian-grid line {
+  stroke: var(--viz-grid);
+  stroke-dasharray: 0;
+}
+
+.recharts-cartesian-axis-line,
+.recharts-cartesian-axis-tick-line {
+  stroke: transparent;
+}
+
+.recharts-cartesian-axis-tick-value,
+.recharts-legend-item-text {
+  fill: var(--viz-ink-muted);
+  color: var(--viz-ink-muted) !important;
+  font-size: 11px;
+}
+
+.recharts-default-tooltip {
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  background: var(--popover) !important;
+  color: var(--popover-foreground) !important;
+  box-shadow: 0 10px 24px color-mix(in oklab, var(--foreground) 10%, transparent);
+  font-size: 12px;
+}
+
+.recharts-tooltip-cursor {
+  fill: color-mix(in oklab, var(--accent) 55%, transparent);
+  stroke: var(--viz-axis);
+}
