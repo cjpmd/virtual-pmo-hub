@@ -27,7 +27,7 @@ function Page(){
  const [filter,setFilter]=useState("All");
  const kinds=["All",...Array.from(new Set(feed.map(item=>item.kind)))];
  const shown=feed.filter(item=>filter==="All"||item.kind===filter);
- return <div className="space-y-7">
+ return <div className="space-y-6">
   <AutoBreadcrumbs/>
   <PageHeader eyebrow="Personal workspace" title="Notifications" description="Everything the workspace has raised with you. Channels and per-event toggles are configured in Settings → Notifications."
    actions={<Button variant="outline" onClick={()=>setRead(feed.map(item=>item.id))}><CheckCheck/>Mark all read</Button>}/>
@@ -38,7 +38,7 @@ function Page(){
    <KpiCard label="Events enabled" value={String(Object.values(settings.notifications.events).filter(Boolean).length)} detail={`of ${Object.keys(settings.notifications.events).length} event types`} icon="budget"/>
   </div>
   <div className="flex flex-wrap gap-2">{kinds.map(kind=><Button key={kind} size="sm" variant={filter===kind?"default":"outline"} onClick={()=>setFilter(kind)}>{kind}</Button>)}</div>
-  <div className="overflow-hidden rounded-lg border bg-card shadow-sm"><div className="divide-y">
+  <div className="overflow-hidden rounded-lg border border-border/70 bg-card shadow-sm"><div className="divide-y">
    {shown.map(item=><button key={item.id} onClick={()=>setRead(current=>current.includes(item.id)?current:[...current,item.id])} className={cn("flex w-full items-start gap-3 p-4 text-left hover:bg-accent/30",!read.includes(item.id)&&"bg-primary/[0.03]")}>
     <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-md bg-accent text-accent-foreground">{item.channel==="Email"?<Mail className="size-4"/>:item.channel==="Teams"?<MessageSquare className="size-4"/>:<BellRing className="size-4"/>}</span>
     <div className="min-w-0 flex-1">

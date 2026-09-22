@@ -16,7 +16,7 @@ export function GateChecklist({ project, lessonsReviewed, phaseReviewHeld, manua
   const resolved = items.map(item => ({ ...item, passed: item.status === "Pass" || (item.status === "Manual" && manualTicks.includes(item.criterion.id)) }));
   const passed = resolved.filter(item => item.passed).length;
 
-  return <section className="rounded-lg border bg-card p-5 shadow-sm">
+  return <section className="rounded-lg border border-border/70 bg-card p-5 shadow-sm">
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
         <h2 className="font-display text-lg font-semibold">{phase?.gateName ?? "Exit gate"}</h2>

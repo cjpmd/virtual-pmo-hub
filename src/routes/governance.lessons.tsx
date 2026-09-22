@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { CircleAlert, Download, Plus, Repeat2, Upload } from "lucide-react";
 import { BoardWorkspace } from "@/components/board-workspace";
+import { ChartCard } from "@/components/charts/chart-card";
 import { LessonsImport } from "@/components/lessons-import";
 import { KpiCard, PageHeader } from "@/components/pmo-ui";
 import { Button } from "@/components/ui/button";
@@ -33,7 +34,7 @@ function Page() {
     URL.revokeObjectURL(url);
   };
 
-  return <div className="space-y-7">
+  return <div className="space-y-6">
     <AutoBreadcrumbs/><PageHeader eyebrow="Continuous improvement" title="Lessons" description="Turning lessons identified into lessons learned: what keeps happening, what we changed because of it, and which projects are not looking back at all."
       actions={<div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => setImportOpen(true)}><Upload />Import lessons</Button><Button variant="outline" onClick={exportCsv}><Download />Export CSV</Button></div>} />
     
@@ -46,7 +47,7 @@ function Page() {
       <KpiCard label="Projects with no recent lessons" value={String(metrics.staleProjects)} detail="Nothing logged in 90 days" icon="health" />
     </div>
 
-    <section className="rounded-lg border bg-card p-5 shadow-sm">
+    <section className="rounded-lg border border-border/70 bg-card p-5 shadow-sm">
       <div className="flex items-center gap-2"><Repeat2 className="size-5 text-primary" /><div><h2 className="font-display text-lg font-semibold">Recurring themes</h2><p className="text-sm text-muted-foreground">Categories where the same kind of problem has appeared in three or more projects.</p></div></div>
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         {themes.map(theme => <ThemeCard key={theme.category} theme={theme} raised={raised.includes(theme.category)} onRaise={() => setRaised(current => [...current, theme.category])} />)}
@@ -62,7 +63,7 @@ function Page() {
       </div>
     </div>
 
-    <section className="rounded-lg border bg-card shadow-sm">
+    <section className="rounded-lg border border-border/70 bg-card shadow-sm">
       <header className="flex items-center gap-2 border-b p-5"><CircleAlert className="size-5 text-primary" /><div><h2 className="font-display text-lg font-semibold">Coverage</h2><p className="text-sm text-muted-foreground">Active projects and their last lessons review. Red where a phase gate passed without one.</p></div></header>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[780px] text-left text-sm">
@@ -108,21 +109,19 @@ function ThemeCard({ theme, raised, onRaise }: { theme: RecurringTheme; raised: 
 }
 
 function Chart({ title: heading, note, data, height, vertical = false }: { title: string; note: string; data: Array<{ name: string; problems: number; successes: number }>; height: number; vertical?: boolean }) {
-  return <section className="rounded-lg border bg-card p-5 shadow-sm">
-    <h2 className="font-display text-lg font-semibold">{heading}</h2>
-    <p className="mt-1 text-sm text-muted-foreground">{note}</p>
-    <div style={{ height }} className="mt-4">
+  return <ChartCard title={heading} subtitle={note} info={note}>
+    <div style={{ height }}>
       <ResponsiveContainer>
         <BarChart data={data} layout={vertical ? "vertical" : "horizontal"} margin={{ left: 8, right: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+          <CartesianGrid />
           {vertical ? <><XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} /><YAxis dataKey="name" type="category" width={170} tick={{ fontSize: 11 }} /></>
             : <><XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-18} textAnchor="end" height={52} /><YAxis tick={{ fontSize: 11 }} allowDecimals={false} width={30} /></>}
           <Tooltip />
           <Legend wrapperStyle={{ fontSize: 12 }} />
-          <Bar dataKey="problems" name="Problem" stackId="a" fill="var(--health-bad)" radius={vertical ? [0, 0, 0, 0] : [0, 0, 0, 0]} />
-          <Bar dataKey="successes" name="Success" stackId="a" fill="var(--health-good)" radius={vertical ? [0, 3, 3, 0] : [3, 3, 0, 0]} />
+          <Bar dataKey="problems" name="Problem" stackId="a" fill="var(--viz-critical)" radius={vertical ? [0, 0, 0, 0] : [0, 0, 0, 0]} />
+          <Bar dataKey="successes" name="Success" stackId="a" fill="var(--viz-good)" radius={vertical ? [0, 3, 3, 0] : [3, 3, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
-  </section>;
+  </ChartCard>;
 }

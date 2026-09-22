@@ -9,7 +9,7 @@ export const Route=createFileRoute("/governance/improvement-actions")({head:()=>
 function Page(){
  const actions=getImprovementActions();
  const embedded=actions.filter(action=>action.embeddedIn);
- return <div className="space-y-7">
+ return <div className="space-y-6">
   <AutoBreadcrumbs/><PageHeader eyebrow="Continuous improvement" title="Improvement actions" description="A lesson only becomes a lesson learned when something changes. These are the changes, and where they have been embedded."/>
   
   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

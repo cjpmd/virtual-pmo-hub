@@ -177,7 +177,7 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
   const endPan = () => { const moved = pan.current; pan.current = null; setDragging(false); return moved };
 
   return <div className="space-y-4">
-    <div className="space-y-3 rounded-lg border bg-card p-4 shadow-sm">
+    <div className="space-y-3 rounded-lg border border-border/70 bg-card p-4 shadow-sm">
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground"/>
@@ -207,7 +207,7 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
       clear={() => onFocus(undefined)}/> : null}
 
     <div className={cn("grid gap-4", focus ? "xl:grid-cols-[1fr_340px]" : "")}>
-      <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
+      <div className="overflow-hidden rounded-lg border border-border/70 bg-card shadow-sm">
         <div ref={viewportRef} onPointerDown={beginPan} onPointerMove={movePan} onPointerUp={event => { const moved = endPan(); if (moved && Math.abs(event.clientX - moved.x) < 4 && Math.abs(event.clientY - moved.y) < 4 && focusId) onFocus(undefined) }} onPointerLeave={endPan}
           className={cn("relative touch-none overflow-hidden", dragging ? "cursor-grabbing" : "cursor-grab")} style={{ height: VIEWPORT_HEIGHT }}>
           <div className="absolute left-0 top-0 origin-top-left" style={{ width: layout.width, height: layout.height, transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`, transition: dragging ? "none" : "transform 260ms cubic-bezier(0.22,0.61,0.36,1)" }}>
@@ -251,7 +251,7 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
                   const childTone = nodeTone(child.id);
                   return <button data-node key={child.id} type="button" onClick={event => { event.stopPropagation(); onFocus(focusId === child.id ? undefined : child.id) }} onMouseEnter={() => setHover(child.id)} onMouseLeave={() => setHover(null)}
                     style={{ left: childBox.x - box.x, top: childBox.y - box.y, width: childBox.width, height: childBox.height, opacity: toneOpacity[childTone] ?? 1, filter: childTone === "muted" ? "grayscale(1)" : undefined, transition: "opacity 200ms ease, filter 200ms ease" }}
-                    className={cn("absolute grid place-items-center rounded-md border bg-card px-2 text-center", childTone === "focus" ? "border-primary ring-2 ring-primary" : "hover:border-primary/60", showCritical && focus?.criticalNodes.has(child.id) && childTone !== "muted" && "ring-2 ring-viz-critical/70")}>
+                    className={cn("absolute grid place-items-center rounded-lg border border-border/70 bg-card px-2 text-center", childTone === "focus" ? "border-primary ring-2 ring-primary" : "hover:border-primary/60", showCritical && focus?.criticalNodes.has(child.id) && childTone !== "muted" && "ring-2 ring-viz-critical/70")}>
                     <span><span className="line-clamp-2 text-[11px] font-medium leading-tight">{child.label}</span>{child.kind === "Milestone" ? <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">{child.sublabel}</span> : null}</span>
                   </button>;
                 })}
@@ -286,7 +286,7 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
         jump={(dependency, side) => jumpTo(nodeFor(dependency, side))}/> : null}
     </div>
 
-    <section className="rounded-lg border bg-card shadow-sm">
+    <section className="rounded-lg border border-border/70 bg-card shadow-sm">
       <header className="flex items-center justify-between border-b p-4">
         <h2 className="font-display text-base font-semibold">Arrows on this map</h2>
         <p className="text-xs text-muted-foreground">{graph.edges.length} of {items.length} shown{focus ? ` · ${focus.edges.size} in the focused chain` : ""}</p>

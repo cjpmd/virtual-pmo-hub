@@ -85,7 +85,7 @@ export function BenefitsMapCanvas() {
   const projectOptions = useMemo(() => getProjects().filter(project => getBenefits().some(benefit => benefit.enablingProjects.some(link => link.projectId === project.id))), []);
 
   return <div className="space-y-4">
-    <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-4 shadow-sm">
+    <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border/70 bg-card p-4 shadow-sm">
       <label className="flex flex-col gap-1 text-xs font-semibold text-muted-foreground">Programme
         <select value={filter.programmeId ?? ""} onChange={event => setKey("programmeId", event.target.value)} className="h-9 min-w-52 rounded-md border border-input bg-background px-2 text-sm font-medium text-foreground">
           <option value="">All programmes</option>{programmes.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}

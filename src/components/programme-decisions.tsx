@@ -18,7 +18,7 @@ export function ProgrammeDecisions({ programmeId }: { programmeId: string }) {
       <KpiCard label="Made in 30 days" value={String(metrics.madeLast30)} detail={`${metrics.superseded} superseded`} icon="budget" />
     </div>
     <div className="space-y-3">
-      {items.map(item => <button key={item.id} onClick={() => setOpen(item)} className="block w-full rounded-lg border bg-card p-4 text-left shadow-sm hover:bg-accent/30">
+      {items.map(item => <button key={item.id} onClick={() => setOpen(item)} className="block w-full rounded-lg border border-border/70 bg-card p-4 text-left shadow-sm hover:bg-accent/30">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <p className="text-sm font-semibold">{item.reference} · {item.title}</p>
           <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", item.status === "Made" ? "bg-health-good/20 text-health-good-foreground" : item.overdue ? "bg-health-bad/20 text-health-bad-foreground" : item.status === "Pending" ? "bg-health-warn/25 text-health-warn-foreground" : "bg-muted text-muted-foreground")}>{item.status}{item.overdue ? " · overdue" : ""}</span>

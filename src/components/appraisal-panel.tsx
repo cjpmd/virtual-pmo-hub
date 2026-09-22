@@ -22,7 +22,7 @@ export function AppraisalPanel({ drafts, wholeLifeCost, years = 5, settings = ge
   const result = appraise({ drafts, wholeLifeCost, years, settings });
   const objectives = getStrategicObjectives();
 
-  return <section className="rounded-lg border bg-card p-5 shadow-sm">
+  return <section className="rounded-lg border border-border/70 bg-card p-5 shadow-sm">
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
         <h3 className="flex items-center gap-2 font-display text-base font-semibold"><Calculator className="size-4 text-primary" />Appraisal</h3>

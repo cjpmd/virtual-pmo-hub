@@ -59,7 +59,7 @@ function RequestsPage() {
   const totalAdjusted = scored.reduce((sum, entry) => sum + entry.score.adjustedBenefit, 0);
   const totalRaw = scored.reduce((sum, entry) => sum + entry.score.rawBenefit, 0);
 
-  return <div className="space-y-7">
+  return <div className="space-y-6">
     <AutoBreadcrumbs/><PageHeader eyebrow="Portfolio intake" title="Requests" description="Benefits are captured as draft benefit profiles, not a single number. Prioritisation uses the optimism-bias adjusted benefit value alongside strategic alignment." />
 
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -72,7 +72,7 @@ function RequestsPage() {
     <BoardWorkspace title="Requests" rows={rows} columns={columns} groupOptions={["group", "priority", "sponsor"]} initialView="kanban"
       renderTitle={row => <button onClick={event => { event.stopPropagation(); setSelectedId(row.id) }} className="text-left text-primary hover:underline">{row.title}</button>} />
 
-    <section className="rounded-lg border bg-card p-5 shadow-sm">
+    <section className="rounded-lg border border-border/70 bg-card p-5 shadow-sm">
       <h2 className="font-display text-lg font-semibold">Prioritisation ranking</h2>
       <p className="mt-1 text-sm text-muted-foreground">Ranked by adjusted value for money (60%) and strategic alignment (40%).</p>
       <div className="mt-4 divide-y">

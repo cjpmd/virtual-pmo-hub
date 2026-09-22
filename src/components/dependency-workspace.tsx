@@ -42,7 +42,7 @@ export function DependencyWorkspace() {
     dueDate: dependency.requiredBy,
   });
 
-  return <div className="space-y-7">
+  return <div className="space-y-6">
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <KpiCard label="Dependencies" value={String(metrics.total)} detail={`${metrics.inferred} inferred and unvalidated`} icon="projects" />
       <KpiCard label="Cross-PM" value={String(metrics.crossPm)} detail="Between different project managers" icon="health" />

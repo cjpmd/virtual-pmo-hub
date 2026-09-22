@@ -17,7 +17,7 @@ export function DecisionsWorkspace() {
   const metrics = getDecisionMetrics(items);
   const rows = decisionsToRows(items).map(row => ({ ...row, madeThisMonth: madeThisMonth(items.find(item => item.id === row.id) ?? items[0]!) }));
 
-  return <div className="space-y-7">
+  return <div className="space-y-6">
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <KpiCard label="Pending decisions" value={String(metrics.pending)} detail="Waiting on a forum" icon="projects" />
       <KpiCard label="Overdue" value={String(metrics.overdue)} detail="Past the needed-by date" icon="health" />

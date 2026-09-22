@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { HealthPill } from "@/components/health-pill";
+import { ChartCard, LegendItem } from "@/components/charts/chart-card";
 import type { Health, HealthDimension, Project, StatusReport, Task } from "@/data/types";
 import { cn } from "@/lib/utils";
 
@@ -22,11 +23,11 @@ const dimensions: Array<{ key: HealthDimension; label: string }> = [
   { key: "issue", label: "Issues & risks" },
 ];
 const chartConfig = {
-  overall: { label: "Overall", color: "var(--chart-1)" },
-  schedule: { label: "Schedule", color: "var(--chart-2)" },
-  financial: { label: "Financial", color: "var(--chart-3)" },
-  effort: { label: "Effort", color: "var(--chart-4)" },
-  issue: { label: "Issues & risks", color: "var(--chart-5)" },
+  overall: { label: "Overall", color: "var(--viz-cat-1)" },
+  schedule: { label: "Schedule", color: "var(--viz-cat-2)" },
+  financial: { label: "Financial", color: "var(--viz-cat-3)" },
+  effort: { label: "Effort", color: "var(--viz-cat-4)" },
+  issue: { label: "Issues & risks", color: "var(--viz-cat-5)" },
 } satisfies ChartConfig;
 
 type HealthSet = Record<HealthDimension, Health>;
@@ -113,7 +114,7 @@ function ReportPanel({ open, calculated, tasks, onClose, onSubmit }: { open: boo
         <div><h2 id="new-report-title" className="font-display text-xl font-semibold">New status report</h2><p className="mt-1 text-sm text-muted-foreground">Reporting date 21/09/2026 · Chris McDonald</p></div>
         <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close"><X className="size-4"/></Button>
       </div>
-      <div className="flex-1 space-y-7 overflow-y-auto px-5 py-6 sm:px-7">
+      <div className="flex-1 space-y-6 overflow-y-auto px-5 py-6 sm:px-7">
         <section className="space-y-5"><div><h3 className="text-sm font-semibold">Health assessment</h3><p className="mt-1 text-xs text-muted-foreground">Current calculated values are pre-filled. Explain any manual change.</p></div>
           {dimensions.map(dimension => <HealthControl key={dimension.key} dimension={dimension} value={health[dimension.key]} calculated={calculated[dimension.key]} reason={reasons[dimension.key]} onChange={value => setHealth(current => ({ ...current, [dimension.key]: value }))} onReasonChange={value => setReasons(current => ({ ...current, [dimension.key]: value }))}/>)}
         </section>
@@ -138,18 +139,17 @@ export function StatusWorkspace({ project, initialReports, calculated }: { proje
 
   return <div className="space-y-6">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="font-display text-xl font-semibold">Project status</h2><p className="mt-1 text-sm text-muted-foreground">Health history and submitted reporting narrative.</p></div><Button onClick={() => setPanelOpen(true)}><Plus className="size-4"/>New status report</Button></div>
-    <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
-      <div className="flex items-start gap-3"><span className="grid size-9 place-items-center rounded-md bg-accent text-accent-foreground"><Activity className="size-4"/></span><div><h3 className="font-display text-lg font-semibold">Health trend</h3><p className="text-sm text-muted-foreground">Movement across submitted reports</p></div></div>
+    <ChartCard title="Health trend" subtitle="Movement across submitted reports" info="Each line follows one health dimension across submitted project status reports." legend={dimensions.map(({key,label})=><LegendItem key={key} colour={chartConfig[key].color} label={label} shape="line"/>)}>
       <ChartContainer config={chartConfig} className="mt-5 h-72 w-full aspect-auto">
         <LineChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
           <CartesianGrid vertical={false}/><XAxis dataKey="reportingDate" tickLine={false} axisLine={false}/><YAxis domain={[0,3]} ticks={[0,1,2,3]} tickFormatter={value => valueHealth[value] ?? ""} width={70} tickLine={false} axisLine={false}/><Tooltip content={<TrendTooltip/>}/><Legend/>
           {dimensions.map(({ key }) => <Line key={key} dataKey={key} name={chartConfig[key].label as string} type="monotone" stroke={`var(--color-${key})`} strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }}/>) }
         </LineChart>
       </ChartContainer>
-    </section>
+    </ChartCard>
     <section><div className="mb-4 flex items-center gap-2"><Clock3 className="size-4 text-primary"/><h3 className="font-display text-lg font-semibold">Report timeline</h3><span className="text-sm text-muted-foreground">{reports.length} submitted</span></div>
       <div className="relative space-y-4 before:absolute before:bottom-4 before:left-4 before:top-4 before:w-px before:bg-border sm:before:left-5">
-        {reports.map((report, index) => { const overallOverride=report.overrideReasons?.overall; return <article key={report.id} className="relative ml-9 rounded-lg border border-border bg-card p-5 shadow-sm sm:ml-12">
+        {reports.map((report, index) => { const overallOverride=report.overrideReasons?.overall; return <article key={report.id} className="relative ml-9 rounded-lg border border-border/70 bg-card p-5 shadow-sm sm:ml-12">
           <span className={cn("absolute -left-[2.1rem] top-5 grid size-7 place-items-center rounded-full border border-primary bg-background text-primary sm:-left-[2.75rem]", index === 0 && "bg-primary text-primary-foreground")}><FilePenLine className="size-3.5"/></span>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><div className="flex items-center gap-2"><CalendarDays className="size-4 text-muted-foreground"/><h4 className="font-semibold">{formatDate(report.reportingDate)}</h4>{index === 0 && <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold uppercase text-accent-foreground">Latest</span>}</div><p className="mt-1 text-xs text-muted-foreground">Submitted by {report.submitter}</p></div><div className="flex flex-wrap gap-1.5">{overallOverride ? <HealthPill health={report.overall} override={{ health: report.overall, reason: overallOverride }}/> : <HealthPill health={report.overall}/>}</div></div>
           <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">{dimensions.map(({ key, label }) => { const reason=report.overrideReasons?.[key]; return <div key={key} className="rounded-md bg-muted/60 p-2.5"><p className="mb-1.5 text-[10px] font-semibold uppercase text-muted-foreground">{label}</p>{reason ? <HealthPill health={report[key]} override={{ health: report[key], reason }}/> : <HealthPill health={report[key]}/>}</div>})}</div>

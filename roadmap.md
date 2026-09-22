@@ -68,3 +68,9 @@
 - [x] Rebuild the sidebar as a collapsible rail with flyouts, Favourites and Recent
 - [x] Add breadcrumbs and redirect every legacy route to its new address
 - [x] Add a settings service, shared formatters and a fourteen-section settings area
+
+- [x] Consolidate Portfolio metric, chart, surface, status and table primitives
+- [x] Align Portfolio, Delivery and Resources pages to the canonical design
+- [x] Align Benefits and Governance pages to the canonical design
+- [x] Align Home, Insights, detail workspaces and Settings to the canonical design
+- [x] Verify representative pages in light/dark and desktop/mobile layouts

@@ -48,7 +48,7 @@ export function AssumptionsWorkspace({ scope, compact = false }: { scope?: { pro
 
     <BoardWorkspace title="Assumption log" rows={assumptionsToRows(items)} columns={assumptionColumns} groupOptions={["group", "scope"]} seededViews={assumptionViews} seededAutomations={governanceAutomationRecipes} />
 
-    <section className="rounded-lg border bg-card shadow-sm">
+    <section className="rounded-lg border border-border/70 bg-card shadow-sm">
       <header className="border-b p-4"><h2 className="font-display text-base font-semibold">Validate or invalidate</h2><p className="mt-0.5 text-xs text-muted-foreground">Invalidating an assumption prompts you to raise an issue.</p></header>
       <div className="divide-y">
         {items.filter(item => item.status === "Open").map(item => <div key={item.id} className="grid gap-3 p-4 lg:grid-cols-[1fr_auto] lg:items-center">
