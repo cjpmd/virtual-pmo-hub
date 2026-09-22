@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { CircleAlert, Download, Plus, Repeat2, Upload } from "lucide-react";
 import { BoardWorkspace } from "@/components/board-workspace";
+import { ChartCard } from "@/components/charts/chart-card";
 import { LessonsImport } from "@/components/lessons-import";
 import { KpiCard, PageHeader } from "@/components/pmo-ui";
 import { Button } from "@/components/ui/button";
@@ -108,21 +109,19 @@ function ThemeCard({ theme, raised, onRaise }: { theme: RecurringTheme; raised: 
 }
 
 function Chart({ title: heading, note, data, height, vertical = false }: { title: string; note: string; data: Array<{ name: string; problems: number; successes: number }>; height: number; vertical?: boolean }) {
-  return <section className="rounded-lg border bg-card p-5 shadow-sm">
-    <h2 className="font-display text-lg font-semibold">{heading}</h2>
-    <p className="mt-1 text-sm text-muted-foreground">{note}</p>
-    <div style={{ height }} className="mt-4">
+  return <ChartCard title={heading} subtitle={note} info={note}>
+    <div style={{ height }}>
       <ResponsiveContainer>
         <BarChart data={data} layout={vertical ? "vertical" : "horizontal"} margin={{ left: 8, right: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+          <CartesianGrid />
           {vertical ? <><XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} /><YAxis dataKey="name" type="category" width={170} tick={{ fontSize: 11 }} /></>
             : <><XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-18} textAnchor="end" height={52} /><YAxis tick={{ fontSize: 11 }} allowDecimals={false} width={30} /></>}
           <Tooltip />
           <Legend wrapperStyle={{ fontSize: 12 }} />
-          <Bar dataKey="problems" name="Problem" stackId="a" fill="var(--health-bad)" radius={vertical ? [0, 0, 0, 0] : [0, 0, 0, 0]} />
-          <Bar dataKey="successes" name="Success" stackId="a" fill="var(--health-good)" radius={vertical ? [0, 3, 3, 0] : [3, 3, 0, 0]} />
+          <Bar dataKey="problems" name="Problem" stackId="a" fill="var(--viz-critical)" radius={vertical ? [0, 0, 0, 0] : [0, 0, 0, 0]} />
+          <Bar dataKey="successes" name="Success" stackId="a" fill="var(--viz-good)" radius={vertical ? [0, 3, 3, 0] : [3, 3, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
-  </section>;
+  </ChartCard>;
 }

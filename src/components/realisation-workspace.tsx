@@ -7,6 +7,7 @@ import { BellRing, CalendarClock, CheckCircle2, FileText, MessageCircleQuestion,
 import { Button } from "@/components/ui/button";
 import { KpiCard } from "@/components/pmo-ui";
 import { HealthPill } from "@/components/health-pill";
+import { ChartCard, LegendItem } from "@/components/charts/chart-card";
 import type { BenefitClassification } from "@/data/types";
 import { filterBenefits, getBenefitsInRealisation, getMeasurementSchedule, getPortfolioCurve, getValidationQueue, type BenefitFilter, type ValidationQueueItem } from "@/services/benefits-value";
 import { getBenefitHealth, getBenefits, getProgrammes, getStrategicObjectives } from "@/services/pmo";
@@ -39,36 +40,28 @@ export function RealisationWorkspace() {
       <KpiCard label="Awaiting validation" value={String(outstanding.length)} detail="Submitted records in the PMO queue" icon="projects" />
     </div>
 
-    <section className="rounded-lg border bg-card p-5 shadow-sm">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h2 className="font-display text-lg font-semibold">Cumulative benefit value</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Planned profile against evidenced actuals and the confidence-adjusted forecast.</p>
-        </div>
-        <div className="flex flex-wrap gap-3">
+    <ChartCard title="Cumulative benefit value" subtitle="Planned profile against evidenced actuals and the confidence-adjusted forecast." info="Forecast applies a confidence factor of 100% for High, 85% for Medium and 60% for Low." controls={<div className="flex flex-wrap gap-3">
           <Filter label="Programme" value={filter.programmeId ?? ""} onChange={value => setKey("programmeId", value)} options={getProgrammes().map(item => ({ value: item.id, label: item.name }))} />
           <Filter label="Objective" value={filter.objectiveId ?? ""} onChange={value => setKey("objectiveId", value)} options={getStrategicObjectives().map(item => ({ value: item.id, label: item.title }))} />
           <Filter label="Classification" value={filter.classification ?? ""} onChange={value => setKey("classification", value)} options={classifications.map(item => ({ value: item, label: item }))} />
           <Filter label="Benefit" value={filter.benefitId ?? ""} onChange={value => setKey("benefitId", value)} options={getBenefits().map(item => ({ value: item.id, label: `${item.reference} · ${item.title}` }))} />
-        </div>
-      </div>
-      <div className="mt-6 h-80">
+        </div>} legend={<><LegendItem colour="var(--viz-cat-2)" label="Planned" shape="line"/><LegendItem colour="var(--viz-cat-5)" label="Forecast" shape="dashed"/><LegendItem colour="var(--viz-cat-1)" label="Actual" shape="line"/></>} footer={`${scoped.length} benefits in scope.`}>
+      <div className="h-80">
         <ResponsiveContainer>
           <AreaChart data={curve} margin={{ left: 8, right: 8 }}>
             <defs><linearGradient id="plannedFill" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--chart-2)" stopOpacity={0.35} /><stop offset="95%" stopColor="var(--chart-2)" stopOpacity={0.02} /></linearGradient></defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+            <CartesianGrid />
             <XAxis dataKey="period" tick={{ fontSize: 11 }} />
             <YAxis tickFormatter={value => money(Number(value))} tick={{ fontSize: 11 }} width={62} />
             <Tooltip formatter={(value: number | string) => formatCurrency(Number(value))} />
             <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Area type="monotone" dataKey="planned" name="Planned" stroke="var(--chart-2)" fill="url(#plannedFill)" strokeWidth={2} />
-            <Line type="monotone" dataKey="forecast" name="Forecast" stroke="var(--chart-5)" strokeWidth={2} strokeDasharray="6 4" dot={false} />
-            <Line type="monotone" dataKey="actual" name="Actual" stroke="var(--primary)" strokeWidth={2.5} connectNulls={false} />
+            <Area type="monotone" dataKey="planned" name="Planned" stroke="var(--viz-cat-2)" fill="url(#plannedFill)" strokeWidth={2} />
+            <Line type="monotone" dataKey="forecast" name="Forecast" stroke="var(--viz-cat-5)" strokeWidth={2} strokeDasharray="6 4" dot={false} />
+            <Line type="monotone" dataKey="actual" name="Actual" stroke="var(--viz-cat-1)" strokeWidth={2.5} connectNulls={false} />
           </AreaChart>
         </ResponsiveContainer>
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">{scoped.length} benefits in scope. Forecast applies a confidence factor of 100% for High, 85% for Medium and 60% for Low.</p>
-    </section>
+    </ChartCard>
 
     <section className="rounded-lg border bg-card shadow-sm">
       <header className="flex flex-wrap items-center gap-3 border-b p-5">

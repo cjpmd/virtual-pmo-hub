@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { HealthPill } from "@/components/health-pill";
+import { ChartCard, LegendItem } from "@/components/charts/chart-card";
 import type { Health, HealthDimension, Project, StatusReport, Task } from "@/data/types";
 import { cn } from "@/lib/utils";
 
@@ -138,15 +139,14 @@ export function StatusWorkspace({ project, initialReports, calculated }: { proje
 
   return <div className="space-y-6">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="font-display text-xl font-semibold">Project status</h2><p className="mt-1 text-sm text-muted-foreground">Health history and submitted reporting narrative.</p></div><Button onClick={() => setPanelOpen(true)}><Plus className="size-4"/>New status report</Button></div>
-    <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
-      <div className="flex items-start gap-3"><span className="grid size-9 place-items-center rounded-md bg-accent text-accent-foreground"><Activity className="size-4"/></span><div><h3 className="font-display text-lg font-semibold">Health trend</h3><p className="text-sm text-muted-foreground">Movement across submitted reports</p></div></div>
+    <ChartCard title="Health trend" subtitle="Movement across submitted reports" info="Each line follows one health dimension across submitted project status reports." legend={dimensions.map(({key,label})=><LegendItem key={key} colour={chartConfig[key].color} label={label} shape="line"/>)}>
       <ChartContainer config={chartConfig} className="mt-5 h-72 w-full aspect-auto">
         <LineChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
           <CartesianGrid vertical={false}/><XAxis dataKey="reportingDate" tickLine={false} axisLine={false}/><YAxis domain={[0,3]} ticks={[0,1,2,3]} tickFormatter={value => valueHealth[value] ?? ""} width={70} tickLine={false} axisLine={false}/><Tooltip content={<TrendTooltip/>}/><Legend/>
           {dimensions.map(({ key }) => <Line key={key} dataKey={key} name={chartConfig[key].label as string} type="monotone" stroke={`var(--color-${key})`} strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }}/>) }
         </LineChart>
       </ChartContainer>
-    </section>
+    </ChartCard>
     <section><div className="mb-4 flex items-center gap-2"><Clock3 className="size-4 text-primary"/><h3 className="font-display text-lg font-semibold">Report timeline</h3><span className="text-sm text-muted-foreground">{reports.length} submitted</span></div>
       <div className="relative space-y-4 before:absolute before:bottom-4 before:left-4 before:top-4 before:w-px before:bg-border sm:before:left-5">
         {reports.map((report, index) => { const overallOverride=report.overrideReasons?.overall; return <article key={report.id} className="relative ml-9 rounded-lg border border-border bg-card p-5 shadow-sm sm:ml-12">
