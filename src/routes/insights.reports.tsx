@@ -67,7 +67,7 @@ function Page() {
     URL.revokeObjectURL(url);
   };
 
-  return <div className="space-y-7">
+  return <div className="space-y-6">
     <AutoBreadcrumbs />
     <PageHeader eyebrow="Insights" title="Reports" description={`Standard reports built from live portfolio data. Values and dates follow the workspace settings, and exports carry the same formatting. Current financial year: ${formatFinancialYear("21/09/2026", settings)}.`} />
 

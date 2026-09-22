@@ -49,7 +49,7 @@ function Page() {
   const bands = settings.risk.bands;
   const bandFor = (score: number) => [...bands].sort((a, b) => b.minScore - a.minScore).find(band => score >= band.minScore);
 
-  return <div className="space-y-7">
+  return <div className="space-y-6">
     <AutoBreadcrumbs />
     <PageHeader eyebrow="Governance" title="RAIDD" description="One register for risks, assumptions, issues and decisions. Matrix size, score bands and option lists are configured in Settings → Risk & RAIDD." />
 

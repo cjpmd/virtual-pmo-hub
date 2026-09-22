@@ -34,7 +34,7 @@ function Dashboard() {
   const [accuracyBy, setAccuracyBy] = useState<"category" | "manager">("category");
   const accuracy = getForecastingAccuracy(accuracyBy, items);
 
-  return <div className="space-y-7">
+  return <div className="space-y-6">
     <AutoBreadcrumbs/><PageHeader eyebrow="Benefits management" title="Value Dashboard" description="What the portfolio is expected to deliver, what it has actually delivered, and how well we forecast." />
     
 

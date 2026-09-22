@@ -59,7 +59,7 @@ function RequestsPage() {
   const totalAdjusted = scored.reduce((sum, entry) => sum + entry.score.adjustedBenefit, 0);
   const totalRaw = scored.reduce((sum, entry) => sum + entry.score.rawBenefit, 0);
 
-  return <div className="space-y-7">
+  return <div className="space-y-6">
     <AutoBreadcrumbs/><PageHeader eyebrow="Portfolio intake" title="Requests" description="Benefits are captured as draft benefit profiles, not a single number. Prioritisation uses the optimism-bias adjusted benefit value alongside strategic alignment." />
 
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

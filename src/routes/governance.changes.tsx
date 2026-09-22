@@ -23,7 +23,7 @@ function Page(){
  ];
  const rows=changes.map(change=>({id:`${change.projectId}-${change.id}`,title:change.title,project:change.projectName,changeType:change.type,people:[change.requestedBy],number:change.costImpact,days:change.scheduleImpactDays,status:change.status,group:change.programmeName}));
  const approved=changes.filter(item=>item.status==="Approved");
- return <div className="space-y-7">
+ return <div className="space-y-6">
   <AutoBreadcrumbs/>
   <PageHeader eyebrow="Governance" title="Changes" description="Every change request raised against a project, with its approved cost and schedule impact. Change types are configured in Settings → Risk & RAIDD."/>
   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

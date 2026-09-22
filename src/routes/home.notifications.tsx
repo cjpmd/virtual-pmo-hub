@@ -27,7 +27,7 @@ function Page(){
  const [filter,setFilter]=useState("All");
  const kinds=["All",...Array.from(new Set(feed.map(item=>item.kind)))];
  const shown=feed.filter(item=>filter==="All"||item.kind===filter);
- return <div className="space-y-7">
+ return <div className="space-y-6">
   <AutoBreadcrumbs/>
   <PageHeader eyebrow="Personal workspace" title="Notifications" description="Everything the workspace has raised with you. Channels and per-event toggles are configured in Settings → Notifications."
    actions={<Button variant="outline" onClick={()=>setRead(feed.map(item=>item.id))}><CheckCheck/>Mark all read</Button>}/>

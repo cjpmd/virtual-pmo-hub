@@ -33,7 +33,7 @@ function Page() {
     URL.revokeObjectURL(url);
   };
 
-  return <div className="space-y-7">
+  return <div className="space-y-6">
     <AutoBreadcrumbs/><PageHeader eyebrow="Continuous improvement" title="Lessons" description="Turning lessons identified into lessons learned: what keeps happening, what we changed because of it, and which projects are not looking back at all."
       actions={<div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => setImportOpen(true)}><Upload />Import lessons</Button><Button variant="outline" onClick={exportCsv}><Download />Export CSV</Button></div>} />
     

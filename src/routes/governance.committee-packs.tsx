@@ -17,7 +17,7 @@ function Page(){
  const [previewId,setPreviewId]=useState<string|null>(null);
  const [packs,setPacks]=useState<Array<CommitteePackSnapshot&{collectionId:string;collectionName:string}>>([]);
  const collection=governance.find(item=>item.id===previewId);
- return <div className="space-y-7">
+ return <div className="space-y-6">
   <AutoBreadcrumbs/>
   <PageHeader eyebrow="Governance" title="Committee packs" description="Build the pack for a governance forum, preview every page and save a dated snapshot. Section order and cover text are set in Settings → Templates."/>
   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

@@ -26,7 +26,7 @@ function Page() {
   const pending = allDecisions.filter(item => item.status === "Pending" && (!mine || item.decisionMaker === user?.name));
   const outstanding = queue.filter(item => !decided[item.record.id]);
 
-  return <div className="space-y-7">
+  return <div className="space-y-6">
     <AutoBreadcrumbs />
     <PageHeader eyebrow="Personal workspace" title="Approvals" description="Everything waiting on a decision or a validation from you, in one queue."
       actions={<Button variant={mine ? "default" : "outline"} onClick={() => setMine(value => !value)}>{mine ? "Showing mine" : "Showing everyone's"}</Button>} />

@@ -23,7 +23,7 @@ function RoadmapsPage() {
   const navigate = useNavigate();
   const roadmap = roadmaps.find(item => item.id === roadmapId);
   if (!roadmap) return <p>No roadmaps available.</p>;
-  return <div className="space-y-7">
+  return <div className="space-y-6">
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <AutoBreadcrumbs/>
       <PageHeader eyebrow="Portfolio planning" title="Roadmaps" description="Coordinate strategic delivery, proposed initiatives and key institutional dates. Click a dependency line to follow its chain."/>

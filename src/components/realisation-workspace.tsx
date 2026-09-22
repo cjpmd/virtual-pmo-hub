@@ -31,7 +31,7 @@ export function RealisationWorkspace() {
 
   const latest = curve.reduce<{ planned: number; actual: number; forecast: number }>((carry, point) => ({ planned: point.planned, actual: point.actual ?? carry.actual, forecast: point.forecast }), { planned: 0, actual: 0, forecast: 0 });
 
-  return <div className="space-y-7">
+  return <div className="space-y-6">
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <KpiCard label="Planned to date" value={money(latest.planned)} detail="Whole-life profile" icon="budget" />
       <KpiCard label="Evidenced to date" value={money(latest.actual)} detail={`${latest.planned ? Math.round((latest.actual / latest.planned) * 100) : 0}% of the profile`} icon="forecast" />

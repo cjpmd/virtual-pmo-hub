@@ -113,7 +113,7 @@ function ReportPanel({ open, calculated, tasks, onClose, onSubmit }: { open: boo
         <div><h2 id="new-report-title" className="font-display text-xl font-semibold">New status report</h2><p className="mt-1 text-sm text-muted-foreground">Reporting date 21/09/2026 · Chris McDonald</p></div>
         <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close"><X className="size-4"/></Button>
       </div>
-      <div className="flex-1 space-y-7 overflow-y-auto px-5 py-6 sm:px-7">
+      <div className="flex-1 space-y-6 overflow-y-auto px-5 py-6 sm:px-7">
         <section className="space-y-5"><div><h3 className="text-sm font-semibold">Health assessment</h3><p className="mt-1 text-xs text-muted-foreground">Current calculated values are pre-filled. Explain any manual change.</p></div>
           {dimensions.map(dimension => <HealthControl key={dimension.key} dimension={dimension} value={health[dimension.key]} calculated={calculated[dimension.key]} reason={reasons[dimension.key]} onChange={value => setHealth(current => ({ ...current, [dimension.key]: value }))} onReasonChange={value => setReasons(current => ({ ...current, [dimension.key]: value }))}/>)}
         </section>
