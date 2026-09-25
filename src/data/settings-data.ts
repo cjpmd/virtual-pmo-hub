@@ -1,4 +1,4 @@
-import { defaultLifecyclePhases } from "./lifecycle";
+import { defaultLifecyclePhases, defaultTierDefinitions } from "./lifecycle";
 import type { AppSettings, CurrencyDefinition, TermKey } from "./settings-types";
 
 export const currencies: CurrencyDefinition[] = [
@@ -195,6 +195,6 @@ export const defaultSettings: AppSettings = {
     renewalDate: "31/07/2027",
     billingContact: "finance-systems@university.ac.uk",
   },
-  lifecycle: { phases: defaultLifecyclePhases },
+  lifecycle: { phases: defaultLifecyclePhases, tiers: defaultTierDefinitions },
   currentUserId: "cm",
 };
