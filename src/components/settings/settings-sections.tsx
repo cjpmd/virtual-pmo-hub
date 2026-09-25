@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ArrowDown, ArrowUp, CheckCircle2, Download, Plus, RotateCcw, Trash2, Upload } from "lucide-react";
-import { defaultLifecyclePhases } from "@/data/lifecycle";
+import { defaultLifecyclePhases, defaultTierDefinitions } from "@/data/lifecycle";
 const getDefaultPhases = () => JSON.parse(JSON.stringify(defaultLifecyclePhases)) as typeof defaultLifecyclePhases;
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
