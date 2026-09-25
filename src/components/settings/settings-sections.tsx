@@ -211,7 +211,7 @@ export function LifecycleSettings() {
   const removeCriterion = (criterionId: string) => active && updatePhase(active.id, { criteria: active.criteria.filter(item => item.id !== criterionId) });
   const toggleTier = (criterionId: string, tier: ProjectTier, current: ProjectTier[]) => updateCriterion(criterionId, { tiers: current.includes(tier) ? current.filter(item => item !== tier) : allTiers.filter(item => item === tier || current.includes(item)) });
   return <>
-    <SettingsCard title="Lifecycle phases and gates" description="Add, rename, reorder or remove phases, and edit each phase's exit gate criteria. Criteria marked as automatic are evaluated from live data on the project page." actions={<Button size="sm" variant="outline" onClick={() => save(getDefaultPhases())}><RotateCcw className="size-4" />Restore DTS lifecycle</Button>}>
+    <SettingsCard title="Lifecycle phases and gates" description="Add, rename, reorder or remove phases, and edit each phase's exit gate criteria. Criteria marked as automatic are evaluated from live data on the project page." actions={<Button size="sm" variant="outline" onClick={() => save(getDefaultPhases())}><RotateCcw className="size-4" />Restore to Default Lifecycle</Button>}>
       <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
         <div className="space-y-2">
           <ul className="space-y-2">{phases.map((phase, index) => <li key={phase.id} className={cn("flex items-stretch rounded-md border", phase.id === active?.id ? "border-primary bg-primary/5" : "hover:bg-accent/30")}>
@@ -259,11 +259,11 @@ export function LifecycleSettings() {
       </div>
     </SettingsCard>
 
-    <SettingsCard title="Project tiers" description="Tier decides which gate criteria and documents apply.">
-      <div className="grid gap-4 md:grid-cols-3">{tiers.map((tier: { tier: ProjectTier; guideline: string; description: string }) => <div key={tier.tier} className="rounded-md border p-4">
+    <SettingsCard title="Project tiers" description="Tier decides which gate criteria and documents apply. Edit the guideline and description for each tier; tier names are fixed because existing projects reference them." actions={<Button size="sm" variant="outline" onClick={() => updateSettings({ lifecycle: { ...settings.lifecycle, tiers: defaultTierDefinitions } })}><RotateCcw className="size-4" />Restore default tiers</Button>}>
+      <div className="grid gap-4 md:grid-cols-3">{tiers.map((tier) => <div key={tier.tier} className="space-y-3 rounded-md border p-4">
         <strong className="text-sm">{tier.tier}</strong>
-        <p className="mt-2 text-xs text-muted-foreground">{tier.guideline}</p>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">{tier.description}</p>
+        <Field label="Guideline"><Input value={tier.guideline} onChange={event => saveTiers(tiers.map(item => item.tier === tier.tier ? { ...item, guideline: event.target.value } : item))} /></Field>
+        <Field label="Description"><Textarea rows={4} value={tier.description} onChange={event => saveTiers(tiers.map(item => item.tier === tier.tier ? { ...item, description: event.target.value } : item))} /></Field>
       </div>)}</div>
     </SettingsCard>
 
