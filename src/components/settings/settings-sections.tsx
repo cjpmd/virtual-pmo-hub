@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { CheckCircle2, Download, Plus, RotateCcw, Trash2, Upload } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, Download, Plus, RotateCcw, Trash2, Upload } from "lucide-react";
+import { defaultLifecyclePhases } from "@/data/lifecycle";
+const getDefaultPhases = () => JSON.parse(JSON.stringify(defaultLifecyclePhases)) as typeof defaultLifecyclePhases;
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -195,7 +197,7 @@ export function LifecycleSettings() {
     const target = index + direction;
     if (target < 0 || target >= phases.length) return;
     const next = [...phases];
-    [next[index], next[target]] = [next[target], next[index]];
+    const moved = next[index]!; next[index] = next[target]!; next[target] = moved;
     save(next);
   };
   const removePhase = (id: string) => {
@@ -242,7 +244,7 @@ export function LifecycleSettings() {
                 <Button size="icon" variant="ghost" aria-label="Remove criterion" onClick={() => removeCriterion(criterion.id)}><Trash2 className="size-4" /></Button>
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-3">
-                <Input aria-label="Required document" placeholder="Required document (optional)" value={criterion.document ?? ""} onChange={event => updateCriterion(criterion.id, { document: event.target.value || undefined })} className="h-8 max-w-xs text-xs" />
+                <Input aria-label="Required document" placeholder="Required document (optional)" value={criterion.document ?? ""} onChange={event => updateCriterion(criterion.id, { document: event.target.value })} className="h-8 max-w-xs text-xs" />
                 <span className="text-xs text-muted-foreground">Applies to:</span>
                 {allTiers.map(tier => <label key={tier} className="flex items-center gap-1 text-xs"><input type="checkbox" checked={criterion.tiers.includes(tier)} onChange={() => toggleTier(criterion.id, tier, criterion.tiers)} />{tier}</label>)}
                 {criterion.check && <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">Evaluated automatically</span>}
