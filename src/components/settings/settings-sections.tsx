@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { CheckCircle2, Download, Plus, RotateCcw, Trash2, Upload } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, Download, Plus, RotateCcw, Trash2, Upload } from "lucide-react";
+import { defaultLifecyclePhases } from "@/data/lifecycle";
+const getDefaultPhases = () => JSON.parse(JSON.stringify(defaultLifecyclePhases)) as typeof defaultLifecyclePhases;
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -177,29 +179,82 @@ export function LifecycleSettings() {
   const settings = useSettings();
   const health = settings.health;
   const set = (value: Partial<AppSettings["health"]>) => patch("health", value);
-  const phases = getLifecyclePhases();
+  const phases = settings.lifecycle?.phases?.length ? settings.lifecycle.phases : getLifecyclePhases();
   const tiers = getTierDefinitions();
   const [activeId, setActiveId] = useState(phases[0]?.id ?? "");
   const active = phases.find(phase => phase.id === activeId) ?? phases[0];
+  const allTiers: ProjectTier[] = ["Small", "Medium", "Large"];
+  const save = (next: typeof phases) => updateSettings({ lifecycle: { phases: next } });
+  const updatePhase = (id: string, value: Partial<(typeof phases)[number]>) => save(phases.map(phase => phase.id === id ? { ...phase, ...value } : phase));
+  const updateCriterion = (criterionId: string, value: Partial<(typeof phases)[number]["criteria"][number]>) => active && updatePhase(active.id, { criteria: active.criteria.map(item => item.id === criterionId ? { ...item, ...value } : item) });
+  const addPhase = () => {
+    const id = `phase-${Date.now()}`;
+    const number = phases.length + 1;
+    save([...phases, { id, name: `Phase ${number} - New phase`, shortName: `Phase ${number}`, gateName: `GATE ${number} - New gate`, description: "Describe what happens in this phase.", criteria: [] }]);
+    setActiveId(id);
+  };
+  const movePhase = (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= phases.length) return;
+    const next = [...phases];
+    const moved = next[index]!; next[index] = next[target]!; next[target] = moved;
+    save(next);
+  };
+  const removePhase = (id: string) => {
+    if (phases.length <= 1) return;
+    if (!window.confirm("Remove this phase and its gate criteria? Projects currently in this phase will show as the first phase.")) return;
+    const next = phases.filter(phase => phase.id !== id);
+    save(next);
+    setActiveId(next[0]?.id ?? "");
+  };
+  const addCriterion = () => active && updatePhase(active.id, { criteria: [...active.criteria, { id: `c-${Date.now()}`, label: "New gate criterion", tiers: [...allTiers] }] });
+  const removeCriterion = (criterionId: string) => active && updatePhase(active.id, { criteria: active.criteria.filter(item => item.id !== criterionId) });
+  const toggleTier = (criterionId: string, tier: ProjectTier, current: ProjectTier[]) => updateCriterion(criterionId, { tiers: current.includes(tier) ? current.filter(item => item !== tier) : allTiers.filter(item => item === tier || current.includes(item)) });
   return <>
-    <SettingsCard title="Lifecycle phases and gates" description="Each phase has an exit gate. Criteria marked as automatic are evaluated from live data on the project page.">
-      <div className="grid gap-5 lg:grid-cols-[260px_1fr]">
-        <ul className="space-y-2">{phases.map((phase, index) => <li key={phase.id}>
-          <button onClick={() => setActiveId(phase.id)} className={cn("w-full rounded-md border p-3 text-left", phase.id === active?.id ? "border-primary bg-primary/5" : "hover:bg-accent/30")}>
-            <span className="block text-sm font-medium">{phase.name}</span>
-            <span className="block text-[11px] text-muted-foreground">{phase.criteria.length} gate criteria · step {index + 1}</span>
-          </button>
-        </li>)}</ul>
-        {active && <div className="rounded-md border p-4">
-          <p className="text-sm font-semibold">{active.gateName}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{active.description}</p>
-          <ul className="mt-4 space-y-2">{active.criteria.map(criterion => <li key={criterion.id} className="flex items-start gap-2 text-sm">
-            <span className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", criterion.check ? "bg-primary" : "bg-muted-foreground/50")} />
-            <span className="min-w-0">
-              {criterion.label}
-              <span className="block text-[11px] text-muted-foreground">Applies to {criterion.tiers.join(", ")}{criterion.document ? ` · ${criterion.document}` : ""}{criterion.check ? " · evaluated automatically" : ""}</span>
-            </span>
+    <SettingsCard title="Lifecycle phases and gates" description="Add, rename, reorder or remove phases, and edit each phase's exit gate criteria. Criteria marked as automatic are evaluated from live data on the project page." actions={<Button size="sm" variant="outline" onClick={() => save(getDefaultPhases())}><RotateCcw className="size-4" />Restore DTS lifecycle</Button>}>
+      <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
+        <div className="space-y-2">
+          <ul className="space-y-2">{phases.map((phase, index) => <li key={phase.id} className={cn("flex items-stretch rounded-md border", phase.id === active?.id ? "border-primary bg-primary/5" : "hover:bg-accent/30")}>
+            <button onClick={() => setActiveId(phase.id)} className="min-w-0 flex-1 p-3 text-left">
+              <span className="block truncate text-sm font-medium">{phase.name}</span>
+              <span className="block text-[11px] text-muted-foreground">{phase.criteria.length} gate criteria · step {index + 1}</span>
+            </button>
+            <div className="flex flex-col justify-center pr-1">
+              <button aria-label={`Move ${phase.name} up`} disabled={index === 0} onClick={() => movePhase(index, -1)} className="rounded p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30"><ArrowUp className="size-3.5" /></button>
+              <button aria-label={`Move ${phase.name} down`} disabled={index === phases.length - 1} onClick={() => movePhase(index, 1)} className="rounded p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30"><ArrowDown className="size-3.5" /></button>
+            </div>
           </li>)}</ul>
+          <Button size="sm" variant="outline" className="w-full" onClick={addPhase}><Plus className="size-4" />Add phase</Button>
+        </div>
+        {active && <div className="space-y-4 rounded-md border p-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TextField label="Phase name" value={active.name} onChange={value => updatePhase(active.id, { name: value })} hint="Renaming a phase used by existing projects will move them to the first phase." />
+            <TextField label="Short name" value={active.shortName} onChange={value => updatePhase(active.id, { shortName: value })} />
+            <TextField label="Exit gate name" value={active.gateName} onChange={value => updatePhase(active.id, { gateName: value })} wide />
+            <Field label="Description" wide><Textarea value={active.description} onChange={event => updatePhase(active.id, { description: event.target.value })} rows={2} /></Field>
+          </div>
+          <div>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold">Gate criteria</p>
+              <Button size="sm" variant="outline" onClick={addCriterion}><Plus className="size-4" />Add criterion</Button>
+            </div>
+            <ul className="mt-3 space-y-3">{active.criteria.map(criterion => <li key={criterion.id} className="rounded-md border border-border/70 p-3">
+              <div className="flex items-start gap-2">
+                <Input aria-label="Criterion" value={criterion.label} onChange={event => updateCriterion(criterion.id, { label: event.target.value })} className="flex-1" />
+                <Button size="icon" variant="ghost" aria-label="Remove criterion" onClick={() => removeCriterion(criterion.id)}><Trash2 className="size-4" /></Button>
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <Input aria-label="Required document" placeholder="Required document (optional)" value={criterion.document ?? ""} onChange={event => updateCriterion(criterion.id, { document: event.target.value })} className="h-8 max-w-xs text-xs" />
+                <span className="text-xs text-muted-foreground">Applies to:</span>
+                {allTiers.map(tier => <label key={tier} className="flex items-center gap-1 text-xs"><input type="checkbox" checked={criterion.tiers.includes(tier)} onChange={() => toggleTier(criterion.id, tier, criterion.tiers)} />{tier}</label>)}
+                {criterion.check && <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">Evaluated automatically</span>}
+              </div>
+            </li>)}
+            {!active.criteria.length && <li className="text-sm text-muted-foreground">No criteria yet — add the first one.</li>}</ul>
+          </div>
+          <div className="flex justify-end border-t pt-3">
+            <Button size="sm" variant="ghost" className="text-destructive" disabled={phases.length <= 1} onClick={() => removePhase(active.id)}><Trash2 className="size-4" />Remove phase</Button>
+          </div>
         </div>}
       </div>
     </SettingsCard>
