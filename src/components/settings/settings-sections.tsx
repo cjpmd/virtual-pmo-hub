@@ -184,7 +184,8 @@ export function LifecycleSettings() {
   const [activeId, setActiveId] = useState(phases[0]?.id ?? "");
   const active = phases.find(phase => phase.id === activeId) ?? phases[0];
   const allTiers: ProjectTier[] = ["Small", "Medium", "Large"];
-  const save = (next: typeof phases) => updateSettings({ lifecycle: { phases: next } });
+  const save = (next: typeof phases) => updateSettings({ lifecycle: { ...settings.lifecycle, phases: next } });
+  const saveTiers = (next: typeof tiers) => updateSettings({ lifecycle: { ...settings.lifecycle, tiers: next } });
   const updatePhase = (id: string, value: Partial<(typeof phases)[number]>) => save(phases.map(phase => phase.id === id ? { ...phase, ...value } : phase));
   const updateCriterion = (criterionId: string, value: Partial<(typeof phases)[number]["criteria"][number]>) => active && updatePhase(active.id, { criteria: active.criteria.map(item => item.id === criterionId ? { ...item, ...value } : item) });
   const addPhase = () => {
