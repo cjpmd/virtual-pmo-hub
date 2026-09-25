@@ -61,5 +61,5 @@ export function retryOutbox(id: string) { set({ outbox: get().outbox.map(o => o.
 export const listConflicts = () => get().conflicts;
 export function resolveConflict(id: string, resolution: "Kept Planner" | "Reapplied") { set({ conflicts: get().conflicts.map(c => c.id === id ? { ...c, resolved: resolution } : c) }); }
 export const listSyncLog = () => get().log;
-export function saveWorkspace(workspace: Workspace) { set({ workspace, connection: { ...get().connection, tenantName: workspace.orgName, tenantDomain: workspace.domain } }); }
+export function saveWorkspace(workspace: Workspace) { set({ workspace, connection: { ...get().connection, tenantName: workspace.orgName, tenantDomain: workspace.domain, status: "Not connected" } }); }
 export function resetIntegrations() { state = seed(); set({}); }
