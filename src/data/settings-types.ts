@@ -124,6 +124,6 @@ export interface AppSettings {
   templates: TemplateSettings;
   data: DataSettings;
   subscription: SubscriptionSettings;
-  lifecycle: { phases: LifecyclePhase[] };
+  lifecycle: { phases: LifecyclePhase[]; tiers: TierDefinition[] };
   currentUserId: string;
 }
