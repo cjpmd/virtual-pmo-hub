@@ -14,6 +14,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AssumptionsRouteImport } from './routes/assumptions'
 import { Route as BenefitsRouteImport } from './routes/benefits'
 import { Route as CollectionsRouteImport } from './routes/collections'
+import { Route as ConnectMicrosoftRouteImport } from './routes/connect-microsoft'
 import { Route as DashboardsRouteImport } from './routes/dashboards'
 import { Route as DecisionsRouteImport } from './routes/decisions'
 import { Route as DeliveryRouteImport } from './routes/delivery'
@@ -88,6 +89,8 @@ import { Route as ResourcesAssignmentsRouteImport } from './routes/resources.ass
 import { Route as ResourcesScenariosRouteImport } from './routes/resources.scenarios'
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
 import { Route as SettingsSectionRouteImport } from './routes/settings.$section'
+import { Route as SignupIndexRouteImport } from './routes/signup.index'
+import { Route as SignupSetupRouteImport } from './routes/signup.setup'
 import { Route as DeliveryDependenciesIndexRouteImport } from './routes/delivery.dependencies.index'
 import { Route as DeliveryDependenciesMapRouteImport } from './routes/delivery.dependencies.map'
 import { Route as PortfolioCollectionsIndexRouteImport } from './routes/portfolio.collections.index'
@@ -120,6 +123,11 @@ const BenefitsRoute = BenefitsRouteImport.update({
 const CollectionsRoute = CollectionsRouteImport.update({
   id: '/collections',
   path: '/collections',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConnectMicrosoftRoute = ConnectMicrosoftRouteImport.update({
+  id: '/connect-microsoft',
+  path: '/connect-microsoft',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardsRoute = DashboardsRouteImport.update({
@@ -494,6 +502,16 @@ const SettingsSectionRoute = SettingsSectionRouteImport.update({
   path: '/$section',
   getParentRoute: () => SettingsRoute,
 } as any)
+const SignupIndexRoute = SignupIndexRouteImport.update({
+  id: '/signup/',
+  path: '/signup/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupSetupRoute = SignupSetupRouteImport.update({
+  id: '/signup/setup',
+  path: '/signup/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DeliveryDependenciesIndexRoute =
   DeliveryDependenciesIndexRouteImport.update({
     id: '/',
@@ -547,6 +565,7 @@ export interface FileRoutesByFullPath {
   '/assumptions': typeof AssumptionsRoute
   '/benefits': typeof BenefitsRouteWithChildren
   '/collections': typeof CollectionsRouteWithChildren
+  '/connect-microsoft': typeof ConnectMicrosoftRoute
   '/dashboards': typeof DashboardsRoute
   '/decisions': typeof DecisionsRouteWithChildren
   '/delivery': typeof DeliveryRouteWithChildren
@@ -607,6 +626,7 @@ export interface FileRoutesByFullPath {
   '/resources/assignments': typeof ResourcesAssignmentsRoute
   '/resources/scenarios': typeof ResourcesScenariosRoute
   '/settings/$section': typeof SettingsSectionRoute
+  '/signup/setup': typeof SignupSetupRoute
   '/benefits/': typeof BenefitsIndexRoute
   '/collections/': typeof CollectionsIndexRoute
   '/decisions/': typeof DecisionsIndexRoute
@@ -621,6 +641,7 @@ export interface FileRoutesByFullPath {
   '/projects/': typeof ProjectsIndexRoute
   '/resources/': typeof ResourcesIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/signup/': typeof SignupIndexRoute
   '/delivery/dependencies/map': typeof DeliveryDependenciesMapRoute
   '/portfolio/collections/$collectionId': typeof PortfolioCollectionsCollectionIdRoute
   '/portfolio/programmes/$programmeId': typeof PortfolioProgrammesProgrammeIdRoute
@@ -634,6 +655,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/assumptions': typeof AssumptionsRoute
+  '/connect-microsoft': typeof ConnectMicrosoftRoute
   '/dashboards': typeof DashboardsRoute
   '/milestones': typeof MilestonesRoute
   '/my-timeline': typeof MyTimelineRoute
@@ -678,6 +700,7 @@ export interface FileRoutesByTo {
   '/resources/assignments': typeof ResourcesAssignmentsRoute
   '/resources/scenarios': typeof ResourcesScenariosRoute
   '/settings/$section': typeof SettingsSectionRoute
+  '/signup/setup': typeof SignupSetupRoute
   '/benefits': typeof BenefitsIndexRoute
   '/collections': typeof CollectionsIndexRoute
   '/decisions': typeof DecisionsIndexRoute
@@ -692,6 +715,7 @@ export interface FileRoutesByTo {
   '/projects': typeof ProjectsIndexRoute
   '/resources': typeof ResourcesIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/signup': typeof SignupIndexRoute
   '/delivery/dependencies/map': typeof DeliveryDependenciesMapRoute
   '/portfolio/collections/$collectionId': typeof PortfolioCollectionsCollectionIdRoute
   '/portfolio/programmes/$programmeId': typeof PortfolioProgrammesProgrammeIdRoute
@@ -708,6 +732,7 @@ export interface FileRoutesById {
   '/assumptions': typeof AssumptionsRoute
   '/benefits': typeof BenefitsRouteWithChildren
   '/collections': typeof CollectionsRouteWithChildren
+  '/connect-microsoft': typeof ConnectMicrosoftRoute
   '/dashboards': typeof DashboardsRoute
   '/decisions': typeof DecisionsRouteWithChildren
   '/delivery': typeof DeliveryRouteWithChildren
@@ -768,6 +793,7 @@ export interface FileRoutesById {
   '/resources/assignments': typeof ResourcesAssignmentsRoute
   '/resources/scenarios': typeof ResourcesScenariosRoute
   '/settings/$section': typeof SettingsSectionRoute
+  '/signup/setup': typeof SignupSetupRoute
   '/benefits/': typeof BenefitsIndexRoute
   '/collections/': typeof CollectionsIndexRoute
   '/decisions/': typeof DecisionsIndexRoute
@@ -782,6 +808,7 @@ export interface FileRoutesById {
   '/projects/': typeof ProjectsIndexRoute
   '/resources/': typeof ResourcesIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/signup/': typeof SignupIndexRoute
   '/delivery/dependencies/map': typeof DeliveryDependenciesMapRoute
   '/portfolio/collections/$collectionId': typeof PortfolioCollectionsCollectionIdRoute
   '/portfolio/programmes/$programmeId': typeof PortfolioProgrammesProgrammeIdRoute
@@ -799,6 +826,7 @@ export interface FileRouteTypes {
     | '/assumptions'
     | '/benefits'
     | '/collections'
+    | '/connect-microsoft'
     | '/dashboards'
     | '/decisions'
     | '/delivery'
@@ -859,6 +887,7 @@ export interface FileRouteTypes {
     | '/resources/assignments'
     | '/resources/scenarios'
     | '/settings/$section'
+    | '/signup/setup'
     | '/benefits/'
     | '/collections/'
     | '/decisions/'
@@ -873,6 +902,7 @@ export interface FileRouteTypes {
     | '/projects/'
     | '/resources/'
     | '/settings/'
+    | '/signup/'
     | '/delivery/dependencies/map'
     | '/portfolio/collections/$collectionId'
     | '/portfolio/programmes/$programmeId'
@@ -886,6 +916,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/assumptions'
+    | '/connect-microsoft'
     | '/dashboards'
     | '/milestones'
     | '/my-timeline'
@@ -930,6 +961,7 @@ export interface FileRouteTypes {
     | '/resources/assignments'
     | '/resources/scenarios'
     | '/settings/$section'
+    | '/signup/setup'
     | '/benefits'
     | '/collections'
     | '/decisions'
@@ -944,6 +976,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/resources'
     | '/settings'
+    | '/signup'
     | '/delivery/dependencies/map'
     | '/portfolio/collections/$collectionId'
     | '/portfolio/programmes/$programmeId'
@@ -959,6 +992,7 @@ export interface FileRouteTypes {
     | '/assumptions'
     | '/benefits'
     | '/collections'
+    | '/connect-microsoft'
     | '/dashboards'
     | '/decisions'
     | '/delivery'
@@ -1019,6 +1053,7 @@ export interface FileRouteTypes {
     | '/resources/assignments'
     | '/resources/scenarios'
     | '/settings/$section'
+    | '/signup/setup'
     | '/benefits/'
     | '/collections/'
     | '/decisions/'
@@ -1033,6 +1068,7 @@ export interface FileRouteTypes {
     | '/projects/'
     | '/resources/'
     | '/settings/'
+    | '/signup/'
     | '/delivery/dependencies/map'
     | '/portfolio/collections/$collectionId'
     | '/portfolio/programmes/$programmeId'
@@ -1049,6 +1085,7 @@ export interface RootRouteChildren {
   AssumptionsRoute: typeof AssumptionsRoute
   BenefitsRoute: typeof BenefitsRouteWithChildren
   CollectionsRoute: typeof CollectionsRouteWithChildren
+  ConnectMicrosoftRoute: typeof ConnectMicrosoftRoute
   DashboardsRoute: typeof DashboardsRoute
   DecisionsRoute: typeof DecisionsRouteWithChildren
   DeliveryRoute: typeof DeliveryRouteWithChildren
@@ -1072,6 +1109,8 @@ export interface RootRouteChildren {
   RoadmapsRoute: typeof RoadmapsRoute
   SettingsRoute: typeof SettingsRouteWithChildren
   TaskOverviewRoute: typeof TaskOverviewRoute
+  SignupSetupRoute: typeof SignupSetupRoute
+  SignupIndexRoute: typeof SignupIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1109,6 +1148,13 @@ declare module '@tanstack/react-router' {
       path: '/collections'
       fullPath: '/collections'
       preLoaderRoute: typeof CollectionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/connect-microsoft': {
+      id: '/connect-microsoft'
+      path: '/connect-microsoft'
+      fullPath: '/connect-microsoft'
+      preLoaderRoute: typeof ConnectMicrosoftRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboards': {
@@ -1629,6 +1675,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsSectionRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/signup/': {
+      id: '/signup/'
+      path: '/signup'
+      fullPath: '/signup/'
+      preLoaderRoute: typeof SignupIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup/setup': {
+      id: '/signup/setup'
+      path: '/signup/setup'
+      fullPath: '/signup/setup'
+      preLoaderRoute: typeof SignupSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/delivery/dependencies/': {
       id: '/delivery/dependencies/'
       path: '/'
@@ -1985,6 +2045,7 @@ const rootRouteChildren: RootRouteChildren = {
   AssumptionsRoute: AssumptionsRoute,
   BenefitsRoute: BenefitsRouteWithChildren,
   CollectionsRoute: CollectionsRouteWithChildren,
+  ConnectMicrosoftRoute: ConnectMicrosoftRoute,
   DashboardsRoute: DashboardsRoute,
   DecisionsRoute: DecisionsRouteWithChildren,
   DeliveryRoute: DeliveryRouteWithChildren,
@@ -2008,6 +2069,8 @@ const rootRouteChildren: RootRouteChildren = {
   RoadmapsRoute: RoadmapsRoute,
   SettingsRoute: SettingsRouteWithChildren,
   TaskOverviewRoute: TaskOverviewRoute,
+  SignupSetupRoute: SignupSetupRoute,
+  SignupIndexRoute: SignupIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
