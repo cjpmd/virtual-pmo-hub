@@ -39,7 +39,7 @@ function GridView({tasks,a,selected,setSelected}:{tasks:Task[];a:Actions;selecte
 
 function TimelineView({tasks,a}:{tasks:Task[];a:Actions}){
  const [zoom,setZoom]=useState<"week"|"month">("week");const [hover,setHover]=useState<string|null>(null);
- const ROW=44,px=zoom==="week"?22:6;
+ const ROW=44,px=zoom==="week"?9:4;
  const starts=tasks.map(t=>toDate(t.start).getTime()),ends=tasks.map(t=>toDate(t.finish).getTime());
  const min=(starts.length?Math.min(...starts):Date.now())-7*DAY,max=(ends.length?Math.max(...ends):Date.now())+14*DAY;
  const x=(ms:number)=>(ms-min)/DAY*px,width=(max-min)/DAY*px,idx=new Map(tasks.map((t,i)=>[t.id,i]));
