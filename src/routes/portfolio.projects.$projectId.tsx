@@ -1,6 +1,6 @@
 import { formatCompactCurrency, formatDate } from "@/lib/format";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, CheckCircle2, Circle, ExternalLink, Gavel, ListChecks, ListPlus, PackageCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HealthPill } from "@/components/health-pill";
@@ -40,6 +40,7 @@ function ProjectPage(){
  const settings=useSettings();
  const project=getProject(projectId);
  const [tab,setTab]=useState("overview");
+ useEffect(()=>{if(new URLSearchParams(window.location.search).get("task"))setTab("tasks")},[]);
  const [lessonsReviewed,setLessonsReviewed]=useState(false);
  const [manualTicks,setManualTicks]=useState<string[]>([]);
  const [handover,setHandover]=useState(false);
