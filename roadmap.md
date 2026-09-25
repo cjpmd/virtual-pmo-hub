@@ -74,3 +74,10 @@
 - [x] Align Benefits and Governance pages to the canonical design
 - [x] Align Home, Insights, detail workspaces and Settings to the canonical design
 - [x] Verify representative pages in light/dark and desktop/mobile layouts
+
+## Microsoft 365 connection (prototype)
+- [x] Self-serve sign-up and setup wizard
+- [x] Connect Microsoft 365 (admin / request approval), plan discovery and linking
+- [x] Settings > Integrations: linked plans, pending changes, conflicts, sync log
+- [x] Tasks tab Planner notes and Open in Planner link
+- [ ] Real Microsoft connection (waits on app registration, test environment and IT approval)
