@@ -7,7 +7,7 @@ import { saveWorkspace } from "@/services/integrations";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/signup/setup")({
-  validateSearch: (s: Record<string, unknown>) => ({ email: typeof s.email === "string" ? s.email : "chris.mcdonald@dundee.ac.uk" }),
+  validateSearch: (s: Record<string, unknown>) => ({ email: typeof s["email"] === "string" ? s["email"] : "chris.mcdonald@dundee.ac.uk" }),
   head: () => ({ meta: [
     { title: "Set up your workspace — Virtual PMO" },
     { name: "description", content: "Choose your region, currency, financial year and lifecycle to finish setting up Virtual PMO." },

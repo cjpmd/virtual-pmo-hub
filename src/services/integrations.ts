@@ -43,7 +43,7 @@ export function disconnect() { set({ connection: { ...get().connection, status: 
 export function discoverPlans(): DiscoveredPlan[] {
   return discoveredPlanSeeds.map(plan => {
     const word = plan.name.split(/[ (]/)[0];
-    const match = plan.name.includes("social") ? undefined : find(plan.name) ?? find(word);
+    const match = plan.name.includes("social") ? undefined : find(plan.name) ?? find(word ?? plan.name);
     return { ...plan, suggestedProjectId: match?.id, matchReason: match ? (plan.kind === "Premium" ? "Same project ID in Dataverse" : "Similar name") : undefined };
   });
 }

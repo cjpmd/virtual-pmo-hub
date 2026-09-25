@@ -106,7 +106,7 @@ export function PlanDiscovery() {
               <option value="">Skip this plan</option>{projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select></td>
             <td className="px-3 text-right">{linked ? <span className="inline-flex items-center gap-1 text-xs font-semibold text-health-good-foreground"><CheckCircle2 className="size-4" />Linked</span>
-              : <Button size="sm" disabled={!choice[plan.id]} onClick={() => linkPlan(choice[plan.id], plan)}>Link</Button>}</td>
+              : <Button size="sm" disabled={!choice[plan.id]} onClick={() => linkPlan(choice[plan.id] ?? "", plan)}>Link</Button>}</td>
           </tr>;
         })}</tbody>
       </table></div>
