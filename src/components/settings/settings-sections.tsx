@@ -14,6 +14,7 @@ import { getLifecyclePhases, getTierDefinitions } from "@/services/pmo";
 import { resetSettings, updateSettings, useSettings } from "@/services/settings";
 import { Field, ListEditor, NumberField, SelectField, SettingsCard, TextField } from "@/components/settings/settings-shell";
 import { cn } from "@/lib/utils";
+import { IntegrationsWorkspace } from "@/components/integrations/integrations-workspace";
 
 const sample = 1_248_500;
 const patch = <K extends keyof AppSettings>(key: K, value: Partial<AppSettings[K]>) => updateSettings({ [key]: value } as Partial<AppSettings>);
@@ -524,20 +525,7 @@ export function TemplateSettings() {
 }
 
 export function IntegrationSettings() {
-  const [connected, setConnected] = useState({ planner: true, teams: false, entra: true, powerBi: false });
-  const rows = [
-    { key: "planner" as const, name: "Microsoft Planner", detail: "Two-way task sync for Planner Basic and Premium plans." },
-    { key: "teams" as const, name: "Microsoft Teams", detail: "Deliver notifications and approvals into a Teams channel." },
-    { key: "entra" as const, name: "Microsoft Entra ID", detail: "Single sign-on and the people directory behind resourcing." },
-    { key: "powerBi" as const, name: "Power BI", detail: "Publish the portfolio dataset for organisation-wide reporting." },
-  ];
-  return <SettingsCard title="Microsoft 365" description="Connections to the tools the portfolio already runs on.">
-    <div className="space-y-3">{rows.map(row => <div key={row.key} className="flex flex-wrap items-center gap-3 rounded-md border p-4">
-      <div className="min-w-0 flex-1"><p className="text-sm font-semibold">{row.name}</p><p className="mt-0.5 text-xs text-muted-foreground">{row.detail}</p></div>
-      {connected[row.key] && <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-health-good-foreground"><CheckCircle2 className="size-4" />Connected</span>}
-      <Button size="sm" variant={connected[row.key] ? "outline" : "default"} onClick={() => setConnected(current => ({ ...current, [row.key]: !current[row.key] }))}>{connected[row.key] ? "Disconnect" : "Connect"}</Button>
-    </div>)}</div>
-  </SettingsCard>;
+  return <IntegrationsWorkspace />;
 }
 
 export function DataSettings() {
