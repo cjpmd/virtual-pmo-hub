@@ -10,7 +10,7 @@ import { getProjects } from "@/services/pmo";
 import type { SyncLogEntry } from "@/data/integrations";
 import { cn } from "@/lib/utils";
 
-const tone = { Healthy: "text-health-good-foreground bg-health-good/15", Warning: "text-health-warning-foreground bg-health-warning/20", Failing: "text-health-critical-foreground bg-health-critical/15" } as const;
+const tone = { Healthy: "text-health-good-foreground bg-health-good/15", Warning: "text-health-warn-foreground bg-health-warn/20", Failing: "text-health-bad-foreground bg-health-bad/15" } as const;
 const th = "h-10 px-3 font-semibold";
 
 export function IntegrationsWorkspace() {
@@ -29,11 +29,11 @@ export function IntegrationsWorkspace() {
     </MetricRow>
 
     <SettingsCard title="Microsoft 365" description="Connection used for Planner sync and the people directory." actions={c.status === "Connected" ? <Button size="sm" variant="outline" onClick={disconnect}>Simulate expired access</Button> : <Button size="sm" onClick={startConsent}>Reconnect Microsoft 365</Button>}>
-      {c.status === "Needs reconnect" && <div className="mb-4 flex items-center gap-2 rounded-md border border-health-critical/40 bg-health-critical/10 p-3 text-sm"><AlertTriangle className="size-4" />Access has expired. Sync is paused until someone reconnects Microsoft 365.</div>}
+      {c.status === "Needs reconnect" && <div className="mb-4 flex items-center gap-2 rounded-md border border-health-bad/40 bg-health-bad/10 p-3 text-sm"><AlertTriangle className="size-4" />Access has expired. Sync is paused until someone reconnects Microsoft 365.</div>}
       <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
         <div><dt className="text-xs text-muted-foreground">Organisation</dt><dd className="font-medium">{c.tenantName}</dd></div>
         <div><dt className="text-xs text-muted-foreground">Connected by</dt><dd className="font-medium">{c.connectedBy ?? "—"} {c.connectedOn && `on ${c.connectedOn}`}</dd></div>
-        <div><dt className="text-xs text-muted-foreground">Environments</dt><dd className="font-medium">{c.environments.join(", ")}</dd></div>
+        <div><dt className="text-xs text-muted-foreground">Environments</dt><dd className="break-all font-medium">{c.environments.join(", ")}</dd></div>
         <div><dt className="text-xs text-muted-foreground"><Users className="mr-1 inline size-3" />People directory</dt><dd className="font-medium">{c.directoryPeople} people · {c.directorySyncedAt}</dd></div>
       </dl>
       <div className="mt-4"><Button size="sm" variant="outline" asChild><Link to="/connect-microsoft">Find and link more plans</Link></Button></div>
@@ -55,7 +55,7 @@ export function IntegrationsWorkspace() {
       {s.outbox.length === 0 ? <p className="text-sm text-muted-foreground">Nothing waiting. All changes have reached Planner.</p> : <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm">
         <thead className="bg-table-head text-xs text-muted-foreground"><tr><th className={th}>Change</th><th className={th}>Project</th><th className={th}>By</th><th className={th}>Status</th><th className={th}>Attempts</th><th className={th} /></tr></thead>
         <tbody>{s.outbox.map(o => <tr key={o.id} className="border-t align-top">
-          <td className="px-3 py-2.5">{o.change}{o.lastError && <p className="text-xs text-health-critical-foreground">{o.lastError}</p>}</td>
+          <td className="px-3 py-2.5">{o.change}{o.lastError && <p className="text-xs text-health-bad-foreground">{o.lastError}</p>}</td>
           <td className="px-3 py-2.5">{names[o.projectId]}</td><td className="px-3 py-2.5">{o.by}</td>
           <td className="px-3 py-2.5"><Badge variant={o.status === "Failed" ? "destructive" : "secondary"}>{o.status}</Badge></td><td className="px-3 py-2.5 tabular-nums">{o.attempts}</td>
           <td className="px-3 py-2.5 text-right">{o.status !== "Sending" && <Button size="sm" variant="outline" onClick={() => retryOutbox(o.id)}>Retry now</Button>}</td>

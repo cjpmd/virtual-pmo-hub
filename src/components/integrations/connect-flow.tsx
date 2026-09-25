@@ -43,7 +43,7 @@ export function ConnectFlow() {
       <div className="mt-5"><PermissionList /></div>
 
       {role === "admin" ? <div className="mt-5 flex justify-end"><Button onClick={() => setConsentOpen(true)}>Continue to Microsoft</Button></div>
-        : status === "Pending approval" ? <div className="mt-5 flex flex-wrap items-center gap-3 rounded-md border border-health-warning/40 bg-health-warning/10 p-4 text-sm">
+        : status === "Pending approval" ? <div className="mt-5 flex flex-wrap items-center gap-3 rounded-md border border-health-warn/40 bg-health-warn/10 p-4 text-sm">
           <Clock className="size-4" /><span className="flex-1">Request sent to <strong>{integ.connection.adminRequestSentTo}</strong>. You can keep using native tasks while you wait.</span>
           <Button size="sm" variant="outline" onClick={() => { startConsent(); }}>Simulate admin approval</Button>
         </div>
