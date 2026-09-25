@@ -89,7 +89,7 @@ function TaskPanel({task,tasks,people,buckets,premium,a,update,close}:{task:Task
  </aside></>}
 
 export function TaskWorkspace({initialTasks,taskSource}:{initialTasks:Task[];taskSource:TaskSource}){
- const [tasks,setTasks]=useState(initialTasks),[view,setView]=useState<"grid"|"board"|"timeline">("grid"),[openId,setOpenId]=useState<string|null>(null),[selected,setSelected]=useState<string|null>(null),[clip,setClip]=useState<{task:Task;cut:boolean}|null>(null),[notice,setNotice]=useState<{text:string;undo?:Task[]}|null>(null),[confirm,setConfirm]=useState<string|null>(null),[syncing,setSyncing]=useState(false);
+ const [tasks,setTasks]=useState(initialTasks),[view,setView]=useState<"grid"|"board"|"timeline">("grid"),[openId,setOpenId]=useState<string|null>(null),[selected,setSelected]=useState<string|null>(null),[clip,setClip]=useState<{task:Task;cut:boolean}|null>(null),[notice,setNotice]=useState<{text:string;undo?:Task[]|undefined}|null>(null),[confirm,setConfirm]=useState<string|null>(null),[syncing,setSyncing]=useState(false);
  const timer=useRef<ReturnType<typeof setTimeout>|null>(null),planner=taskSource!=="Native";
  useEffect(()=>()=>{if(timer.current)clearTimeout(timer.current)},[]);
  useEffect(()=>{const id=new URLSearchParams(window.location.search).get("task");if(id&&initialTasks.some(t=>t.id===id))setOpenId(id)},[initialTasks]);
