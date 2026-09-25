@@ -20,7 +20,7 @@ export function PermissionList() {
 export function ConnectFlow() {
   const integ = useIntegrations();
   const [role, setRole] = useState<"admin" | "user">("user");
-  const [step, setStep] = useState<"consent" | "discover">(integ.connection.status === "Connected" ? "discover" : "consent");
+  const step: "consent" | "discover" = integ.connection.status === "Connected" ? "discover" : "consent";
   const [adminEmail, setAdminEmail] = useState("it-admin@dundee.ac.uk");
   const [consentOpen, setConsentOpen] = useState(false);
   const status = integ.connection.status;
@@ -45,7 +45,7 @@ export function ConnectFlow() {
       {role === "admin" ? <div className="mt-5 flex justify-end"><Button onClick={() => setConsentOpen(true)}>Continue to Microsoft</Button></div>
         : status === "Pending approval" ? <div className="mt-5 flex flex-wrap items-center gap-3 rounded-md border border-health-warning/40 bg-health-warning/10 p-4 text-sm">
           <Clock className="size-4" /><span className="flex-1">Request sent to <strong>{integ.connection.adminRequestSentTo}</strong>. You can keep using native tasks while you wait.</span>
-          <Button size="sm" variant="outline" onClick={() => { startConsent(); setStep("discover"); }}>Simulate admin approval</Button>
+          <Button size="sm" variant="outline" onClick={() => { startConsent(); }}>Simulate admin approval</Button>
         </div>
         : <div className="mt-5 grid gap-4 lg:grid-cols-2">
           <div className="space-y-3 rounded-md border p-4">
@@ -69,7 +69,7 @@ export function ConnectFlow() {
           <p className="text-sm text-muted-foreground">Virtual PMO (unverified demo) wants to access resources in your organisation.</p>
           <ul className="mt-3 list-disc space-y-1 pl-5 text-sm">{requiredPermissions.map(p => <li key={p.name}>{p.why}</li>)}</ul>
           <label className="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" defaultChecked /> Consent on behalf of your organisation</label>
-          <div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={() => setConsentOpen(false)}>Cancel</Button><Button onClick={() => { startConsent(); setConsentOpen(false); setStep("discover"); }}>Accept</Button></div>
+          <div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={() => setConsentOpen(false)}>Cancel</Button><Button onClick={() => { startConsent(); setConsentOpen(false); }}>Accept</Button></div>
         </div>
       </div>}
     </section>}
