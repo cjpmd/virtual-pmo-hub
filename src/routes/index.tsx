@@ -6,7 +6,17 @@ import { getDefaultHome, hydrateSettings, useSettings } from "@/services/setting
  * The landing page follows the default home configured for the signed-in user's role.
  * It resolves on the client so the stored user is known before redirecting.
  */
-export const Route = createFileRoute("/")({ component: Landing });
+export const Route = createFileRoute("/")({
+  head: () => ({ meta: [
+    { title: "Home — Virtual PMO" },
+    { name: "description", content: "Open your Virtual PMO workspace and portfolio home." },
+    { property: "og:title", content: "Home — Virtual PMO" },
+    { property: "og:description", content: "Open your Virtual PMO workspace and portfolio home." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
+  component: Landing,
+});
 
 function Landing() {
   const settings = useSettings();
