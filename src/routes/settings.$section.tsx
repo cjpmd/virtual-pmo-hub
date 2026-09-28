@@ -3,6 +3,7 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { Breadcrumbs } from "@/components/section-nav";
 import { PageHeader } from "@/components/pmo-ui";
 import { SettingsShell, isSettingsSection, settingsSections } from "@/components/settings/settings-shell";
+import { AccountSettings } from "@/components/settings/account-settings";
 import { BenefitSettingsSection, DataSettings, IntegrationSettings, LifecycleSettings, ListsSettings, NotificationSettings, OrganisationSettings, RegionalSettings, RiskSettings, SubscriptionSettings, TemplateSettings, TerminologySettings, UserSettings, WorkingTimeSettings } from "@/components/settings/settings-sections";
 
 export const Route = createFileRoute("/settings/$section")({
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/settings/$section")({
 });
 
 const panels: Record<string, () => JSX.Element> = {
+  account: AccountSettings,
   organisation: OrganisationSettings,
   regional: RegionalSettings,
   "working-time": WorkingTimeSettings,

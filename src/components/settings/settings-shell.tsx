@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { Banknote, BellRing, Building2, ClipboardList, Clock4, CreditCard, Database, FileStack, Gift, Globe2, Languages, LayoutList, Plug, ShieldAlert, Users } from "lucide-react";
+import { Banknote, BellRing, Building2, ClipboardList, Clock4, CreditCard, Database, FileStack, Gift, Globe2, Languages, LayoutList, Plug, ShieldAlert, UserRound, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 export interface SettingsSectionDefinition { id: string; label: string; icon: typeof Building2; blurb: string }
 
 export const settingsSections: SettingsSectionDefinition[] = [
+  { id: "account", label: "Account settings", icon: UserRound, blurb: "Your name and account details." },
   { id: "organisation", label: "Organisation", icon: Building2, blurb: "Name, logo, brand colour and support contact." },
   { id: "regional", label: "Regional & currency", icon: Globe2, blurb: "Currency, dates, locale, time zone and financial year." },
   { id: "working-time", label: "Working time", icon: Clock4, blurb: "Standard hours, working days, holidays and BAU." },

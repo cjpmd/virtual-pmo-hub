@@ -1,8 +1,9 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Bell, CheckCheck, ChevronDown, ChevronLeft, ChevronRight, Menu, Moon, Search, Settings, Star, Sun, X } from "lucide-react";
+import { Bell, CheckCheck, ChevronDown, ChevronLeft, ChevronRight, LogOut, Menu, Moon, Search, Settings, Star, Sun, UserRound, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { readFavourites, type Favourite } from "@/components/favourite-button";
@@ -201,10 +202,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className={cn("transition-[padding]", collapsed ? "lg:pl-[68px]" : "lg:pl-64")}>
         <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-background/90 px-4 backdrop-blur-md sm:px-6 lg:px-8">
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Open menu"><Menu /></Button>
-          <button onClick={() => setPalette(true)} className="relative flex h-9 max-w-xl flex-1 items-center rounded-md bg-muted/60 pl-9 pr-3 text-left text-sm text-muted-foreground">
-            <Search className="absolute left-3 size-4" />Search anything…
-            <kbd className="ml-auto hidden rounded border bg-background px-1.5 py-0.5 text-[10px] sm:inline">⌘K</kbd>
-          </button>
+          <div className="min-w-0 flex-1">
+            <Button variant="ghost" onClick={() => setPalette(true)} className="relative flex h-9 w-full max-w-xl justify-start bg-muted/60 pl-9 pr-3 text-left text-sm font-normal text-muted-foreground">
+              <Search className="absolute left-3 size-4" />Search anything…
+              <kbd className="ml-auto hidden rounded border bg-background px-1.5 py-0.5 text-[10px] sm:inline">⌘K</kbd>
+            </Button>
+          </div>
+          <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
           <div className="relative">
             <Button variant="ghost" size="icon" onClick={() => setInbox(!inbox)} aria-label="Notifications"><Bell />{notifications.some(item => !item.read) && <span className="absolute right-1 top-1 size-2 rounded-full bg-health-bad" />}</Button>
             {inbox && <div className="absolute right-0 top-12 w-[340px] rounded-md border bg-popover p-3 shadow-xl">
@@ -216,8 +220,21 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>}
           </div>
           <Button variant="ghost" size="icon" onClick={() => setDark(!dark)} aria-label="Toggle theme">{dark ? <Sun /> : <Moon />}</Button>
-          <div className="hidden text-right sm:block"><p className="text-xs font-semibold">{user?.name}</p><p className="text-[10px] text-muted-foreground">{user?.role}</p></div>
-          <Avatar className="size-9"><AvatarFallback className="bg-primary text-primary-foreground">{(user?.name ?? "").split(" ").map(part => part[0]).join("").slice(0, 2)}</AvatarFallback></Avatar>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-11 gap-2 px-1 sm:px-2" aria-label={`Account menu for ${user?.name ?? "user"}`}>
+                <span className="hidden min-w-0 text-right sm:block"><span className="block text-xs font-semibold">{user?.name}</span><span className="block text-[10px] text-muted-foreground">{user?.role}</span></span>
+                <Avatar className="size-9 shrink-0"><AvatarFallback className="bg-primary text-primary-foreground">{(user?.name ?? "").split(" ").map(part => part[0]).join("").slice(0, 2)}</AvatarFallback></Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="px-2 py-1.5 text-xs text-muted-foreground">{user?.email}</div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => navigate({ to: "/settings/$section", params: { section: "account" } })}><UserRound />Account settings</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => navigate({ to: "/signup" })}><LogOut />Log out</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          </div>
         </header>
 
         <main key={formatKey} className="mx-auto max-w-[1600px] px-4 py-7 sm:px-6 lg:px-8 lg:py-9">
