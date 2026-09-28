@@ -1,5 +1,7 @@
 # Virtual PMO prototype
 
+- [x] Align header controls to the right and add an account menu with personal settings and prototype log out
+
 - [x] Create the typed mock data and calculated health services
 - [x] Build the shared application shell and reusable UI
 - [x] Build the portfolio overview and programme detail experience
