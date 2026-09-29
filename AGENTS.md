@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 Account settings are a distinct Settings section backed by the existing browser-local settings store; this prototype has no authentication service, so log out only returns to the sign-up demo.
+- Portfolio/programme/project create, edit and close go through src/services/entity-store.ts (browser-local, mutates shared mock arrays, root re-renders on change) — keeps services swappable for a real backend.
