@@ -116,3 +116,24 @@ export function ProjectEditDialog({ open, onOpenChange, project }: { open: boole
     </div>{error && <p className="text-sm text-destructive">{error}</p>}
     <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={submit}><Check />Save changes</Button></DialogFooter></DialogContent></Dialog>;
 }
+
+/* ---------- Ready-made header buttons ---------- */
+export function ManagePortfoliosButton() {
+  const [open, setOpen] = useState(false);
+  return <><Button size="sm" variant="outline" onClick={() => setOpen(true)}><FolderOpen />Manage portfolios</Button><PortfolioManagerDialog open={open} onOpenChange={setOpen} /></>;
+}
+export function NewProgrammeButton() {
+  const [open, setOpen] = useState(false);
+  return <><Button onClick={() => setOpen(true)}><Plus />New programme</Button><ProgrammeFormDialog open={open} onOpenChange={setOpen} /></>;
+}
+export function ProgrammeActions({ programme }: { programme: Programme }) {
+  const [edit, setEdit] = useState(false), [close, setClose] = useState(false);
+  return <div className="flex flex-wrap items-center gap-2"><StateBadge state={programme.state} /><Button size="sm" variant="outline" onClick={() => setEdit(true)}><Pencil />Edit</Button>
+    {programme.state === "Closed" ? <Button size="sm" variant="outline" onClick={() => saveProgramme({ ...programme, state: "Active", closedReason: "" })}><RotateCcw />Reopen</Button> : <Button size="sm" variant="outline" onClick={() => setClose(true)}><Archive />Close programme</Button>}
+    <ProgrammeFormDialog open={edit} onOpenChange={setEdit} programme={programme} />
+    <CloseDialog open={close} onOpenChange={setClose} kind="programme" name={programme.name} onConfirm={reason => saveProgramme({ ...programme, state: "Closed", closedReason: reason })} /></div>;
+}
+export function ProjectEditButton({ project }: { project: Project }) {
+  const [edit, setEdit] = useState(false);
+  return <><Button size="sm" variant="outline" onClick={() => setEdit(true)}><Pencil />Edit</Button>{project.state === "Closed" && <Button size="sm" variant="outline" onClick={() => saveProject({ ...project, state: "Active" })}><RotateCcw />Reopen</Button>}<ProjectEditDialog open={edit} onOpenChange={setEdit} project={project} /></>;
+}
