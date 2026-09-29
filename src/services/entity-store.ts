@@ -68,7 +68,7 @@ export function resetEntities() {
   saved = { portfolios: [], programmes: [], projects: [], edits: {} };
   currentPortfolioId = portfolio.id;
   for (const list of [portfolios, programmes, projects] as { id: string }[][]) {
-    for (let i = list.length - 1; i >= 0; i--) { const item = list[i]!; const original = originals.get(item.id); if (original) Object.assign(item, original); else list.splice(i, 1); }
+    for (let i = list.length - 1; i >= 0; i--) { const item = list[i]!; const original = originals.get(item.id); if (original) { for (const key of Object.keys(item)) if (!(key in original)) delete (item as Record<string, unknown>)[key]; Object.assign(item, original); } else list.splice(i, 1); }
   }
   persist();
 }

@@ -1,4 +1,3 @@
-import { Fragment, useEffect } from "react";
 import { loadEntities, useEntityVersion } from "@/services/entity-store";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -10,7 +9,7 @@ import {
   Scripts,
   useRouterState,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { Fragment, useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
