@@ -19,9 +19,9 @@ function Field({ label, required, children, wide }: { label: string; required?: 
   return <div className={cn("space-y-1.5", wide && "sm:col-span-2")}><Label className="text-xs">{label}{required && <span className="text-destructive"> *</span>}</Label>{children}</div>;
 }
 function PeopleList() { return <datalist id="vpmo-people">{getPeople().map(p => <option key={p.id} value={p.name} />)}</datalist>; }
-function useDraft<T>(open: boolean, initial: () => T) { const [draft, setDraft] = useState<T>(initial); useEffect(() => { if (open) setDraft(initial()); }, [open]); return [draft, (patch: Partial<T>) => setDraft(d => ({ ...d, ...patch }))] as const; }
+function useDraft<T>(open: boolean, initial: () => T) { const [draft, setDraft] = useState<T>(initial); useEffect(() => { if (open) setDraft(initial()); }, [open]); return [draft, (patch: { [K in keyof T]?: T[K] | undefined }) => setDraft(d => ({ ...d, ...patch }) as T)] as const; }
 
-export function StateBadge({ state }: { state?: string }) {
+export function StateBadge({ state }: { state?: string | undefined }) {
   if (state !== "Closed") return null;
   return <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground"><Archive className="size-3" />Closed</span>;
 }
@@ -36,7 +36,7 @@ export function CloseDialog({ open, onOpenChange, kind, name, onConfirm }: { ope
 }
 
 /* ---------- Portfolio ---------- */
-function PortfolioForm({ open, onOpenChange, portfolio }: { open: boolean; onOpenChange: (o: boolean) => void; portfolio?: Portfolio }) {
+function PortfolioForm({ open, onOpenChange, portfolio }: { open: boolean; onOpenChange: (o: boolean) => void; portfolio?: Portfolio | undefined }) {
   const [d, set] = useDraft<Portfolio>(open, () => portfolio ? { ...portfolio } : { id: "", name: "", description: "", owner: "Chris McDonald", budget: 0, state: "Active" });
   const [error, setError] = useState("");
   const submit = () => { if (!d.name.trim() || !d.owner.trim()) { setError("Name and owner are required."); return; } const item = { ...d, name: d.name.trim(), id: d.id || slugId("portfolio", d.name) }; savePortfolio(item); if (!portfolio) setCurrentPortfolio(item.id); onOpenChange(false); };
