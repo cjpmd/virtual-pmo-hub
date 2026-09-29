@@ -2,7 +2,6 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Archive, Check, FolderOpen, Pencil, Plus, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Portfolio, Priority, Programme, Project, ProjectState } from "@/data/types";
@@ -16,7 +15,7 @@ const fromInput = (value: string) => { const [y, m, d] = value.split("-"); retur
 const selectClass = "h-9 w-full rounded-md border border-input bg-background px-3 text-sm";
 
 function Field({ label, required, children, wide }: { label: string; required?: boolean; children: ReactNode; wide?: boolean }) {
-  return <div className={cn("space-y-1.5", wide && "sm:col-span-2")}><Label className="text-xs">{label}{required && <span className="text-destructive"> *</span>}</Label>{children}</div>;
+  return <label className={cn("block space-y-1.5", wide && "sm:col-span-2")}><span className="text-xs font-medium">{label}{required && <span className="text-destructive"> *</span>}</span>{children}</label>;
 }
 function PeopleList() { return <datalist id="vpmo-people">{getPeople().map(p => <option key={p.id} value={p.name} />)}</datalist>; }
 function useDraft<T>(open: boolean, initial: () => T) { const [draft, setDraft] = useState<T>(initial); useEffect(() => { if (open) setDraft(initial()); }, [open]); return [draft, (patch: { [K in keyof T]?: T[K] | undefined }) => setDraft(d => ({ ...d, ...patch }) as T)] as const; }
