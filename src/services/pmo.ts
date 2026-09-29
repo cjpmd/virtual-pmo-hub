@@ -1,6 +1,7 @@
 import { benefits, collections, genericResources, issuedTasks, people, portfolio, programmes, projectRequests, projects, resourceAssignments, roadmaps, strategicObjectives } from "@/data/mock-data";
 import { defaultLifecyclePhases, defaultTierDefinitions } from "@/data/lifecycle";
 import { getSettings } from "@/services/settings";
+import { getCurrentPortfolioId, portfolios } from "@/services/entity-store";
 import type { ChangeRequest, Issue, GateCriterion, LifecyclePhase, ProjectStage, ProjectTier, TierDefinition, Benefit, BenefitMeasure, BookingType, GenericResource, Health, IssuedTask, Milestone, MilestoneStatus, Person, Portfolio, Programme, Project, ProjectRequest, ResourceAssignment as Assignment, ResourceTeam, Risk, Roadmap, RoadmapHealth, RoadmapItem, Task, TeamMember } from "@/data/types";
 
 const rank: Record<Health,number> = {"Not Set":0,"On Track":1,"At Risk":2,"Off Track":3};
@@ -43,13 +44,16 @@ export function getEffortHealth(project: Project): Health {
   return "On Track";
 }
 export function getProjectHealth(project: Project): Health { return project.healthOverride?.health ?? worst([getScheduleHealth(project),getFinancialHealth(project),getEffortHealth(project),getIssueHealth(project),getProjectBenefitHealth(project)]); }
-export function getProjects(programmeId?:string) { return projects.filter(p=>!programmeId||p.programmeId===programmeId); }
+export function getProjects(programmeId?:string) { const current=getCurrentPortfolioId(); return projects.filter(p=>(programmeId?p.programmeId===programmeId:p.portfolioId===current)); }
+export function getAllProjects() { return projects; }
 export function getProject(id:string) { return projects.find(p=>p.id===id); }
-export function getProgrammes() { return programmes; }
+export function getProgrammes() { const current=getCurrentPortfolioId(); return programmes.filter(p=>p.portfolioId===current); }
+export function getAllProgrammes() { return programmes; }
+export function getPortfolios() { return portfolios; }
 export function getProgramme(id:string) { return programmes.find(p=>p.id===id); }
 export function getProgrammeHealth(programme:Programme):Health { return programme.healthOverride?.health ?? worst([...getProjects(programme.id).map(getProjectHealth),getProgrammeBenefitHealth(programme)]); }
-export function getPortfolio():Portfolio { return portfolio; }
-export function getPortfolioHealth():Health { return portfolio.healthOverride?.health ?? worst(programmes.map(getProgrammeHealth)); }
+export function getPortfolio():Portfolio { return portfolios.find(p=>p.id===getCurrentPortfolioId())??portfolio; }
+export function getPortfolioHealth():Health { const current=getPortfolio(); return current.healthOverride?.health ?? worst(getProgrammes().map(getProgrammeHealth)); }
 export function getCollections(){ return collections; }
 export function getCollection(id:string){ return collections.find(collection=>collection.id===id); }
 export function getCollectionProjects(id:string){
@@ -119,7 +123,7 @@ export function getResolvedRoadmapItems(roadmap:Roadmap):ResolvedRoadmapItem[]{r
 export function getProgrammeMetrics(programme: Programme){
   const items=getProjects(programme.id); return { projectCount:items.length, active:items.filter(p=>p.state==="Active").length, budget:items.reduce((s,p)=>s+p.budget,0), forecast:items.reduce((s,p)=>s+p.forecast,0), rag:{ green:items.filter(p=>getProjectHealth(p)==="On Track").length, amber:items.filter(p=>getProjectHealth(p)==="At Risk").length, red:items.filter(p=>getProjectHealth(p)==="Off Track").length } };
 }
-export function getPortfolioMetrics(){ const active=projects.filter(p=>p.state==="Active"); const rag={green:projects.filter(p=>getProjectHealth(p)==="On Track").length,amber:projects.filter(p=>getProjectHealth(p)==="At Risk").length,red:projects.filter(p=>getProjectHealth(p)==="Off Track").length}; return {activeProjects:active.length,totalBudget:projects.reduce((s,p)=>s+p.budget,0),forecast:projects.reduce((s,p)=>s+p.forecast,0),percentOnTrack:Math.round((rag.green/projects.length)*100),rag}; }
+export function getPortfolioMetrics(){ const projects=getProjects(); const active=projects.filter(p=>p.state==="Active"); const rag={green:projects.filter(p=>getProjectHealth(p)==="On Track").length,amber:projects.filter(p=>getProjectHealth(p)==="At Risk").length,red:projects.filter(p=>getProjectHealth(p)==="Off Track").length}; return {activeProjects:active.length,totalBudget:projects.reduce((s,p)=>s+p.budget,0),forecast:projects.reduce((s,p)=>s+p.forecast,0),percentOnTrack:projects.length?Math.round((rag.green/projects.length)*100):0,rag}; }
 
 export interface PortfolioTask extends Task { projectId:string; projectName:string; programmeId:string; programmeName:string; projectManager:string; taskSource:Project["taskSource"]; deliveryStatus:MilestoneStatus; effortHours:number; effortCompleted:number; effortRemaining:number; plannerUrl?:string }
 export function getTaskStatus(task:Task):MilestoneStatus {if(task.percentComplete===100)return "Completed";if(parseDate(task.finish)<today)return "Overdue";if(task.baselineFinish&&parseDate(task.finish)>parseDate(task.baselineFinish))return "Late";if(parseDate(task.start)>today)return "Future";return "On Track"}
