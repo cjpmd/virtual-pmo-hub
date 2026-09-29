@@ -1,3 +1,4 @@
+import { ManagePortfoliosButton, StateBadge } from "@/components/entity-management";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AutoBreadcrumbs } from "@/components/section-nav";
@@ -51,7 +52,7 @@ function PortfolioPage() {
   const variance = headlines.forecast - headlines.budget;
   return <div className="space-y-6">
     <AutoBreadcrumbs/>
-    <PageHeader eyebrow="Portfolio" title={portfolio.name} description={portfolio.description} actions={<HealthPill health={getPortfolioHealth()}/>}/>
+    <PageHeader eyebrow="Portfolio" title={portfolio.name} description={portfolio.description} actions={<div className="flex items-center gap-3"><StateBadge state={portfolio.state}/><HealthPill health={getPortfolioHealth()}/><ManagePortfoliosButton/></div>}/>
 
     <MetricRow>
       <MetricCard label="Active projects" value={String(headlines.activeProjects.value)} to="/portfolio/projects"

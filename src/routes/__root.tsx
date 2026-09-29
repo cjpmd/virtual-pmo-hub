@@ -1,3 +1,4 @@
+import { loadEntities, useEntityVersion } from "@/services/entity-store";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -8,7 +9,7 @@ import {
   Scripts,
   useRouterState,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { Fragment, useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -122,11 +123,13 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const entityVersion = useEntityVersion();
+  useEffect(() => { loadEntities(); }, []);
   const bare = useRouterState({ select: state => state.location.pathname.startsWith("/signup") });
 
   return (
     <QueryClientProvider client={queryClient}>
-      {bare ? <Outlet /> : <AppShell><Outlet /><IssueTaskSheet /></AppShell>}
+      {bare ? <Outlet /> : <AppShell><Fragment key={entityVersion}><Outlet /></Fragment><IssueTaskSheet /></AppShell>}
     </QueryClientProvider>
   );
 }
