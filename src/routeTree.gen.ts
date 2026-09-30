@@ -49,6 +49,7 @@ import { Route as CollectionsCollectionIdRouteImport } from './routes/collection
 import { Route as DecisionsIndexRouteImport } from './routes/decisions.index'
 import { Route as DecisionsForumRouteImport } from './routes/decisions.forum'
 import { Route as DeliveryIndexRouteImport } from './routes/delivery.index'
+import { Route as DeliveryAssuranceRouteImport } from './routes/delivery.assurance'
 import { Route as DeliveryDependenciesRouteImport } from './routes/delivery.dependencies'
 import { Route as DeliveryIssueTasksRouteImport } from './routes/delivery.issue-tasks'
 import { Route as DeliveryMilestonesRouteImport } from './routes/delivery.milestones'
@@ -298,6 +299,11 @@ const DecisionsForumRoute = DecisionsForumRouteImport.update({
 const DeliveryIndexRoute = DeliveryIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => DeliveryRoute,
+} as any)
+const DeliveryAssuranceRoute = DeliveryAssuranceRouteImport.update({
+  id: '/assurance',
+  path: '/assurance',
   getParentRoute: () => DeliveryRoute,
 } as any)
 const DeliveryDependenciesRoute = DeliveryDependenciesRouteImport.update({
@@ -596,6 +602,7 @@ export interface FileRoutesByFullPath {
   '/benefits/register': typeof BenefitsRegisterRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
   '/decisions/forum': typeof DecisionsForumRoute
+  '/delivery/assurance': typeof DeliveryAssuranceRoute
   '/delivery/dependencies': typeof DeliveryDependenciesRouteWithChildren
   '/delivery/issue-tasks': typeof DeliveryIssueTasksRoute
   '/delivery/milestones': typeof DeliveryMilestonesRoute
@@ -674,6 +681,7 @@ export interface FileRoutesByTo {
   '/benefits/register': typeof BenefitsRegisterRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
   '/decisions/forum': typeof DecisionsForumRoute
+  '/delivery/assurance': typeof DeliveryAssuranceRoute
   '/delivery/issue-tasks': typeof DeliveryIssueTasksRoute
   '/delivery/milestones': typeof DeliveryMilestonesRoute
   '/delivery/tasks': typeof DeliveryTasksRoute
@@ -763,6 +771,7 @@ export interface FileRoutesById {
   '/benefits/register': typeof BenefitsRegisterRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
   '/decisions/forum': typeof DecisionsForumRoute
+  '/delivery/assurance': typeof DeliveryAssuranceRoute
   '/delivery/dependencies': typeof DeliveryDependenciesRouteWithChildren
   '/delivery/issue-tasks': typeof DeliveryIssueTasksRoute
   '/delivery/milestones': typeof DeliveryMilestonesRoute
@@ -857,6 +866,7 @@ export interface FileRouteTypes {
     | '/benefits/register'
     | '/collections/$collectionId'
     | '/decisions/forum'
+    | '/delivery/assurance'
     | '/delivery/dependencies'
     | '/delivery/issue-tasks'
     | '/delivery/milestones'
@@ -935,6 +945,7 @@ export interface FileRouteTypes {
     | '/benefits/register'
     | '/collections/$collectionId'
     | '/decisions/forum'
+    | '/delivery/assurance'
     | '/delivery/issue-tasks'
     | '/delivery/milestones'
     | '/delivery/tasks'
@@ -1023,6 +1034,7 @@ export interface FileRouteTypes {
     | '/benefits/register'
     | '/collections/$collectionId'
     | '/decisions/forum'
+    | '/delivery/assurance'
     | '/delivery/dependencies'
     | '/delivery/issue-tasks'
     | '/delivery/milestones'
@@ -1393,6 +1405,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/delivery/'
       preLoaderRoute: typeof DeliveryIndexRouteImport
+      parentRoute: typeof DeliveryRoute
+    }
+    '/delivery/assurance': {
+      id: '/delivery/assurance'
+      path: '/assurance'
+      fullPath: '/delivery/assurance'
+      preLoaderRoute: typeof DeliveryAssuranceRouteImport
       parentRoute: typeof DeliveryRoute
     }
     '/delivery/dependencies': {
@@ -1812,6 +1831,7 @@ const DeliveryDependenciesRouteWithChildren =
   DeliveryDependenciesRoute._addFileChildren(DeliveryDependenciesRouteChildren)
 
 interface DeliveryRouteChildren {
+  DeliveryAssuranceRoute: typeof DeliveryAssuranceRoute
   DeliveryDependenciesRoute: typeof DeliveryDependenciesRouteWithChildren
   DeliveryIssueTasksRoute: typeof DeliveryIssueTasksRoute
   DeliveryMilestonesRoute: typeof DeliveryMilestonesRoute
@@ -1820,6 +1840,7 @@ interface DeliveryRouteChildren {
 }
 
 const DeliveryRouteChildren: DeliveryRouteChildren = {
+  DeliveryAssuranceRoute: DeliveryAssuranceRoute,
   DeliveryDependenciesRoute: DeliveryDependenciesRouteWithChildren,
   DeliveryIssueTasksRoute: DeliveryIssueTasksRoute,
   DeliveryMilestonesRoute: DeliveryMilestonesRoute,
