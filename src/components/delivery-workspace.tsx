@@ -158,14 +158,15 @@ function SprintBoard({ projectId, d }: { projectId: string; d: ProjectDelivery }
 }
 
 // ---------------- Reports ----------------
+interface BurnRow { label: string; period: number; scope?: number | undefined; done?: number | undefined; planned: number; forecast?: number | undefined; forecastScope?: number | undefined; cone?: number[] | undefined }
 function burnUpSeries(d: ProjectDelivery, f: ForecastResult) {
-  const n = closedPeriodCount(d); const input = forecastInputFor(d); const rows: Record<string, number | string | number[] | null>[] = [];
+  const n = closedPeriodCount(d); const input = forecastInputFor(d); const rows: BurnRow[] = [];
   let done = 0;
   for (let k = 0; k <= n; k++) { if (k > 0) done += input.completed[k - 1]!; rows.push({ label: fmt(periodEndDate(d, k)), period: k, scope: k === 0 ? d.settings.baselineScope : input.scopeHistory[k - 1]!, done, planned: Math.round(Math.min(d.settings.baselineScope, (k * d.settings.baselineScope) / d.settings.baselinePeriods)) }); }
   const last = Math.min(Math.max(f.finishPeriod ?? n + 8, d.settings.baselinePeriods, f.range.worst ? daysBetween(toDate(d.settings.baselineStart), f.range.worst) / d.settings.sprintLengthDays : 0) + 1, n + 40);
   const worstPeriods = f.velocities.worst, bestPeriods = f.velocities.best;
   for (let k = n; k <= last; k++) {
-    const step = k - n; const row = rows[k] ?? { label: fmt(periodEndDate(d, k)), period: k, planned: Math.round(Math.min(d.settings.baselineScope, (k * d.settings.baselineScope) / d.settings.baselinePeriods)) };
+    const step = k - n; const row: BurnRow = rows[k] ?? { label: fmt(periodEndDate(d, k)), period: k, planned: Math.round(Math.min(d.settings.baselineScope, (k * d.settings.baselineScope) / d.settings.baselinePeriods)) };
     const scopeF = f.scopeNow + f.scopeGrowth * step;
     row.forecastScope = Math.round(scopeF);
     row.forecast = Math.min(Math.round(f.doneNow + f.velocity * step), Math.round(scopeF) + f.velocity);
@@ -187,7 +188,7 @@ function BurnUpChart({ d, f, height = 300 }: { d: ProjectDelivery; f: ForecastRe
     <Line dataKey="done" name="Done" stroke="var(--viz-good)" strokeWidth={2.5} dot={false} isAnimationActive={false} />
     <Line dataKey="forecast" name="Forecast" stroke="var(--viz-cat-2)" strokeWidth={2} strokeDasharray="2 3" dot={false} isAnimationActive={false} />
     <ReferenceLine x={fmt(periodEndDate(d, closedPeriodCount(d)))} stroke="var(--viz-axis)" label={{ value: "Today", fontSize: 10, position: "top" }} />
-    {recovery && <ReferenceDot x={recovery.label as string} y={Number(recovery.planned)} r={6} shape="diamond" fill="var(--viz-cat-2)" stroke="var(--background)" />}
+    {recovery && <ReferenceDot x={recovery.label} y={recovery.planned} r={6} fill="var(--viz-cat-2)" stroke="var(--background)" />}
   </ComposedChart></ResponsiveContainer></div>;
 }
 const burnLegend = <><LegendItem colour="var(--viz-ink-muted)" label="Scope" shape="dashed" /><LegendItem colour="var(--viz-cat-1)" label="Baseline plan" shape="dashed" /><LegendItem colour="var(--viz-good)" label="Done" shape="line" /><LegendItem colour="var(--viz-cat-2)" label="Forecast and best–worst range" shape="dot" /></>;
@@ -196,7 +197,7 @@ function sprintDaily(d: ProjectDelivery, sprint: Sprint) {
   const start = toDate(sprint.start), end = toDate(sprint.end); const commits = d.commitments.filter(c => c.sprintId === sprint.id);
   const items = liveItems(d).filter(i => i.sprintId === sprint.id || commits.some(c => c.workItemId === i.id));
   const committed = commits.filter(c => !c.addedAfterStart).reduce((s, c) => s + c.unitsAtStart, 0) || items.reduce((s, i) => s + effectiveUnits(d, i), 0);
-  const work = workingDays(start, end); const rows: { label: string; remaining?: number; ideal: number; added?: number }[] = [];
+  const work = workingDays(start, end); const rows: { label: string; remaining?: number | undefined; ideal: number; added?: number | undefined }[] = [];
   const dailyDone: number[] = [];
   work.forEach((day, idx) => {
     const ideal = Math.round((committed * (1 - idx / Math.max(1, work.length - 1))) * 10) / 10;
@@ -226,12 +227,12 @@ function Reports({ projectId, d }: { projectId: string; d: ProjectDelivery }) {
   const bu = burnUpSeries(d, f);
   return <div className="grid gap-6 xl:grid-cols-2">
     <ChartCard className="xl:col-span-2" title="Project burn-up" subtitle="Scope, baseline plan and delivered work, with the forecast from today" info="Grey dashed is total scope, blue dashed is the baseline plan, green is work done. The orange dotted line is the forecast at the 3-sprint average." legend={burnLegend}
-      csv={{ name: `${projectId}-burn-up`, columns: ["Period end", "Scope", "Planned", "Done", "Forecast"], rows: bu.map(r => [String(r.label), r.scope as number, r.planned as number, r.done as number, r.forecast as number]) }}
+      csv={{ name: `${projectId}-burn-up`, columns: ["Period end", "Scope", "Planned", "Done", "Forecast"], rows: bu.map(r => [r.label, r.scope, r.planned, r.done, r.forecast]) }}
       table={<SimpleTable columns={["Period end", "Scope", "Planned", "Done"]} rows={bu.filter(r => r.done !== undefined).map(r => [String(r.label), String(r.scope), String(r.planned), String(r.done)])} />}
       empty={n < 1 ? { title: "No history yet", detail: "Close the first sprint to start the burn-up." } : undefined}><BurnUpChart d={d} f={f} /></ChartCard>
     <ChartCard title="Sprint burndown" subtitle={sprint ? `${sprint.name} · weekends and closure days skipped` : "No active sprint"} info="Remaining units each working day against an ideal straight line. Orange bars mark scope added mid-sprint."
       aside={burn && <RagPill rag={burn.forecast.willLand ? "Green" : "Red"} label={burn.forecast.willLand ? "Will land" : "Won't land"} />}
-      csv={burn ? { name: `${projectId}-burndown`, columns: ["Day", "Remaining", "Ideal", "Added"], rows: burn.rows.map(r => [r.label, r.remaining, r.ideal, r.added]) } : undefined}
+      csv={{ name: `${projectId}-burndown`, columns: ["Day", "Remaining", "Ideal", "Added"], rows: (burn?.rows ?? []).map(r => [r.label, r.remaining, r.ideal, r.added]) }}
       table={burn && <SimpleTable columns={["Day", "Remaining", "Ideal"]} rows={burn.rows.map(r => [r.label, String(r.remaining ?? "—"), String(r.ideal)])} />}
       empty={!burn ? { title: "No active sprint", detail: "Start a sprint to see its burndown." } : undefined}
       footer={burn && <p className="text-xs text-muted-foreground">{burn.remaining} {unitLabel(d)} left, completing about {burn.forecast.rate} a day over the last 3 days. {burn.forecast.willLand ? `On course to finish by ${fmt(burn.forecast.landDate)}.` : burn.forecast.landDate ? `At this rate it finishes ${fmt(burn.forecast.landDate)}, after the sprint ends.` : "Nothing completed recently, so it won't finish at this rate."}</p>}>
@@ -265,7 +266,7 @@ function SimpleTable({ columns, rows }: { columns: string[]; rows: string[][] })
 function RecoveryPlan({ projectId, d }: { projectId: string; d: ProjectDelivery }) {
   const [value, setValue] = useState(String(d.settings.planVelocity ?? ""));
   return <div className="rounded-lg border border-border/70 bg-card p-5 shadow-sm xl:col-span-2"><h3 className="font-semibold">Recovery plan</h3><p className="mt-1 text-sm text-muted-foreground">Set the velocity the team is committing to for recovery. The "Recovery plan" forecast basis uses it.</p>
-    <div className="mt-3 flex items-end gap-2"><Label className="text-xs">Target {unitLabel(d)} per {d.settings.approach === "waterfall" ? "period" : "sprint"}<Input type="number" className="mt-1 w-32" value={value} onChange={e => setValue(e.target.value)} /></Label><Button variant="outline" onClick={() => saveSettings(projectId, { planVelocity: value ? Number(value) : undefined })}>Save plan</Button></div></div>;
+    <div className="mt-3 flex items-end gap-2"><Label className="text-xs">Target {unitLabel(d)} per {d.settings.approach === "waterfall" ? "period" : "sprint"}<Input type="number" className="mt-1 w-32" value={value} onChange={e => setValue(e.target.value)} /></Label><Button variant="outline" onClick={() => saveSettings(projectId, value ? { planVelocity: Number(value) } : {})}>Save plan</Button></div></div>;
 }
 
 // ---------------- Forecast ----------------
