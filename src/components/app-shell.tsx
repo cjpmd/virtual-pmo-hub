@@ -22,6 +22,8 @@ const seedNotifications = [
   { id: "n1", text: "Maya Harrison mentioned you on Ebbot", kind: "Mention", read: false },
   { id: "n2", text: "3 Ebbot tasks are overdue", kind: "Overdue alert", read: false },
   { id: "n3", text: "Status report due Friday", kind: "Reminder", read: false },
+  { id: "n-ben", text: "Benefit measurement due: record this quarter's actuals for BEN-003", kind: "Benefit reminder", read: false },
+  { id: "n-div", text: "Divergence alert: declared RAG is better than the evidence on a project", kind: "Assurance", read: false },
   { id: "n4", text: "Digital assessment pilot awaits approval", kind: "Approval request", read: true },
 ];
 
