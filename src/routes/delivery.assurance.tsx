@@ -32,7 +32,7 @@ function AssurancePage() {
     <PageHeader eyebrow="Assurance from evidence" title="Portfolio assurance" description="What project managers declare, next to what the delivery data shows." />
     <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <KpiCard label="Evidenced portfolio RAG" value={roll.worst === "Grey" ? "No evidence" : roll.worst} detail={`Worst of ${live.length - roll.excluded} projects · ${roll.excluded} excluded (no or stale evidence)`} icon="health" />
-      <KpiCard label="Divergence alerts" value={String(alerts.length)} detail="Declared better than evidence for 2+ cycles or 14+ days" icon="risks" />
+      <KpiCard label="Divergence alerts" value={String(alerts.length)} detail="Declared better than evidence for 2+ cycles or 14+ days" icon="health" />
       <KpiCard label="Latest forecast finish" value={fmt(roll.latestFinish)} detail="Latest forecast finish among projects" icon="forecast" />
       <KpiCard label="Not converging" value={String(roll.notConverging)} detail="Scope growing faster than delivery" icon="projects" />
     </section>

@@ -34,6 +34,7 @@ export const sections: Section[] = [
       { to: "/delivery/milestones", label: "Milestones", icon: Diamond, termKey: "milestonePlural" },
       { to: "/delivery/dependencies", label: "Dependencies", icon: Waypoints, termKey: "dependencyPlural" },
       { to: "/delivery/issue-tasks", label: "Issue tasks", icon: ListChecks },
+      { to: "/delivery/assurance", label: "Assurance", icon: Gauge },
     ],
   },
   {
