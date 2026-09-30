@@ -9,7 +9,7 @@ const healthRag = (h: Health): EvidencedRag => (h === "On Track" ? "Green" : h =
 export interface AssuranceRow {
   projectId: string; name: string; programme: string; state: string; declared: Health; evidenced: EvidencedRag; stale: boolean; status: DeliveryStatus;
   forecast: ForecastResult; daysVsBaseline: number | null; gap: number; converging: boolean; lastUpdateDays: number;
-  divergent: boolean; divergenceAlert: boolean; divergenceDays: number; justification?: string; riskScore: number;
+  divergent: boolean; divergenceAlert: boolean; divergenceDays: number; justification?: string | undefined; riskScore: number;
 }
 
 export function getAssuranceRow(projectId: string): AssuranceRow {

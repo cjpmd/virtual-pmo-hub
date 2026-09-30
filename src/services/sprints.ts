@@ -11,11 +11,11 @@ export type WorkUnit = "points" | "tasks" | "effort_hours";
 export type ItemType = "story" | "task" | "bug" | "spike" | "milestone_task";
 export type StatusCategory = "todo" | "wip" | "done";
 export interface ProjectStatus { id: string; name: string; category: StatusCategory; sortOrder: number }
-export interface WorkItem { id: string; title: string; itemType: ItemType; workstream: string; estimateUnits: number | null; statusId: string; sprintId: string | null; milestoneId?: string; assignee?: string; backlogRank: number; createdAt: string; doneAt: string | null; deletedAt?: string; source: "native" | "planner" | "import"; externalId?: string }
+export interface WorkItem { id: string; title: string; itemType: ItemType; workstream: string; estimateUnits: number | null; statusId: string; sprintId: string | null; milestoneId?: string | undefined; assignee?: string | undefined; backlogRank: number; createdAt: string; doneAt: string | null; deletedAt?: string; source: "native" | "planner" | "import"; externalId?: string }
 export interface Sprint { id: string; name: string; goal: string; start: string; end: string; status: "planned" | "active" | "closed"; capacityUnits: number; committedUnits?: number; completedUnits?: number; addedUnits?: number; removedUnits?: number; closedAt?: string }
 export interface Commitment { sprintId: string; workItemId: string; unitsAtStart: number; addedAfterStart: boolean }
 export interface WorkItemEvent { id: string; workItemId: string; field: "status" | "estimate" | "sprint" | "created" | "deleted"; oldValue: string; newValue: string; changedBy: string; changedAt: string }
-export interface DeliverySettings { approach: DeliveryApproach; workUnit: WorkUnit; sprintLengthDays: number; baselineScope: number; baselineStart: string; baselinePeriods: number; ragToleranceDays: number; planVelocity?: number }
+export interface DeliverySettings { approach: DeliveryApproach; workUnit: WorkUnit; sprintLengthDays: number; baselineScope: number; baselineStart: string; baselinePeriods: number; ragToleranceDays: number; planVelocity?: number | undefined }
 export interface Justification { date: string; text: string; by: string }
 export interface ProjectDelivery { settings: DeliverySettings; statuses: ProjectStatus[]; items: WorkItem[]; sprints: Sprint[]; commitments: Commitment[]; events: WorkItemEvent[]; estimateDefaults: Partial<Record<ItemType, number>>; justifications: Justification[] }
 export interface NonWorkingPeriod { id: string; name: string; start: string; end: string }

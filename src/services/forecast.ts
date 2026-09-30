@@ -18,10 +18,10 @@ export interface ForecastInput {
   /** Total scope at the end of each closed period, oldest first. */
   scopeHistory: number[];
   /** Recovery plan target per period, if the PM set one. */
-  planVelocity?: number;
+  planVelocity?: number | undefined;
   ragToleranceDays: number;
 }
-export interface ForecastOverrides { velocity?: number; scopeGrowth?: number }
+export interface ForecastOverrides { velocity?: number | undefined; scopeGrowth?: number | undefined }
 
 export interface ForecastResult {
   periodsClosed: number;

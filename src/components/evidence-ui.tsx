@@ -16,7 +16,7 @@ export const healthToRag = (h: Health): EvidencedRag => (h === "On Track" ? "Gre
 export const ragLevel = (r: EvidencedRag) => (r === "Green" ? 0 : r === "Amber" ? 1 : r === "Red" ? 2 : -1);
 
 /** RAG always carries a text label, never colour alone. */
-export function RagPill({ rag, prefix, label, className }: { rag: EvidencedRag; prefix?: string; label?: string; className?: string }) {
+export function RagPill({ rag, prefix, label, className }: { rag: EvidencedRag; prefix?: string | undefined; label?: string | undefined; className?: string | undefined }) {
   return <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-medium", ragStyles[rag], className)}>
     <span aria-hidden className={cn("size-1.5 rounded-full", rag === "Green" ? "bg-health-good" : rag === "Amber" ? "bg-health-warn" : rag === "Red" ? "bg-health-bad" : "bg-muted-foreground")} />
     {prefix && <span className="font-normal opacity-80">{prefix}</span>}{label ?? (rag === "Grey" ? "No evidence" : rag)}
