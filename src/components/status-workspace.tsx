@@ -11,6 +11,7 @@ import { HealthPill } from "@/components/health-pill";
 import { ChartCard, LegendItem } from "@/components/charts/chart-card";
 import type { Health, HealthDimension, Project, StatusReport, Task } from "@/data/types";
 import { cn } from "@/lib/utils";
+import { evidenceDraft } from "@/services/highlight-draft";
 
 const healthOptions: Health[] = ["On Track", "At Risk", "Off Track", "Not Set"];
 const healthValues: Record<Health, number> = { "Not Set": 0, "On Track": 1, "At Risk": 2, "Off Track": 3 };
@@ -82,7 +83,7 @@ function TrendTooltip({ active, payload, label }: { active?: boolean; payload?: 
   </div>;
 }
 
-function ReportPanel({ open, calculated, tasks, onClose, onSubmit }: { open: boolean; calculated: HealthSet; tasks: Task[]; onClose: () => void; onSubmit: (report: StatusReport) => void }) {
+function ReportPanel({ open, calculated, tasks, projectId, onClose, onSubmit }: { open: boolean; calculated: HealthSet; tasks: Task[]; projectId: string; onClose: () => void; onSubmit: (report: StatusReport) => void }) {
   const [health, setHealth] = useState<HealthSet>(calculated);
   const [reasons, setReasons] = useState<Reasons>({});
   const [accomplished, setAccomplished] = useState("");
@@ -96,10 +97,12 @@ function ReportPanel({ open, calculated, tasks, onClose, onSubmit }: { open: boo
     if (missingReasons.length || !accomplished.trim() || !planned.trim()) return;
     onSubmit({
       id: `sr-${Date.now()}`, reportingDate: "21/09/2026", submitter: "Chris McDonald", ...health,
-      accomplished: accomplished.trim(), planned: planned.trim(), comments: comments.trim(),
+      accomplished: accomplished.trim(), planned: planned.trim(), comments: comments.trim(), ...(aiDraft ? { aiDraft } : {}),
       overrideReasons: Object.fromEntries(dimensions.filter(({ key }) => health[key] !== calculated[key]).map(({ key }) => [key, reasons[key]?.trim()])) as Reasons,
     });
   };
+  const [aiDraft, setAiDraft] = useState<StatusReport["aiDraft"]>();
+  const evidence = () => { const text = evidenceDraft(projectId); setAccomplished(text.accomplished); setPlanned(text.planned); setComments(text.comments); setAiDraft(text); };
   const draft = () => {
     const text = activityDraft(tasks);
     setAccomplished(text.accomplished);
@@ -119,7 +122,7 @@ function ReportPanel({ open, calculated, tasks, onClose, onSubmit }: { open: boo
           {dimensions.map(dimension => <HealthControl key={dimension.key} dimension={dimension} value={health[dimension.key]} calculated={calculated[dimension.key]} reason={reasons[dimension.key]} onChange={value => setHealth(current => ({ ...current, [dimension.key]: value }))} onReasonChange={value => setReasons(current => ({ ...current, [dimension.key]: value }))}/>)}
         </section>
         <section className="space-y-4 border-t border-border pt-6">
-          <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="text-sm font-semibold">Progress narrative</h3><p className="mt-1 text-xs text-muted-foreground">Use recent task activity as a starting point, then refine it.</p></div><Button type="button" variant="outline" size="sm" onClick={draft}><Sparkles className="size-4"/>Draft from activity</Button></div>
+          <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="text-sm font-semibold">Progress narrative</h3><p className="mt-1 text-xs text-muted-foreground">Use recent task activity as a starting point, then refine it.</p></div><Button type="button" variant="outline" size="sm" onClick={draft}><Sparkles className="size-4"/>Draft from activity</Button><Button type="button" size="sm" onClick={evidence}><Sparkles className="size-4"/>Draft highlight report</Button></div>
           <div className="space-y-2"><Label htmlFor="accomplished">Accomplished</Label><Textarea id="accomplished" rows={4} value={accomplished} onChange={event => setAccomplished(event.target.value)} placeholder="Summarise progress since the last report"/></div>
           <div className="space-y-2"><Label htmlFor="planned">Planned</Label><Textarea id="planned" rows={4} value={planned} onChange={event => setPlanned(event.target.value)} placeholder="Summarise the next reporting period"/></div>
           <div className="space-y-2"><Label htmlFor="comments">Comments</Label><Textarea id="comments" rows={3} value={comments} onChange={event => setComments(event.target.value)} placeholder="Add context, decisions or support required"/></div>
@@ -153,11 +156,15 @@ export function StatusWorkspace({ project, initialReports, calculated }: { proje
           <span className={cn("absolute -left-[2.1rem] top-5 grid size-7 place-items-center rounded-full border border-primary bg-background text-primary sm:-left-[2.75rem]", index === 0 && "bg-primary text-primary-foreground")}><FilePenLine className="size-3.5"/></span>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><div className="flex items-center gap-2"><CalendarDays className="size-4 text-muted-foreground"/><h4 className="font-semibold">{formatDate(report.reportingDate)}</h4>{index === 0 && <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold uppercase text-accent-foreground">Latest</span>}</div><p className="mt-1 text-xs text-muted-foreground">Submitted by {report.submitter}</p></div><div className="flex flex-wrap gap-1.5">{overallOverride ? <HealthPill health={report.overall} override={{ health: report.overall, reason: overallOverride }}/> : <HealthPill health={report.overall}/>}</div></div>
           <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">{dimensions.map(({ key, label }) => { const reason=report.overrideReasons?.[key]; return <div key={key} className="rounded-md bg-muted/60 p-2.5"><p className="mb-1.5 text-[10px] font-semibold uppercase text-muted-foreground">{label}</p>{reason ? <HealthPill health={report[key]} override={{ health: report[key], reason }}/> : <HealthPill health={report[key]}/>}</div>})}</div>
-          <div className="mt-5 grid gap-5 md:grid-cols-2"><div><p className="text-xs font-semibold">Accomplished</p><p className="mt-1 text-sm leading-6 text-muted-foreground">{report.accomplished}</p></div><div><p className="text-xs font-semibold">Planned next</p><p className="mt-1 text-sm leading-6 text-muted-foreground">{report.planned}</p></div></div>
+          <div className="mt-5 grid gap-5 md:grid-cols-2"><div><p className="text-xs font-semibold">Accomplished</p><p className="mt-1 text-sm leading-6 text-muted-foreground">{report.accomplished}</p></div><div><p className="text-xs font-semibold">Planned next</p><p className="mt-1 text-sm leading-6 text-muted-foreground">{report.planned}</p></div></div>{report.aiDraft && <details className="mt-4 text-xs text-muted-foreground"><summary className="cursor-pointer">{report.aiDraft.exception ? "Exception report draft kept for audit" : "Original draft kept for audit"}</summary><p className="mt-2 whitespace-pre-line">{report.aiDraft.accomplished}
+
+{report.aiDraft.planned}
+
+{report.aiDraft.comments}</p></details>}
           {report.comments && <div className="mt-4 border-t border-border pt-4"><p className="text-xs font-semibold">Comments</p><p className="mt-1 text-sm text-muted-foreground">{report.comments}</p></div>}
         </article>})}
       </div>
     </section>
-    <ReportPanel key={panelOpen ? "open" : "closed"} open={panelOpen} calculated={calculated} tasks={project.tasks ?? []} onClose={() => setPanelOpen(false)} onSubmit={submit}/>
+    <ReportPanel key={panelOpen ? "open" : "closed"} open={panelOpen} calculated={calculated} tasks={project.tasks ?? []} projectId={project.id} onClose={() => setPanelOpen(false)} onSubmit={submit}/>
   </div>;
 }
