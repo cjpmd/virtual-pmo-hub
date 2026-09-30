@@ -83,3 +83,12 @@
 - [x] Settings > Integrations: linked plans, pending changes, conflicts, sync log
 - [x] Tasks tab Planner notes and Open in Planner link
 - [ ] Real Microsoft connection (waits on app registration, test environment and IT approval)
+
+## Sprints, forecasting and assurance (demo)
+- [x] Phase 1: backlog, sprints, sprint board, close-sprint carry-over, audit events, closure days
+- [x] Phase 2: burn-up, burndown, velocity, cumulative flow, recovery plan, CSV/table
+- [x] Phase 3: forecast engine + tests against the brief's worked example, what-if, sprint verdict
+- [x] Phase 4: declared vs evidenced, divergence alerts + justification, Assurance page, accuracy, stale evidence
+- [x] Phase 5: benefits at-risk flag/view, measurement reminders
+- [x] Phase 6: evidence-referenced highlight draft, exception variant, draft kept for audit
+- [ ] Real backend (own Supabase, org security tests, nightly snapshots, Postgres forecasts, Claude drafting) — waiting on backend connection
