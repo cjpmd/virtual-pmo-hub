@@ -169,7 +169,7 @@ function burnUpSeries(d: ProjectDelivery, f: ForecastResult) {
     const step = k - n; const row: BurnRow = rows[k] ?? { label: fmt(periodEndDate(d, k)), period: k, planned: Math.round(Math.min(d.settings.baselineScope, (k * d.settings.baselineScope) / d.settings.baselinePeriods)) };
     const scopeF = f.scopeNow + f.scopeGrowth * step;
     row.forecastScope = Math.round(scopeF);
-    row.forecast = Math.min(Math.round(f.doneNow + f.velocity * step), Math.round(scopeF) + f.velocity);
+    row.forecast = Math.min(Math.round(f.doneNow + f.velocity * step), Math.round(scopeF));
     row.cone = [Math.round(Math.min(f.doneNow + worstPeriods * step, scopeF)), Math.round(Math.min(f.doneNow + bestPeriods * step, scopeF))];
     rows[k] = row;
   }

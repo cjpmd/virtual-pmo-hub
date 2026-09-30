@@ -58,12 +58,13 @@ function profileFor(project: Project): Profile {
   const r = rng(hash(project.id));
   const closed = project.state === "Closed";
   const n = closed ? 6 + Math.floor(r() * 4) : project.state === "Proposed" ? Math.floor(r() * 3) : 2 + Math.floor(r() * 7);
-  const base = 14 + Math.floor(r() * 24), trend = (r() - 0.55) * 4;
+  const base = 14 + Math.floor(r() * 24), trend = (r() - 0.35) * 2.5;
   const completed = Array.from({ length: n }, (_, i) => Math.max(3, Math.round(base + trend * i + (r() - 0.5) * 6)));
-  const growth = Math.floor(r() * 6) + (r() > 0.85 ? 10 : 0);
+  const growth = Math.floor(r() * 4) + (r() > 0.9 ? 30 : 0);
   const done = completed.reduce((s, v) => s + v, 0);
   const periods = closed ? n : n + 3 + Math.floor(r() * 6);
-  const baselineScope = closed ? Math.max(done - growth * n, 20) : Math.max(Math.round(base * periods * (0.85 + r() * 0.4)), done + 30);
+  const avg = completed.slice(-3).reduce((s, v) => s + v, 0) / Math.max(1, Math.min(3, n)) || base;
+  const baselineScope = closed ? Math.max(done - growth * n, 20) : Math.max(Math.round(avg * periods * (0.7 + r() * 0.4)), done + 30);
   const approach: DeliveryApproach = r() > 0.6 ? "waterfall" : r() > 0.5 ? "hybrid" : "agile";
   return { completed, growth: closed ? 0 : growth, baselineScope, baselinePeriods: periods, approach, workUnit: approach === "waterfall" ? "tasks" : "points", stale: !closed && r() > 0.82, active: !closed && project.state !== "Proposed" };
 }
