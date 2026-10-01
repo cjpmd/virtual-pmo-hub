@@ -17,7 +17,7 @@ export function saveDelta<T extends { id: string }>(key: string, delta: RecordDe
 
 export function applyDelta<T extends { id: string }>(seed: T[], delta: RecordDelta<T>): T[] {
   const deleted = new Set(delta.deleted);
-  const merged = [...seed.filter(item => !delta.created.some(c => c.id === item.id)), ...delta.created];
+  const merged = [...delta.created, ...seed.filter(item => !delta.created.some(c => c.id === item.id))];
   return merged.filter(item => !deleted.has(item.id)).map(item => delta.edits[item.id] ? { ...item, ...delta.edits[item.id] } : item);
 }
 
