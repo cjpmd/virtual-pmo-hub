@@ -12,3 +12,4 @@
 Account settings are a distinct Settings section backed by the existing browser-local settings store; this prototype has no authentication service, so log out only returns to the sign-up demo.
 - Portfolio/programme/project create, edit and close go through src/services/entity-store.ts (browser-local, mutates shared mock arrays, root re-renders on change) — keeps services swappable for a real backend.
 - Forecasting lives in src/services/forecast.ts (pure, vitest-tested); sprint/work-item data in src/services/sprints.ts (browser-local) — one engine so every screen shows identical numbers, swappable for Postgres later.
+- Board items (risks, issues, benefits, decisions, etc.) add/edit/close/delete via BoardWorkspace + src/services/record-store.ts (per-board browser-local deltas) — one consistent behaviour, cleared by Restore sample data.

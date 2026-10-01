@@ -69,7 +69,7 @@ function RequestsPage() {
       <KpiCard label="Highest priority score" value={String(ranked[0]?.score.priorityScore ?? 0)} detail={ranked[0]?.request.title ?? "—"} icon="health" />
     </div>
 
-    <BoardWorkspace title="Requests" rows={rows} columns={columns} groupOptions={["group", "priority", "sponsor"]} initialView="kanban"
+    <BoardWorkspace title="Requests" itemLabel="request" rows={rows} columns={columns} groupOptions={["group", "priority", "sponsor"]} initialView="kanban"
       renderTitle={row => <button onClick={event => { event.stopPropagation(); setSelectedId(row.id) }} className="text-left text-primary hover:underline">{row.title}</button>} />
 
     <section className="rounded-lg border border-border/70 bg-card p-5 shadow-sm">

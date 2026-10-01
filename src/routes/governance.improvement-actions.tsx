@@ -18,6 +18,6 @@ function Page(){
    <KpiCard label="In progress" value={String(actions.filter(action=>action.status==="In progress").length)} detail="Underway" icon="forecast"/>
    <KpiCard label="Embedded" value={String(embedded.length)} detail={embedded.map(action=>action.embeddedIn).join(", ")||"None yet"} icon="budget"/>
   </div>
-  <BoardWorkspace title="Improvement actions" rows={improvementActionsToRows(actions)} columns={improvementActionColumns} groupOptions={["group","people","embeddedIn"]} initialView="kanban"/>
+  <BoardWorkspace title="Improvement actions" itemLabel="action" rows={improvementActionsToRows(actions)} columns={improvementActionColumns} groupOptions={["group","people","embeddedIn"]} initialView="kanban"/>
  </div>;
 }

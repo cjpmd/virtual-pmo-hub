@@ -156,7 +156,7 @@ function PortfolioPage() {
 
     <section className="space-y-3">
       <h2 className="font-display text-lg font-semibold">Programmes</h2>
-      <BoardWorkspace title="Programmes" rows={rows} columns={columns} groupOptions={["group", "status"]} renderTitle={row => <Link to="/portfolio/programmes/$programmeId" params={{ programmeId: row.id }} className="text-primary hover:underline">{row.title}</Link>}/>
+      <BoardWorkspace title="Programmes" manage={false} rows={rows} columns={columns} groupOptions={["group", "status"]} renderTitle={row => <Link to="/portfolio/programmes/$programmeId" params={{ programmeId: row.id }} className="text-primary hover:underline">{row.title}</Link>}/>
     </section>
   </div>;
 }
