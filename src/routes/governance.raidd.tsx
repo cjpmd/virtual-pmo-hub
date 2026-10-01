@@ -94,7 +94,7 @@ function Page() {
     {active === "assumptions" && <AssumptionsWorkspace />}
 
     {active === "issues" && <div className="space-y-5">
-      <BoardWorkspace title="Issue register" rows={issuesToRows(issues).map((row, index) => ({ ...row, project: issues[index]?.projectName ?? "", group: issues[index]?.programmeName ?? "Unassigned" }))} columns={[...issueColumns, { key: "project", label: "Project", type: "text", width: 240 }]} groupOptions={["group", "status", "priority"]} />
+      <BoardWorkspace title="Issue register" itemLabel="issue" rows={issuesToRows(issues).map((row, index) => ({ ...row, project: issues[index]?.projectName ?? "", group: issues[index]?.programmeName ?? "Unassigned" }))} columns={[...issueColumns, { key: "project", label: "Project", type: "text", width: 240 }]} groupOptions={["group", "status", "priority"]} />
       {!issues.length && <p className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">No issues are open across the portfolio.</p>}
     </div>}
 

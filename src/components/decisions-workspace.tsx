@@ -24,7 +24,7 @@ export function DecisionsWorkspace() {
       <KpiCard label="Average decision latency" value={`${metrics.averageLatencyDays} days`} detail="Needed-by against decided" icon="forecast" />
       <KpiCard label="Made in the last 30 days" value={String(metrics.madeLast30)} detail={`${metrics.superseded} superseded overall`} icon="budget" />
     </div>
-    <BoardWorkspace title="Decision log" rows={rows} columns={decisionColumns} groupOptions={["group", "status", "scope"]} seededViews={decisionViews} seededAutomations={governanceAutomationRecipes}
+    <BoardWorkspace title="Decision log" itemLabel="decision" rows={rows} columns={decisionColumns} groupOptions={["group", "status", "scope"]} seededViews={decisionViews} seededAutomations={governanceAutomationRecipes}
       renderTitle={row => <button onClick={event => { event.stopPropagation(); setSelected(items.find(item => item.id === row.id) ?? null) }} className="text-left text-primary hover:underline">{String(row["reference"])} · {row.title}</button>} />
     {selected && <DecisionPanel decision={items.find(item => item.id === selected.id) ?? selected} all={items}
       {...(outcomes[selected.id] ? { outcome: outcomes[selected.id] as RecordedOutcome } : {})}

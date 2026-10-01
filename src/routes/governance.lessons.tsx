@@ -82,7 +82,7 @@ function Page() {
       </div>
     </section>
 
-    <BoardWorkspace title="Lessons log" rows={lessonsToRows(lessons)} columns={lessonColumns} groupOptions={["group", "project", "phase", "lessonStatus"]} seededViews={lessonViews} />
+    <BoardWorkspace title="Lessons log" itemLabel="lesson" rows={lessonsToRows(lessons)} columns={lessonColumns} groupOptions={["group", "project", "phase", "lessonStatus"]} seededViews={lessonViews} />
 
     {importOpen && <LessonsImport lessons={lessons} close={() => setImportOpen(false)} />}
   </div>;

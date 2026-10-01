@@ -55,7 +55,7 @@ export function DependencyWorkspace() {
       <p className="text-sm text-muted-foreground">Generates the agenda for the PM sync: cross-PM dependencies that are off track, awaiting confirmation, or needed in the next 30 days.</p>
     </div>
 
-    <BoardWorkspace title="Dependency register" rows={dependenciesToRows(items)} columns={dependencyColumns} groupOptions={["group", "boundary", "dependencyType", "validation"]} seededViews={dependencyViews} seededAutomations={dependencyAutomationRecipes}
+    <BoardWorkspace title="Dependency register" itemLabel="dependency" rows={dependenciesToRows(items)} columns={dependencyColumns} groupOptions={["group", "boundary", "dependencyType", "validation"]} seededViews={dependencyViews} seededAutomations={dependencyAutomationRecipes}
       renderTitle={row => <button onClick={event => { event.stopPropagation(); setSelected(items.find(item => item.id === row.id) ?? null) }} className="text-left text-primary hover:underline">{String(row["reference"])} · {row.title}</button>} />
 
     {selected && <DependencyPanel dependency={items.find(item => item.id === selected.id) ?? selected} overrides={overrides} onAccept={accept} onRaise={raise} close={() => setSelected(null)} />}

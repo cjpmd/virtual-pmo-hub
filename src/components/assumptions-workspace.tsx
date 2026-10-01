@@ -46,7 +46,7 @@ export function AssumptionsWorkspace({ scope, compact = false }: { scope?: { pro
       <KpiCard label="Invalidated" value={String(metrics.invalidated)} detail="Each one should have an issue" icon="health" />
     </div>}
 
-    <BoardWorkspace title="Assumption log" rows={assumptionsToRows(items)} columns={assumptionColumns} groupOptions={["group", "scope"]} seededViews={assumptionViews} seededAutomations={governanceAutomationRecipes} />
+    <BoardWorkspace title="Assumption log" itemLabel="assumption" rows={assumptionsToRows(items)} columns={assumptionColumns} groupOptions={["group", "scope"]} seededViews={assumptionViews} seededAutomations={governanceAutomationRecipes} />
 
     <section className="rounded-lg border border-border/70 bg-card shadow-sm">
       <header className="border-b p-4"><h2 className="font-display text-base font-semibold">Validate or invalidate</h2><p className="mt-0.5 text-xs text-muted-foreground">Invalidating an assumption prompts you to raise an issue.</p></header>
