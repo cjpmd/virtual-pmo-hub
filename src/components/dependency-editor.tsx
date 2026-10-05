@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { X, Trash2 } from "lucide-react";
 import type { Dependency, DependencyEnd, DependencyType } from "@/data/types";
-import { getDependencyRecords, nextDependencyReference, saveDependency, deleteDependency } from "@/services/dependency-store";
+import { nextDependencyReference, saveDependency, deleteDependency } from "@/services/dependency-store";
 import { buildDependencyGraph, nodeForEnd, type GraphNode } from "@/services/dependency-graph";
 import { getDependencies } from "@/services/dependencies";
 
