@@ -55,6 +55,24 @@ export const notificationEvents = [
   "Benefit behind profile", "Lessons review outstanding",
 ];
 
+/**
+ * The prototype's people with sign-in accounts. Only the seed generator uses this: it gives
+ * the demo organisation's resources their email addresses. Real organisations' users come
+ * from organisation_members.
+ */
+export const demoUsers: Array<{ id: string; name: string; email: string; role: string; team: string; active: boolean }> = [
+    { id: "cm", name: "Chris McDonald", email: "chris.mcdonald@university.ac.uk", role: "PMO", team: "PMO", active: true },
+    { id: "ap", name: "Amelia Price", email: "amelia.price@university.ac.uk", role: "Programme Manager", team: "PMO", active: true },
+    { id: "fw", name: "Freya Walsh", email: "freya.walsh@university.ac.uk", role: "Project Manager", team: "PMO", active: true },
+    { id: "gc", name: "George Clarke", email: "george.clarke@university.ac.uk", role: "Project Manager", team: "PMO", active: true },
+    { id: "nr", name: "Nadia Rahman", email: "nadia.rahman@university.ac.uk", role: "Project Officer", team: "PMO", active: true },
+    { id: "mh", name: "Maya Harrison", email: "maya.harrison@university.ac.uk", role: "Team Member", team: "Applications", active: true },
+    { id: "dm", name: "Daniel Mercer", email: "daniel.mercer@university.ac.uk", role: "Executive Viewer", team: "Executive", active: true },
+    { id: "ml", name: "Martin Lowe", email: "martin.lowe@university.ac.uk", role: "Executive Viewer", team: "Finance", active: true },
+    { id: "er", name: "Elliot Reed", email: "elliot.reed@university.ac.uk", role: "PMO", team: "PMO", active: true },
+    { id: "sysadmin", name: "Sofia Marsh", email: "sofia.marsh@university.ac.uk", role: "Admin", team: "PMO", active: false },
+  ];
+
 const allPermissions = { viewPortfolio: true, editProjects: true, approveGates: true, manageBenefits: true, manageSettings: true, issueTasks: true, validateMeasurements: true, recordDecisions: true };
 const noPermissions = { viewPortfolio: false, editProjects: false, approveGates: false, manageBenefits: false, manageSettings: false, issueTasks: false, validateMeasurements: false, recordDecisions: false };
 /** The fixed role ladder enforced by RLS. Only the default home page is configurable. */

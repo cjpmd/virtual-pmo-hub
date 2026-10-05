@@ -29,7 +29,7 @@ import {
   roadmaps,
   strategicObjectives,
 } from "../src/data/mock-data";
-import { defaultSettings } from "../src/data/settings-data";
+import { defaultSettings, demoUsers } from "../src/data/settings-data";
 import type { DependencyEnd, Health, RoadmapHealth } from "../src/data/types";
 
 // ---------------------------------------------------------------------------
@@ -135,7 +135,7 @@ interface ResourceRow {
   source: "people" | "user" | "placeholder" | "unmatched";
 }
 const resources = new Map<string, ResourceRow>();
-const users = defaultSettings.users;
+const users = demoUsers;
 const personIdToName = new Map(people.map((p) => [p.id, p.name]));
 for (const p of people) {
   const user = users.find((u) => u.name === p.name);
