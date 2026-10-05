@@ -34,6 +34,7 @@ export const qk = {
       ["org", orgId, "projects", projectId, "raid"] as const,
     forecastHistory: (orgId: string, projectId: string) =>
       ["org", orgId, "projects", projectId, "forecast-history"] as const,
+    allTasks: (orgId: string) => ["org", orgId, "projects", "all-tasks"] as const,
     tasks: (orgId: string, projectId: string) =>
       ["org", orgId, "projects", projectId, "tasks"] as const,
     canEdit: (orgId: string, projectId: string) =>

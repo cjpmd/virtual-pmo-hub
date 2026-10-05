@@ -11,12 +11,12 @@
 // Reads come from v_work_items (delivery status, checklist counts) plus the child tables, each
 // filtered by project in parallel: views can't be embedded.
 import type { Database } from "@/integrations/supabase/types";
-import type { Priority, Task, TaskSource } from "@/data/types";
+import type { MilestoneStatus, Priority, Task, TaskSource } from "@/data/types";
 import { supabase } from "@/integrations/supabase/client";
 import { fromIsoDate, toIsoDate } from "@/lib/format";
-import { todayIso } from "@/lib/today";
+import { daysFromToday, todayIso } from "@/lib/today";
 import { listPeople, type Person } from "./hierarchy";
-import { priorityLabel, priorityValue } from "./labels";
+import { milestoneStatusLabel, priorityLabel, priorityValue } from "./labels";
 import { unwrap } from "./service-error";
 import { deleteWhere, insertRow, insertRows, updateRow, deleteRows } from "./write";
 
@@ -368,4 +368,148 @@ export async function saveTaskChanges(input: {
     }
 
   return { ids, updatedAt, checklistIds };
+}
+
+// ---- Portfolio and personal task views ----------------------------------------------------
+
+export interface PortfolioTaskView {
+  id: string;
+  title: string;
+  bucket: string;
+  assignees: string[];
+  assigneeIds: string[];
+  start: string;
+  finish: string;
+  baselineFinish?: string;
+  percentComplete: number;
+  isMilestone: boolean;
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+  programmeId: string | null;
+  programmeName: string;
+  taskSource: TaskSource;
+  deliveryStatus: MilestoneStatus;
+  effortHours: number;
+  effortCompleted: number;
+  effortRemaining: number;
+}
+
+export interface PortfolioTasksData {
+  tasks: PortfolioTaskView[];
+  projects: { id: string; name: string; programmeId: string | null }[];
+  programmes: { id: string; name: string }[];
+}
+
+/** Every live task in the organisation, for the task overview, My Work and My Timeline. */
+export async function listPortfolioTasks(orgId: string): Promise<PortfolioTasksData> {
+  const [items, assignees, buckets, projects, programmes, people] = await Promise.all([
+    supabase
+      .from("v_work_items")
+      .select(
+        "id, title, project_id, bucket_id, item_type, start_date, finish_date, baseline_finish_date, percent_complete, status, estimated_effort_hours, effort_completed_hours, delivery_status",
+      )
+      .eq("organisation_id", orgId)
+      .neq("status", "cancelled")
+      .order("backlog_rank"),
+    supabase
+      .from("work_item_assignees")
+      .select("work_item_id, resource_id")
+      .eq("organisation_id", orgId),
+    supabase.from("project_buckets").select("id, name").eq("organisation_id", orgId),
+    supabase
+      .from("projects")
+      .select("id, code, name, programme_id, task_source")
+      .eq("organisation_id", orgId)
+      .is("archived_at", null)
+      .order("name"),
+    supabase.from("programmes").select("id, name").eq("organisation_id", orgId).order("name"),
+    listPeople(orgId),
+  ]);
+  const names = new Map(people.map((person) => [person.id, person.name]));
+  const bucketName = new Map(unwrap(buckets, "Loading buckets").map((row) => [row.id, row.name]));
+  const programmeRows = unwrap(programmes, "Loading programmes");
+  const programmeName = new Map(programmeRows.map((row) => [row.id, row.name]));
+  const projectRows = unwrap(projects, "Loading projects");
+  const projectById = new Map(projectRows.map((row) => [row.id, row]));
+  const assigned = new Map<string, string[]>();
+  for (const row of unwrap(assignees, "Loading task assignees"))
+    assigned.set(row.work_item_id, [...(assigned.get(row.work_item_id) ?? []), row.resource_id]);
+  const today = todayIso();
+  const tasks = unwrap(items, "Loading tasks").flatMap((row): PortfolioTaskView[] => {
+    const project = projectById.get(row.project_id ?? "");
+    if (!project) return [];
+    const id = row.id ?? "";
+    const percent = row.percent_complete ?? (row.status === "done" ? 100 : 0);
+    const effort = Number(row.estimated_effort_hours ?? 0);
+    const completed =
+      row.effort_completed_hours != null
+        ? Number(row.effort_completed_hours)
+        : Math.round((effort * percent) / 100);
+    const start = row.start_date ?? row.finish_date ?? today;
+    const ids = assigned.get(id) ?? [];
+    return [
+      {
+        id,
+        title: row.title ?? "",
+        bucket: (row.bucket_id && bucketName.get(row.bucket_id)) || "Unassigned",
+        assignees: ids.map((item) => names.get(item) ?? ""),
+        assigneeIds: ids,
+        start: fromIsoDate(start),
+        finish: fromIsoDate(row.finish_date ?? start),
+        ...(row.baseline_finish_date && { baselineFinish: fromIsoDate(row.baseline_finish_date) }),
+        percentComplete: percent,
+        isMilestone: row.item_type === "milestone_task",
+        projectId: project.id,
+        projectCode: project.code,
+        projectName: project.name,
+        programmeId: project.programme_id,
+        programmeName:
+          (project.programme_id && programmeName.get(project.programme_id)) || "Unassigned",
+        taskSource: taskSourceLabel[project.task_source],
+        deliveryStatus: milestoneStatusLabel(row.delivery_status),
+        effortHours: effort,
+        effortCompleted: completed,
+        effortRemaining: Math.max(0, effort - completed),
+      },
+    ];
+  });
+  return {
+    tasks,
+    projects: projectRows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      programmeId: row.programme_id,
+    })),
+    programmes: programmeRows,
+  };
+}
+
+export function getTaskMetrics(items: PortfolioTaskView[]) {
+  const count = (status: MilestoneStatus) =>
+    items.filter((item) => item.deliveryStatus === status).length;
+  const effort = items.reduce((sum, item) => sum + item.effortHours, 0);
+  const effortCompleted = items.reduce((sum, item) => sum + item.effortCompleted, 0);
+  return {
+    projects: new Set(items.map((item) => item.projectId)).size,
+    tasks: items.length,
+    completed: count("Completed"),
+    future: count("Future"),
+    onTrack: count("On Track"),
+    late: count("Late"),
+    overdue: count("Overdue"),
+    effort,
+    effortCompleted,
+    effortRemaining: effort - effortCompleted,
+  };
+}
+
+/** When a personal task needs attention, from its finish date relative to today. */
+export function personalTaskGroup(task: PortfolioTaskView) {
+  if (task.deliveryStatus === "Overdue") return "Overdue";
+  const days = daysFromToday(toIsoDate(task.finish)) ?? 0;
+  if (days === 0) return "Today";
+  if (days <= 6) return "This week";
+  if (days <= 13) return "Next week";
+  return "Later";
 }
