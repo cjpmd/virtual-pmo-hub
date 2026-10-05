@@ -8,6 +8,7 @@ import { qk } from "@/services/query-keys";
 import { errorMessage } from "@/services/service-error";
 import { OrganisationProvider, useOrganisationState } from "./organisation-provider";
 import { useSession, useUser } from "./session-provider";
+import { SettingsSync } from "./settings-sync";
 
 /** Paths anyone can open. Everything else needs a session and an organisation. */
 export const isPublicPath = (path: string) =>
@@ -77,7 +78,11 @@ function OrganisationGate({ children }: { children: ReactNode }) {
       </CentredCard>
     );
   if (state.status === "none") return <NoOrganisation email={state.profile.email} />;
-  return <OrganisationProvider value={state.value}>{children}</OrganisationProvider>;
+  return (
+    <OrganisationProvider value={state.value}>
+      <SettingsSync>{children}</SettingsSync>
+    </OrganisationProvider>
+  );
 }
 
 function NoOrganisation({ email }: { email: string }) {

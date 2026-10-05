@@ -82,7 +82,8 @@ export interface ListSettings {
 }
 
 // ---- 9. Users, roles & permissions ----
-export type UserRole = "Admin" | "PMO" | "Programme Manager" | "Project Manager" | "Project Officer" | "Team Member" | "Executive Viewer";
+/** The role ladder RLS enforces (app_role): viewer < contributor < manager < pmo < admin. */
+export type UserRole = "Admin" | "PMO" | "Manager" | "Contributor" | "Viewer";
 export interface UserAccount { id: string; name: string; email: string; role: UserRole; team: string; active: boolean }
 export type PermissionKey = "viewPortfolio" | "editProjects" | "approveGates" | "manageBenefits" | "manageSettings" | "issueTasks" | "validateMeasurements" | "recordDecisions";
 export interface RoleDefinition { role: UserRole; description: string; defaultHome: string; permissions: Record<PermissionKey, boolean> }
