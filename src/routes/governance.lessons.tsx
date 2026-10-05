@@ -1,4 +1,5 @@
 import { AutoBreadcrumbs } from "@/components/section-nav";
+import { toProjectCode } from "@/services/legacy-bridge";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -70,7 +71,7 @@ function Page() {
           <thead className="bg-table-head text-xs text-muted-foreground"><tr><th className="h-11 px-4 font-semibold">Project</th><th className="px-4 font-semibold">Stage</th><th className="px-4 font-semibold">Gates passed</th><th className="px-4 font-semibold">Reviews held</th><th className="px-4 font-semibold">Last review</th><th className="px-4 font-semibold">Lessons</th></tr></thead>
           <tbody>
             {coverage.map(row => <tr key={row.projectId} className={cn("border-t", row.overdue && "bg-health-bad/5")}>
-              <td className="px-4 py-3"><Link to="/portfolio/projects/$projectId" params={{ projectId: row.projectId }} className="font-medium text-primary hover:underline">{row.projectName}</Link></td>
+              <td className="px-4 py-3"><Link to="/portfolio/projects/$projectCode" params={{ projectCode: toProjectCode(row.projectId) }} className="font-medium text-primary hover:underline">{row.projectName}</Link></td>
               <td className="px-4 py-3 text-muted-foreground">{row.stage}</td>
               <td className="px-4 py-3">{row.gatesPassed}</td>
               <td className="px-4 py-3">{row.reviewsHeld}</td>

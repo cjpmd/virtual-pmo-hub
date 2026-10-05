@@ -1,4 +1,5 @@
 import { ManagePortfoliosButton, StateBadge } from "@/components/entity-management";
+import { toProgrammeId } from "@/services/legacy-bridge";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AutoBreadcrumbs } from "@/components/section-nav";
@@ -93,7 +94,7 @@ function PortfolioPage() {
           <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">By programme</p>
           {rollups.map(rollup => <div key={rollup.programme.id}>
             <div className="mb-1 flex items-baseline justify-between gap-2">
-              <Link to="/portfolio/programmes/$programmeId" params={{ programmeId: rollup.programme.id }} className="truncate text-xs text-foreground hover:underline">{rollup.programme.name}</Link>
+              <Link to="/portfolio/programmes/$programmeId" params={{ programmeId: toProgrammeId(rollup.programme.id) }} className="truncate text-xs text-foreground hover:underline">{rollup.programme.name}</Link>
               <span className="tabular shrink-0 text-[11px] text-muted-foreground">{rollup.rag.green}/{rollup.rag.total}</span>
             </div>
             <SegmentedBar segments={ragSegments(rollup.rag)} height={8} showInlineLabels={false} className="[&>div:last-of-type]:hidden"/>
@@ -156,7 +157,7 @@ function PortfolioPage() {
 
     <section className="space-y-3">
       <h2 className="font-display text-lg font-semibold">Programmes</h2>
-      <BoardWorkspace title="Programmes" manage={false} rows={rows} columns={columns} groupOptions={["group", "status"]} renderTitle={row => <Link to="/portfolio/programmes/$programmeId" params={{ programmeId: row.id }} className="text-primary hover:underline">{row.title}</Link>}/>
+      <BoardWorkspace title="Programmes" manage={false} rows={rows} columns={columns} groupOptions={["group", "status"]} renderTitle={row => <Link to="/portfolio/programmes/$programmeId" params={{ programmeId: toProgrammeId(row.id) }} className="text-primary hover:underline">{row.title}</Link>}/>
     </section>
   </div>;
 }

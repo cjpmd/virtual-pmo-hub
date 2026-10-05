@@ -1,4 +1,5 @@
 import { formatDate } from "@/lib/format";
+import { toProjectCode } from "@/services/legacy-bridge";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { BellRing, CheckCircle2, CircleAlert, Handshake, ShieldAlert, TriangleAlert, X } from "lucide-react";
@@ -86,7 +87,7 @@ export function DependencyPanel({ dependency, overrides, onAccept, onRaise, clos
 
       {linkedRisks.length > 0 && <div className="mt-5">
         <p className="text-sm font-semibold">Linked RAID items</p>
-        <div className="mt-2 space-y-2">{linkedRisks.map(({ risk, projectId }) => <Link key={risk.id} to="/portfolio/projects/$projectId" params={{ projectId }} className="block rounded-md border p-3 hover:bg-accent/30">
+        <div className="mt-2 space-y-2">{linkedRisks.map(({ risk, projectId }) => <Link key={risk.id} to="/portfolio/projects/$projectCode" params={{ projectCode: toProjectCode(projectId) }} className="block rounded-md border p-3 hover:bg-accent/30">
           <p className="text-sm font-medium">{risk.title}</p>
           <p className="mt-1 text-xs text-muted-foreground">Score {risk.score} · {risk.owner} · review {formatDate(risk.reviewDate)}</p>
         </Link>)}</div>

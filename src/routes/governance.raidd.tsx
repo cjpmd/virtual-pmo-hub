@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
+import { toProjectCode } from "@/services/legacy-bridge";
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { CircleAlert, Gavel, Lightbulb, ShieldAlert } from "lucide-react";
@@ -80,7 +81,7 @@ function Page() {
       <section>
         <h2 className="font-display text-lg font-semibold">Risks above appetite</h2>
         <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {risks.filter(item => item.score >= settings.risk.appetiteThreshold).slice(0, 12).map(risk => <Link key={`${risk.projectId}-${risk.id}`} to="/portfolio/projects/$projectId" params={{ projectId: risk.projectId }} className="rounded-lg border border-border/70 bg-card p-3 hover:bg-accent/40">
+          {risks.filter(item => item.score >= settings.risk.appetiteThreshold).slice(0, 12).map(risk => <Link key={`${risk.projectId}-${risk.id}`} to="/portfolio/projects/$projectCode" params={{ projectCode: toProjectCode(risk.projectId) }} className="rounded-lg border border-border/70 bg-card p-3 hover:bg-accent/40">
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm font-medium">{risk.title}</p>
               <span className="shrink-0 rounded px-1.5 py-0.5 text-xs font-bold text-primary-foreground" style={{ background: bandFor(risk.score)?.colour }}>{risk.score}</span>

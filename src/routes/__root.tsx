@@ -129,7 +129,11 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const entityVersion = useEntityVersion();
   useEffect(() => { loadEntities(); }, []);
-  const bare = useRouterState({ select: state => isPublicPath(state.location.pathname) });
+  // Public only when both the target and the page actually rendered are public: during a
+  // redirect the target changes first, and a protected page must never render outside the gate.
+  const bare = useRouterState({
+    select: state => isPublicPath(state.location.pathname) && isPublicPath(state.matches[state.matches.length - 1]?.pathname ?? state.location.pathname),
+  });
 
   return (
     <QueryClientProvider client={queryClient}>

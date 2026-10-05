@@ -8518,6 +8518,14 @@ export type Database = {
         Returns: string;
       };
       join_demo_organisation: { Args: never; Returns: string };
+      project_permissions: {
+        Args: { p_project: string };
+        Returns: {
+          can_delete_records: boolean;
+          can_edit: boolean;
+          can_manage_project: boolean;
+        }[];
+      };
     };
     Enums: {
       action_status: "open" | "in_progress" | "done";

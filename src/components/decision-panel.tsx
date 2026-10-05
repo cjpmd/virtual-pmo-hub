@@ -1,4 +1,5 @@
 import { formatDate } from "@/lib/format";
+import { toProjectCode } from "@/services/legacy-bridge";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { CheckCircle2, CircleDot, FileText, Lock, ThumbsDown, ThumbsUp, X } from "lucide-react";
@@ -115,7 +116,7 @@ export function DecisionPanel({ decision, all, outcome, onRecord, close }: {
       </section>}
 
       <section className="mt-5 grid gap-3 sm:grid-cols-2 text-sm">
-        {decision.projectId && <Link to="/portfolio/projects/$projectId" params={{ projectId: decision.projectId }} className="font-semibold text-primary hover:underline">Open the project →</Link>}
+        {decision.projectId && <Link to="/portfolio/projects/$projectCode" params={{ projectCode: toProjectCode(decision.projectId) }} className="font-semibold text-primary hover:underline">Open the project →</Link>}
         {decision.dependencyIds.length > 0 && <Link to="/delivery/dependencies" className="font-semibold text-primary hover:underline">{decision.dependencyIds.length} linked dependenc{decision.dependencyIds.length === 1 ? "y" : "ies"} →</Link>}
         {decision.benefitIds.length > 0 && <Link to="/benefits/register" className="font-semibold text-primary hover:underline">{decision.benefitIds.length} linked benefit{decision.benefitIds.length === 1 ? "" : "s"} →</Link>}
         {decision.evidenceLink && <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><FileText className="size-3.5" />{decision.evidenceLink}</span>}

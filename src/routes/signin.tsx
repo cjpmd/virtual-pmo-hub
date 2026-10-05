@@ -23,6 +23,7 @@ function SignInPage() {
   const session = useSession();
   const [email, setEmail] = useState("");
   const send = useMutation({
+    meta: { silent: true },
     mutationFn: (address: string) => sendMagicLink(address, next ?? "/"),
   });
 

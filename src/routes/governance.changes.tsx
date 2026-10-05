@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { toProjectCode } from "@/services/legacy-bridge";
 import { useMemo } from "react";
 import { AutoBreadcrumbs } from "@/components/section-nav";
 import { BoardWorkspace, type BoardColumn } from "@/components/board-workspace";
@@ -33,7 +34,7 @@ function Page(){
    <KpiCard label="Approved schedule impact" value={`${approved.reduce((sum,item)=>sum+item.scheduleImpactDays,0)} days`} detail="Added across the portfolio" icon="forecast"/>
   </div>
   <BoardWorkspace title="Change register" itemLabel="change request" rows={rows} columns={columns} groupOptions={["group","status","changeType"]}
-   renderTitle={row=><Link to="/portfolio/projects/$projectId" params={{projectId:String(row.id).split("-cr")[0]??""}} className="text-primary hover:underline">{row.title}</Link>}/>
+   renderTitle={row=><Link to="/portfolio/projects/$projectCode" params={{ projectCode: toProjectCode(String(row.id).split("-cr")[0]??"") }} className="text-primary hover:underline">{row.title}</Link>}/>
   {!changes.length&&<p className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">No change requests have been raised.</p>}
  </div>;
 }

@@ -63,6 +63,13 @@ export function fromPostgrest(error: PostgrestError, context?: string): ServiceE
 }
 
 export function fromAuth(error: AuthError): ServiceError {
+  // AuthRetryableFetchError (status 0) means the request never reached the server.
+  if (
+    error.name === "AuthRetryableFetchError" ||
+    !error.status ||
+    /fetch|network/i.test(error.message)
+  )
+    return new ServiceError("network", messages.network, { code: error.code, cause: error });
   if (error.status === 429)
     return new ServiceError("invalid", "Too many attempts. Wait a minute and try again.", {
       code: error.code,
@@ -92,11 +99,11 @@ export function unwrap<T>(
 
 /** Like unwrap, but a missing row is a valid answer (`maybeSingle()`). */
 export function unwrapMaybe<T>(
-  result: { data: T | null; error: PostgrestError | null },
+  result: { data: T; error: PostgrestError | null },
   context?: string,
 ): T | null {
   if (result.error) throw fromPostgrest(result.error, context);
-  return result.data;
+  return result.data ?? null;
 }
 
 /**
@@ -104,11 +111,15 @@ export function unwrapMaybe<T>(
  * and no rows. Writes select the row back, so an empty result means "not allowed or not there".
  */
 export function unwrapWrite<T>(
-  result: { data: T | null; error: PostgrestError | null },
+  result: { data: T; error: PostgrestError | null },
   context?: string,
 ): NonNullable<T> {
   if (result.error) throw fromPostgrest(result.error, context);
-  if (result.data === null || (Array.isArray(result.data) && result.data.length === 0))
+  if (
+    result.data === null ||
+    result.data === undefined ||
+    (Array.isArray(result.data) && result.data.length === 0)
+  )
     throw new ServiceError(
       "forbidden",
       context ? `${context}: ${messages.forbidden}` : messages.forbidden,

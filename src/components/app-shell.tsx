@@ -1,4 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { toMockProgrammeId, toMockProjectId, toProgrammeId, toProjectCode } from "@/services/legacy-bridge";
 import { Bell, Building2, Check, CheckCheck, ChevronDown, ChevronLeft, ChevronRight, LoaderCircle, LogOut, Menu, Moon, Search, Settings, Star, Sun, UserRound, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -78,9 +79,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     const project = /^\/portfolio\/projects\/([^/]+)/.exec(path)?.[1];
     const programme = /^\/portfolio\/programmes\/([^/]+)/.exec(path)?.[1];
     const entry: RecentEntry | undefined = project
-      ? { id: project, label: getProjects().find(item => item.id === project)?.name ?? project, type: "Project", to: path }
+      ? { id: project, label: getProjects().find(item => item.id === toMockProjectId(project))?.name ?? project, type: "Project", to: path }
       : programme
-        ? { id: programme, label: getProgrammes().find(item => item.id === programme)?.name ?? programme, type: "Programme", to: path }
+        ? { id: programme, label: getProgrammes().find(item => item.id === toMockProgrammeId(programme))?.name ?? programme, type: "Programme", to: path }
         : undefined;
     if (!entry) return;
     setRecent(current => {
@@ -113,8 +114,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (!text) return [];
     return [
       ...allPages.filter(page => page.label.toLowerCase().includes(text)).map(page => ({ id: page.to, label: page.label, detail: page.section.label, to: page.to, params: undefined })),
-      ...getProjects().filter(item => item.name.toLowerCase().includes(text)).slice(0, 6).map(item => ({ id: item.id, label: item.name, detail: term("project", settings), to: "/portfolio/projects/$projectId", params: { projectId: item.id } })),
-      ...getProgrammes().filter(item => item.name.toLowerCase().includes(text)).slice(0, 4).map(item => ({ id: item.id, label: item.name, detail: term("programme", settings), to: "/portfolio/programmes/$programmeId", params: { programmeId: item.id } })),
+      ...getProjects().filter(item => item.name.toLowerCase().includes(text)).slice(0, 6).map(item => ({ id: item.id, label: item.name, detail: term("project", settings), to: "/portfolio/projects/$projectCode", params: { projectCode: toProjectCode(item.id) } })),
+      ...getProgrammes().filter(item => item.name.toLowerCase().includes(text)).slice(0, 4).map(item => ({ id: item.id, label: item.name, detail: term("programme", settings), to: "/portfolio/programmes/$programmeId", params: { programmeId: toProgrammeId(item.id) } })),
     ].slice(0, 10);
   }, [query, settings]);
 
@@ -176,15 +177,15 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           {favourites.length > 0 && <SidebarGroup title="Favourites" open={showFavourites} collapsed={collapsed} onToggle={() => setShowFavourites(value => !value)}>
             {favourites.map(item => item.type === "Project"
-              ? <Link key={item.id} to="/portfolio/projects/$projectId" params={{ projectId: item.id }} className="flex h-8 items-center gap-2.5 rounded px-3 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"><Star className="size-3.5 shrink-0 fill-primary text-primary" />{!collapsed && <span className="truncate">{item.label}</span>}</Link>
+              ? <Link key={item.id} to="/portfolio/projects/$projectCode" params={{ projectCode: toProjectCode(item.id) }} className="flex h-8 items-center gap-2.5 rounded px-3 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"><Star className="size-3.5 shrink-0 fill-primary text-primary" />{!collapsed && <span className="truncate">{item.label}</span>}</Link>
               : item.type === "Programme"
-                ? <Link key={item.id} to="/portfolio/programmes/$programmeId" params={{ programmeId: item.id }} className="flex h-8 items-center gap-2.5 rounded px-3 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"><Star className="size-3.5 shrink-0 fill-primary text-primary" />{!collapsed && <span className="truncate">{item.label}</span>}</Link>
+                ? <Link key={item.id} to="/portfolio/programmes/$programmeId" params={{ programmeId: toProgrammeId(item.id) }} className="flex h-8 items-center gap-2.5 rounded px-3 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"><Star className="size-3.5 shrink-0 fill-primary text-primary" />{!collapsed && <span className="truncate">{item.label}</span>}</Link>
                 : null)}
           </SidebarGroup>}
 
           {recent.length > 0 && <SidebarGroup title="Recent" open={showRecent} collapsed={collapsed} onToggle={() => setShowRecent(value => !value)}>
-            {recent.map(item => <Link key={item.id} to={item.type === "Project" ? "/portfolio/projects/$projectId" : "/portfolio/programmes/$programmeId"}
-              params={item.type === "Project" ? { projectId: item.id } : { programmeId: item.id }}
+            {recent.map(item => <Link key={item.id} to={item.type === "Project" ? "/portfolio/projects/$projectCode" : "/portfolio/programmes/$programmeId"}
+              params={item.type === "Project" ? { projectCode: toProjectCode(item.id) } : { programmeId: toProgrammeId(item.id) }}
               className="flex h-8 items-center gap-2.5 rounded px-3 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-foreground">
               <span className="grid size-3.5 shrink-0 place-items-center rounded-sm bg-muted text-[8px] font-bold">{item.type[0]}</span>
               {!collapsed && <span className="truncate">{item.label}</span>}
@@ -275,7 +276,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {!query && <>
             <p className="px-2 pb-2 pt-4 text-[10px] font-semibold uppercase text-muted-foreground">Quick actions</p>
             <div className="grid gap-1 sm:grid-cols-3">
-              <Button variant="ghost" onClick={() => { navigate({ to: "/portfolio/projects/$projectId", params: { projectId: "ebbot-chatbot" } }); setPalette(false) }}>Go to Ebbot</Button>
+              <Button variant="ghost" onClick={() => { navigate({ to: "/portfolio/projects/$projectCode", params: { projectCode: toProjectCode("ebbot-chatbot") } }); setPalette(false) }}>Go to Ebbot</Button>
               <Button variant="ghost" onClick={() => { setPalette(false); openIssueTask() }}>Issue task</Button>
               <Button variant="ghost" onClick={() => { navigate({ to: "/settings" }); setPalette(false) }}>Open settings</Button>
             </div>

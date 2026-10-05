@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Navigate, useRouterState } from "@tanstack/react-router";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { LoaderCircle, LogOut } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { joinDemoOrganisation, signOut } from "@/services/auth";
 import { qk } from "@/services/query-keys";
@@ -38,12 +38,28 @@ export function Splash({ label = "Loading your workspace…" }: { label?: string
  */
 export function AuthGate({ children }: { children: ReactNode }) {
   const session = useSession();
-  const location = useRouterState({ select: (state) => state.location });
+  const navigate = useNavigate();
+  const href = useRouterState({ select: (state) => state.location.href });
+  const hrefRef = useRef(href);
+  hrefRef.current = href;
+  const redirected = useRef(false);
+
+  // Redirect once per sign-out. (<Navigate> re-navigates whenever this component re-renders,
+  // which it does on every router state change during the redirect itself.)
+  useEffect(() => {
+    if (session.status === "signed_in") redirected.current = false;
+    if (session.status !== "signed_out" || redirected.current) return;
+    redirected.current = true;
+    const next = hrefRef.current;
+    void navigate({
+      to: "/signin",
+      search: next && next !== "/" && !isPublicPath(next.split("?")[0] ?? "") ? { next } : {},
+      replace: true,
+    });
+  }, [session.status, navigate]);
+
   if (session.status === "loading") return <Splash />;
-  if (session.status === "signed_out") {
-    const next = location.href;
-    return <Navigate to="/signin" search={next && next !== "/" ? { next } : {}} replace />;
-  }
+  if (session.status === "signed_out") return <Splash label="Taking you to sign in…" />;
   return <OrganisationGate>{children}</OrganisationGate>;
 }
 
@@ -68,6 +84,7 @@ function NoOrganisation({ email }: { email: string }) {
   const user = useUser();
   const queryClient = useQueryClient();
   const join = useMutation({
+    meta: { silent: true },
     mutationFn: joinDemoOrganisation,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: qk.memberships(user.id) }),
   });

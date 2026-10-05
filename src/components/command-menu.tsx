@@ -1,4 +1,5 @@
 import * as React from "react";
+import { toProgrammeId, toProjectCode } from "@/services/legacy-bridge";
 import { useNavigate } from "@tanstack/react-router";
 import { BriefcaseBusiness, FolderKanban, Layers3, ListTodo, Search, ShieldAlert, UsersRound } from "lucide-react";
 import {
@@ -60,7 +61,7 @@ export function CommandMenu({ open, setOpen }: { open: boolean; setOpen: (open: 
           {programmes.slice(0, 5).map((p) => (
             <CommandItem
               key={p.id}
-              onSelect={() => runCommand(() => navigate({ to: "/programmes/$programmeId", params: { programmeId: p.id } }))}
+              onSelect={() => runCommand(() => navigate({ to: "/programmes/$programmeId", params: { programmeId: toProgrammeId(p.id) } }))}
             >
               <Layers3 className="mr-2 h-4 w-4" />
               <span>{p.name}</span>
@@ -71,7 +72,7 @@ export function CommandMenu({ open, setOpen }: { open: boolean; setOpen: (open: 
           {projects.slice(0, 5).map((p) => (
             <CommandItem
               key={p.id}
-              onSelect={() => runCommand(() => navigate({ to: "/portfolio/projects/$projectId", params: { projectId: p.id } }))}
+              onSelect={() => runCommand(() => navigate({ to: "/portfolio/projects/$projectCode", params: { projectCode: toProjectCode(p.id) } }))}
             >
               <FolderKanban className="mr-2 h-4 w-4" />
               <span>{p.name}</span>

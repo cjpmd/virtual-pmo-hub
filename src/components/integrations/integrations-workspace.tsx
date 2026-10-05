@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { toProjectCode } from "@/services/legacy-bridge";
 import { AlertTriangle, CheckCircle2, Clock, LoaderCircle, RefreshCw, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,7 +44,7 @@ export function IntegrationsWorkspace() {
       <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm">
         <thead className="bg-table-head text-xs text-muted-foreground"><tr><th className={th}>Project</th><th className={th}>Plan type</th><th className={th}>Last sync</th><th className={th}>How changes arrive</th><th className={th}>Health</th><th className={th} /></tr></thead>
         <tbody>{s.links.map(l => { const busy = s.syncing.includes(l.projectId); return <tr key={l.projectId} className="border-t">
-          <td className="px-3 py-2.5 font-medium"><Link to="/projects/$projectId" params={{ projectId: l.projectId }} className="hover:underline">{names[l.projectId] ?? l.projectId}</Link></td>
+          <td className="px-3 py-2.5 font-medium"><Link to="/projects/$projectCode" params={{ projectCode: toProjectCode(l.projectId) }} className="hover:underline">{names[l.projectId] ?? l.projectId}</Link></td>
           <td className="px-3">Planner {l.kind}</td><td className="px-3 tabular-nums text-muted-foreground">{l.lastSync}</td><td className="px-3">{l.mode}</td>
           <td className="px-3"><span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", tone[l.health])}>{l.health}</span></td>
           <td className="space-x-1 whitespace-nowrap px-3 text-right"><Button size="sm" variant="outline" disabled={busy} onClick={() => syncNow(l.projectId)}>{busy ? <><LoaderCircle className="animate-spin" />Syncing…</> : "Sync now"}</Button><Button size="sm" variant="ghost" onClick={() => unlinkPlan(l.projectId)}>Unlink</Button></td>

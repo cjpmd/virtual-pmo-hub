@@ -16,6 +16,20 @@ export function parseDate(value: string | Date | undefined): Date | undefined {
   return new Date(year, month - 1, day);
 }
 
+/** Calendar date as stored in the database (YYYY-MM-DD), or undefined when the input is not a full date. */
+export function toIsoDate(value: string | Date | undefined): string | undefined {
+  const date = parseDate(value);
+  if (!date || Number.isNaN(date.getTime())) return undefined;
+  if (typeof value === "string" && !/^\d{4}-\d{2}-\d{2}/.test(value) && !/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value.trim())) return undefined;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+/** Database date (YYYY-MM-DD) as the DD/MM/YYYY string the board and prototype screens hold. */
+export function fromIsoDate(value: string | null | undefined): string {
+  const iso = value ? /^(\d{4})-(\d{2})-(\d{2})/.exec(value) : null;
+  return iso ? `${iso[3]}/${iso[2]}/${iso[1]}` : "";
+}
+
 function groupDigits(value: string, separator: string) {
   return value.replace(/\B(?=(\d{3})+(?!\d))/g, separator);
 }

@@ -1,4 +1,5 @@
 import { formatCompactCurrency } from "@/lib/format";
+import { toProjectCode } from "@/services/legacy-bridge";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { CircleAlert, Link2, RotateCcw, Sparkles, TriangleAlert, X } from "lucide-react";
@@ -199,7 +200,7 @@ function NodePanel({ node, close }: { node: MapNode; close: () => void }) {
         <p><span className="text-xs text-muted-foreground">Confidence</span><br />{benefit.confidence}</p>
         <Link to="/benefits/$benefitId" params={{ benefitId: benefit.id }} className="inline-flex text-sm font-semibold text-primary hover:underline">Open the benefit profile →</Link>
       </div>}
-      {node.projectId && <Link to="/portfolio/projects/$projectId" params={{ projectId: node.projectId }} className="mt-5 inline-flex text-sm font-semibold text-primary hover:underline">Open the project →</Link>}
+      {node.projectId && <Link to="/portfolio/projects/$projectCode" params={{ projectCode: toProjectCode(node.projectId) }} className="mt-5 inline-flex text-sm font-semibold text-primary hover:underline">Open the project →</Link>}
     </aside>
   </>;
 }
