@@ -79,8 +79,9 @@ const KEY_COLUMN: Partial<Record<TableName, string>> = {
   project_plan_links: "project_id",
 };
 const keyOf = (name: TableName) => KEY_COLUMN[name] ?? "id";
+// Link tables have no id column; return the whole (small) row instead.
 const returning = (name: TableName) =>
-  `${keyOf(name)}${NO_UPDATED_AT.has(name) ? "" : ", updated_at"}`;
+  NO_UPDATED_AT.has(name) ? "*" : `${keyOf(name)}, updated_at`;
 
 const toWritten = (name: TableName, row: unknown): Written => {
   const value = row as Record<string, string | null | undefined>;

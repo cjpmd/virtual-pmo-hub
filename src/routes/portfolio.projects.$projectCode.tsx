@@ -54,6 +54,7 @@ import type { ProjectDetail } from "@/services/hierarchy";
 import { toMockProjectId, toProjectCode } from "@/services/legacy-bridge";
 import { getProjectLessons, hasPhaseLessonsReview } from "@/services/lessons";
 import { useLessons } from "@/hooks/use-lessons";
+import { toTaskSource } from "@/services/work-items";
 import {
   getPhaseForStage,
   getProject,
@@ -623,23 +624,10 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
       )}
 
       {/* Not yet on Supabase (Stage 4c): these tabs read the demo project's prototype record. */}
-      {[
-        "status",
-        "tasks",
-        "delivery",
-        "resources",
-        "benefits",
-        "dependencies",
-        "decisions",
-        "assumptions",
-        "lessons",
-        "changes",
-        "business case",
-      ].includes(tab) &&
-        !legacy && <NotYetMigrated />}
-      {legacy && (
+      {["status", "delivery", "resources"].includes(tab) && !legacy && <NotYetMigrated />}
+      {(
         <>
-          {tab === "status" && (
+          {legacy && tab === "status" && (
             <StatusWorkspace
               project={legacy}
               initialReports={reports}
@@ -653,10 +641,10 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
             />
           )}
           {tab === "tasks" && (
-            <TaskWorkspace initialTasks={legacy.tasks ?? []} taskSource={legacy.taskSource} />
+            <TaskWorkspace projectId={project.id} taskSource={toTaskSource(project.taskSource)} />
           )}
-          {tab === "delivery" && <DeliveryWorkspace projectId={mockId} />}
-          {tab === "resources" && (
+          {legacy && tab === "delivery" && <DeliveryWorkspace projectId={mockId} />}
+          {legacy && tab === "resources" && (
             <ProjectResources members={getProjectTeam(legacy)} projectId={mockId} />
           )}
           {tab === "benefits" && <ProjectBenefits projectId={project.id} />}
