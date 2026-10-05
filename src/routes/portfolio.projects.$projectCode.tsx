@@ -48,6 +48,8 @@ import { useFormat } from "@/lib/format";
 import { daysFromToday, todayIso } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { getAssuranceRow } from "@/services/assurance";
+import { useAssuranceProjects } from "@/hooks/use-assurance";
+import { useStatusReports } from "@/hooks/use-status-reports";
 import { scopedTo, type ResolvedDecision } from "@/services/decisions";
 import { useGovernance } from "@/hooks/use-governance";
 import type { ProjectDetail } from "@/services/hierarchy";
@@ -195,14 +197,20 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
     () => (lessonsData.data ? getProjectLessons(lessonsData.data, project.id) : []),
     [lessonsData.data, project.id],
   );
-  const reports = legacy?.reports ?? [];
+  const statusReports = useStatusReports(project.id);
+  const reports = statusReports.data ?? [];
   const currentPhaseId = phases.data?.[project.phaseIndex]?.id;
   const phaseReviewHeld =
     lessonsData.data && currentPhaseId
       ? hasPhaseLessonsReview(lessonsData.data, project.id, currentPhaseId)
       : false;
   const projectTypeTags = Array.from(new Set(lessons.flatMap((lesson) => lesson.projectTypeTags)));
-  const assurance = legacy ? getAssuranceRow(mockId) : undefined;
+  const assuranceProjects = useAssuranceProjects();
+  const assuranceProject = assuranceProjects.data?.find((item) => item.id === project.id);
+  // Delivery data is browser-local and generated per project once the project is registered
+  // (useAssuranceProjects does that), so the delivery views wait for it.
+  const deliveryReady = Boolean(assuranceProject);
+  const assurance = assuranceProject ? getAssuranceRow(assuranceProject) : undefined;
 
   const tierInfo = getTierDefinitions().find((item) => item.tier === project.tier);
   const elapsed = (() => {
@@ -409,7 +417,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
         </div>
       )}
 
-      {tab === "overview" && legacy && <ForecastPanel projectId={mockId} />}
+      {tab === "overview" && deliveryReady && <ForecastPanel projectId={project.code} />}
       {tab === "overview" && (
         <div className="grid gap-5 xl:grid-cols-12">
           <div className="space-y-5 xl:col-span-8">
@@ -457,7 +465,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
                   <div className="flex flex-wrap items-center gap-3">
                     <HealthPill health={reports[0].overall} />
                     <span className="text-xs text-muted-foreground">
-                      {reports[0].reportingDate} · {reports[0].submitter}
+                      {format.date(reports[0].reportingDate)} · {reports[0].submitter}
                     </span>
                   </div>
                   <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -624,13 +632,12 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
       )}
 
       {/* Not yet on Supabase (Stage 4c): these tabs read the demo project's prototype record. */}
-      {["status", "delivery", "resources"].includes(tab) && !legacy && <NotYetMigrated />}
+      {tab === "resources" && !legacy && <NotYetMigrated />}
       {(
         <>
-          {legacy && tab === "status" && (
+          {tab === "status" && (
             <StatusWorkspace
-              project={legacy}
-              initialReports={reports}
+              project={project}
               calculated={{
                 overall: project.health.overall,
                 schedule: project.health.schedule,
@@ -643,7 +650,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
           {tab === "tasks" && (
             <TaskWorkspace projectId={project.id} taskSource={toTaskSource(project.taskSource)} />
           )}
-          {legacy && tab === "delivery" && <DeliveryWorkspace projectId={mockId} />}
+          {tab === "delivery" && deliveryReady && <DeliveryWorkspace projectId={project.code} />}
           {legacy && tab === "resources" && (
             <ProjectResources members={getProjectTeam(legacy)} projectId={mockId} />
           )}
