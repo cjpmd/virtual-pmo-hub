@@ -60,6 +60,7 @@ export function resetDependencyRecords() {
   records = dependencies;
   loaded = false;
   localStorage.removeItem(KEY);
+  localStorage.removeItem("virtual-pmo-dependency-layout");
   version += 1;
   listeners.forEach(listener => listener());
 }

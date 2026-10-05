@@ -140,7 +140,8 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
     if (!boxes.length) { fitAll(); return }
     const left = Math.min(...boxes.map(box => box.x)), top = Math.min(...boxes.map(box => box.y));
     fitTo({ x: left, y: top, width: Math.max(...boxes.map(box => box.x + box.width)) - left, height: Math.max(...boxes.map(box => box.y + box.height)) - top }, 1.4);
-  }, [focus, fitAll, layout.boxes]);
+  // Reframe for a changed graph/focus or viewport, not for each workshop drag.
+  }, [focus, graph, viewportWidth]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === "Escape" && focusId) onFocus(undefined) };
@@ -355,7 +356,7 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
         <p className="text-xs text-muted-foreground">{graph.edges.length} of {items.length} shown{focus ? ` · ${focus.edges.size} in the focused chain` : ""}</p>
       </header>
       <div className="divide-y">
-        {graph.edges.map(({ dependency, id }) => <div key={id} className={cn("grid gap-1 p-3 sm:grid-cols-[1fr_auto_auto]", focus && !focus.edges.has(id) && "opacity-45")}>
+        {graph.edges.map(({ dependency, id }) => <div key={id} className={cn("grid items-center gap-2 p-3 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]", focus && !focus.edges.has(id) && "opacity-45")}>
           <Button variant="link" onClick={() => workshop ? setEditing(dependency) : setSelected(dependency)} className="h-auto flex-col items-start gap-0 p-0 text-left">
             <p className="text-sm font-medium">{dependency.reference} · {dependency.giverLabel} → {dependency.receiverLabel}</p>
             <p className="text-xs text-muted-foreground">{dependency.type} · {dependency.boundary} · {dependency.validation}</p>
