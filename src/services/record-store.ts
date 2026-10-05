@@ -23,6 +23,7 @@ export function applyDelta<T extends { id: string }>(seed: T[], delta: RecordDel
 
 export function clearAllRecords() {
   try { Object.keys(localStorage).filter(k => k.startsWith(PREFIX)).forEach(k => localStorage.removeItem(k)); } catch { /* ignore */ }
+  try { localStorage.removeItem("virtual-pmo-dependencies"); localStorage.removeItem("virtual-pmo-dependency-layout"); } catch { /* ignore */ }
 }
 
 /** Status used when an item is closed, picked from the item's own status options. */
