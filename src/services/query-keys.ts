@@ -36,6 +36,9 @@ export const qk = {
       ["org", orgId, "projects", projectId, "forecast-history"] as const,
     statusReports: (orgId: string, projectId: string) =>
       ["org", orgId, "projects", projectId, "status-reports"] as const,
+    collections: (orgId: string) => ["org", orgId, "projects", "collections"] as const,
+    pack: (orgId: string, projectIds: string[]) =>
+      ["org", orgId, "projects", "pack", [...projectIds].sort().join(",")] as const,
     assurance: (orgId: string) => ["org", orgId, "projects", "assurance"] as const,
     allTasks: (orgId: string) => ["org", orgId, "projects", "all-tasks"] as const,
     tasks: (orgId: string, projectId: string) =>
