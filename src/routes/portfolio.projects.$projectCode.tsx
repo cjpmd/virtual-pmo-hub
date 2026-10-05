@@ -53,6 +53,7 @@ import { useGovernance } from "@/hooks/use-governance";
 import type { ProjectDetail } from "@/services/hierarchy";
 import { toMockProjectId, toProjectCode } from "@/services/legacy-bridge";
 import { getProjectLessons, hasPhaseLessonsReview } from "@/services/lessons";
+import { useLessons } from "@/hooks/use-lessons";
 import {
   getPhaseForStage,
   getProject,
@@ -188,12 +189,17 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
     () => (governance.data?.changes ?? []).filter((change) => change.scope.projectId === project.id),
     [governance.data, project.id],
   );
-  const lessons = useMemo(() => (legacy ? getProjectLessons(mockId) : []), [legacy, mockId]);
+  const lessonsData = useLessons();
+  const lessons = useMemo(
+    () => (lessonsData.data ? getProjectLessons(lessonsData.data, project.id) : []),
+    [lessonsData.data, project.id],
+  );
   const reports = legacy?.reports ?? [];
-  const currentPhase = legacy ? getPhaseForStage(legacy.stage) : undefined;
-  const phaseReviewHeld = legacy
-    ? hasPhaseLessonsReview(mockId, currentPhase?.id ?? "phase-1")
-    : false;
+  const currentPhaseId = phases.data?.[project.phaseIndex]?.id;
+  const phaseReviewHeld =
+    lessonsData.data && currentPhaseId
+      ? hasPhaseLessonsReview(lessonsData.data, project.id, currentPhaseId)
+      : false;
   const projectTypeTags = Array.from(new Set(lessons.flatMap((lesson) => lesson.projectTypeTags)));
   const assurance = legacy ? getAssuranceRow(mockId) : undefined;
 
@@ -702,7 +708,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
             </div>
           )}
           {tab === "assumptions" && <AssumptionsWorkspace scope={{ projectId: project.id }} compact />}
-          {tab === "lessons" && <LessonsTab project={legacy} />}
+          {tab === "lessons" && <LessonsTab project={project} />}
           {tab === "changes" && (
             <Section title="Change requests">
               <div className="mt-4 space-y-3">
@@ -746,8 +752,8 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
               />
               <RelevantLessons
                 projectTypeTags={projectTypeTags}
-                phaseId="phase-2"
-                excludeProjectId={mockId}
+                phaseIndex={1}
+                excludeProjectId={project.id}
                 requireTick
                 ticked={lessonsReviewed}
                 onTick={setLessonsReviewed}

@@ -13,6 +13,7 @@ import { useGovernance } from "@/hooks/use-governance";
 import { useDependencies } from "@/hooks/use-dependencies";
 import { getDependencyMetrics } from "@/services/dependencies";
 import { getLessonMetrics } from "@/services/lessons";
+import { useLessons } from "@/hooks/use-lessons";
 import { useSettings } from "@/services/settings";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +33,10 @@ function Page() {
   const decisions = getDecisionMetrics(allDecisions);
   const dependencyQuery = useDependencies();
   const dependencies = getDependencyMetrics(dependencyQuery.data?.dependencies ?? []);
-  const lessons = getLessonMetrics();
+  const lessonsData = useLessons();
+  const lessons = lessonsData.data
+    ? getLessonMetrics(lessonsData.data)
+    : { total: 0, openActions: 0 };
 
   const reports: ReportDefinition[] = [
     {

@@ -1,10 +1,11 @@
-import { formatDate } from "@/lib/format";
 import { useState } from "react";
 import { ArrowRight, CheckCircle2, Download, FileSpreadsheet, TriangleAlert, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { lessonCsvColumns, lessonsToCsv, matchCategory, matchPhase, normaliseChoice, parseCsv, type ResolvedLesson } from "@/services/lessons";
+import { lessonCsvColumns, lessonsToCsv, parseCsv, resolveImportRow, type ImportRow, type LessonsData } from "@/services/lessons";
+import { useLessonMutations } from "@/hooks/use-lessons";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const targetFields = ["Ignore", "Reference", "Project", "Phase", "Sprint", "Type", "Category", "Summary", "What happened", "Impact", "Root cause", "Recommendation", "Applicability", "Project type tags", "Raised by", "Date", "Status"] as const;
 const sample = `Title,Lesson Type,Category,Project,Phase,What happened,Impact,Root cause,Recommendation,Raised By,Date Raised
@@ -12,7 +13,8 @@ const sample = `Title,Lesson Type,Category,Project,Phase,What happened,Impact,Ro
 "Supplier daily stand-up",Success,"[""Vendor Management""]","Unified Comms (Phase 2)","Phase 3 - Design & Procure","A short daily call replaced weekly reporting.","Issues resolved same-day.","Short feedback loops suit distributed teams.","Agree a daily contact rhythm with delivery suppliers.","Iona Craig",03/02/2026`;
 
 /** CSV import wizard with a column-mapping step and preview (Prompt I3). */
-export function LessonsImport({ lessons, close }: { lessons: ResolvedLesson[]; close: () => void }) {
+export function LessonsImport({ data, close }: { data: LessonsData; close: () => void }) {
+  const mutations = useLessonMutations();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [text, setText] = useState("");
   const [mapping, setMapping] = useState<Record<number, string>>({});
@@ -34,28 +36,35 @@ export function LessonsImport({ lessons, close }: { lessons: ResolvedLesson[]; c
     if (cleaned.includes("root")) return "Root cause";
     if (cleaned.includes("recommend")) return "Recommendation";
     if (cleaned.includes("applicab")) return "Applicability";
-    if (cleaned.includes("raised")) return "Raised by";
+    // "Date Raised" is a date; "Raised By" is a person.
     if (cleaned.includes("date")) return "Date";
+    if (cleaned.includes("raised")) return "Raised by";
     if (cleaned.includes("status")) return "Status";
     if (cleaned.includes("ref")) return "Reference";
     return "Ignore";
   };
   const effective = (index: number) => mapping[index] ?? guess(header[index] ?? "");
   const columnFor = (field: string) => header.findIndex((_, index) => effective(index) === field);
-  const preview = body.slice(0, 8).map(row => {
+  const resolved = body.map(row => {
     const value = (field: string) => { const index = columnFor(field); return index >= 0 ? row[index] ?? "" : ""; };
-    const rawCategory = value("Category"), rawPhase = value("Phase");
-    return {
-      summary: value("Summary"), project: value("Project"), type: value("Type"),
-      category: matchCategory(rawCategory), rawCategory, phase: matchPhase(rawPhase), rawPhase,
-      raisedBy: value("Raised by"), date: value("Date"),
-      tags: normaliseChoice(value("Project type tags")),
+    const item: ImportRow = {
+      summary: value("Summary"), project: value("Project"), phase: value("Phase"), sprint: value("Sprint"), type: value("Type"),
+      category: value("Category"), whatHappened: value("What happened"), impact: value("Impact"), rootCause: value("Root cause"),
+      recommendation: value("Recommendation"), applicability: value("Applicability"), tags: value("Project type tags"),
+      raisedBy: value("Raised by"), date: value("Date"), status: value("Status"),
     };
+    return resolveImportRow(data, item);
   });
-  const unmatched = preview.filter(row => !row.category || !row.phase).length;
+  const preview = resolved.slice(0, 8);
+  const blocked = resolved.filter(item => item.problems.length);
+  const ready = resolved.length - blocked.length;
+  const runImport = () => mutations.importLessons.mutate({ data, rows: resolved }, {
+    onSuccess: count => { toast.success(`${count} lesson${count === 1 ? "" : "s"} imported`); close(); },
+    onError: error => toast.error(error.message),
+  });
 
   const download = () => {
-    const blob = new Blob([lessonsToCsv(lessons)], { type: "text/csv;charset=utf-8" });
+    const blob = new Blob([lessonsToCsv(data)], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url; anchor.download = "lessons-learned.csv"; anchor.click();
@@ -103,28 +112,31 @@ export function LessonsImport({ lessons, close }: { lessons: ResolvedLesson[]; c
       </div>}
 
       {step === 3 && <div className="mt-5 space-y-4">
-        {unmatched > 0 && <div className="flex items-start gap-2 rounded-md border border-health-warn/40 bg-health-warn/10 p-3 text-xs">
+        {blocked.length > 0 && <div className="flex items-start gap-2 rounded-md border border-health-warn/40 bg-health-warn/10 p-3 text-xs">
           <TriangleAlert className="mt-0.5 size-4 shrink-0 text-health-warn-foreground" />
-          <span>{unmatched} of the {preview.length} previewed rows have a category or phase that does not match the controlled list. SharePoint values like <code className="rounded bg-muted px-1">[&quot;Project Management&quot;]</code> are unwrapped automatically; anything still unmatched is imported as Identified with no category and flagged for the PMO.</span>
+          <div>
+            <p>{blocked.length} of the {resolved.length} rows can't be imported and will be skipped. SharePoint values like <code className="rounded bg-muted px-1">[&quot;Project Management&quot;]</code> are unwrapped automatically; the project, category and type must match this organisation's lists.</p>
+            <ul className="mt-1.5 space-y-0.5 text-muted-foreground">{blocked.slice(0, 5).map((item, index) => <li key={index}>• {item.row.summary || `Row ${resolved.indexOf(item) + 1}`}: {item.problems.join("; ")}</li>)}</ul>
+          </div>
         </div>}
         <div className="overflow-x-auto rounded-md border">
           <table className="w-full min-w-[720px] text-left text-xs">
             <thead className="bg-table-head text-muted-foreground"><tr><th className="h-9 px-3 font-semibold">Summary</th><th className="px-3 font-semibold">Project</th><th className="px-3 font-semibold">Phase</th><th className="px-3 font-semibold">Type</th><th className="px-3 font-semibold">Category</th><th className="px-3 font-semibold">Raised by</th><th className="px-3 font-semibold">Date</th></tr></thead>
-            <tbody>{preview.map((row, index) => <tr key={index} className="border-t">
-              <td className="px-3 py-2">{row.summary || <span className="text-health-bad-foreground">missing</span>}</td>
-              <td className="px-3 py-2">{row.project}</td>
-              <td className="px-3 py-2">{row.phase ? <span className="text-health-good-foreground">{row.phase}</span> : <span className="text-health-warn-foreground">{row.rawPhase || "—"}</span>}</td>
-              <td className="px-3 py-2">{row.type}</td>
-              <td className="px-3 py-2">{row.category ?? <span className="text-health-warn-foreground">{row.rawCategory || "—"}</span>}</td>
-              <td className="px-3 py-2">{row.raisedBy}</td>
-              <td className="px-3 py-2">{row.date}</td>
+            <tbody>{preview.map((item, index) => <tr key={index} className={cn("border-t", item.problems.length && "bg-health-warn/5")}>
+              <td className="px-3 py-2">{item.row.summary || <span className="text-health-bad-foreground">missing</span>}</td>
+              <td className="px-3 py-2">{item.project ? item.project.name : <span className="text-health-warn-foreground">{item.row.project || "—"}</span>}</td>
+              <td className="px-3 py-2">{item.phase ? <span className="text-health-good-foreground">{item.phase.shortName}</span> : <span className="text-muted-foreground">{item.row.phase || "—"}</span>}</td>
+              <td className="px-3 py-2">{item.type ?? <span className="text-health-warn-foreground">{item.row.type || "—"}</span>}</td>
+              <td className="px-3 py-2">{item.category?.label ?? <span className="text-health-warn-foreground">{item.row.category || "—"}</span>}</td>
+              <td className="px-3 py-2">{item.row.raisedBy}</td>
+              <td className="px-3 py-2">{item.row.date}</td>
             </tr>)}</tbody>
           </table>
         </div>
         <p className="text-xs text-muted-foreground">Showing the first {preview.length} of {body.length} rows.</p>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
-          <Button onClick={close}><Upload />Import {body.length} lessons</Button>
+          <Button disabled={!ready || mutations.importLessons.isPending} onClick={runImport}><Upload />Import {ready} lesson{ready === 1 ? "" : "s"}</Button>
         </div>
       </div>}
 
