@@ -1,17 +1,19 @@
 import { formatDate } from "@/lib/format";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { DependencyPanel, type AcceptanceState } from "@/components/dependency-panel";
 import { HealthPill } from "@/components/health-pill";
 import { getDependencies, getDependenciesFor, type ResolvedDependency } from "@/services/dependencies";
 import { cn } from "@/lib/utils";
+import { useDependencyVersion } from "@/services/dependency-store";
 
 /** "We depend on" and "Depends on us" for a project or programme (Prompt I1). */
 export function DependencyTab({ projectId, programmeId }: { projectId?: string; programmeId?: string }) {
   const [overrides, setOverrides] = useState<Record<string, AcceptanceState>>({});
   const [selected, setSelected] = useState<ResolvedDependency | null>(null);
-  const all = useMemo(() => getDependencies(), []);
+  useDependencyVersion();
+  const all = getDependencies();
   const applied = all.map(item => {
     const override = overrides[item.id];
     if (!override) return item;
