@@ -55,6 +55,8 @@ export const qk = {
   orgRaid: (orgId: string) => ["org", orgId, "projects", "org-raid"] as const,
   requests: (orgId: string) => ["org", orgId, "requests"] as const,
   resources: {
+    // Under projects: bookings and teams change with project writes (and vice versa).
+    planning: (orgId: string) => ["org", orgId, "projects", "resource-planning"] as const,
     list: (orgId: string) => ["org", orgId, "resources", "list"] as const,
     mine: (orgId: string, userId: string) => ["org", orgId, "resources", "mine", userId] as const,
   },

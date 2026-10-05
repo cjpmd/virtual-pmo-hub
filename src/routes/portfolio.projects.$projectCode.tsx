@@ -632,7 +632,6 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
       )}
 
       {/* Not yet on Supabase (Stage 4c): these tabs read the demo project's prototype record. */}
-      {tab === "resources" && !legacy && <NotYetMigrated />}
       {(
         <>
           {tab === "status" && (
@@ -651,9 +650,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
             <TaskWorkspace projectId={project.id} taskSource={toTaskSource(project.taskSource)} />
           )}
           {tab === "delivery" && deliveryReady && <DeliveryWorkspace projectId={project.code} />}
-          {legacy && tab === "resources" && (
-            <ProjectResources members={getProjectTeam(legacy)} projectId={mockId} />
-          )}
+          {tab === "resources" && <ProjectResources projectId={project.id} />}
           {tab === "benefits" && <ProjectBenefits projectId={project.id} />}
           {tab === "dependencies" && <DependencyTab projectId={project.id} />}
           {tab === "decisions" && (
