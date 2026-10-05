@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { DependencyEditor } from "@/components/dependency-editor";
-import { useDependencyVersion } from "@/services/dependency-store";
+import { saveDependency, useDependencyVersion } from "@/services/dependency-store";
 import { DependencyPanel, typeLegend, type AcceptanceState } from "@/components/dependency-panel";
 import { DependencyFocusList, FilterChips, FocusBanner, focusEdgeColour, focusLegend } from "@/components/dependency-focus";
 import { dependencyStrokeDash, dependencyTypes, getDependencies, healthStroke, type ResolvedDependency } from "@/services/dependencies";
@@ -50,6 +50,7 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
   const [editing, setEditing] = useState<ResolvedDependency | { from: string; to: string } | null>(null);
   const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>({});
   const nodeDrag = useRef<{ id: string; x: number; y: number; moved: boolean } | null>(null);
+  const draggedNode = useRef<string | null>(null);
   const [level, setLevel] = useState<Granularity>("programme");
   const [depth, setDepth] = useState(1);
   const [types, setTypes] = useState<DependencyType[]>([]);
@@ -66,7 +67,13 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
   const { ref: viewportRef, width: viewportWidth } = useMeasuredWidth(900);
 
   const all = useMemo(() => getDependencies(), [dependencyVersion]);
-  const programmes = getProgrammes();
+  const programmes = useMemo(() => getProgrammes(), [dependencyVersion]);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("virtual-pmo-dependency-layout");
+      if (saved) setPositions(JSON.parse(saved) as Record<string, { x: number; y: number }>);
+    } catch { /* Start with the default arrangement. */ }
+  }, []);
   const items = useMemo(() => all.map(item => {
     const override = overrides[item.id];
     if (!override) return item;
@@ -133,7 +140,7 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
     if (!boxes.length) { fitAll(); return }
     const left = Math.min(...boxes.map(box => box.x)), top = Math.min(...boxes.map(box => box.y));
     fitTo({ x: left, y: top, width: Math.max(...boxes.map(box => box.x + box.width)) - left, height: Math.max(...boxes.map(box => box.y + box.height)) - top }, 1.4);
-  }, [focus, layout.boxes, fitAll]);
+  }, [focus, fitAll, layout.boxes]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === "Escape" && focusId) onFocus(undefined) };
@@ -208,10 +215,18 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
     drag.x = event.clientX; drag.y = event.clientY;
   };
   const onNodePointerUp = (event: React.PointerEvent) => {
-    if (nodeDrag.current?.moved) event.stopPropagation();
+    if (nodeDrag.current?.moved) {
+      event.stopPropagation();
+      draggedNode.current = nodeDrag.current.id;
+      setPositions(current => {
+        try { localStorage.setItem("virtual-pmo-dependency-layout", JSON.stringify(current)); } catch { /* Layout remains available for this session. */ }
+        return current;
+      });
+    }
     nodeDrag.current = null;
   };
   const onNodeClick = (id: string) => {
+    if (draggedNode.current === id) { draggedNode.current = null; return; }
     if (workshop && linkFrom) {
       if (id !== linkFrom) { setEditing({ from: linkFrom, to: id }); setLinkFrom(null); }
       else setLinkFrom(null);
@@ -296,7 +311,7 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
                   const childBox = layout.boxes.get(child.id);
                   if (!childBox) return null;
                   const childTone = nodeTone(child.id);
-                  return <div key={child.id}><button data-node type="button" onClick={event => { event.stopPropagation(); if (nodeDrag.current?.moved) return; onNodeClick(child.id) }} onPointerDown={event => onNodePointerDown(event, child.id)} onPointerMove={onNodePointerMove} onPointerUp={onNodePointerUp} onMouseEnter={() => setHover(child.id)} onMouseLeave={() => setHover(null)}
+                  return <div key={child.id}><button data-node type="button" onClick={event => { event.stopPropagation(); onNodeClick(child.id) }} onPointerDown={event => onNodePointerDown(event, child.id)} onPointerMove={onNodePointerMove} onPointerUp={onNodePointerUp} onMouseEnter={() => setHover(child.id)} onMouseLeave={() => setHover(null)}
                     style={{ left: childBox.x - box.x, top: childBox.y - box.y, width: childBox.width, height: childBox.height, opacity: toneOpacity[childTone] ?? 1, filter: childTone === "muted" ? "grayscale(1)" : undefined, transition: "opacity 200ms ease, filter 200ms ease" }}
                     className={cn("absolute grid place-items-center rounded-lg border border-border/70 bg-card px-2 text-center", childTone === "focus" ? "border-primary ring-2 ring-primary" : "hover:border-primary/60", showCritical && focus?.criticalNodes.has(child.id) && childTone !== "muted" && "ring-2 ring-viz-critical/70")}>
                     <span><span className="line-clamp-2 text-[11px] font-medium leading-tight">{child.label}</span>{child.kind === "Milestone" ? <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">{child.sublabel}</span> : null}</span>
@@ -354,7 +369,7 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
     </section>
 
     {selected && <DependencyPanel dependency={items.find(item => item.id === selected.id) ?? selected} overrides={overrides}
-      onAccept={(id, side) => setOverrides(current => { const base = current[id] ?? { giver: all.find(item => item.id === id)?.giverAccepted ?? false, receiver: all.find(item => item.id === id)?.receiverAccepted ?? false }; return { ...current, [id]: { ...base, [side]: true } } })}
+      onAccept={(id, side) => { const item = all.find(entry => entry.id === id); if (item) saveDependency({ ...item, [side === "giver" ? "giverAccepted" : "receiverAccepted"]: true }); setOverrides(current => { const base = current[id] ?? { giver: item?.giverAccepted ?? false, receiver: item?.receiverAccepted ?? false }; return { ...current, [id]: { ...base, [side]: true } } }); }}
       onRaise={() => undefined} close={() => setSelected(null)}/>}
     {editing && <DependencyEditor {...("id" in editing ? { item: editing } : { fromId: editing.from, toId: editing.to })} onClose={() => setEditing(null)} />}
   </div>;

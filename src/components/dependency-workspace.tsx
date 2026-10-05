@@ -44,10 +44,10 @@ export function DependencyWorkspace() {
     });
   };
 
-  const accept = (id: string, side: "giver" | "receiver") => setOverrides(current => {
+  const accept = (id: string, side: "giver" | "receiver") => { const item = all.find(entry => entry.id === id); if (item) saveDependency({ ...item, [side === "giver" ? "giverAccepted" : "receiverAccepted"]: true }); setOverrides(current => {
     const base = current[id] ?? { giver: all.find(item => item.id === id)?.giverAccepted ?? false, receiver: all.find(item => item.id === id)?.receiverAccepted ?? false };
     return { ...current, [id]: { ...base, [side]: true } };
-  });
+  }); };
   const raise = (dependency: ResolvedDependency, kind: "Risk" | "Issue") => setDraft({
     kind, dependency,
     title: kind === "Risk" ? `${dependency.reference}: ${dependency.giverLabel} may not deliver by ${formatDate(dependency.requiredBy)}` : `${dependency.reference}: ${dependency.giverLabel} has not delivered by ${formatDate(dependency.requiredBy)}`,

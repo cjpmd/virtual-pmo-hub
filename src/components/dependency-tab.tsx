@@ -6,7 +6,7 @@ import { DependencyPanel, type AcceptanceState } from "@/components/dependency-p
 import { HealthPill } from "@/components/health-pill";
 import { getDependencies, getDependenciesFor, type ResolvedDependency } from "@/services/dependencies";
 import { cn } from "@/lib/utils";
-import { useDependencyVersion } from "@/services/dependency-store";
+import { saveDependency, useDependencyVersion } from "@/services/dependency-store";
 
 /** "We depend on" and "Depends on us" for a project or programme (Prompt I1). */
 export function DependencyTab({ projectId, programmeId }: { projectId?: string; programmeId?: string }) {
@@ -23,11 +23,11 @@ export function DependencyTab({ projectId, programmeId }: { projectId?: string; 
   const scope = { ...(projectId ? { projectId } : {}), ...(programmeId ? { programmeId } : {}) };
   const { weDependOn, dependsOnUs } = getDependenciesFor(scope, applied);
 
-  const accept = (id: string, side: "giver" | "receiver") => setOverrides(current => {
+  const accept = (id: string, side: "giver" | "receiver") => { const item = all.find(entry => entry.id === id); if (item) saveDependency({ ...item, [side === "giver" ? "giverAccepted" : "receiverAccepted"]: true }); setOverrides(current => {
     const source = all.find(item => item.id === id);
     const base = current[id] ?? { giver: source?.giverAccepted ?? false, receiver: source?.receiverAccepted ?? false };
     return { ...current, [id]: { ...base, [side]: true } };
-  });
+  }); };
 
   return <div className="space-y-6">
     <Section title="We depend on" note="Other people owe this work something." items={weDependOn} icon={<ArrowDownLeft className="size-4 text-primary" />} otherSide={item => item.giverLabel} otherOwner={item => item.giver.owner} onOpen={setSelected} />
