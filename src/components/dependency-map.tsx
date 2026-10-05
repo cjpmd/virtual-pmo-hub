@@ -1,7 +1,10 @@
-import { Crosshair, Maximize2, Minus, Plus, Search } from "lucide-react";
+import { Crosshair, Maximize2, Minus, Plus, Search, Sparkles, Pencil, Link2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { DependencyEditor } from "@/components/dependency-editor";
+import { useDependencyVersion } from "@/services/dependency-store";
 import { DependencyPanel, typeLegend, type AcceptanceState } from "@/components/dependency-panel";
 import { DependencyFocusList, FilterChips, FocusBanner, focusEdgeColour, focusLegend } from "@/components/dependency-focus";
 import { dependencyStrokeDash, dependencyTypes, getDependencies, healthStroke, type ResolvedDependency } from "@/services/dependencies";
@@ -41,6 +44,12 @@ function edgePath(from: Box, to: Box, offset = 0) {
 type View = { scale: number; x: number; y: number };
 
 export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefined; onFocus: (id: string | undefined) => void }) {
+  useDependencyVersion();
+  const [workshop, setWorkshop] = useState(false);
+  const [linkFrom, setLinkFrom] = useState<string | null>(null);
+  const [editing, setEditing] = useState<ResolvedDependency | { from: string; to: string } | null>(null);
+  const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const nodeDrag = useRef<{ id: string; x: number; y: number; moved: boolean } | null>(null);
   const [level, setLevel] = useState<Granularity>("programme");
   const [depth, setDepth] = useState(1);
   const [types, setTypes] = useState<DependencyType[]>([]);
@@ -56,7 +65,7 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
   const pan = useRef<{ x: number; y: number; view: View } | null>(null);
   const { ref: viewportRef, width: viewportWidth } = useMeasuredWidth(900);
 
-  const all = useMemo(() => getDependencies(), []);
+  const all = getDependencies();
   const programmes = getProgrammes();
   const items = useMemo(() => all.map(item => {
     const override = overrides[item.id];
@@ -101,8 +110,14 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
       boxes.set(node.id, { x: 24 + (index % COLUMNS) * (CONTAINER_WIDTH + CONTAINER_GAP), y: rowTop + Math.floor(index / COLUMNS) * (72 + CHILD_GAP), width: CONTAINER_WIDTH, height: 64 });
     });
     const externalRows = Math.ceil(externals.length / COLUMNS);
-    return { boxes, containers, externals, width: COLUMNS * (CONTAINER_WIDTH + CONTAINER_GAP) + 24, height: rowTop + (externalRows ? externalRows * (72 + CHILD_GAP) + 24 : 0) };
-  }, [graph, programmes]);
+    for (const [id, point] of Object.entries(positions)) {
+      const box = boxes.get(id);
+      if (box) boxes.set(id, { ...box, ...point });
+    }
+    const farRight = Math.max(COLUMNS * (CONTAINER_WIDTH + CONTAINER_GAP) + 24, ...Array.from(boxes.values()).map(box => box.x + box.width + 30));
+    const farBottom = Math.max(rowTop + (externalRows ? externalRows * (72 + CHILD_GAP) + 24 : 0), ...Array.from(boxes.values()).map(box => box.y + box.height + 30));
+    return { boxes, containers, externals, width: farRight, height: farBottom };
+  }, [graph, programmes, positions]);
 
   // ---- zoom -----------------------------------------------------------------
   const fitTo = useCallback((box: Box, maxScale: number) => {
@@ -165,6 +180,7 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
   const delayImpact = focusId && focus && focus.criticalNodes.has(focusId) ? getDelayImpact(graph, focusId) : 0;
 
   const beginPan = (event: React.PointerEvent) => {
+    if (nodeDrag.current) return;
     if ((event.target as HTMLElement).closest("[data-node]")) return;
     pan.current = { x: event.clientX, y: event.clientY, view };
     setDragging(true);
@@ -175,10 +191,40 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
     setView({ scale: pan.current.view.scale, x: pan.current.view.x + event.clientX - pan.current.x, y: pan.current.view.y + event.clientY - pan.current.y });
   };
   const endPan = () => { const moved = pan.current; pan.current = null; setDragging(false); return moved };
+  const onNodePointerDown = (event: React.PointerEvent, id: string) => {
+    if (!workshop || linkFrom || (event.target as HTMLElement).closest("[data-link-handle]")) return;
+    event.stopPropagation();
+    nodeDrag.current = { id, x: event.clientX, y: event.clientY, moved: false };
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  };
+  const onNodePointerMove = (event: React.PointerEvent) => {
+    const drag = nodeDrag.current;
+    if (!drag) return;
+    const dx = (event.clientX - drag.x) / view.scale, dy = (event.clientY - drag.y) / view.scale;
+    if (Math.abs(dx) + Math.abs(dy) < 2 && !drag.moved) return;
+    drag.moved = true;
+    const box = layout.boxes.get(drag.id);
+    if (box) setPositions(current => ({ ...current, [drag.id]: { x: Math.max(0, box.x + dx), y: Math.max(0, box.y + dy) } }));
+    drag.x = event.clientX; drag.y = event.clientY;
+  };
+  const onNodePointerUp = (event: React.PointerEvent) => {
+    if (nodeDrag.current?.moved) event.stopPropagation();
+    nodeDrag.current = null;
+  };
+  const onNodeClick = (id: string) => {
+    if (workshop && linkFrom) {
+      if (id !== linkFrom) { setEditing({ from: linkFrom, to: id }); setLinkFrom(null); }
+      else setLinkFrom(null);
+      return;
+    }
+    onFocus(focusId === id ? undefined : id);
+  };
+  const linkHandle = (id: string) => workshop && <Button data-link-handle type="button" size="icon" variant="outline" title="Draw a dependency from this node" aria-label={`Draw a dependency from ${graph.nodes.get(id)?.label ?? id}`} className="absolute -right-2 top-1/2 z-10 size-6 -translate-y-1/2 rounded-full border-primary bg-card text-primary shadow-sm" onPointerDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); setLinkFrom(id); }}><Plus className="size-3.5" /></Button>;
 
   return <div className="space-y-4">
     <div className="space-y-3 rounded-lg border border-border/70 bg-card p-4 shadow-sm">
       <div className="flex flex-wrap items-center gap-3">
+        <label className="flex items-center gap-2 text-sm font-medium"><Sparkles className="size-4 text-primary" />Workshop mode<Switch checked={workshop} onCheckedChange={value => { setWorkshop(value); setLinkFrom(null); }} aria-label="Workshop mode" /></label>
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground"/>
           <Input value={query} onChange={event => setQuery(event.target.value)} placeholder="Find and focus a node" aria-label="Find a node" className="h-9 w-60 pl-8"/>
@@ -207,7 +253,7 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
       clear={() => onFocus(undefined)}/> : null}
 
     <div className={cn("grid gap-4", focus ? "xl:grid-cols-[1fr_340px]" : "")}>
-      <div className="overflow-hidden rounded-lg border border-border/70 bg-card shadow-sm">
+      <div className={cn("overflow-hidden rounded-lg border shadow-sm", workshop ? "border-dashed border-primary/40 bg-muted/25" : "border-border/70 bg-card")}>
         <div ref={viewportRef} onPointerDown={beginPan} onPointerMove={movePan} onPointerUp={event => { const moved = endPan(); if (moved && Math.abs(event.clientX - moved.x) < 4 && Math.abs(event.clientY - moved.y) < 4 && focusId) onFocus(undefined) }} onPointerLeave={endPan}
           className={cn("relative touch-none overflow-hidden", dragging ? "cursor-grabbing" : "cursor-grab")} style={{ height: VIEWPORT_HEIGHT }}>
           <div className="absolute left-0 top-0 origin-top-left" style={{ width: layout.width, height: layout.height, transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`, transition: dragging ? "none" : "transform 260ms cubic-bezier(0.22,0.61,0.36,1)" }}>
@@ -239,20 +285,21 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
               // would inherit the parent's opacity and disappear. Only its own chrome fades.
               return <div key={container.programme.id} style={{ left: box.x, top: box.y, width: box.width, height: box.height, transition: "opacity 200ms ease, border-color 200ms ease" }}
                 className={cn("absolute rounded-lg border-2 border-dashed p-3", tone === "focus" ? "border-primary bg-primary/10" : tone === "muted" ? "border-border/60 bg-muted/20" : "border-primary/30 bg-primary/5", showCritical && focus?.criticalNodes.has(nodeId) && tone !== "muted" && "ring-2 ring-viz-critical/70")}>
-                <button data-node type="button" disabled={!isNode} onClick={() => onFocus(focusId === nodeId ? undefined : nodeId)} onMouseEnter={() => isNode && setHover(nodeId)} onMouseLeave={() => setHover(null)}
+                <button data-node type="button" disabled={!isNode} onClick={() => onNodeClick(nodeId)} onPointerDown={event => onNodePointerDown(event, nodeId)} onPointerMove={onNodePointerMove} onPointerUp={onNodePointerUp} onMouseEnter={() => isNode && setHover(nodeId)} onMouseLeave={() => setHover(null)}
                   style={{ opacity: toneOpacity[tone] ?? 1, filter: tone === "muted" ? "grayscale(1)" : undefined, transition: "opacity 200ms ease, filter 200ms ease" }}
                   className={cn("block w-full text-left", isNode && "cursor-pointer rounded hover:underline")}>
                   <p className="line-clamp-2 text-sm font-semibold">{container.programme.name}</p>
                   <p className="mt-0.5 text-[11px] text-muted-foreground">PM {container.programme.projectManager ?? container.programme.manager} · {involved.length} dependencies</p>
                 </button>
+                {isNode && linkHandle(nodeId)}
                 {container.kids.map(child => {
                   const childBox = layout.boxes.get(child.id);
                   if (!childBox) return null;
                   const childTone = nodeTone(child.id);
-                  return <button data-node key={child.id} type="button" onClick={event => { event.stopPropagation(); onFocus(focusId === child.id ? undefined : child.id) }} onMouseEnter={() => setHover(child.id)} onMouseLeave={() => setHover(null)}
+                  return <button data-node key={child.id} type="button" onClick={event => { event.stopPropagation(); if (nodeDrag.current?.moved) return; onNodeClick(child.id) }} onPointerDown={event => onNodePointerDown(event, child.id)} onPointerMove={onNodePointerMove} onPointerUp={onNodePointerUp} onMouseEnter={() => setHover(child.id)} onMouseLeave={() => setHover(null)}
                     style={{ left: childBox.x - box.x, top: childBox.y - box.y, width: childBox.width, height: childBox.height, opacity: toneOpacity[childTone] ?? 1, filter: childTone === "muted" ? "grayscale(1)" : undefined, transition: "opacity 200ms ease, filter 200ms ease" }}
                     className={cn("absolute grid place-items-center rounded-lg border border-border/70 bg-card px-2 text-center", childTone === "focus" ? "border-primary ring-2 ring-primary" : "hover:border-primary/60", showCritical && focus?.criticalNodes.has(child.id) && childTone !== "muted" && "ring-2 ring-viz-critical/70")}>
-                    <span><span className="line-clamp-2 text-[11px] font-medium leading-tight">{child.label}</span>{child.kind === "Milestone" ? <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">{child.sublabel}</span> : null}</span>
+                    <span><span className="line-clamp-2 text-[11px] font-medium leading-tight">{child.label}</span>{child.kind === "Milestone" ? <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">{child.sublabel}</span> : null}</span>{linkHandle(child.id)}
                   </button>;
                 })}
               </div>;
@@ -261,14 +308,15 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
               const box = layout.boxes.get(node.id);
               if (!box) return null;
               const tone = nodeTone(node.id);
-              return <button data-node key={node.id} type="button" onClick={() => onFocus(focusId === node.id ? undefined : node.id)} onMouseEnter={() => setHover(node.id)} onMouseLeave={() => setHover(null)}
+              return <button data-node key={node.id} type="button" onClick={() => onNodeClick(node.id)} onPointerDown={event => onNodePointerDown(event, node.id)} onPointerMove={onNodePointerMove} onPointerUp={onNodePointerUp} onMouseEnter={() => setHover(node.id)} onMouseLeave={() => setHover(null)}
                 style={{ left: box.x, top: box.y, width: box.width, height: box.height, opacity: toneOpacity[tone] ?? 1, filter: tone === "muted" ? "grayscale(1)" : undefined, transition: "opacity 200ms ease, filter 200ms ease" }}
                 className={cn("absolute grid place-items-center rounded-lg border-2 border-dashed px-3 text-center", tone === "focus" ? "border-chart-5 bg-chart-5/20 ring-2 ring-chart-5" : "border-chart-5/60 bg-chart-5/10 hover:border-chart-5", showCritical && focus?.criticalNodes.has(node.id) && tone !== "muted" && "ring-2 ring-viz-critical/70")}>
-                <div><p className="text-sm font-semibold">{node.label}</p><p className="text-[11px] text-muted-foreground">External party</p></div>
+                <div><p className="text-sm font-semibold">{node.label}</p><p className="text-[11px] text-muted-foreground">External party</p></div>{linkHandle(node.id)}
               </button>;
             })}
           </div>
-          {!focusId ? <p className="pointer-events-none absolute bottom-3 left-4 flex items-center gap-1.5 text-[11px] text-muted-foreground"><Crosshair className="size-3.5"/>Click a node to focus its chain · drag to pan</p> : null}
+          {linkFrom && <div className="absolute bottom-3 left-4 z-20 flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-xs shadow-sm"><Link2 className="size-4 text-primary" />Select a receiving node <Button size="sm" variant="ghost" onClick={() => setLinkFrom(null)}>Cancel</Button></div>}
+          {!focusId && !linkFrom ? <p className="pointer-events-none absolute bottom-3 left-4 flex items-center gap-1.5 text-[11px] text-muted-foreground"><Crosshair className="size-3.5"/>{workshop ? "Drag nodes to arrange · use + to draw a dependency" : "Click a node to focus its chain · drag to pan"}</p> : null}
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t p-3 text-xs">
           {focus ? focusLegend : <>
@@ -293,10 +341,11 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
       </header>
       <div className="divide-y">
         {graph.edges.map(({ dependency, id }) => <div key={id} className={cn("grid gap-1 p-3 sm:grid-cols-[1fr_auto_auto]", focus && !focus.edges.has(id) && "opacity-45")}>
-          <button onClick={() => setSelected(dependency)} className="text-left hover:underline">
+          <Button variant="link" onClick={() => workshop ? setEditing(dependency) : setSelected(dependency)} className="h-auto flex-col items-start gap-0 p-0 text-left">
             <p className="text-sm font-medium">{dependency.reference} · {dependency.giverLabel} → {dependency.receiverLabel}</p>
             <p className="text-xs text-muted-foreground">{dependency.type} · {dependency.boundary} · {dependency.validation}</p>
-          </button>
+          </Button>
+          {workshop && <Button size="sm" variant="ghost" onClick={() => setEditing(dependency)}><Pencil className="size-3.5" />Edit</Button>}
           <Button size="sm" variant="ghost" className="justify-self-start text-xs" onClick={() => jumpTo(nodeFor(dependency, "giver"))}><Crosshair className="size-3.5"/>Focus giver</Button>
           <span className={cn("self-center rounded-full px-2.5 py-1 text-xs font-semibold", dependency.health === "Off Track" ? "bg-health-bad/20 text-health-bad-foreground" : dependency.health === "At Risk" ? "bg-health-warn/25 text-health-warn-foreground" : "bg-health-good/20 text-health-good-foreground")}>{dependency.health}</span>
         </div>)}
@@ -307,5 +356,6 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
     {selected && <DependencyPanel dependency={items.find(item => item.id === selected.id) ?? selected} overrides={overrides}
       onAccept={(id, side) => setOverrides(current => { const base = current[id] ?? { giver: all.find(item => item.id === id)?.giverAccepted ?? false, receiver: all.find(item => item.id === id)?.receiverAccepted ?? false }; return { ...current, [id]: { ...base, [side]: true } } })}
       onRaise={() => undefined} close={() => setSelected(null)}/>}
+    {editing && <DependencyEditor item={"id" in editing ? editing : undefined} fromId={"from" in editing ? editing.from : undefined} toId={"to" in editing ? editing.to : undefined} onClose={() => setEditing(null)} />}
   </div>;
 }
