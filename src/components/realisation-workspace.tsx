@@ -10,25 +10,47 @@ import { HealthPill } from "@/components/health-pill";
 import { ChartCard, LegendItem } from "@/components/charts/chart-card";
 import type { BenefitClassification } from "@/data/types";
 import { filterBenefits, getBenefitsInRealisation, getMeasurementSchedule, getPortfolioCurve, getValidationQueue, type BenefitFilter, type ValidationQueueItem } from "@/services/benefits-value";
-import { getBenefitHealth, getBenefits, getProgrammes, getStrategicObjectives } from "@/services/pmo";
+import type { BenefitsData } from "@/services/benefits";
+import { QueryState } from "@/components/query-state";
+import { useBenefitMutations, useBenefits } from "@/hooks/use-benefits";
+import { useMyResourceId } from "@/hooks/use-hierarchy";
+import { useCan } from "@/hooks/use-permissions";
+import { todayIso } from "@/lib/today";
 import { cn } from "@/lib/utils";
 
 const money = formatCompactCurrency;
 const classifications: BenefitClassification[] = ["Cash-releasing", "Non-cash-releasing", "Qualitative", "Societal"];
 
 export function RealisationWorkspace() {
+  const benefits = useBenefits();
+  return <QueryState query={benefits}>{data => <Realisation data={data} />}</QueryState>;
+}
+
+function Realisation({ data }: { data: BenefitsData }) {
   const [filter, setFilter] = useState<BenefitFilter>({});
-  const [reminded, setReminded] = useState<string[]>([]);
-  const [decided, setDecided] = useState<Record<string, "Validated" | "Queried">>({});
   const [preview, setPreview] = useState<ValidationQueueItem | null>(null);
+  const canValidate = useCan("pmo");
+  const reviewerId = useMyResourceId();
+  const { reviewMeasurement } = useBenefitMutations();
+  const emails = useMemo(() => new Map(data.people.map(person => [person.name, person.email])), [data.people]);
 
   const setKey = (key: keyof BenefitFilter, value: string) => setFilter(current => { const next = { ...current }; if (value) (next[key] as string) = value; else delete next[key]; return next; });
-  const scoped = useMemo(() => filterBenefits(filter), [filter]);
-  const curve = useMemo(() => getPortfolioCurve(scoped), [scoped]);
+  const scoped = useMemo(() => filterBenefits(data, filter), [data, filter]);
+  const curve = useMemo(() => getPortfolioCurve(scoped, data.periods), [scoped, data.periods]);
   const schedule = useMemo(() => getMeasurementSchedule(scoped).filter(item => item.state !== "Upcoming"), [scoped]);
   const queue = useMemo(() => getValidationQueue(scoped), [scoped]);
-  const inRealisation = useMemo(() => getBenefitsInRealisation(scoped), [scoped]);
-  const outstanding = queue.filter(item => !decided[item.record.id]);
+  const inRealisation = useMemo(() => getBenefitsInRealisation(data, scoped), [data, scoped]);
+  const outstanding = queue.filter(item => item.record.status === "Submitted");
+  const decide = (item: ValidationQueueItem, decision: "Validated" | "Queried") => {
+    const queryNote = decision === "Queried" ? window.prompt("What needs checking? The submitter sees this note.") ?? "" : undefined;
+    if (decision === "Queried" && !queryNote?.trim()) return;
+    reviewMeasurement.mutate({ id: item.record.id, decision, ...(queryNote ? { queryNote } : {}), reviewerId, today: todayIso(), lastSeen: item.record.updatedAt });
+  };
+  const reminder = (item: { benefit: { reference: string; title: string; owner: string }; measure: { name: string }; dueDate: string }) => {
+    const subject = `Benefit measurement due: ${item.benefit.reference} ${item.measure.name}`;
+    const body = `Hello ${item.benefit.owner || ""},\n\nThe ${item.measure.name} measurement for ${item.benefit.reference} ${item.benefit.title} was due on ${formatDate(item.dueDate)}. Please submit it in Virtual PMO.\n`;
+    return `mailto:${emails.get(item.benefit.owner) ?? ""}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
 
   const latest = curve.reduce<{ planned: number; actual: number; forecast: number }>((carry, point) => ({ planned: point.planned, actual: point.actual ?? carry.actual, forecast: point.forecast }), { planned: 0, actual: 0, forecast: 0 });
 
@@ -41,10 +63,10 @@ export function RealisationWorkspace() {
     </div>
 
     <ChartCard title="Cumulative benefit value" subtitle="Planned profile against evidenced actuals and the confidence-adjusted forecast." info="Forecast applies a confidence factor of 100% for High, 85% for Medium and 60% for Low." controls={<div className="flex flex-wrap gap-3">
-          <Filter label="Programme" value={filter.programmeId ?? ""} onChange={value => setKey("programmeId", value)} options={getProgrammes().map(item => ({ value: item.id, label: item.name }))} />
-          <Filter label="Objective" value={filter.objectiveId ?? ""} onChange={value => setKey("objectiveId", value)} options={getStrategicObjectives().map(item => ({ value: item.id, label: item.title }))} />
+          <Filter label="Programme" value={filter.programmeId ?? ""} onChange={value => setKey("programmeId", value)} options={data.programmes.map(item => ({ value: item.id, label: item.name }))} />
+          <Filter label="Objective" value={filter.objectiveId ?? ""} onChange={value => setKey("objectiveId", value)} options={data.objectives.map(item => ({ value: item.id, label: item.title }))} />
           <Filter label="Classification" value={filter.classification ?? ""} onChange={value => setKey("classification", value)} options={classifications.map(item => ({ value: item, label: item }))} />
-          <Filter label="Benefit" value={filter.benefitId ?? ""} onChange={value => setKey("benefitId", value)} options={getBenefits().map(item => ({ value: item.id, label: `${item.reference} · ${item.title}` }))} />
+          <Filter label="Benefit" value={filter.benefitId ?? ""} onChange={value => setKey("benefitId", value)} options={data.benefits.map(item => ({ value: item.id, label: `${item.reference} · ${item.title}` }))} />
         </div>} legend={<><LegendItem colour="var(--viz-cat-2)" label="Planned" shape="line"/><LegendItem colour="var(--viz-cat-5)" label="Forecast" shape="dashed"/><LegendItem colour="var(--viz-cat-1)" label="Actual" shape="line"/></>} footer={`${scoped.length} benefits in scope.`}>
       <div className="h-80">
         <ResponsiveContainer>
@@ -67,7 +89,6 @@ export function RealisationWorkspace() {
       <header className="flex flex-wrap items-center gap-3 border-b p-5">
         <CalendarClock className="size-5 text-primary" />
         <div className="mr-auto"><h2 className="font-display text-lg font-semibold">Measurements due and overdue</h2><p className="mt-0.5 text-sm text-muted-foreground">Due this month or already past the agreed date.</p></div>
-        <Button variant="outline" size="sm" onClick={() => setReminded(schedule.map(item => item.measure.id))}><BellRing />Remind everyone</Button>
       </header>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[820px] text-left text-sm">
@@ -80,9 +101,7 @@ export function RealisationWorkspace() {
               <td className="px-4 py-3">{item.measure.frequency}</td>
               <td className="px-4 py-3">{formatDate(item.dueDate)}</td>
               <td className="px-4 py-3"><span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", item.state === "Overdue" ? "bg-health-bad/20 text-health-bad-foreground" : "bg-health-warn/25 text-health-warn-foreground")}>{item.state}{item.daysOverdue > 0 && ` · ${item.daysOverdue}d`}</span></td>
-              <td className="px-4 py-3">{reminded.includes(item.measure.id)
-                ? <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-health-good-foreground"><CheckCircle2 className="size-4" />Reminder sent</span>
-                : <Button size="sm" variant="outline" onClick={() => setReminded(current => [...current, item.measure.id])}><BellRing />Send reminder</Button>}</td>
+              <td className="px-4 py-3">{item.benefit.owner ? <Button asChild size="sm" variant="outline"><a href={reminder(item)}><BellRing />Email owner</a></Button> : <span className="text-xs text-muted-foreground">Assign an owner first</span>}</td>
             </tr>)}
             {!schedule.length && <tr><td colSpan={7} className="px-4 py-10 text-center text-sm text-muted-foreground">Nothing due or overdue in this selection.</td></tr>}
           </tbody>
@@ -94,7 +113,7 @@ export function RealisationWorkspace() {
       <header className="flex items-center gap-3 border-b p-5"><ShieldCheck className="size-5 text-primary" /><div><h2 className="font-display text-lg font-semibold">PMO validation queue</h2><p className="mt-0.5 text-sm text-muted-foreground">Submitted measurement records awaiting validation.</p></div></header>
       <div className="divide-y">
         {queue.map(item => {
-          const outcome = decided[item.record.id];
+          const outcome = item.record.status === "Submitted" ? undefined : item.record.status;
           return <div key={item.record.id} className="grid gap-3 p-5 lg:grid-cols-[1fr_auto]">
             <div>
               <p className="text-sm font-semibold"><Link to="/benefits/$benefitId" params={{ benefitId: item.benefit.id }} className="text-primary hover:underline">{item.benefit.reference}</Link> · {item.measure.name}</p>
@@ -106,8 +125,9 @@ export function RealisationWorkspace() {
             </div>
             <div className="flex items-start gap-2">
               {outcome ? <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold", outcome === "Validated" ? "bg-health-good/20 text-health-good-foreground" : "bg-health-warn/25 text-health-warn-foreground")}>{outcome === "Validated" ? <CheckCircle2 className="size-4" /> : <MessageCircleQuestion className="size-4" />}{outcome}</span>
-                : <><Button size="sm" onClick={() => setDecided(current => ({ ...current, [item.record.id]: "Validated" }))}><CheckCircle2 />Validate</Button>
-                  <Button size="sm" variant="outline" onClick={() => setDecided(current => ({ ...current, [item.record.id]: "Queried" }))}><MessageCircleQuestion />Query</Button></>}
+                : canValidate ? <><Button size="sm" disabled={reviewMeasurement.isPending} onClick={() => decide(item, "Validated")}><CheckCircle2 />Validate</Button>
+                  <Button size="sm" variant="outline" disabled={reviewMeasurement.isPending} onClick={() => decide(item, "Queried")}><MessageCircleQuestion />Query</Button></>
+                : <span className="text-xs text-muted-foreground">Awaiting PMO validation</span>}
             </div>
           </div>;
         })}
@@ -128,7 +148,7 @@ export function RealisationWorkspace() {
               <td className="px-4 py-3 text-muted-foreground">{row.bauService}</td>
               <td className="px-4 py-3">{formatDate(row.nextReviewDate)}</td>
               <td className="px-4 py-3 text-muted-foreground">{formatDate(row.postImplementationReviewDate)}</td>
-              <td className="px-4 py-3"><HealthPill health={getBenefitHealth(row.benefit)} /></td>
+              <td className="px-4 py-3"><HealthPill health={row.benefit.realisation.health} /></td>
             </tr>)}
             {!inRealisation.length && <tr><td colSpan={7} className="px-4 py-10 text-center text-sm text-muted-foreground">No benefits are being tracked beyond project closure in this selection.</td></tr>}
           </tbody>
@@ -146,7 +166,7 @@ export function RealisationWorkspace() {
           <div className="grid grid-cols-3 gap-3 border-b pb-3 text-[11px] font-semibold uppercase text-muted-foreground"><span>Period</span><span>Reported</span><span>Profile</span></div>
           {preview.measure.targetProfile.map(target => <div key={target.period} className="grid grid-cols-3 gap-3 border-b py-2.5 text-sm last:border-0">
             <span className="text-muted-foreground">{target.period}</span>
-            <span className="font-medium">{preview.measure.records.find(record => record.period === target.period)?.actualValue.toLocaleString("en-GB") ?? "—"}</span>
+            <span className="font-medium">{[...preview.measure.records].reverse().find(record => record.period === target.period && record.status !== "Queried")?.actualValue.toLocaleString("en-GB") ?? "—"}</span>
             <span>{target.value.toLocaleString("en-GB")}</span>
           </div>)}
         </div>

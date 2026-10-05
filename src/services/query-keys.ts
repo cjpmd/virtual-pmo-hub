@@ -35,8 +35,14 @@ export const qk = {
     canEdit: (orgId: string, projectId: string) =>
       ["org", orgId, "projects", projectId, "can-edit"] as const,
   },
+  benefits: {
+    all: (orgId: string) => ["org", orgId, "benefits"] as const,
+    list: (orgId: string) => ["org", orgId, "benefits", "list"] as const,
+  },
+  requests: (orgId: string) => ["org", orgId, "requests"] as const,
   resources: {
     list: (orgId: string) => ["org", orgId, "resources", "list"] as const,
+    mine: (orgId: string, userId: string) => ["org", orgId, "resources", "mine", userId] as const,
   },
   lookups: (orgId: string, listKey: string) => ["org", orgId, "lookups", listKey] as const,
   settings: (orgId: string) => ["org", orgId, "settings"] as const,

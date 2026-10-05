@@ -7,6 +7,7 @@ import { KpiCard, PageHeader } from "@/components/pmo-ui";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { getValidationQueue } from "@/services/benefits-value";
+import { useBenefits } from "@/hooks/use-benefits";
 import { getDecisions, type ResolvedDecision } from "@/services/decisions";
 import { getCurrentUser, useSettings } from "@/services/settings";
 import { cn } from "@/lib/utils";
@@ -22,7 +23,8 @@ function Page() {
   const [mine, setMine] = useState(true);
 
   const allDecisions = useMemo(() => getDecisions(), []);
-  const queue = useMemo(() => getValidationQueue(), []);
+  const benefits = useBenefits();
+  const queue = useMemo(() => getValidationQueue(benefits.data?.benefits ?? []), [benefits.data]);
   const pending = allDecisions.filter(item => item.status === "Pending" && (!mine || item.decisionMaker === user?.name));
   const outstanding = queue.filter(item => !decided[item.record.id]);
 

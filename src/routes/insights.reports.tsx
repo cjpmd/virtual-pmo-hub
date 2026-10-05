@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { formatCompactCurrency, formatDate, formatFinancialYear } from "@/lib/format";
 import { getBenefits, getPortfolioMetrics, getPortfolioMilestones, getProjects } from "@/services/pmo";
 import { getValueMetrics } from "@/services/benefits-value";
+import { useBenefits } from "@/hooks/use-benefits";
 import { getDecisionMetrics, getDecisions } from "@/services/decisions";
 import { getDependencyMetrics } from "@/services/dependencies";
 import { getLessonMetrics } from "@/services/lessons";
@@ -22,7 +23,8 @@ function Page() {
   const settings = useSettings();
   const [openId, setOpenId] = useState<string | null>(null);
   const metrics = getPortfolioMetrics();
-  const value = getValueMetrics();
+  const benefits = useBenefits();
+  const value = getValueMetrics(benefits.data?.benefits ?? []);
   const decisions = getDecisionMetrics(getDecisions());
   const dependencies = getDependencyMetrics();
   const lessons = getLessonMetrics();

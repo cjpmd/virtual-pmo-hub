@@ -125,3 +125,31 @@ export async function getWorkspaces(organisationId: string) {
     ) ?? []
   );
 }
+
+export type AppRole = "viewer" | "contributor" | "manager" | "pmo" | "admin";
+const roleRank: Record<AppRole, number> = {
+  viewer: 0,
+  contributor: 1,
+  manager: 2,
+  pmo: 3,
+  admin: 4,
+};
+/** True when `role` is at least `min` on the RLS role ladder. */
+export const atLeast = (role: AppRole | null | undefined, min: AppRole) =>
+  role ? roleRank[role] >= roleRank[min] : false;
+
+export interface WorkspaceRole {
+  workspaceId: string;
+  organisationId: string;
+  role: AppRole;
+}
+
+/** The caller's effective role in each workspace (membership, or org pmo/admin). */
+export async function listMyWorkspaceRoles(): Promise<WorkspaceRole[]> {
+  const rows = unwrap(await supabase.rpc("my_workspace_roles"), "Checking your permissions");
+  return rows.map((row) => ({
+    workspaceId: row.workspace_id,
+    organisationId: row.organisation_id,
+    role: row.role,
+  }));
+}

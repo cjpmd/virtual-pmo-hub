@@ -25,6 +25,7 @@ import type { Priority } from "@/data/types";
 export interface Person {
   id: string;
   name: string;
+  email: string | null;
   jobTitle: string | null;
   isBookable: boolean;
 }
@@ -137,7 +138,7 @@ export async function listPeople(orgId: string): Promise<Person[]> {
   const rows = unwrap(
     await supabase
       .from("resources")
-      .select("id, name, job_title, is_bookable")
+      .select("id, name, email, job_title, is_bookable")
       .eq("organisation_id", orgId)
       .order("name"),
     "Loading people",
@@ -145,6 +146,7 @@ export async function listPeople(orgId: string): Promise<Person[]> {
   return rows.map((row) => ({
     id: row.id,
     name: row.name,
+    email: row.email,
     jobTitle: row.job_title,
     isBookable: row.is_bookable,
   }));
@@ -450,4 +452,18 @@ export async function getProjectPermissions(projectId: string): Promise<ProjectP
     canDelete: row?.can_delete ?? false,
     canManageProject: row?.can_manage_project ?? false,
   };
+}
+
+/** The signed-in user's own resource (person) record in the organisation, if linked. */
+export async function getMyResourceId(orgId: string, userId: string): Promise<string | null> {
+  const row = unwrapMaybe(
+    await supabase
+      .from("resources")
+      .select("id")
+      .eq("organisation_id", orgId)
+      .eq("profile_id", userId)
+      .maybeSingle(),
+    "Loading your profile",
+  );
+  return row?.id ?? null;
 }

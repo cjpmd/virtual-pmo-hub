@@ -7,6 +7,8 @@ import { HealthPill } from "@/components/health-pill";
 import type { Collection, Project } from "@/data/types";
 import { getBenefitPercent, getBenefitRealised, getFinancialHealth, getIssueHealth, getProgramme, getProjectBenefits, getProjectHealth, getScheduleHealth } from "@/services/pmo";
 import { getBenefitsByObjective, getMeasurementSchedule, getValueMetrics } from "@/services/benefits-value";
+import { useBenefits } from "@/hooks/use-benefits";
+import { toProjectCode } from "@/services/legacy-bridge";
 import { getDecisions, madeSince } from "@/services/decisions";
 import { isBenefitBehindProfile } from "@/services/pmo";
 import { getSettings } from "@/services/settings";
@@ -54,10 +56,14 @@ function MilestonesPage({collection,projects,pageNumber,total}:{collection:Colle
 
 
 function BenefitsPage({collection,projects,pageNumber,total}:{collection:Collection;projects:Project[];pageNumber:number;total:number}){
-  const benefits=Array.from(new Map(projects.flatMap(project=>getProjectBenefits(project.id)).map(benefit=>[benefit.id,benefit])).values());
+  // Temporary until committee packs move to Supabase later in Stage 4c: match prototype projects by code.
+  const data=useBenefits().data;
+  const codes=new Set(projects.map(project=>toProjectCode(project.id)));
+  const ids=new Set((data?.projects??[]).filter(project=>codes.has(project.code)).map(project=>project.id));
+  const benefits=(data?.benefits??[]).filter(benefit=>benefit.enablingProjects.some(link=>ids.has(link.projectId)));
   const metrics=getValueMetrics(benefits);
-  const objectives=getBenefitsByObjective(benefits).filter(row=>row.planned>0).slice(0,6);
-  const behind=benefits.filter(isBenefitBehindProfile);
+  const objectives=data?getBenefitsByObjective(data,benefits).filter(row=>row.planned>0).slice(0,6):[];
+  const behind=benefits.filter(benefit=>benefit.realisation.behindProfile);
   const overdue=getMeasurementSchedule(benefits).filter(item=>item.state==="Overdue");
   return <div className="min-h-[580px] p-7 sm:p-10"><PackHeader collection={collection} pageNumber={pageNumber} total={total}/>
     <div className="mt-7"><p className="text-xs font-semibold uppercase text-primary">Benefits realisation</p><h2 className="mt-2 font-display text-3xl font-semibold">Portfolio value and exceptions</h2><p className="mt-2 text-sm text-muted-foreground">Planned against realised value, contribution by objective, and the benefits needing attention.</p></div>

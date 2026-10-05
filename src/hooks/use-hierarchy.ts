@@ -2,8 +2,9 @@
 // supabase directly. Keys come from qk (src/services/query-keys.ts) and are always scoped to
 // the current organisation, so switching organisation can never show another tenant's cache.
 import { useQuery } from "@tanstack/react-query";
-import { useOrgId } from "@/components/auth/organisation-provider";
+import { useOrganisation, useOrgId } from "@/components/auth/organisation-provider";
 import {
+  getMyResourceId,
   getProgramme,
   getProjectByCode,
   getProjectPermissions,
@@ -103,4 +104,16 @@ export function usePortfolioOverview(portfolioId: string | undefined) {
     queryFn: () => loadPortfolioOverview(orgId, portfolioId ?? ""),
     enabled: Boolean(portfolioId),
   });
+}
+
+/** The signed-in user's resource id (null when their profile isn't linked to a person yet). */
+export function useMyResourceId() {
+  const orgId = useOrgId();
+  const { profile } = useOrganisation();
+  const query = useQuery({
+    queryKey: qk.resources.mine(orgId, profile.id),
+    queryFn: () => getMyResourceId(orgId, profile.id),
+    staleTime: 10 * 60_000,
+  });
+  return query.data ?? null;
 }

@@ -1,12 +1,13 @@
 import { formatCompactCurrency } from "@/lib/format";
-import { toProjectCode } from "@/services/legacy-bridge";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { CircleAlert, Link2, RotateCcw, Sparkles, TriangleAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { buildBenefitMap, getMapValidationSummary, mapColumns, type MapFilter, type MapLink, type MapNode } from "@/services/benefits-map";
-import { getBenefits, getProgrammes, getProjects, getStrategicObjectives } from "@/services/pmo";
+import type { BenefitsData } from "@/services/benefits";
+import { QueryState } from "@/components/query-state";
+import { useBenefits } from "@/hooks/use-benefits";
 import type { BenefitMapNodeType } from "@/data/types";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +42,11 @@ function Edge({ from, to, disbenefit, workshop }: { from: Position; to: Position
 }
 
 export function BenefitsMapCanvas() {
+  const benefits = useBenefits();
+  return <QueryState query={benefits}>{data => <MapCanvas data={data} />}</QueryState>;
+}
+
+function MapCanvas({ data }: { data: BenefitsData }) {
   const [filter, setFilter] = useState<MapFilter>({});
   const [workshop, setWorkshop] = useState(false);
   const [selected, setSelected] = useState<MapNode | null>(null);
@@ -51,7 +57,7 @@ export function BenefitsMapCanvas() {
   const surface = useRef<HTMLDivElement>(null);
   const dragging = useRef<{ id: string; offsetX: number; offsetY: number } | null>(null);
 
-  const model = useMemo(() => buildBenefitMap(filter), [filter]);
+  const model = useMemo(() => buildBenefitMap(data, filter), [data, filter]);
   const validation = useMemo(() => getMapValidationSummary(model), [model]);
   const base = useMemo(() => layout(model.nodes), [model]);
   useEffect(() => { setPositions({}); setExtraLinks([]); setSelected(null); }, [filter]);
@@ -82,8 +88,8 @@ export function BenefitsMapCanvas() {
   };
 
   const setKey = (key: keyof MapFilter, value: string) => setFilter(current => { const next = { ...current }; if (value) next[key] = value; else delete next[key]; return next; });
-  const programmes = getProgrammes(), objectives = getStrategicObjectives();
-  const projectOptions = useMemo(() => getProjects().filter(project => getBenefits().some(benefit => benefit.enablingProjects.some(link => link.projectId === project.id))), []);
+  const programmes = data.programmes, objectives = data.objectives;
+  const projectOptions = useMemo(() => data.projects.filter(project => data.benefits.some(benefit => benefit.enablingProjects.some(link => link.projectId === project.id))), [data]);
 
   return <div className="space-y-4">
     <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border/70 bg-card p-4 shadow-sm">
@@ -168,12 +174,13 @@ export function BenefitsMapCanvas() {
     </div>
     <p className="text-xs text-muted-foreground">Drag a node to reposition it. Drag from the dot on a node's right edge onto another node to propose a new link. {workshop ? "Workshop mode hides values so the group can focus on the logic." : "Switch on Workshop mode for a clean sticky-note canvas."}</p>
 
-    {selected && <NodePanel node={selected} close={() => setSelected(null)} />}
+    {selected && <NodePanel node={selected} data={data} close={() => setSelected(null)} />}
   </div>;
 }
 
-function NodePanel({ node, close }: { node: MapNode; close: () => void }) {
-  const benefit = node.benefitId ? getBenefits().find(item => item.id === node.benefitId) : undefined;
+function NodePanel({ node, close, data }: { node: MapNode; close: () => void; data: BenefitsData }) {
+  const benefit = node.benefitId ? data.benefits.find(item => item.id === node.benefitId) : undefined;
+  const projectCode = node.projectId ? data.projects.find(project => project.id === node.projectId)?.code : undefined;
   return <>
     <button aria-label="Close node detail" className="fixed inset-0 z-40 bg-overlay" onClick={close} />
     <aside role="dialog" aria-label={`${node.type} detail`} className="fixed inset-y-0 right-0 z-50 w-full max-w-md overflow-y-auto border-l bg-background p-6 shadow-xl">
@@ -200,7 +207,7 @@ function NodePanel({ node, close }: { node: MapNode; close: () => void }) {
         <p><span className="text-xs text-muted-foreground">Confidence</span><br />{benefit.confidence}</p>
         <Link to="/benefits/$benefitId" params={{ benefitId: benefit.id }} className="inline-flex text-sm font-semibold text-primary hover:underline">Open the benefit profile →</Link>
       </div>}
-      {node.projectId && <Link to="/portfolio/projects/$projectCode" params={{ projectCode: toProjectCode(node.projectId) }} className="mt-5 inline-flex text-sm font-semibold text-primary hover:underline">Open the project →</Link>}
+      {projectCode && <Link to="/portfolio/projects/$projectCode" params={{ projectCode }} className="mt-5 inline-flex text-sm font-semibold text-primary hover:underline">Open the project →</Link>}
     </aside>
   </>;
 }

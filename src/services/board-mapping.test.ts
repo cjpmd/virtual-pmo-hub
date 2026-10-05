@@ -9,8 +9,8 @@ const { milestoneInputFromBoard } = await import("@/components/project-milestone
 const { fromPostgrest } = await import("./service-error");
 
 const people = [
-  { id: "r1", name: "Maya Harrison", jobTitle: null, isBookable: true },
-  { id: "r2", name: "Chris McDonald", jobTitle: null, isBookable: true },
+  { id: "r1", name: "Maya Harrison", email: null, jobTitle: null, isBookable: true },
+  { id: "r2", name: "Chris McDonald", email: null, jobTitle: null, isBookable: true },
 ];
 
 describe("riskInputFromBoard", () => {

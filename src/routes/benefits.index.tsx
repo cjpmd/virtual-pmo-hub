@@ -8,7 +8,9 @@ import { ArrowDownRight, ArrowUpRight, Info } from "lucide-react";
 import { KpiCard, PageHeader } from "@/components/pmo-ui";
 import { Button } from "@/components/ui/button";
 import { getBenefitPerformance, getBenefitsByObjective, getClassificationSplit, getForecastingAccuracy, getPortfolioReturn, getValueMetrics } from "@/services/benefits-value";
-import { getBenefits } from "@/services/pmo";
+import { QueryState } from "@/components/query-state";
+import { useBenefits } from "@/hooks/use-benefits";
+import type { BenefitsData } from "@/services/benefits";
 import { cn } from "@/lib/utils";
 
 const title = "Benefits Value Dashboard — Virtual PMO", description = "Portfolio benefit value, objective contribution, portfolio return and forecasting accuracy.";
@@ -25,17 +27,24 @@ function Panel({ title: heading, note, children, className }: { title: string; n
 }
 
 function Dashboard() {
-  const items = getBenefits();
-  const metrics = getValueMetrics(items);
-  const objectives = getBenefitsByObjective(items);
-  const split = getClassificationSplit(items);
-  const portfolioReturn = getPortfolioReturn(items);
-  const performance = getBenefitPerformance(items);
-  const [accuracyBy, setAccuracyBy] = useState<"category" | "manager">("category");
-  const accuracy = getForecastingAccuracy(accuracyBy, items);
-
+  const benefits = useBenefits();
   return <div className="space-y-6">
     <AutoBreadcrumbs/><PageHeader eyebrow="Benefits management" title="Value Dashboard" description="What the portfolio is expected to deliver, what it has actually delivered, and how well we forecast." />
+    <QueryState query={benefits}>{data => <DashboardBody data={data}/>}</QueryState>
+  </div>;
+}
+
+function DashboardBody({ data }: { data: BenefitsData }) {
+  const items = data.benefits;
+  const metrics = getValueMetrics(items);
+  const objectives = getBenefitsByObjective(data, items);
+  const split = getClassificationSplit(items);
+  const portfolioReturn = getPortfolioReturn(data, items);
+  const performance = getBenefitPerformance(items);
+  const [accuracyBy, setAccuracyBy] = useState<"category" | "manager">("category");
+  const accuracy = getForecastingAccuracy(data, accuracyBy, items);
+
+  return <div className="space-y-6">
     
 
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

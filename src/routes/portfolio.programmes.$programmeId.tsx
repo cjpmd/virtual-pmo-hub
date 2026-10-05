@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { UserRound } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AssumptionsWorkspace } from "@/components/assumptions-workspace";
-import { BenefitSummary } from "@/components/benefit-summary";
+import { ProgrammeBenefits } from "@/components/project-benefits";
 import { BoardWorkspace } from "@/components/board-workspace";
 import { DependencyTab } from "@/components/dependency-tab";
 import { StateBadge } from "@/components/entity-management";
@@ -321,7 +321,7 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
       )}
 
       {/* Not yet on Supabase (Stage 4c): these tabs still read the prototype data for this programme. */}
-      {tab === "benefits" && <BenefitSummary items={getProgrammeBenefits(mockId)} />}
+      {tab === "benefits" && <ProgrammeBenefits programmeId={programme.id} />}
       {tab === "dependencies" && <DependencyTab programmeId={mockId} />}
       {tab === "decisions" && <ProgrammeDecisions programmeId={mockId} />}
       {tab === "assumptions" && <AssumptionsWorkspace scope={{ programmeId: mockId }} compact />}

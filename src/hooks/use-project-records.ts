@@ -22,8 +22,12 @@ import {
 } from "@/services/project-records";
 import { qk } from "@/services/query-keys";
 
-/** Health roll-ups read risks, issues and milestones, so they refresh after any record write. */
-const invalidateRollups = (queryClient: QueryClient, orgId: string) =>
+/**
+ * Health roll-ups read risks, issues, milestones and benefits, so they refresh after any
+ * record write. This refreshes the whole project → programme → portfolio chain; narrowing it
+ * to the affected project and its parents is a later optimisation (docs/data-layer.md).
+ */
+export const invalidateRollups = (queryClient: QueryClient, orgId: string) =>
   Promise.all([
     queryClient.invalidateQueries({ queryKey: qk.projects.all(orgId) }),
     queryClient.invalidateQueries({ queryKey: qk.programmes.all(orgId) }),

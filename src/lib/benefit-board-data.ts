@@ -1,10 +1,82 @@
+// Benefits register board: rows from services/benefits.ts and the column → field mapping the
+// board uses to write edits by record id.
 import type { BoardColumn, BoardRow, SavedView } from "@/components/board-workspace";
 import type { Benefit } from "@/data/types";
-import { getBenefitPercent, getBenefitRealised, getNextMeasurementDue, getProject, getProgramme, getStrategicObjectives } from "@/services/pmo";
-export const benefitColumns:BoardColumn[]=[{key:"reference",label:"Reference",type:"text",width:110},{key:"title",label:"Benefit",type:"text",summary:"count",width:280},{key:"type",label:"Type",type:"status",editable:true,options:["Benefit","Disbenefit"]},{key:"classification",label:"Classification",type:"status"},{key:"people",label:"Benefit owner",type:"people"},{key:"projects",label:"Enabling projects",type:"tags",width:260},{key:"planned",label:"Planned total value",type:"number",unit:"currency",summary:"sum"},{key:"realised",label:"Realised to date",type:"number",unit:"currency",summary:"sum"},{key:"progress",label:"% realised",type:"progress",summary:"average",unit:"%"},{key:"confidence",label:"Confidence",type:"status"},{key:"finish",label:"Next measurement due",type:"date"},{key:"status",label:"Status",type:"status"},{key:"atRisk",label:"At risk",type:"status"}];
-/** At risk: latest measurement more than 10% below the planned profile for that period. */
-export function benefitAtRisk(item:Benefit){for(const m of item.measures){const rec=[...m.records].sort((a,b)=>a.period.localeCompare(b.period)).at(-1);if(!rec)continue;const target=m.targetProfile.find(t=>t.period===rec.period);if(!target)continue;const planned=target.value,actual=rec.actualValue;const higherIsWorse=item.type==="Disbenefit";if(higherIsWorse?actual>planned*1.1:actual<planned*0.9)return true}return false}
-export const benefitsToRows=(items:Benefit[]):BoardRow[]=>items.map(item=>{const projectLinks=item.enablingProjects.map(link=>getProject(link.projectId)).filter(Boolean),programmeNames=Array.from(new Set(projectLinks.map(project=>getProgramme(project?.programmeId??"")?.name??"Unassigned"))),objectives=item.strategicObjectiveIds.map(id=>getStrategicObjectives().find(objective=>objective.id===id)?.title??id);return{id:item.id,reference:item.reference,title:item.title,type:item.type,classification:item.classification,people:item.owner?[item.owner]:[],owner:item.owner,projects:projectLinks.map(project=>project?.name??"Unknown"),programme:programmeNames.join(", "),objective:objectives.join(", "),planned:item.plannedTotalValue,realised:getBenefitRealised(item),progress:getBenefitPercent(item),confidence:item.confidence,finish:getNextMeasurementDue(item),status:item.status,atRisk:benefitAtRisk(item)?"At risk":"",measurementOverdue:item.measures.some(measure=>measure.nextDue<"21/09/2026"),unownedOrUnvalidated:!item.owner||!item.eligibilityConfirmed,closedProjectRealisation:item.status==="In realisation"&&projectLinks.some(project=>project?.state==="Closed"),disbenefit:item.type==="Disbenefit",group:objectives[0]??"Unaligned"}});
+import { fromIsoDate } from "@/lib/format";
+import type { BenefitInput, BenefitsData, BenefitView } from "@/services/benefits";
+import type { Person } from "@/services/hierarchy";
+
+const statuses: Benefit["status"][] = ["Identified", "Validated", "Planned", "In realisation", "Realised", "Partially realised", "Not realised", "Closed"];
+export const benefitColumns: BoardColumn[] = [
+  { key: "reference", label: "Reference", type: "text", width: 110 },
+  { key: "title", label: "Benefit", type: "text", summary: "count", width: 280 },
+  { key: "type", label: "Type", type: "status", editable: true, options: ["Benefit", "Disbenefit"] },
+  { key: "classification", label: "Classification", type: "status", editable: true, options: ["Cash-releasing", "Non-cash-releasing", "Qualitative", "Societal"] },
+  { key: "people", label: "Benefit owner", type: "people" },
+  { key: "projects", label: "Enabling projects", type: "tags", width: 260 },
+  { key: "planned", label: "Planned total value", type: "number", unit: "currency", summary: "sum" },
+  { key: "realised", label: "Realised to date", type: "number", unit: "currency", summary: "sum" },
+  { key: "progress", label: "% realised", type: "progress", summary: "average", unit: "%" },
+  { key: "confidence", label: "Confidence", type: "status", editable: true, options: ["High", "Medium", "Low"] },
+  { key: "finish", label: "Next measurement due", type: "date" },
+  { key: "status", label: "Status", type: "status", editable: true, options: statuses },
+  { key: "atRisk", label: "At risk", type: "status" },
+];
+
+/** Board rows. "At risk" is the view's benefit health (At Risk or Off Track), not a client rule. */
+export function benefitsToRows(data: BenefitsData, items: BenefitView[] = data.benefits): BoardRow[] {
+  const projects = new Map(data.projects.map(project => [project.id, project]));
+  const programmes = new Map(data.programmes.map(programme => [programme.id, programme.name]));
+  const objectives = new Map(data.objectives.map(objective => [objective.id, objective.title]));
+  return items.map(item => {
+    const links = item.enablingProjects.map(link => projects.get(link.projectId)).filter(project => project !== undefined);
+    const programmeNames = Array.from(new Set(links.map(project => programmes.get(project.programmeId ?? "") ?? "Unassigned")));
+    const objectiveNames = item.strategicObjectiveIds.map(id => objectives.get(id) ?? id);
+    const health = item.realisation.health;
+    return {
+      id: item.id,
+      reference: item.reference,
+      title: item.title,
+      type: item.type,
+      classification: item.classification,
+      people: item.owner ? [item.owner] : [],
+      owner: item.owner,
+      projects: links.map(project => project.name),
+      programme: programmeNames.join(", "),
+      objective: objectiveNames.join(", "),
+      planned: item.plannedTotalValue,
+      realised: item.realisation.realised,
+      progress: item.realisation.percent,
+      confidence: item.confidence,
+      finish: fromIsoDate(item.realisation.nextMeasurementDue),
+      status: item.status,
+      atRisk: health === "At Risk" || health === "Off Track" ? "At risk" : "",
+      measurementOverdue: item.realisation.measurementOverdue,
+      unownedOrUnvalidated: !item.owner || !item.eligibilityConfirmed,
+      closedProjectRealisation: item.status === "In realisation" && links.some(project => project.state === "Closed"),
+      disbenefit: item.type === "Disbenefit",
+      group: objectiveNames[0] ?? "Unaligned",
+    };
+  });
+}
+
+/** Board column key → benefit field. Undefined while a value isn't valid yet. */
+export function benefitInputFromBoard(patch: Partial<BoardRow>, people: Person[]): BenefitInput | undefined {
+  const input: BenefitInput = {};
+  if (typeof patch.title === "string") { if (!patch.title.trim()) return undefined; input.title = patch.title; }
+  if (patch["type"] === "Benefit" || patch["type"] === "Disbenefit") input.type = patch["type"];
+  if (typeof patch.status === "string" && statuses.includes(patch.status as Benefit["status"])) input.status = patch.status as Benefit["status"];
+  if (patch["confidence"] === "High" || patch["confidence"] === "Medium" || patch["confidence"] === "Low") input.confidence = patch["confidence"];
+  if (typeof patch["classification"] === "string" && ["Cash-releasing", "Non-cash-releasing", "Qualitative", "Societal"].includes(patch["classification"])) input.classification = patch["classification"] as Benefit["classification"];
+  if (Array.isArray(patch.people)) {
+    const name = patch.people[0];
+    if (!name) input.ownerId = null;
+    else { const person = people.find(item => item.name === name); if (!person) return undefined; input.ownerId = person.id; }
+  }
+  if (patch["planned"] !== undefined) { const value = Number(patch["planned"]); if (!Number.isFinite(value)) return undefined; input.plannedTotalValue = value; }
+  return input;
+}
+
 const visible=benefitColumns.map(column=>column.key);
 export const benefitViews:SavedView[]=[
  {id:"all",name:"All benefits",type:"table",groupBy:"",sortKey:"reference",filter:"",visible,isDefault:true},

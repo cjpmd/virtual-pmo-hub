@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AppraisalPanel } from "@/components/appraisal-panel";
 import { BenefitSummary } from "@/components/benefit-summary";
 import { BenefitsHandoverWizard } from "@/components/benefits-handover";
+import { ProjectAppraisal, ProjectBenefits } from "@/components/project-benefits";
 import { DeliveryStatusIcon } from "@/components/board-workspace";
 import { DecisionPanel } from "@/components/decision-panel";
 import { DeliveryWorkspace, ForecastPanel } from "@/components/delivery-workspace";
@@ -47,7 +48,6 @@ import { useFormat } from "@/lib/format";
 import { daysFromToday, todayIso } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { getAssuranceRow } from "@/services/assurance";
-import { draftsFromBenefits } from "@/services/benefits-value";
 import { getDecisionsFor, type ResolvedDecision } from "@/services/decisions";
 import type { ProjectDetail } from "@/services/hierarchy";
 import { toMockProjectId, toProjectCode } from "@/services/legacy-bridge";
@@ -188,7 +188,6 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
     ? hasPhaseLessonsReview(mockId, currentPhase?.id ?? "phase-1")
     : false;
   const projectTypeTags = Array.from(new Set(lessons.flatMap((lesson) => lesson.projectTypeTags)));
-  const benefits = legacy ? getProjectBenefits(mockId) : [];
   const assurance = legacy ? getAssuranceRow(mockId) : undefined;
 
   const tierInfo = getTierDefinitions().find((item) => item.tier === project.tier);
@@ -647,7 +646,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
           {tab === "resources" && (
             <ProjectResources members={getProjectTeam(legacy)} projectId={mockId} />
           )}
-          {tab === "benefits" && <BenefitSummary items={benefits} />}
+          {tab === "benefits" && <ProjectBenefits projectId={project.id} />}
           {tab === "dependencies" && <DependencyTab projectId={mockId} />}
           {tab === "decisions" && (
             <div className="space-y-4">
@@ -734,10 +733,9 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
                   </p>
                 </Section>
               </div>
-              <AppraisalPanel
-                drafts={draftsFromBenefits(benefits)}
+              <ProjectAppraisal
+                projectId={project.id}
                 wholeLifeCost={Math.max(project.budget, project.forecast)}
-                years={5}
               />
               <RelevantLessons
                 projectTypeTags={projectTypeTags}
@@ -751,7 +749,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
           )}
           {handover && (
             <BenefitsHandoverWizard
-              project={legacy}
+              project={project}
               close={() => setHandover(false)}
               onComplete={(count) => {
                 setHandedOver(count);
