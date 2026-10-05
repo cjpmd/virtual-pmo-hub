@@ -132,8 +132,9 @@ export function ProjectRaid({ projectId }: { projectId: string }) {
       if (!input.title) return void toast.error("Give the risk a title.");
       mutations.createRisk.mutate({ ...input, title: input.title });
     },
-    update: (id, input) => mutations.updateRisk.mutate({ id, input }),
+    update: (id, input, lastSeen) => mutations.updateRisk.mutateAsync({ id, input, lastSeen }),
     remove: (ids) => mutations.deleteRisks.mutate(ids),
+    lastSeen: (id) => raid.data?.risks.find((item) => item.id === id)?.updatedAt,
   });
   const onIssueChange = useBoardRecordSync<IssueInput>({
     toInput: (patch) => issueInputFromBoard(patch, peopleList),
@@ -141,8 +142,9 @@ export function ProjectRaid({ projectId }: { projectId: string }) {
       if (!input.title) return void toast.error("Give the issue a title.");
       mutations.createIssue.mutate({ ...input, title: input.title });
     },
-    update: (id, input) => mutations.updateIssue.mutate({ id, input }),
+    update: (id, input, lastSeen) => mutations.updateIssue.mutateAsync({ id, input, lastSeen }),
     remove: (ids) => mutations.deleteIssues.mutate(ids),
+    lastSeen: (id) => raid.data?.issues.find((item) => item.id === id)?.updatedAt,
   });
 
   return (
@@ -160,6 +162,7 @@ export function ProjectRaid({ projectId }: { projectId: string }) {
             risks={data.risks.map((item) => toRisk(item, names))}
             issues={data.issues.map((item) => toIssue(item, names))}
             editable={permissions.canEdit}
+            canDelete={permissions.canDelete}
             onRiskChange={onRiskChange}
             onIssueChange={onIssueChange}
           />

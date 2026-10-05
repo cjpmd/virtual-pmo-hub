@@ -20,6 +20,7 @@ import {
   type SeverityLabel,
 } from "./labels";
 import { ServiceError, unwrap, unwrapWrite } from "./service-error";
+import { deleteRows, updateRow } from "./write";
 
 export interface MilestoneItem {
   id: string;
@@ -34,6 +35,7 @@ export interface MilestoneItem {
   status: MilestoneStatus;
   slipDays: number;
   reportToCommittee: boolean;
+  updatedAt: string;
 }
 
 export interface RiskItem {
@@ -48,6 +50,7 @@ export interface RiskItem {
   response: ResponseLabel;
   status: OpenClosedLabel;
   reviewDate: string | null;
+  updatedAt: string;
 }
 
 export interface IssueItem {
@@ -59,6 +62,7 @@ export interface IssueItem {
   severity: SeverityLabel;
   status: OpenClosedLabel;
   dueDate: string | null;
+  updatedAt: string;
 }
 
 // ---- Milestones -----------------------------------------------------------------------
@@ -69,7 +73,7 @@ export async function listMilestones(projectIds: string[]): Promise<MilestoneIte
     await supabase
       .from("v_milestones")
       .select(
-        "id, project_id, ref, title, type, owner_id, baseline_date, forecast_date, actual_date, status, slip_days, report_to_committee",
+        "id, project_id, ref, title, type, owner_id, baseline_date, forecast_date, actual_date, status, slip_days, report_to_committee, updated_at",
       )
       .in("project_id", projectIds)
       .order("forecast_date"),
@@ -88,6 +92,7 @@ export async function listMilestones(projectIds: string[]): Promise<MilestoneIte
     status: milestoneStatusLabel(row.status),
     slipDays: row.slip_days ?? 0,
     reportToCommittee: row.report_to_committee ?? false,
+    updatedAt: row.updated_at ?? "",
   }));
 }
 
@@ -136,20 +141,15 @@ export async function createMilestone(
 }
 
 /** Forecast changes are recorded in milestone_forecast_history by a database trigger. */
-export async function updateMilestone(id: string, input: MilestoneInput) {
+export async function updateMilestone(id: string, input: MilestoneInput, lastSeen?: string | null) {
   const fields = milestoneFields(input);
   if (!Object.keys(fields).length) return;
-  unwrapWrite(
-    await supabase.from("milestones").update(fields).eq("id", id).select("id"),
-    "Saving the milestone",
-  );
+  return updateRow("milestones", id, fields, { context: "Saving the milestone", lastSeen });
 }
 
-export async function deleteMilestone(id: string) {
-  unwrapWrite(
-    await supabase.from("milestones").delete().eq("id", id).select("id"),
-    "Deleting the milestone",
-  );
+/** Managers only (RLS). */
+export async function deleteMilestones(ids: string[]) {
+  await deleteRows("milestones", ids, "Deleting milestones");
 }
 
 // ---- RAID -------------------------------------------------------------------------------
@@ -161,14 +161,14 @@ export async function listRaid(
     supabase
       .from("risks")
       .select(
-        "id, ref, title, description, owner_id, probability, impact, score, response, status, review_date",
+        "id, ref, title, description, owner_id, probability, impact, score, response, status, review_date, updated_at",
       )
       .eq("project_id", projectId)
       .order("score", { ascending: false })
       .order("ref"),
     supabase
       .from("issues")
-      .select("id, ref, title, description, owner_id, severity, status, due_date")
+      .select("id, ref, title, description, owner_id, severity, status, due_date, updated_at")
       .eq("project_id", projectId)
       .order("ref"),
   ]);
@@ -185,6 +185,7 @@ export async function listRaid(
       response: responseLabel[row.response],
       status: openClosedLabel[row.status],
       reviewDate: row.review_date,
+      updatedAt: row.updated_at,
     })),
     issues: unwrap(issues, "Loading issues").map((row) => ({
       id: row.id,
@@ -195,6 +196,7 @@ export async function listRaid(
       severity: severityLabel[row.severity],
       status: openClosedLabel[row.status],
       dueDate: row.due_date,
+      updatedAt: row.updated_at,
     })),
   };
 }
@@ -250,18 +252,15 @@ export async function createRisk(projectId: string, input: RiskInput & { title: 
   );
 }
 
-export async function updateRisk(id: string, input: RiskInput) {
+export async function updateRisk(id: string, input: RiskInput, lastSeen?: string | null) {
   const fields = riskFields(input);
   if (!Object.keys(fields).length) return;
-  unwrapWrite(
-    await supabase.from("risks").update(fields).eq("id", id).select("id"),
-    "Saving the risk",
-  );
+  return updateRow("risks", id, fields, { context: "Saving the risk", lastSeen });
 }
 
 /** Managers only (RLS). The audit log keeps a copy of the deleted row. */
 export async function deleteRisks(ids: string[]) {
-  unwrapWrite(await supabase.from("risks").delete().in("id", ids).select("id"), "Deleting risks");
+  await deleteRows("risks", ids, "Deleting risks");
 }
 
 export interface IssueInput {
@@ -303,15 +302,13 @@ export async function createIssue(projectId: string, input: IssueInput & { title
   );
 }
 
-export async function updateIssue(id: string, input: IssueInput) {
+export async function updateIssue(id: string, input: IssueInput, lastSeen?: string | null) {
   const fields = issueFields(input);
   if (!Object.keys(fields).length) return;
-  unwrapWrite(
-    await supabase.from("issues").update(fields).eq("id", id).select("id"),
-    "Saving the issue",
-  );
+  return updateRow("issues", id, fields, { context: "Saving the issue", lastSeen });
 }
 
+/** Managers only (RLS). */
 export async function deleteIssues(ids: string[]) {
-  unwrapWrite(await supabase.from("issues").delete().in("id", ids).select("id"), "Deleting issues");
+  await deleteRows("issues", ids, "Deleting issues");
 }

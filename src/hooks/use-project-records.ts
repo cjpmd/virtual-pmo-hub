@@ -11,7 +11,7 @@ import {
   createMilestone,
   createRisk,
   deleteIssues,
-  deleteMilestone,
+  deleteMilestones,
   deleteRisks,
   updateIssue,
   updateMilestone,
@@ -44,7 +44,15 @@ export function useRaidMutations(projectId: string) {
       onSettled,
     }),
     updateRisk: useMutation({
-      mutationFn: ({ id, input }: { id: string; input: RiskInput }) => updateRisk(id, input),
+      mutationFn: ({
+        id,
+        input,
+        lastSeen,
+      }: {
+        id: string;
+        input: RiskInput;
+        lastSeen?: string | null;
+      }) => updateRisk(id, input, lastSeen),
       onSettled,
     }),
     deleteRisks: useMutation({ mutationFn: deleteRisks, onSettled }),
@@ -53,7 +61,15 @@ export function useRaidMutations(projectId: string) {
       onSettled,
     }),
     updateIssue: useMutation({
-      mutationFn: ({ id, input }: { id: string; input: IssueInput }) => updateIssue(id, input),
+      mutationFn: ({
+        id,
+        input,
+        lastSeen,
+      }: {
+        id: string;
+        input: IssueInput;
+        lastSeen?: string | null;
+      }) => updateIssue(id, input, lastSeen),
       onSettled,
     }),
     deleteIssues: useMutation({ mutationFn: deleteIssues, onSettled }),
@@ -80,10 +96,17 @@ export function useMilestoneMutations(scopeKey: string) {
       onSettled,
     }),
     update: useMutation({
-      mutationFn: ({ id, input }: { id: string; input: MilestoneInput }) =>
-        updateMilestone(id, input),
+      mutationFn: ({
+        id,
+        input,
+        lastSeen,
+      }: {
+        id: string;
+        input: MilestoneInput;
+        lastSeen?: string | null;
+      }) => updateMilestone(id, input, lastSeen),
       onSettled,
     }),
-    remove: useMutation({ mutationFn: deleteMilestone, onSettled }),
+    remove: useMutation({ mutationFn: deleteMilestones, onSettled }),
   };
 }

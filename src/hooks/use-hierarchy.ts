@@ -57,7 +57,7 @@ export function useProjectPermissions(projectId: string | undefined) {
     enabled: Boolean(projectId),
     staleTime: 5 * 60_000,
   });
-  return query.data ?? { canEdit: false, canDeleteRecords: false, canManageProject: false };
+  return query.data ?? { canEdit: false, canDelete: false, canManageProject: false };
 }
 
 export function usePeople() {

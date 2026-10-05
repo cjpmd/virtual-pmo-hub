@@ -120,7 +120,7 @@ export interface ProjectDetail extends ProjectSummary {
 
 export interface ProjectPermissions {
   canEdit: boolean;
-  canDeleteRecords: boolean;
+  canDelete: boolean;
   canManageProject: boolean;
 }
 
@@ -447,7 +447,7 @@ export async function getProjectPermissions(projectId: string): Promise<ProjectP
   const row = rows[0];
   return {
     canEdit: row?.can_edit ?? false,
-    canDeleteRecords: row?.can_delete_records ?? false,
+    canDelete: row?.can_delete ?? false,
     canManageProject: row?.can_manage_project ?? false,
   };
 }

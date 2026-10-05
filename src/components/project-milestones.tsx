@@ -103,8 +103,9 @@ export function ProjectMilestones({ projectId }: { projectId: string }) {
         input: { ...input, title: input.title, forecastDate: input.forecastDate },
       });
     },
-    update: (id, input) => mutations.update.mutate({ id, input }),
-    remove: (ids) => ids.forEach((id) => mutations.remove.mutate(id)),
+    update: (id, input, lastSeen) => mutations.update.mutateAsync({ id, input, lastSeen }),
+    remove: (ids) => mutations.remove.mutate(ids),
+    lastSeen: (id) => milestones.data?.find((item) => item.id === id)?.updatedAt,
   });
 
   return (
@@ -123,6 +124,7 @@ export function ProjectMilestones({ projectId }: { projectId: string }) {
           }
           groupOptions={["group", "deliveryStatus"]}
           manage={permissions.canEdit}
+          canDelete={permissions.canDelete}
           onRecordChange={onRecordChange}
         />
       )}
