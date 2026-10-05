@@ -1,6 +1,6 @@
 # Virtual PMO: Supabase schema proposal
 
-Status: **proposal for sign-off (Stage 2)**. Nothing has been applied yet.
+Status: **approved (Stage 2 review A–F applied)**. Implemented by the migrations in `supabase/migrations/`.
 Project: `xvdlmtkzfmbcegkmampz` (London, Postgres 17).
 
 This document records the Stage 1 decisions and turns them into a concrete schema: tables, columns, constraints, RLS, roll-ups, renames and migration order. Wherever a section says "decided", it follows your Stage 2 brief. Wherever a section says "proposed", it is my call and open to veto. §14 collects those calls.
@@ -15,6 +15,7 @@ This document records the Stage 1 decisions and turns them into a concrete schem
 | Human references | `ref text` generated on insert by a `before insert` trigger. Format `PREFIX-nnn` (zero-padded to 3, grows beyond 999). Scope: **per project** for project-only children (work items, change requests, status reports, milestones); **per organisation** for registers that can sit at portfolio, programme or project level (risks, issues, decisions, assumptions, dependencies, benefits, lessons, improvement actions, requests). Counters live in `ref_counters (organisation_id, scope_id, prefix, last_value)`, incremented under a row lock, so refs are gapless in practice and never reused. |
 | Tenancy columns | Every tenant table has `organisation_id uuid not null`, plus `workspace_id uuid not null` when it holds workspace data. Both are indexed. Both are **filled by a trigger** from the parent row (`set_tenant_columns()`), so services never send them. Both are **immutable** after insert (a trigger raises if they change). |
 | Cross-tenant integrity | Composite foreign keys stop a child pointing at a parent in another workspace. For example, `foreign key (project_id, workspace_id) references projects (id, workspace_id)`. Parents expose `unique (id, workspace_id)` and `unique (id, organisation_id)`. Composite FKs use `MATCH SIMPLE`, so they are skipped when the nullable scope column is null. That is exactly what the exactly-one-scope pattern needs. |
+| Org-level tenant guard | **Every FK to an organisation-level table is composite with `organisation_id`** (review A): resources (every person `*_id`), lifecycle_phases, gate_criteria, strategic_objectives, benefit_periods, project_templates, holiday_calendars, lookup_values, and profiles via membership. Those parents expose `unique (id, organisation_id)`. Where the FK nulls on delete, it uses the PG15+ column list `on delete set null (owner_id)`, so `organisation_id` is never nulled with it. Stage 3 test: a project whose `sponsor_id` belongs to another organisation must fail. |
 | Scope pattern | RAID, change requests, decisions, assumptions and health snapshots have nullable `portfolio_id`, `programme_id` and `project_id` with `check (num_nonnulls(portfolio_id, programme_id, project_id) = 1)`. There are no polymorphic `type + id` columns. **The one deliberate exception is `audit_log`** (§11), which must outlive the rows it describes. |
 | People | Every person field is a FK to **`resources`** (`*_id`). Only `created_by` and audit fields reference **`profiles`**. |
 | Audit columns | `created_at timestamptz not null default now()`, `updated_at timestamptz not null default now()` (maintained by the `set_updated_at()` trigger) and `created_by uuid default auth.uid() references profiles (id) on delete set null`. Append-only tables carry only `created_at`/`created_by`. |
@@ -22,7 +23,7 @@ This document records the Stage 1 decisions and turns them into a concrete schem
 | "Today" | The database uses `org_today(organisation_id)`, which is `current_date` in the organisation's `settings->>'timeZone'`. The front end uses one `today()` helper (Stage 4) in place of the 33 hardcoded `21/09/2026` values. |
 | Naming | Tables are plural `snake_case`. Columns are the `snake_case` form of the front-end field name. That mechanical camelCase → snake_case change is **not** listed as a rename; §12 lists only real renames. Enum values are lower `snake_case`, and services map them to the Title Case labels the UI shows. |
 | Money | `numeric(14,2)`. Currency is per organisation (`settings.regional.baseCurrency`). Multi-currency stays out of scope apart from the `exchange_rates` table. |
-| Deletes | Hierarchy rows close (`state = 'closed'`, `closed_reason`) rather than delete. Children cascade on delete only from their direct parent (project → milestones etc.). Hierarchy parents use `on delete restrict`, so deleting a programme with projects fails loudly. |
+| Deletes | (review B) **Portfolios, programmes and projects have no client delete policy.** `state = 'closed'` is the lifecycle end (still reported). `archived_at timestamptz` hides a record created in error; every list view excludes `archived_at is not null` by default. **Work items are never hard-deleted by clients**: "delete" sets `deleted_at`, and views exclude those rows. Register rows (RAID, change requests, decisions…) can be deleted by managers, and `audit_log` captures it. History tables (`health_snapshots`, `milestone_forecast_history`, `work_item_events`) reference their parents `on delete restrict`. Other children cascade only from their direct parent. |
 | Views | Every view is `with (security_invoker = true)`, so the caller's RLS applies (the advisor flags `security definer` views). |
 
 ---
@@ -209,10 +210,10 @@ This rejects a value from the wrong list or the wrong organisation with no trigg
 ## 5. Hierarchy
 
 ### `portfolios`
-id, organisation_id, workspace_id, name, description, owner_id → resources, budget, state `entity_state`, closed_reason, health_override `health` null, health_override_reason, audit columns. `unique (id, workspace_id)`.
+id, organisation_id, workspace_id, name, description, owner_id → resources, budget, state `entity_state`, closed_reason, health_override `health` null, health_override_reason, archived_at, audit columns. `unique (id, workspace_id)`.
 
 ### `programmes`
-id, organisation_id, workspace_id, portfolio_id (composite FK with workspace), name, description, manager_id, project_manager_id, project_officer_id, sponsor_id (all → resources), start_date, finish_date, budget, value_statement, state, closed_reason, health_override, health_override_reason, audit columns.
+id, organisation_id, workspace_id, portfolio_id (composite FK with workspace), name, description, manager_id, project_manager_id, project_officer_id, sponsor_id (all → resources), start_date, finish_date, budget, value_statement, state, closed_reason, health_override, health_override_reason, archived_at, audit columns.
 
 ### `projects`
 | Column | Type | Notes |
@@ -222,6 +223,7 @@ id, organisation_id, workspace_id, portfolio_id (composite FK with workspace), n
 | portfolio_id | uuid null | composite FK `(portfolio_id, workspace_id)` |
 | | | **`check (num_nonnulls(programme_id, portfolio_id) = 1)`** |
 | name | text not null | |
+| code | text not null | (review D) uppercase short code, `unique (organisation_id, code)`, `check (code ~ '^[A-Z0-9]{2,10}$')`. Editable by PMO only (trigger). Routes become `/projects/:code`. Seeded from the existing lesson prefixes (EBB, CYB, W11, FSC, UC2, SFZ), with the others derived from the name's initials |
 | manager_id, project_officer_id, sponsor_id | → resources | |
 | tier | project_tier | |
 | phase_id | uuid → lifecycle_phases | was `stage` (phase **name**) |
@@ -234,6 +236,7 @@ id, organisation_id, workspace_id, portfolio_id (composite FK with workspace), n
 | task_source | task_source default `native` | |
 | health_override, health_override_reason | | |
 | closed_reason | text | |
+| archived_at | timestamptz null | (review B) records created in error |
 | converted_from_request_id | uuid null → project_requests | |
 | audit columns | | |
 
@@ -300,7 +303,7 @@ id, organisation_id, workspace_id, project_id, name, sort_order. `unique (projec
 | labels | text[] default `{}` | GIN index |
 | backlog_rank | numeric | fractional ranking, so reordering touches one row |
 | done_at | timestamptz | set by trigger when status becomes `done`, cleared otherwise |
-| deleted_at | timestamptz | soft delete (scope-history needs it) |
+| deleted_at | timestamptz | soft delete, the **only** delete clients can do (review B). Scope history needs it |
 | external_source | external_source null | **reserved for Planner sync** |
 | external_id | text null | reserved |
 | external_etag | text null | reserved |
@@ -336,11 +339,12 @@ id, organisation_id, workspace_id, work_item_id, field text (`status`, `estimate
 | proposed_date | date null | required when `response = 'proposed_date'` (check) |
 | comment | text null | was `responseReason` |
 | responded_at | timestamptz null | |
+| responded_by | uuid null → profiles | (review E) who recorded the response: the issued-to person, the issuer, or pmo/admin on their behalf |
 | created_at, created_by | | |
 
 Append-only rules (trigger plus RLS):
 - Insert by workspace contributors. The work item's status becomes `issued`.
-- Exactly **one** update per row: response, proposed_date, comment and responded_at go from null to set. Only the profile linked to `issued_to` (or pmo/admin) can do it. Every other column is frozen, and once responded the row is immutable. No delete.
+- Exactly **one** update per row: response, proposed_date, comment and responded_at go from null to set. The profile linked to `issued_to`, the **issuer**, or pmo/admin can do it, the last two on behalf of a resource with no profile (review E). `responded_by` records who did. Every other column is frozen, and once responded the row is immutable. No delete.
 - `accepted` moves the work item `issued` → `not_started` and adds `issued_to` to `work_item_assignees` (trigger).
 - Re-issuing after `proposed_date` or `declined` inserts a **new row**.
 
@@ -362,7 +366,7 @@ id, work_item_id, organisation_id, workspace_id, file_name, storage_path (bucket
 id, ref (`MS`, per project), organisation_id, workspace_id, project_id, title, type `milestone_type`, owner_id, baseline_date, forecast_date, actual_date null, report_to_committee bool, audit columns. **`status` is not stored.** It comes from `v_milestones` (§10).
 
 ### `milestone_forecast_history` (append-only)
-id, milestone_id, organisation_id, workspace_id, reporting_date date, forecast_date date, created_at, created_by. Written by a trigger whenever `milestones.forecast_date` changes, with `reporting_date = org_today()`. The seed inserts the mock history directly.
+id, milestone_id (`on delete restrict`), organisation_id, workspace_id, reporting_date date, forecast_date date, created_at, created_by. Written by a trigger whenever `milestones.forecast_date` changes, with `reporting_date = org_today()`. The seed inserts the mock history directly.
 
 ### `project_team_members`
 id, organisation_id, workspace_id, project_id, resource_id, role `project_role`, start_date, finish_date, allocated_effort_hours, audit columns. This is the **governance role** on the project.
@@ -373,9 +377,9 @@ id, organisation_id, workspace_id, project_id, resource_id (person **or** placeh
 Team members and assignments overlap (Stage 1, flag 3). I've kept both, with distinct meanings (role vs booking), as the screens do today. Merging them can wait for the resource-management phase.
 
 ### `status_reports`
-id, ref (`SR`, per project), organisation_id, workspace_id, project_id, reporting_date, submitter_id, overall, schedule, financial, effort, issue (`health`), accomplished, planned, comments, override_reasons jsonb, ai_draft jsonb, audit columns. `unique (project_id, ref)`.
+id, ref (`SR`, per project), organisation_id, workspace_id, project_id, reporting_date, submitter_id, overall, schedule, financial, effort, issue (`health`), accomplished, planned, comments, override_reasons jsonb, ai_draft jsonb, **evidenced_overall, evidenced_schedule, evidenced_financial, evidenced_effort, evidenced_issue, evidenced_benefit** (`health`, review E: copied from `v_project_health` by the `submit_status_report()` trigger at insert, then frozen), audit columns. `unique (project_id, ref)`.
 
-These RAGs **are** stored, deliberately. A submitted report is a point-in-time judgement, and changing it would rewrite history. They are not the computed health (§10).
+The declared RAGs and the evidenced RAGs **are** stored, deliberately. A submitted report is a point-in-time judgement, and changing it would rewrite history. They are not the computed health (§10).
 
 ### `phase_lessons_reviews` and `phase_lessons_review_attendees`
 Review: id, organisation_id, workspace_id, project_id, phase_id, review_date, facilitator_id. Attendees: review_id, resource_id.
@@ -419,7 +423,7 @@ Link tables: `dependency_risks`, `dependency_issues`.
 Both ends must be in the same workspace (composite FKs). Cross-workspace dependencies are out of scope for this phase.
 
 ### Benefits
-- `benefits`: id, ref (`BEN`), tenant columns, portfolio_id **not null** (benefits roll up across projects, so they sit at portfolio level, not exactly-one-of), title, description, type, classification, category_id, beneficiaries text[], owner_id, sro_id, status, confidence, eligibility_confirmed, eligibility_confirmed_by_id, eligibility_confirmed_date, planned_total_value, dependency_notes text[] (renamed: it clashed with the dependency register), audit columns.
+- `benefits`: id, ref (`BEN`), tenant columns, portfolio_id **not null** (benefits roll up across projects, so they sit at portfolio level, not exactly-one-of), programme_id null (review C: composite FK `(programme_id, portfolio_id) → programmes (id, portfolio_id)`, so the programme must belong to the benefit's portfolio; programme benefit health uses it directly, and `benefit_projects` stays as the contribution/attribution table), title, description, type, classification, category_id, beneficiaries text[], owner_id, sro_id, status, confidence, eligibility_confirmed, eligibility_confirmed_by_id, eligibility_confirmed_date, planned_total_value, dependency_notes text[] (renamed: it clashed with the dependency register), audit columns.
 - `benefit_objectives`: benefit_id, strategic_objective_id.
 - `benefit_projects`: benefit_id, project_id, attribution_percent numeric(5,2) check 0–100. Totals over 100% are allowed but surfaced as a warning column in `v_benefit_realisation`, which matches `getBenefitWarnings`.
 - `benefit_measures`: id, benefit_id, tenant columns, name, unit, measurement_method, data_source, frequency, data_provider text (a team name, not a person), baseline_value, baseline_date, next_due_date, sort_order, audit columns. `next_due_date` stays **stored** as a scheduling field the PMO edits, as the screens treat it.
@@ -454,6 +458,7 @@ All are `language sql stable security definer set search_path = ''`, use `(selec
 | `is_workspace_member(ws_id uuid)` | `workspace_role(ws_id) is not null` |
 | `has_workspace_role(ws_id uuid, min_role app_role)` | bool |
 | `current_resource_id(org_id uuid)` | the caller's resource row (for offer responses and "my work") |
+| `can_edit_project(project_id uuid)` | (review E) **every project-scoped write policy calls this.** Today it returns `has_workspace_role(project's workspace, 'contributor')`. Per-project membership can later narrow it without touching any policy |
 
 Policies call these as `(select public.has_workspace_role(workspace_id, 'contributor'))` to keep the planner's initplan caching.
 
@@ -469,10 +474,14 @@ Policies call these as `(select public.has_workspace_role(workspace_id, 'contrib
 | `resources`, `resource_skills`, `resource_leave` | `is_org_member` | `has_org_role(…,'pmo')`, or `has_org_role(…,'manager')` for placeholders. Members may update their **own** leave | pmo |
 | `profiles` | self, or a co-member of any shared org (for names) | self | none |
 | `user_favourites` | self | self | self |
-| `portfolios`, `strategic_objectives`, `collections`, `roadmaps` | `is_workspace_member` | `has_workspace_role(…,'pmo')` | pmo |
-| `programmes`, `projects`, `project_requests`, `project_buckets` | `is_workspace_member` | `has_workspace_role(…,'manager')` | pmo |
-| Project-level records: work items and children, milestones, team, assignments, status reports, RAID, change requests, decisions and children, dependencies, benefits and children, lessons, actions, reviews | `is_workspace_member` | `has_workspace_role(…,'contributor')` | `has_workspace_role(…,'manager')` |
-| `work_item_offers` | member | insert: contributor. Update: the `issued_to` resource's own profile, or pmo, response columns only, once (trigger) | none |
+| `portfolios` | `is_workspace_member` | `has_workspace_role(…,'pmo')` | **none** (archive instead) |
+| `programmes`, `projects` | `is_workspace_member` | `has_workspace_role(…,'manager')` (project `code` changes need pmo) | **none** (archive instead) |
+| `strategic_objectives`, `collections`, `roadmaps` | `is_workspace_member` | `has_workspace_role(…,'pmo')` | pmo |
+| `project_requests` | `is_workspace_member` | `has_workspace_role(…,'manager')` | pmo |
+| `work_items` | `is_workspace_member` | `can_edit_project(project_id)` | **none** (soft delete via `deleted_at`) |
+| Project-scoped records: buckets, work item children, milestones, team, assignments, status reports, lessons, reviews, and RAID / change / decision / dependency rows scoped to a project | `is_workspace_member` | `can_edit_project(project_id)` | manager |
+| The same registers scoped to a programme or portfolio, and benefits | `is_workspace_member` | `has_workspace_role(…,'contributor')` | manager |
+| `work_item_offers` | member | insert: `can_edit_project`. Update: the `issued_to` resource's own profile, the issuer, or pmo/admin, response columns only, once (trigger) | none |
 | `work_item_events`, `milestone_forecast_history`, `health_snapshots`, `audit_log` | member (`audit_log`: pmo) | **none for clients**. Written by security-definer triggers or functions | none |
 | `benefit_measurements` | member | insert/update: contributor. Setting status `validated` or `queried` requires pmo (trigger) | manager |
 | Integrations tables | member | pmo | pmo |
@@ -503,7 +512,7 @@ All are `security_invoker` views over the tables above. "Today" is `org_today(or
 | `v_milestones` | milestone + `status` (`completed` if actual_date, `overdue` if forecast < today, `late` if forecast > baseline, `future` if more than 30 days out, else `on_track`) + `slip_days` | `Milestone.status`, `PortfolioMilestone.slipDays` |
 | `v_work_items` | work item + delivery status (same rules on finish/baseline) + checklist_count | `getTaskStatus`, `checklistCount` |
 | `benefit_realisation(benefit_id)` → `v_benefit_realisation` | realised value, percent, variance %, benefit health, behind_profile, measurement_overdue | `getBenefitRealised`, `getBenefitPercent`, `getBenefitVariance`, `getBenefitHealth` |
-| `v_project_health` | schedule, financial, effort, issue and benefit health, **overall = health_override, or else the worst of the five**, plus `forecast_finish_date` = `finish_date` | `getProjectHealth` and the dimension functions |
+| `v_project_health` | schedule, financial, effort, issue and benefit health, **overall = health_override, or else the worst of the five**, plus `forecast_finish_date` and `forecast_basis`. Today `forecast_basis = 'declared'` and the date is the declared `finish_date`; the forecast-engine phase switches the basis to `evidenced` without renaming the column, so callers don't break (review F) | `getProjectHealth` and the dimension functions |
 | `v_programme_health` | overall = override, or else the worst of its projects' overall + programme benefit health. `forecast_finish_date` = the latest of its projects' forecast finish | `getProgrammeHealth` |
 | `v_portfolio_health` | overall = override, or else the worst of its programmes **and** direct projects. Latest forecast finish | `getPortfolioHealth` |
 | `v_dependency_health` | health (override, else the sequencing + giving-milestone forecast vs required-by rule in working days), boundary, acceptance state | `getDependencyHealth`, `getBoundary` |
@@ -519,7 +528,7 @@ All are `security_invoker` views over the tables above. "Today" is `org_today(or
 |---|---|
 | id | uuid |
 | organisation_id, workspace_id | |
-| portfolio_id / programme_id / project_id | exactly one (FKs, `on delete cascade`) |
+| portfolio_id / programme_id / project_id | exactly one (FKs, `on delete restrict`, review B) |
 | snapshot_date | date |
 | overall, schedule, financial, effort, issue, benefit | health (dimension columns null for portfolio and programme rows) |
 | forecast_finish_date | date |
@@ -552,7 +561,7 @@ Mechanical camelCase → snake_case (`dueDate` → `due_date`) is not listed. Se
 ### Cross-cutting
 | Front end | Database | Reason |
 |---|---|---|
-| `id` (slug or `r-12`) | `id uuid` + `ref` where shown to users | decided. **Route URLs become uuids** (`/portfolio/projects/<uuid>`) |
+| `id` (slug or `r-12`) | `id uuid` + `ref` where shown to users | decided. Projects also get `code`, and routes become `/projects/:code` (review D). Other detail routes use uuids |
 | `reference` | `ref` | decided naming |
 | `start` / `finish` / `end` | `start_date` / `finish_date` | decided |
 | `baselineFinish` | `baseline_finish_date` | consistency |
@@ -658,6 +667,7 @@ Small named migrations, applied through the Supabase connector. After each one I
 **Seed.** `scripts/generate-seed.ts` imports the current mock modules and writes `supabase/seed.sql`:
 - one demo organisation ("Demo University", `is_demo = true`) with one workspace
 - deterministic uuids (uuid v5 of the old string id), so reruns are stable
+- project codes from the existing lesson prefixes, the rest derived from initials and made unique
 - dates re-expressed relative to the run date: `current_date + (mock_date − 2026-09-21)`
 - every person name resolved to a `resources` row. Names that match neither directory become unlinked, non-bookable resources, listed with `raise notice`
 - synthetic `health_snapshots` backfill (`is_synthetic = true`)
@@ -670,17 +680,23 @@ It has no auth users. After your first sign-in, `select public.join_demo_organis
 
 ---
 
-## 14. Calls I've made that you may want to veto
+## 14. Review outcome
 
-1. **Effective role:** org `admin` and `pmo` automatically hold the same role in every workspace. Everyone else needs workspace membership.
-2. **Permissions are fixed, not configurable** (§9.4). The Roles settings screen becomes read-only.
-3. **No per-project membership yet.** Any workspace contributor can edit any project in that workspace. A `project_members` table can narrow this later without changing the helpers' callers.
-4. **Ref scope:** per project for work items, milestones, CRs and SRs. Per organisation for every register that can sit above project level. Lessons lose their project prefix (`EBB-001` → `LES-001`).
-5. **Benefits** are portfolio-scoped (`portfolio_id not null`), not exactly-one-of.
-6. **Health snapshots** use exactly-one-of FKs rather than entity type/id (§10).
-7. **Work item status vocabulary:** `issued, not_started, in_progress, blocked, done, cancelled`. Declined and proposed-date states live on the offer, not the item. Per-project custom statuses from `sprints.ts` are dropped.
-8. **Team members and resource assignments** stay separate tables (role vs booking).
-9. **Dependencies** cannot cross workspaces in this phase.
-10. **`sprints.ts`** stays browser-local until the sprints phase. `Task.sprint` is not seeded.
-11. **Lookup list enforcement** uses generated constant columns plus composite FKs (§4.3) rather than triggers.
-12. **Route URLs** change from slugs to uuids. If you want readable URLs, I'd add `projects.slug` (unique per workspace) now.
+| # | Call | Outcome |
+|---|---|---|
+| 1 | Org admin/pmo hold that role in every workspace | approved |
+| 2 | Fixed permission matrix | approved |
+| 3 | No per-project membership | covered by `can_edit_project()` (review E) |
+| 4 | Ref scopes (`LES-001` org-wide) | approved |
+| 5 | Benefits portfolio-scoped | approved, plus nullable `programme_id` (review C) |
+| 6 | Snapshots use exactly-one-of FKs | kept, with `on delete restrict` (review B) |
+| 7 | Work item status vocabulary | approved |
+| 8 | Team members vs assignments separate | approved |
+| 9 | No cross-workspace dependencies | approved |
+| 10 | `sprints.ts` stays browser-local | approved |
+| 11 | Lookup enforcement by generated column + composite FK | approved |
+| 12 | uuid URLs | replaced by project `code` (review D) |
+
+**Also from review:**
+- After Stage 4, the `pmo.ts` health logic runs only as the parity-test fixture, never at runtime.
+- Whether workspace PMOs can manage resources is **on hold**. Built as written: org-level pmo writes resources, and managers write placeholders.
