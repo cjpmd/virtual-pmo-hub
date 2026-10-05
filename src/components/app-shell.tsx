@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Bell, CheckCheck, ChevronDown, ChevronLeft, ChevronRight, LogOut, Menu, Moon, Search, Settings, Star, Sun, UserRound, X } from "lucide-react";
+import { Bell, Building2, Check, CheckCheck, ChevronDown, ChevronLeft, ChevronRight, LoaderCircle, LogOut, Menu, Moon, Search, Settings, Star, Sun, UserRound, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { readFavourites, type Favourite } from "@/components/favourite-button";
 import { SectionTabs } from "@/components/section-nav";
 import { getProgrammes, getProjects } from "@/services/pmo";
-import { getCurrentUser, hydrateSettings, term, useSettings } from "@/services/settings";
+import { hydrateSettings, term, useSettings } from "@/services/settings";
+import { useOrganisation } from "@/components/auth/organisation-provider";
+import { signOut } from "@/services/auth";
+import { errorMessage } from "@/services/service-error";
+import { toast } from "sonner";
 import { allPages, findSection, sections, settingsSection } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 import { openIssueTask } from "@/components/issue-task-sheet";
@@ -49,7 +53,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const path = useRouterState({ select: state => state.location.pathname });
   const navigate = useNavigate();
   const activeSection = findSection(path);
-  const user = getCurrentUser();
+  const { profile, organisation, organisations, switchOrganisation, switching } = useOrganisation();
+  const user = { name: profile.displayName, email: profile.email, role: organisation.role.charAt(0).toUpperCase() + organisation.role.slice(1) };
+  // Signing out ends the session; the auth gate then shows the sign-in page.
+  const logOut = () => { signOut().catch(error => toast.error(errorMessage(error))) };
 
   useEffect(() => { hydrateSettings() }, []);
   useEffect(() => { document.documentElement.classList.toggle("dark", dark) }, [dark]);
@@ -221,6 +228,21 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Link to="/home/notifications" onClick={() => setInbox(false)} className="mt-2 block text-xs font-semibold text-primary hover:underline">Open the notification centre →</Link>
             </div>}
           </div>
+          {organisations.length > 1
+            ? <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="hidden max-w-56 gap-2 sm:flex" aria-label={`Organisation: ${organisation.name}. Switch organisation`} disabled={switching}>
+                  {switching ? <LoaderCircle className="animate-spin" /> : <Building2 />}<span className="truncate">{organisation.name}</span><ChevronDown className="size-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">Switch organisation</div>
+                {organisations.map(item => <DropdownMenuItem key={item.organisationId} onSelect={() => switchOrganisation(item.organisationId)}>
+                  <Check className={cn("size-4", item.organisationId !== organisation.organisationId && "invisible")} /><span className="truncate">{item.name}</span>
+                </DropdownMenuItem>)}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            : <span className="hidden max-w-56 items-center gap-2 truncate px-2 text-sm text-muted-foreground sm:flex"><Building2 className="size-4" />{organisation.name}</span>}
           <Button variant="ghost" size="icon" onClick={() => setDark(!dark)} aria-label="Toggle theme">{dark ? <Sun /> : <Moon />}</Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -233,7 +255,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <div className="px-2 py-1.5 text-xs text-muted-foreground">{user?.email}</div>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => navigate({ to: "/settings/$section", params: { section: "account" } })}><UserRound />Account settings</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => navigate({ to: "/signup" })}><LogOut />Log out</DropdownMenuItem>
+              <DropdownMenuItem onSelect={logOut}><LogOut />Log out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           </div>

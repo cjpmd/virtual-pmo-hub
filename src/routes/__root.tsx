@@ -16,6 +16,9 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "../components/app-shell";
 import { IssueTaskSheet } from "../components/issue-task-sheet";
+import { AuthGate, isPublicPath } from "../components/auth/auth-gate";
+import { SessionProvider } from "../components/auth/session-provider";
+import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -126,11 +129,14 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const entityVersion = useEntityVersion();
   useEffect(() => { loadEntities(); }, []);
-  const bare = useRouterState({ select: state => state.location.pathname.startsWith("/signup") });
+  const bare = useRouterState({ select: state => isPublicPath(state.location.pathname) });
 
   return (
     <QueryClientProvider client={queryClient}>
-      {bare ? <Outlet /> : <AppShell><Fragment key={entityVersion}><Outlet /></Fragment><IssueTaskSheet /></AppShell>}
+      <SessionProvider>
+        {bare ? <Outlet /> : <AuthGate><AppShell><Fragment key={entityVersion}><Outlet /></Fragment><IssueTaskSheet /></AppShell></AuthGate>}
+      </SessionProvider>
+      <Toaster richColors closeButton />
     </QueryClientProvider>
   );
 }

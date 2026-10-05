@@ -37,7 +37,9 @@ import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as RisksRouteImport } from './routes/risks'
 import { Route as RoadmapsRouteImport } from './routes/roadmaps'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SigninRouteImport } from './routes/signin'
 import { Route as TaskOverviewRouteImport } from './routes/task-overview'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as BenefitsIndexRouteImport } from './routes/benefits.index'
 import { Route as BenefitsBenefitIdRouteImport } from './routes/benefits.$benefitId'
 import { Route as BenefitsDashboardRouteImport } from './routes/benefits.dashboard'
@@ -241,9 +243,19 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SigninRoute = SigninRouteImport.update({
+  id: '/signin',
+  path: '/signin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TaskOverviewRoute = TaskOverviewRouteImport.update({
   id: '/task-overview',
   path: '/task-overview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BenefitsIndexRoute = BenefitsIndexRouteImport.update({
@@ -594,7 +606,9 @@ export interface FileRoutesByFullPath {
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
   '/settings': typeof SettingsRouteWithChildren
+  '/signin': typeof SigninRoute
   '/task-overview': typeof TaskOverviewRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/benefits/$benefitId': typeof BenefitsBenefitIdRoute
   '/benefits/dashboard': typeof BenefitsDashboardRoute
   '/benefits/map': typeof BenefitsMapRoute
@@ -673,7 +687,9 @@ export interface FileRoutesByTo {
   '/resource-scenarios': typeof ResourceScenariosRoute
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
+  '/signin': typeof SigninRoute
   '/task-overview': typeof TaskOverviewRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/benefits/$benefitId': typeof BenefitsBenefitIdRoute
   '/benefits/dashboard': typeof BenefitsDashboardRoute
   '/benefits/map': typeof BenefitsMapRoute
@@ -763,7 +779,9 @@ export interface FileRoutesById {
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
   '/settings': typeof SettingsRouteWithChildren
+  '/signin': typeof SigninRoute
   '/task-overview': typeof TaskOverviewRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/benefits/$benefitId': typeof BenefitsBenefitIdRoute
   '/benefits/dashboard': typeof BenefitsDashboardRoute
   '/benefits/map': typeof BenefitsMapRoute
@@ -858,7 +876,9 @@ export interface FileRouteTypes {
     | '/risks'
     | '/roadmaps'
     | '/settings'
+    | '/signin'
     | '/task-overview'
+    | '/auth/callback'
     | '/benefits/$benefitId'
     | '/benefits/dashboard'
     | '/benefits/map'
@@ -937,7 +957,9 @@ export interface FileRouteTypes {
     | '/resource-scenarios'
     | '/risks'
     | '/roadmaps'
+    | '/signin'
     | '/task-overview'
+    | '/auth/callback'
     | '/benefits/$benefitId'
     | '/benefits/dashboard'
     | '/benefits/map'
@@ -1026,7 +1048,9 @@ export interface FileRouteTypes {
     | '/risks'
     | '/roadmaps'
     | '/settings'
+    | '/signin'
     | '/task-overview'
+    | '/auth/callback'
     | '/benefits/$benefitId'
     | '/benefits/dashboard'
     | '/benefits/map'
@@ -1120,7 +1144,9 @@ export interface RootRouteChildren {
   RisksRoute: typeof RisksRoute
   RoadmapsRoute: typeof RoadmapsRoute
   SettingsRoute: typeof SettingsRouteWithChildren
+  SigninRoute: typeof SigninRoute
   TaskOverviewRoute: typeof TaskOverviewRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   SignupSetupRoute: typeof SignupSetupRoute
   SignupIndexRoute: typeof SignupIndexRoute
 }
@@ -1323,11 +1349,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/signin': {
+      id: '/signin'
+      path: '/signin'
+      fullPath: '/signin'
+      preLoaderRoute: typeof SigninRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/task-overview': {
       id: '/task-overview'
       path: '/task-overview'
       fullPath: '/task-overview'
       preLoaderRoute: typeof TaskOverviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/benefits/': {
@@ -2089,7 +2129,9 @@ const rootRouteChildren: RootRouteChildren = {
   RisksRoute: RisksRoute,
   RoadmapsRoute: RoadmapsRoute,
   SettingsRoute: SettingsRouteWithChildren,
+  SigninRoute: SigninRoute,
   TaskOverviewRoute: TaskOverviewRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   SignupSetupRoute: SignupSetupRoute,
   SignupIndexRoute: SignupIndexRoute,
 }
