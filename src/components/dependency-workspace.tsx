@@ -1,6 +1,6 @@
 import { formatDate } from "@/lib/format";
-import { useMemo, useState } from "react";
-import { CalendarClock, CheckCircle2, ClipboardList, Handshake, ShieldAlert, TriangleAlert, X } from "lucide-react";
+import { useState } from "react";
+import { CalendarClock, CheckCircle2, ClipboardList, Handshake, Plus, ShieldAlert, TriangleAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,11 +10,16 @@ import { KpiCard } from "@/components/pmo-ui";
 import { dependencyColumns, dependenciesToRows, dependencyViews } from "@/lib/dependency-board-data";
 import { getDependencies, getDependencyMetrics, getDependencySyncAgenda, type ResolvedDependency } from "@/services/dependencies";
 import { cn } from "@/lib/utils";
+import { DependencyEditor } from "@/components/dependency-editor";
+import { useDependencyVersion, saveDependency } from "@/services/dependency-store";
+import type { BoardRow } from "@/components/board-workspace";
 
 interface RaidDraft { kind: "Risk" | "Issue"; title: string; description: string; owner: string; dueDate: string; dependency: ResolvedDependency }
 
 export function DependencyWorkspace() {
-  const all = useMemo(() => getDependencies(), []);
+  useDependencyVersion();
+  const all = getDependencies();
+  const [editing, setEditing] = useState<ResolvedDependency | "new" | null>(null);
   const [overrides, setOverrides] = useState<Record<string, AcceptanceState>>({});
   const [selected, setSelected] = useState<ResolvedDependency | null>(null);
   const [sync, setSync] = useState(false);
@@ -29,11 +34,20 @@ export function DependencyWorkspace() {
   });
   const metrics = getDependencyMetrics(items);
   const agenda = getDependencySyncAgenda(items);
+  const updateRows = (rows: BoardRow[]) => {
+    rows.forEach(row => {
+      const item = all.find(entry => entry.id === row.id);
+      if (!item) return;
+      if (row.finish !== item.requiredBy || row.priority !== item.criticality || row["validation"] !== item.validation || row["dependencyType"] !== item.type) {
+        saveDependency({ ...item, requiredBy: String(row.finish ?? item.requiredBy), criticality: row.priority as ResolvedDependency["criticality"], validation: row["validation"] as ResolvedDependency["validation"], type: row["dependencyType"] as ResolvedDependency["type"] });
+      }
+    });
+  };
 
-  const accept = (id: string, side: "giver" | "receiver") => setOverrides(current => {
+  const accept = (id: string, side: "giver" | "receiver") => { const item = all.find(entry => entry.id === id); if (item) saveDependency({ ...item, [side === "giver" ? "giverAccepted" : "receiverAccepted"]: true }); setOverrides(current => {
     const base = current[id] ?? { giver: all.find(item => item.id === id)?.giverAccepted ?? false, receiver: all.find(item => item.id === id)?.receiverAccepted ?? false };
     return { ...current, [id]: { ...base, [side]: true } };
-  });
+  }); };
   const raise = (dependency: ResolvedDependency, kind: "Risk" | "Issue") => setDraft({
     kind, dependency,
     title: kind === "Risk" ? `${dependency.reference}: ${dependency.giverLabel} may not deliver by ${formatDate(dependency.requiredBy)}` : `${dependency.reference}: ${dependency.giverLabel} has not delivered by ${formatDate(dependency.requiredBy)}`,
@@ -52,11 +66,14 @@ export function DependencyWorkspace() {
 
     <div className="flex flex-wrap items-center gap-3">
       <Button onClick={() => setSync(true)}><ClipboardList />Dependency sync</Button>
+      <Button variant="outline" onClick={() => setEditing("new")}><Plus />New dependency</Button>
       <p className="text-sm text-muted-foreground">Generates the agenda for the PM sync: cross-PM dependencies that are off track, awaiting confirmation, or needed in the next 30 days.</p>
     </div>
 
-    <BoardWorkspace title="Dependency register" itemLabel="dependency" rows={dependenciesToRows(items)} columns={dependencyColumns} groupOptions={["group", "boundary", "dependencyType", "validation"]} seededViews={dependencyViews} seededAutomations={dependencyAutomationRecipes}
-      renderTitle={row => <button onClick={event => { event.stopPropagation(); setSelected(items.find(item => item.id === row.id) ?? null) }} className="text-left text-primary hover:underline">{String(row["reference"])} · {row.title}</button>} />
+    <BoardWorkspace title="Dependency register" itemLabel="dependency" manage={false} onRowsChange={updateRows} rows={dependenciesToRows(items)} columns={dependencyColumns} groupOptions={["group", "boundary", "dependencyType", "validation"]} seededViews={dependencyViews} seededAutomations={dependencyAutomationRecipes}
+      renderTitle={row => <Button variant="link" className="h-auto p-0 text-left" onClick={event => { event.stopPropagation(); setEditing(items.find(item => item.id === row.id) ?? null) }}>{String(row["reference"])} · {row.title}</Button>} />
+
+    {editing && <DependencyEditor {...(editing === "new" ? {} : { item: editing })} onClose={() => setEditing(null)} />}
 
     {selected && <DependencyPanel dependency={items.find(item => item.id === selected.id) ?? selected} overrides={overrides} onAccept={accept} onRaise={raise} close={() => setSelected(null)} />}
 

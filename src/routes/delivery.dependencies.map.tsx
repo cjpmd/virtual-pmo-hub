@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router"
 import { AutoBreadcrumbs } from "@/components/section-nav";
 import { DependencyMap } from "@/components/dependency-map";
 import { PageHeader } from "@/components/pmo-ui";
+import { DependencyViewTabs } from "@/components/dependency-view-tabs";
 
 const title = "Dependency Map — Virtual PMO", description = "Network view of dependencies between programmes, projects and external parties.";
 export const Route = createFileRoute("/delivery/dependencies/map")({
@@ -20,6 +21,7 @@ function Page() {
   return <div className="space-y-6">
     <AutoBreadcrumbs/>
     <PageHeader eyebrow="Portfolio assurance" title="Dependency Map" description="Programmes are containers, projects and milestones sit inside them, and arrows are coloured by health and styled by type. Click a node to follow its chain." />
+    <DependencyViewTabs/>
     <DependencyMap focusId={focus} onFocus={id => navigate({ to: "/delivery/dependencies/map", search: id ? { focus: id } : {}, replace: true })}/>
   </div>;
 }

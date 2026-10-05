@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import { portfolio, programmes, projects } from "@/data/mock-data";
 import type { Portfolio, Programme, Project } from "@/data/types";
 import { clearAllRecords } from "@/services/record-store";
+import { resetDependencyRecords } from "@/services/dependency-store";
 
 /** Browser-local store for created/edited portfolios, programmes and projects.
  *  Mutates the shared mock arrays in place so every service function sees the changes. */
@@ -67,6 +68,7 @@ export const saveProject = (item: Project) => upsert("projects", projects, item)
 
 export function resetEntities() {
   clearAllRecords();
+  resetDependencyRecords();
   saved = { portfolios: [], programmes: [], projects: [], edits: {} };
   currentPortfolioId = portfolio.id;
   for (const list of [portfolios, programmes, projects] as { id: string }[][]) {

@@ -1,4 +1,4 @@
-import { dependencies } from "@/data/dependencies-data";
+import { getDependencyRecords } from "@/services/dependency-store";
 import type { Dependency, DependencyBoundary, DependencyEnd, DependencyType, Health, Milestone } from "@/data/types";
 import { getProgramme, getProject } from "@/services/pmo";
 import { getSettings } from "@/services/settings";
@@ -101,7 +101,7 @@ export interface ResolvedDependency extends Dependency {
   giverMilestone: Milestone | undefined;
 }
 export function getDependencies(): ResolvedDependency[] {
-  return dependencies.map(dependency => {
+  return getDependencyRecords().map(dependency => {
     const giverProgrammeId = getEndProgrammeId(dependency.giver), receiverProgrammeId = getEndProgrammeId(dependency.receiver);
     return {
       ...dependency,

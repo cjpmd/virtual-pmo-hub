@@ -63,6 +63,7 @@
 - [x] Add benefit gate criteria, the project gate checklist and the benefits handover wizard at closure
 - [x] Add benefit health as a project and programme health dimension and to the committee pack
 - [x] Add Dependency management: model, register, map, sync agenda and roadmap connectors
+- [x] Restore visible Dependency Map navigation and add immediate browser-local workshop edits across map and register
 - [x] Extend RAID to RAIDD with the decision log, forum meeting mode and assumption log
 - [x] Add Lessons Learned: project reviews, portfolio overview, improvement actions, matching at initiation and CSV import/export
 
