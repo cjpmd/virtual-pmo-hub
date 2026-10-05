@@ -13,6 +13,7 @@ import {
   listProgrammes,
   listProjects,
 } from "@/services/hierarchy";
+import { loadPortfolioOverview } from "@/services/analytics";
 import { listMilestones, listRaid } from "@/services/project-records";
 import { qk } from "@/services/query-keys";
 
@@ -92,5 +93,14 @@ export function useRaid(projectId: string | undefined) {
     queryKey: qk.projects.raid(orgId, projectId ?? ""),
     queryFn: () => listRaid(projectId ?? ""),
     enabled: Boolean(projectId),
+  });
+}
+
+export function usePortfolioOverview(portfolioId: string | undefined) {
+  const orgId = useOrgId();
+  return useQuery({
+    queryKey: qk.portfolios.overview(orgId, portfolioId ?? ""),
+    queryFn: () => loadPortfolioOverview(orgId, portfolioId ?? ""),
+    enabled: Boolean(portfolioId),
   });
 }

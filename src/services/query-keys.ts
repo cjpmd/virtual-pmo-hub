@@ -15,6 +15,8 @@ export const qk = {
     all: (orgId: string) => ["org", orgId, "portfolios"] as const,
     list: (orgId: string) => ["org", orgId, "portfolios", "list"] as const,
     health: (orgId: string) => ["org", orgId, "portfolios", "health"] as const,
+    overview: (orgId: string, portfolioId: string) =>
+      ["org", orgId, "portfolios", "overview", portfolioId] as const,
   },
   programmes: {
     all: (orgId: string) => ["org", orgId, "programmes"] as const,

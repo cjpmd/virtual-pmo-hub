@@ -39,11 +39,16 @@ export interface Phase {
 
 export interface PortfolioSummary {
   id: string;
+  workspaceId: string;
   name: string;
   description: string | null;
+  state: EntityStateLabel;
+  closedReason: string | null;
+  ownerId: string | null;
   ownerName: string;
   budget: number;
   health: Health;
+  updatedAt: string;
 }
 
 export interface ProgrammeSummary {
@@ -169,7 +174,9 @@ export async function listPortfolios(orgId: string): Promise<PortfolioSummary[]>
   const [portfolios, health, people] = await Promise.all([
     supabase
       .from("portfolios")
-      .select("id, name, description, owner_id, budget")
+      .select(
+        "id, workspace_id, name, description, state, closed_reason, owner_id, budget, updated_at",
+      )
       .eq("organisation_id", orgId)
       .is("archived_at", null)
       .order("name"),
@@ -185,11 +192,16 @@ export async function listPortfolios(orgId: string): Promise<PortfolioSummary[]>
   );
   return unwrap(portfolios, "Loading portfolios").map((row) => ({
     id: row.id,
+    workspaceId: row.workspace_id,
     name: row.name,
     description: row.description,
+    state: entityStateLabel[row.state],
+    closedReason: row.closed_reason,
+    ownerId: row.owner_id,
     ownerName: nameOf(byId, row.owner_id),
     budget: num(row.budget),
     health: toHealth(healthById.get(row.id)),
+    updatedAt: row.updated_at,
   }));
 }
 
