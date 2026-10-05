@@ -44,7 +44,7 @@ function edgePath(from: Box, to: Box, offset = 0) {
 type View = { scale: number; x: number; y: number };
 
 export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefined; onFocus: (id: string | undefined) => void }) {
-  useDependencyVersion();
+  const dependencyVersion = useDependencyVersion();
   const [workshop, setWorkshop] = useState(false);
   const [linkFrom, setLinkFrom] = useState<string | null>(null);
   const [editing, setEditing] = useState<ResolvedDependency | { from: string; to: string } | null>(null);
@@ -65,7 +65,7 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
   const pan = useRef<{ x: number; y: number; view: View } | null>(null);
   const { ref: viewportRef, width: viewportWidth } = useMeasuredWidth(900);
 
-  const all = getDependencies();
+  const all = useMemo(() => getDependencies(), [dependencyVersion]);
   const programmes = getProgrammes();
   const items = useMemo(() => all.map(item => {
     const override = overrides[item.id];
@@ -296,11 +296,11 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
                   const childBox = layout.boxes.get(child.id);
                   if (!childBox) return null;
                   const childTone = nodeTone(child.id);
-                  return <button data-node key={child.id} type="button" onClick={event => { event.stopPropagation(); if (nodeDrag.current?.moved) return; onNodeClick(child.id) }} onPointerDown={event => onNodePointerDown(event, child.id)} onPointerMove={onNodePointerMove} onPointerUp={onNodePointerUp} onMouseEnter={() => setHover(child.id)} onMouseLeave={() => setHover(null)}
+                  return <div key={child.id}><button data-node type="button" onClick={event => { event.stopPropagation(); if (nodeDrag.current?.moved) return; onNodeClick(child.id) }} onPointerDown={event => onNodePointerDown(event, child.id)} onPointerMove={onNodePointerMove} onPointerUp={onNodePointerUp} onMouseEnter={() => setHover(child.id)} onMouseLeave={() => setHover(null)}
                     style={{ left: childBox.x - box.x, top: childBox.y - box.y, width: childBox.width, height: childBox.height, opacity: toneOpacity[childTone] ?? 1, filter: childTone === "muted" ? "grayscale(1)" : undefined, transition: "opacity 200ms ease, filter 200ms ease" }}
                     className={cn("absolute grid place-items-center rounded-lg border border-border/70 bg-card px-2 text-center", childTone === "focus" ? "border-primary ring-2 ring-primary" : "hover:border-primary/60", showCritical && focus?.criticalNodes.has(child.id) && childTone !== "muted" && "ring-2 ring-viz-critical/70")}>
-                    <span><span className="line-clamp-2 text-[11px] font-medium leading-tight">{child.label}</span>{child.kind === "Milestone" ? <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">{child.sublabel}</span> : null}</span>{linkHandle(child.id)}
-                  </button>;
+                    <span><span className="line-clamp-2 text-[11px] font-medium leading-tight">{child.label}</span>{child.kind === "Milestone" ? <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">{child.sublabel}</span> : null}</span>
+                  </button>{workshop && <div className="absolute z-10" style={{ left: childBox.x - box.x + childBox.width, top: childBox.y - box.y + childBox.height / 2 }}>{linkHandle(child.id)}</div>}</div>;
                 })}
               </div>;
             })}
@@ -308,11 +308,11 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
               const box = layout.boxes.get(node.id);
               if (!box) return null;
               const tone = nodeTone(node.id);
-              return <button data-node key={node.id} type="button" onClick={() => onNodeClick(node.id)} onPointerDown={event => onNodePointerDown(event, node.id)} onPointerMove={onNodePointerMove} onPointerUp={onNodePointerUp} onMouseEnter={() => setHover(node.id)} onMouseLeave={() => setHover(null)}
+              return <div key={node.id}><button data-node type="button" onClick={() => onNodeClick(node.id)} onPointerDown={event => onNodePointerDown(event, node.id)} onPointerMove={onNodePointerMove} onPointerUp={onNodePointerUp} onMouseEnter={() => setHover(node.id)} onMouseLeave={() => setHover(null)}
                 style={{ left: box.x, top: box.y, width: box.width, height: box.height, opacity: toneOpacity[tone] ?? 1, filter: tone === "muted" ? "grayscale(1)" : undefined, transition: "opacity 200ms ease, filter 200ms ease" }}
                 className={cn("absolute grid place-items-center rounded-lg border-2 border-dashed px-3 text-center", tone === "focus" ? "border-chart-5 bg-chart-5/20 ring-2 ring-chart-5" : "border-chart-5/60 bg-chart-5/10 hover:border-chart-5", showCritical && focus?.criticalNodes.has(node.id) && tone !== "muted" && "ring-2 ring-viz-critical/70")}>
-                <div><p className="text-sm font-semibold">{node.label}</p><p className="text-[11px] text-muted-foreground">External party</p></div>{linkHandle(node.id)}
-              </button>;
+                <div><p className="text-sm font-semibold">{node.label}</p><p className="text-[11px] text-muted-foreground">External party</p></div>
+              </button>{workshop && <div className="absolute z-10" style={{ left: box.x + box.width, top: box.y + box.height / 2 }}>{linkHandle(node.id)}</div>}</div>;
             })}
           </div>
           {linkFrom && <div className="absolute bottom-3 left-4 z-20 flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-xs shadow-sm"><Link2 className="size-4 text-primary" />Select a receiving node <Button size="sm" variant="ghost" onClick={() => setLinkFrom(null)}>Cancel</Button></div>}
