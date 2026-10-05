@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { dependencies } from "@/data/dependencies-data";
 import type { Dependency } from "@/data/types";
 
@@ -26,6 +26,11 @@ export function getDependencyRecords() {
 }
 
 export function useDependencyVersion() {
+  useEffect(() => {
+    loadDependencyRecords();
+    version += 1;
+    listeners.forEach(listener => listener());
+  }, []);
   return useSyncExternalStore(subscribe, () => version, () => 0);
 }
 
