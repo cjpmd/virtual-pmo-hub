@@ -5,7 +5,8 @@ import { AutoBreadcrumbs } from "@/components/section-nav";
 import { KpiCard, PageHeader } from "@/components/pmo-ui";
 import { Button } from "@/components/ui/button";
 import { formatCompactCurrency, formatDate, formatFinancialYear } from "@/lib/format";
-import { getBenefits, getPortfolioMetrics, getPortfolioMilestones, getProjects } from "@/services/pmo";
+import { useMilestones, useProjects } from "@/hooks/use-hierarchy";
+import { activeOnly, getRag } from "@/services/analytics";
 import { getValueMetrics } from "@/services/benefits-value";
 import { useBenefits } from "@/hooks/use-benefits";
 import { getDecisionMetrics } from "@/services/decisions";
@@ -16,6 +17,7 @@ import { getLessonMetrics } from "@/services/lessons";
 import { useLessons } from "@/hooks/use-lessons";
 import { useSettings } from "@/services/settings";
 import { cn } from "@/lib/utils";
+import { todayIso } from "@/lib/today";
 
 const title = "Reports — Virtual PMO", description = "Standard portfolio reports, ready to run and export.";
 export const Route = createFileRoute("/insights/reports")({ head: () => ({ meta: [{ title }, { name: "description", content: description }, { property: "og:title", content: title }, { property: "og:description", content: description }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
@@ -25,7 +27,12 @@ interface ReportDefinition { id: string; name: string; description: string; cade
 function Page() {
   const settings = useSettings();
   const [openId, setOpenId] = useState<string | null>(null);
-  const metrics = getPortfolioMetrics();
+  const projectQuery = useProjects();
+  const projects = projectQuery.data ?? [];
+  const active = activeOnly(projects);
+  const metrics = { activeProjects: active.length, percentOnTrack: getRag(projects).percentOnTrack, totalBudget: projects.reduce((sum, project) => sum + project.budget, 0), forecast: projects.reduce((sum, project) => sum + project.forecast, 0) };
+  const milestoneQuery = useMilestones(projects.map(project => project.id), "reports");
+  const projectName = new Map(projects.map(project => [project.id, project.name]));
   const benefits = useBenefits();
   const value = getValueMetrics(benefits.data?.benefits ?? []);
   const governance = useGovernance();
@@ -41,27 +48,27 @@ function Page() {
   const reports: ReportDefinition[] = [
     {
       id: "portfolio-status", name: "Portfolio status summary", description: "One row per project with health, stage, finance and next milestone.", cadence: "Fortnightly", owner: "PMO",
-      rows: () => getProjects().filter(project => project.state === "Active").slice(0, 12).map(project => ({
-        Project: project.name, Stage: project.stage, State: project.state,
-        Budget: formatCompactCurrency(project.budget), Forecast: formatCompactCurrency(project.forecast), Finish: formatDate(project.finish),
+      rows: () => active.map(project => ({
+        Project: project.name, Stage: project.phaseName, Health: project.health.overall, State: project.state,
+        Budget: formatCompactCurrency(project.budget), Forecast: formatCompactCurrency(project.forecast), Finish: project.finishDate ? formatDate(project.finishDate) : "—",
       })),
     },
     {
       id: "milestone-exceptions", name: "Milestone exceptions", description: "Overdue and slipped milestones with baseline against forecast.", cadence: "Weekly", owner: "PMO",
-      rows: () => getPortfolioMilestones().filter(item => item.status === "Overdue" || item.status === "Late").slice(0, 12).map(item => ({
-        Milestone: item.title, Project: item.projectName, Baseline: formatDate(item.baselineDate), Forecast: formatDate(item.forecastDate), Slip: `${item.slipDays} days`, Status: item.status,
+      rows: () => (milestoneQuery.data ?? []).filter(item => item.status === "Overdue" || item.status === "Late").map(item => ({
+        Milestone: item.title, Project: projectName.get(item.projectId) ?? "", Baseline: formatDate(item.baselineDate), Forecast: formatDate(item.forecastDate), Slip: `${item.slipDays} days`, Status: item.status,
       })),
     },
     {
       id: "benefit-realisation", name: "Benefit realisation", description: "Planned against realised value for every benefit, with confidence.", cadence: "Quarterly", owner: "Benefits lead",
-      rows: () => getBenefits().slice(0, 12).map(benefit => ({
+      rows: () => (benefits.data?.benefits ?? []).map(benefit => ({
         Reference: benefit.reference, Benefit: benefit.title, Owner: benefit.owner || "Unassigned",
         Planned: formatCompactCurrency(benefit.plannedTotalValue), Classification: benefit.classification, Confidence: benefit.confidence,
       })),
     },
     {
       id: "decision-latency", name: "Decision latency", description: "How long decisions take from needed-by to made, by forum.", cadence: "Monthly", owner: "PMO",
-      rows: () => allDecisions.filter(item => item.decisionDate).slice(0, 12).map(item => ({
+      rows: () => allDecisions.filter(item => item.decisionDate).map(item => ({
         Reference: item.reference, Decision: item.title, Forum: item.forum, "Needed by": formatDate(item.neededBy), Decided: formatDate(item.decisionDate), Latency: `${item.latencyDays ?? 0} days`,
       })),
     },
@@ -80,7 +87,7 @@ function Page() {
 
   return <div className="space-y-6">
     <AutoBreadcrumbs />
-    <PageHeader eyebrow="Insights" title="Reports" description={`Standard reports built from live portfolio data. Values and dates follow the workspace settings, and exports carry the same formatting. Current financial year: ${formatFinancialYear("21/09/2026", settings)}.`} />
+    <PageHeader eyebrow="Insights" title="Reports" description={`Standard reports built from live portfolio data. Values and dates follow the workspace settings, and exports carry the same formatting. Current financial year: ${formatFinancialYear(todayIso(), settings)}.`} />
 
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <KpiCard label="Active projects" value={String(metrics.activeProjects)} detail={`${metrics.percentOnTrack}% on track`} icon="projects" />
@@ -106,7 +113,7 @@ function Page() {
     {open && <section className="rounded-lg border border-border/70 bg-card shadow-sm">
       <header className="flex flex-wrap items-center gap-3 border-b p-5">
         <FileSpreadsheet className="size-5 text-primary" />
-        <div className="mr-auto"><h2 className="font-display text-lg font-semibold">{open.name}</h2><p className="mt-0.5 text-sm text-muted-foreground">Run on {formatDate("21/09/2026", settings)} · showing the first {open.rows().length} rows</p></div>
+        <div className="mr-auto"><h2 className="font-display text-lg font-semibold">{open.name}</h2><p className="mt-0.5 text-sm text-muted-foreground">Run on {formatDate(todayIso(), settings)} · {open.rows().length} rows</p></div>
         <Button size="sm" variant="outline" onClick={() => download(open)}><Download />Export CSV</Button>
       </header>
       <div className="overflow-x-auto">
