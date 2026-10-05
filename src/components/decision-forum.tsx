@@ -4,30 +4,43 @@ import { CalendarDays, CheckCircle2, ClipboardList, Presentation, ThumbsDown, Th
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { decisionForums } from "@/data/decisions-data";
-import type { DecisionForum } from "@/data/types";
-import { getDecisions, getForumAgenda, type ResolvedDecision } from "@/services/decisions";
+import { getForumAgenda, type GovernanceData, type ResolvedDecision } from "@/services/decisions";
+import { QueryState } from "@/components/query-state";
+import { useGovernance, useGovernanceMutations } from "@/hooks/use-governance";
+import { useCan } from "@/hooks/use-permissions";
+import { todayIso } from "@/lib/today";
+
+type DecisionForum = string;
 import { cn } from "@/lib/utils";
 
 interface Outcome { optionId: string; rationale: string }
 
 export function DecisionForumView() {
-  const [forum, setForum] = useState<DecisionForum>("Digital Committee");
-  const [meetingDate, setMeetingDate] = useState("20/10/2026");
+  const governance = useGovernance();
+  return <QueryState query={governance}>{data => <Forum data={data} />}</QueryState>;
+}
+
+function Forum({ data }: { data: GovernanceData }) {
+  const forums = data.forums.map(item => item.label);
+  const [forum, setForum] = useState<DecisionForum>(() => forums.find(item => data.decisions.some(decision => decision.forum === item && decision.status === "Pending")) ?? forums[0] ?? "");
+  const [meetingDate, setMeetingDate] = useState(todayIso());
   const [meetingMode, setMeetingMode] = useState(false);
   const [outcomes, setOutcomes] = useState<Record<string, Outcome>>({});
-  const all = useMemo(() => getDecisions(), []);
-  const agenda = getForumAgenda(forum, all);
+  const all = data.decisions;
+  const agenda = useMemo(() => getForumAgenda(forum, all), [forum, all]);
+  // Keep items recorded in this meeting on screen (they leave the pending list once saved).
+  const [recorded, setRecorded] = useState<string[]>([]);
+  const meetingItems = useMemo(() => [...agenda.pending, ...all.filter(item => recorded.includes(item.id) && item.forum === forum && item.status !== "Pending")], [agenda.pending, all, recorded, forum]);
 
   return <div className="space-y-6">
     <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border/70 bg-card p-4 shadow-sm">
       <label className="flex flex-col gap-1 text-xs font-semibold text-muted-foreground">Forum
         <select value={forum} onChange={event => { setForum(event.target.value as DecisionForum); setMeetingMode(false); setOutcomes({}) }} className="h-9 min-w-56 rounded-md border border-input bg-background px-2 text-sm font-medium text-foreground">
-          {decisionForums.map(item => <option key={item}>{item}</option>)}
+          {forums.map(item => <option key={item}>{item}</option>)}
         </select>
       </label>
       <label className="flex flex-col gap-1 text-xs font-semibold text-muted-foreground">Meeting date
-        <Input value={meetingDate} onChange={event => setMeetingDate(event.target.value)} className="h-9 w-36" />
+        <Input type="date" value={meetingDate} onChange={event => setMeetingDate(event.target.value)} className="h-9 w-44" />
       </label>
       <div className="ml-auto flex gap-2">
         <Button variant={meetingMode ? "outline" : "default"} onClick={() => setMeetingMode(false)}><ClipboardList />Agenda</Button>
@@ -38,12 +51,12 @@ export function DecisionForumView() {
     <div className="flex flex-wrap gap-4 rounded-md border bg-muted/30 p-4 text-sm">
       <span><strong>{agenda.pending.length}</strong> decisions for this forum</span>
       <span className="text-health-bad-foreground"><strong>{agenda.overdue.length}</strong> overdue</span>
-      <span className="text-muted-foreground"><CalendarDays className="mr-1 inline size-4" />{forum} · {meetingDate}</span>
-      <span className="ml-auto text-muted-foreground"><strong>{Object.keys(outcomes).length}</strong> outcomes recorded in this session</span>
+      <span className="text-muted-foreground"><CalendarDays className="mr-1 inline size-4" />{forum} · {formatDate(meetingDate)}</span>
+      <span className="ml-auto text-muted-foreground"><strong>{recorded.length}</strong> outcomes recorded in this meeting</span>
     </div>
 
     {meetingMode
-      ? <MeetingMode items={agenda.pending} outcomes={outcomes} setOutcomes={setOutcomes} meetingDate={meetingDate} forum={forum} />
+      ? <MeetingMode items={meetingItems} outcomes={outcomes} setOutcomes={setOutcomes} meetingDate={meetingDate} forum={forum} onRecorded={id => setRecorded(current => [...current, id])} />
       : <Agenda items={agenda.pending} recent={agenda.recent} forum={forum} meetingDate={meetingDate} />}
   </div>;
 }
@@ -52,7 +65,7 @@ function Agenda({ items, recent, forum, meetingDate }: { items: ResolvedDecision
   return <div className="space-y-5">
     <section className="rounded-lg border border-border/70 bg-card p-6 shadow-sm">
       <p className="text-xs font-semibold uppercase text-primary">Agenda</p>
-      <h2 className="mt-1 font-display text-2xl font-semibold">{forum} · {meetingDate}</h2>
+      <h2 className="mt-1 font-display text-2xl font-semibold">{forum} · {formatDate(meetingDate)}</h2>
       <p className="mt-1 text-sm text-muted-foreground">Decisions required, with the context and options each one needs.</p>
       <ol className="mt-5 space-y-5">
         {items.map((item, index) => <li key={item.id} className="rounded-md border p-5">
@@ -87,23 +100,26 @@ function Agenda({ items, recent, forum, meetingDate }: { items: ResolvedDecision
   </div>;
 }
 
-function MeetingMode({ items, outcomes, setOutcomes, meetingDate, forum }: { items: ResolvedDecision[]; outcomes: Record<string, Outcome>; setOutcomes: (value: Record<string, Outcome>) => void; meetingDate: string; forum: DecisionForum }) {
+function MeetingMode({ items, outcomes, setOutcomes, meetingDate, forum, onRecorded }: { items: ResolvedDecision[]; outcomes: Record<string, Outcome>; setOutcomes: (value: Record<string, Outcome>) => void; meetingDate: string; forum: DecisionForum; onRecorded: (id: string) => void }) {
   const [index, setIndex] = useState(0);
+  const { recordDecision } = useGovernanceMutations();
+  const canRecord = useCan("contributor");
   const item = items[index];
   if (!item) return <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">No decisions are waiting for {forum}.</div>;
-  const outcome = outcomes[item.id];
+  const outcome = outcomes[item.id] ?? (item.status !== "Pending" && item.chosenOptionId ? { optionId: item.chosenOptionId, rationale: item.rationale ?? "" } : undefined);
+  const done = item.status !== "Pending";
   return <div className="space-y-4">
     <div className="flex flex-wrap items-center gap-2">
-      {items.map((entry, position) => <button key={entry.id} onClick={() => setIndex(position)} className={cn("rounded-full px-3 py-1 text-xs font-semibold", position === index ? "bg-primary text-primary-foreground" : outcomes[entry.id] ? "bg-health-good/20 text-health-good-foreground" : "bg-muted text-muted-foreground")}>{entry.reference}</button>)}
+      {items.map((entry, position) => <button key={entry.id} onClick={() => setIndex(position)} className={cn("rounded-full px-3 py-1 text-xs font-semibold", position === index ? "bg-primary text-primary-foreground" : entry.status !== "Pending" ? "bg-health-good/20 text-health-good-foreground" : "bg-muted text-muted-foreground")}>{entry.reference}</button>)}
     </div>
     <section className="rounded-lg border border-border/70 bg-card p-6 shadow-sm">
-      <p className="text-xs font-semibold uppercase text-primary">{forum} · {meetingDate} · item {index + 1} of {items.length}</p>
+      <p className="text-xs font-semibold uppercase text-primary">{forum} · {formatDate(meetingDate)} · item {index + 1} of {items.length}</p>
       <h2 className="mt-2 font-display text-2xl font-semibold">{item.title}</h2>
       <p className="mt-1 text-sm text-muted-foreground">{item.scopeName} · needed by {formatDate(item.neededBy)} · decision maker {item.decisionMaker}</p>
       <p className="mt-4 text-base leading-7">{item.context}</p>
       <div className="mt-5 space-y-3">
         {item.options.map(option => <label key={option.id} className={cn("flex cursor-pointer gap-3 rounded-md border p-4", outcome?.optionId === option.id && "border-primary bg-primary/5")}>
-          <input type="radio" name={`meeting-${item.id}`} className="mt-1" checked={outcome?.optionId === option.id} onChange={() => setOutcomes({ ...outcomes, [item.id]: { optionId: option.id, rationale: outcome?.rationale ?? "" } })} />
+          <input type="radio" name={`meeting-${item.id}`} className="mt-1" disabled={done || !canRecord} checked={outcome?.optionId === option.id} onChange={() => setOutcomes({ ...outcomes, [item.id]: { optionId: option.id, rationale: outcome?.rationale ?? "" } })} />
           <div className="flex-1">
             <p className="font-semibold">{option.title}</p>
             <div className="mt-2 grid gap-3 sm:grid-cols-2">
@@ -114,13 +130,13 @@ function MeetingMode({ items, outcomes, setOutcomes, meetingDate, forum }: { ite
         </label>)}
       </div>
       <label className="mt-4 block space-y-1.5"><span className="text-xs font-semibold text-muted-foreground">Rationale recorded in the minutes</span>
-        <Textarea rows={3} value={outcome?.rationale ?? ""} onChange={event => setOutcomes({ ...outcomes, [item.id]: { optionId: outcome?.optionId ?? "", rationale: event.target.value } })} placeholder="What the forum agreed and why…" />
+        <Textarea rows={3} disabled={done || !canRecord} value={outcome?.rationale ?? ""} onChange={event => setOutcomes({ ...outcomes, [item.id]: { optionId: outcome?.optionId ?? "", rationale: event.target.value } })} placeholder="What the forum agreed and why…" />
       </label>
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <Button disabled={!outcome?.optionId || !outcome.rationale.trim()} onClick={() => setIndex(Math.min(items.length - 1, index + 1))}><CheckCircle2 />Record and move on</Button>
+        {canRecord && !done && <Button disabled={!outcome?.optionId || !outcome.rationale.trim() || recordDecision.isPending} onClick={() => outcome && recordDecision.mutate({ id: item.id, optionId: outcome.optionId, rationale: outcome.rationale, decisionDate: meetingDate, lastSeen: item.updatedAt }, { onSuccess: () => { onRecorded(item.id); setIndex(Math.min(items.length - 1, index + 1)); } })}><CheckCircle2 />Record and move on</Button>}
         <Button variant="outline" disabled={index === 0} onClick={() => setIndex(index - 1)}>Previous</Button>
         <Button variant="outline" disabled={index === items.length - 1} onClick={() => setIndex(index + 1)}>Next</Button>
-        {outcome?.optionId && outcome.rationale.trim() && <span className="ml-auto inline-flex items-center gap-1.5 text-xs font-semibold text-health-good-foreground"><CheckCircle2 className="size-4" />Outcome recorded — this decision becomes read-only</span>}
+        {done && <span className="ml-auto inline-flex items-center gap-1.5 text-xs font-semibold text-health-good-foreground"><CheckCircle2 className="size-4" />Outcome recorded — this decision is now read-only</span>}
       </div>
     </section>
   </div>;

@@ -9,7 +9,9 @@ import { getBenefitPercent, getBenefitRealised, getFinancialHealth, getIssueHeal
 import { getBenefitsByObjective, getMeasurementSchedule, getValueMetrics } from "@/services/benefits-value";
 import { useBenefits } from "@/hooks/use-benefits";
 import { toProjectCode } from "@/services/legacy-bridge";
-import { getDecisions, madeSince } from "@/services/decisions";
+import { madeSince } from "@/services/decisions";
+import { useGovernance } from "@/hooks/use-governance";
+import { addDaysIso } from "@/lib/today";
 import { isBenefitBehindProfile } from "@/services/pmo";
 import { getSettings } from "@/services/settings";
 import { cn } from "@/lib/utils";
@@ -81,10 +83,11 @@ function BenefitsPage({collection,projects,pageNumber,total}:{collection:Collect
 }
 
 function DecisionsPage({collection,projects,pageNumber,total}:{collection:Collection;projects:Project[];pageNumber:number;total:number}){
-  const projectIds=new Set(projects.map(project=>project.id));
-  const decisions=getDecisions().filter(decision=>!decision.projectId||projectIds.has(decision.projectId));
+  // Temporary until committee packs move to Supabase later in Stage 4c: match prototype projects by code.
+  const codes=new Set(projects.map(project=>toProjectCode(project.id)));
+  const decisions=(useGovernance().data?.decisions??[]).filter(decision=>!decision.projectCode||codes.has(decision.projectCode));
   const required=decisions.filter(decision=>decision.status==="Pending").sort((a,b)=>a.daysToNeededBy-b.daysToNeededBy);
-  const made=decisions.filter(decision=>madeSince(decision,"21/08/2026"));
+  const made=decisions.filter(decision=>madeSince(decision,addDaysIso(-31)));
   return <div className="min-h-[580px] p-7 sm:p-10"><PackHeader collection={collection} pageNumber={pageNumber} total={total}/>
     <div className="mt-7"><p className="text-xs font-semibold uppercase text-primary">Governance</p><h2 className="mt-2 font-display text-3xl font-semibold">Decisions</h2></div>
     <div className="mt-6"><h3 className="font-semibold">Decisions required</h3>

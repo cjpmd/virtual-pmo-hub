@@ -15,7 +15,7 @@ import {
   listProjects,
 } from "@/services/hierarchy";
 import { loadPortfolioOverview } from "@/services/analytics";
-import { listMilestones, listRaid } from "@/services/project-records";
+import { listMilestones, listOrgRaid, listRaid } from "@/services/project-records";
 import { qk } from "@/services/query-keys";
 
 export function usePortfolios() {
@@ -116,4 +116,10 @@ export function useMyResourceId() {
     staleTime: 10 * 60_000,
   });
   return query.data ?? null;
+}
+
+/** Every risk and issue in the organisation (RAIDD register). Lives under projects, so record writes refresh it. */
+export function useOrgRaid() {
+  const orgId = useOrgId();
+  return useQuery({ queryKey: qk.orgRaid(orgId), queryFn: () => listOrgRaid(orgId) });
 }

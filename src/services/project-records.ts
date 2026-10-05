@@ -312,3 +312,85 @@ export async function updateIssue(id: string, input: IssueInput, lastSeen?: stri
 export async function deleteIssues(ids: string[]) {
   await deleteRows("issues", ids, "Deleting issues");
 }
+
+// ---- Organisation-wide RAID (RAIDD register) ---------------------------------------------
+
+export interface ScopedRisk extends RiskItem {
+  projectId: string | null;
+  projectCode: string | null;
+  projectName: string;
+  programmeName: string;
+}
+export interface ScopedIssue extends IssueItem {
+  projectId: string | null;
+  projectCode: string | null;
+  projectName: string;
+  programmeName: string;
+}
+
+/** Every visible risk and issue in the organisation, with the project or programme it sits in. */
+export async function listOrgRaid(orgId: string) {
+  const [risks, issues, projects, programmes] = await Promise.all([
+    supabase
+      .from("risks")
+      .select(
+        "id, ref, title, description, owner_id, probability, impact, score, response, status, review_date, updated_at, project_id, programme_id",
+      )
+      .eq("organisation_id", orgId)
+      .order("score", { ascending: false }),
+    supabase
+      .from("issues")
+      .select(
+        "id, ref, title, description, owner_id, severity, status, due_date, updated_at, project_id, programme_id",
+      )
+      .eq("organisation_id", orgId)
+      .order("ref"),
+    supabase.from("v_projects").select("id, code, name, programme_id").eq("organisation_id", orgId),
+    supabase.from("programmes").select("id, name").eq("organisation_id", orgId),
+  ]);
+  const projectById = new Map(
+    unwrap(projects, "Loading projects").map((row) => [row.id ?? "", row]),
+  );
+  const programmeName = new Map(
+    unwrap(programmes, "Loading programmes").map((row) => [row.id, row.name]),
+  );
+  const where = (projectId: string | null, programmeId: string | null) => {
+    const project = projectId ? projectById.get(projectId) : undefined;
+    const programme = programmeId ?? project?.programme_id ?? null;
+    return {
+      projectId,
+      projectCode: project?.code ?? null,
+      projectName: project?.name ?? (programme && programmeName.get(programme)) ?? "Portfolio",
+      programmeName: (programme && programmeName.get(programme)) || "Portfolio",
+    };
+  };
+  return {
+    risks: unwrap(risks, "Loading risks").map((row): ScopedRisk => ({
+      id: row.id,
+      ref: row.ref,
+      title: row.title,
+      description: row.description,
+      ownerId: row.owner_id,
+      probability: row.probability,
+      impact: row.impact,
+      score: row.score ?? row.probability * row.impact,
+      response: responseLabel[row.response],
+      status: openClosedLabel[row.status],
+      reviewDate: row.review_date,
+      updatedAt: row.updated_at,
+      ...where(row.project_id, row.programme_id),
+    })),
+    issues: unwrap(issues, "Loading issues").map((row): ScopedIssue => ({
+      id: row.id,
+      ref: row.ref,
+      title: row.title,
+      description: row.description,
+      ownerId: row.owner_id,
+      severity: severityLabel[row.severity],
+      status: openClosedLabel[row.status],
+      dueDate: row.due_date,
+      updatedAt: row.updated_at,
+      ...where(row.project_id, row.programme_id),
+    })),
+  };
+}

@@ -39,6 +39,8 @@ export const qk = {
     all: (orgId: string) => ["org", orgId, "benefits"] as const,
     list: (orgId: string) => ["org", orgId, "benefits", "list"] as const,
   },
+  governance: (orgId: string) => ["org", orgId, "governance"] as const,
+  orgRaid: (orgId: string) => ["org", orgId, "projects", "org-raid"] as const,
   requests: (orgId: string) => ["org", orgId, "requests"] as const,
   resources: {
     list: (orgId: string) => ["org", orgId, "resources", "list"] as const,

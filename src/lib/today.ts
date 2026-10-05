@@ -31,3 +31,10 @@ export function daysFromToday(
   const target = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
   return Math.round((target.getTime() - today(timeZone).getTime()) / 86_400_000);
 }
+
+/** The ISO date a number of days from today (negative for the past). */
+export function addDaysIso(days: number, timeZone: string = DEFAULT_TIME_ZONE): string {
+  const date = today(timeZone);
+  date.setDate(date.getDate() + days);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}

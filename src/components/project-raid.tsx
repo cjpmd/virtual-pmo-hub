@@ -94,7 +94,7 @@ const nameFor = (people: Map<string, string>, id: string | null) =>
   (id && people.get(id)) || "Unassigned";
 
 // RaidWorkspace renders the prototype Risk/Issue shapes; these adapt the database records.
-const toRisk = (item: RiskItem, people: Map<string, string>): Risk => ({
+export const toRisk = (item: RiskItem, people: Map<string, string>): Risk => ({
   id: item.id,
   title: item.title,
   description: item.description ?? "",
@@ -106,7 +106,7 @@ const toRisk = (item: RiskItem, people: Map<string, string>): Risk => ({
   status: item.status,
   reviewDate: fromIsoDate(item.reviewDate),
 });
-const toIssue = (item: IssueItem, people: Map<string, string>): Issue => ({
+export const toIssue = (item: IssueItem, people: Map<string, string>): Issue => ({
   id: item.id,
   title: item.title,
   owner: nameFor(people, item.ownerId),

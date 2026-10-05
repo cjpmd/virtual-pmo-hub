@@ -8,7 +8,8 @@ import { formatCompactCurrency, formatDate, formatFinancialYear } from "@/lib/fo
 import { getBenefits, getPortfolioMetrics, getPortfolioMilestones, getProjects } from "@/services/pmo";
 import { getValueMetrics } from "@/services/benefits-value";
 import { useBenefits } from "@/hooks/use-benefits";
-import { getDecisionMetrics, getDecisions } from "@/services/decisions";
+import { getDecisionMetrics } from "@/services/decisions";
+import { useGovernance } from "@/hooks/use-governance";
 import { getDependencyMetrics } from "@/services/dependencies";
 import { getLessonMetrics } from "@/services/lessons";
 import { useSettings } from "@/services/settings";
@@ -25,7 +26,9 @@ function Page() {
   const metrics = getPortfolioMetrics();
   const benefits = useBenefits();
   const value = getValueMetrics(benefits.data?.benefits ?? []);
-  const decisions = getDecisionMetrics(getDecisions());
+  const governance = useGovernance();
+  const allDecisions = governance.data?.decisions ?? [];
+  const decisions = getDecisionMetrics(allDecisions);
   const dependencies = getDependencyMetrics();
   const lessons = getLessonMetrics();
 
@@ -52,7 +55,7 @@ function Page() {
     },
     {
       id: "decision-latency", name: "Decision latency", description: "How long decisions take from needed-by to made, by forum.", cadence: "Monthly", owner: "PMO",
-      rows: () => getDecisions().filter(item => item.decisionDate).slice(0, 12).map(item => ({
+      rows: () => allDecisions.filter(item => item.decisionDate).slice(0, 12).map(item => ({
         Reference: item.reference, Decision: item.title, Forum: item.forum, "Needed by": formatDate(item.neededBy), Decided: formatDate(item.decisionDate), Latency: `${item.latencyDays ?? 0} days`,
       })),
     },

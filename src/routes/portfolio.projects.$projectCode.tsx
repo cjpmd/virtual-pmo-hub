@@ -48,7 +48,8 @@ import { useFormat } from "@/lib/format";
 import { daysFromToday, todayIso } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { getAssuranceRow } from "@/services/assurance";
-import { getDecisionsFor, type ResolvedDecision } from "@/services/decisions";
+import { scopedTo, type ResolvedDecision } from "@/services/decisions";
+import { useGovernance } from "@/hooks/use-governance";
 import type { ProjectDetail } from "@/services/hierarchy";
 import { toMockProjectId, toProjectCode } from "@/services/legacy-bridge";
 import { getProjectLessons, hasPhaseLessonsReview } from "@/services/lessons";
@@ -156,7 +157,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
   const [manualTicks, setManualTicks] = useState<string[]>([]);
   const [handover, setHandover] = useState(false);
   const [handedOver, setHandedOver] = useState<number | null>(null);
-  const [openDecision, setOpenDecision] = useState<ResolvedDecision | null>(null);
+  const [openDecisionId, setOpenDecisionId] = useState<string | null>(null);
 
   // ---- From Supabase ----
   const phases = usePhases();
@@ -177,9 +178,15 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
   // ---- Still prototype data (Stage 4c), keyed by the demo project's old id ----
   const mockId = toMockProjectId(project.code);
   const legacy: Project | undefined = getProject(mockId);
+  const governance = useGovernance();
   const decisions = useMemo(
-    () => (legacy ? getDecisionsFor({ projectId: mockId }) : []),
-    [legacy, mockId],
+    () => scopedTo(governance.data?.decisions ?? [], { projectId: project.id }),
+    [governance.data, project.id],
+  );
+  const openDecision = decisions.find((item) => item.id === openDecisionId);
+  const changes = useMemo(
+    () => (governance.data?.changes ?? []).filter((change) => change.scope.projectId === project.id),
+    [governance.data, project.id],
   );
   const lessons = useMemo(() => (legacy ? getProjectLessons(mockId) : []), [legacy, mockId]);
   const reports = legacy?.reports ?? [];
@@ -486,7 +493,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
                     <div className="min-w-0 flex-1">
                       {entry.decision ? (
                         <button
-                          onClick={() => setOpenDecision(entry.decision ?? null)}
+                          onClick={() => setOpenDecisionId(entry.decision?.id ?? null)}
                           className="text-left text-sm font-medium text-primary hover:underline"
                         >
                           {entry.label}
@@ -653,7 +660,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
               {decisions.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => setOpenDecision(item)}
+                  onClick={() => setOpenDecisionId(item.id)}
                   className="block w-full rounded-lg border border-border/70 bg-card p-4 text-left shadow-sm hover:bg-accent/30"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2">
@@ -694,12 +701,12 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
               )}
             </div>
           )}
-          {tab === "assumptions" && <AssumptionsWorkspace scope={{ projectId: mockId }} compact />}
+          {tab === "assumptions" && <AssumptionsWorkspace scope={{ projectId: project.id }} compact />}
           {tab === "lessons" && <LessonsTab project={legacy} />}
           {tab === "changes" && (
             <Section title="Change requests">
               <div className="mt-4 space-y-3">
-                {(legacy.changes ?? []).map((change) => (
+                {changes.map((change) => (
                   <div
                     key={change.id}
                     className="flex items-center justify-between border-b border-border py-3"
@@ -713,7 +720,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
                     <span className="text-sm">{change.status}</span>
                   </div>
                 ))}
-                {!legacy.changes?.length && (
+                {!changes.length && (
                   <p className="mt-3 text-sm text-muted-foreground">No change requests raised.</p>
                 )}
               </div>
@@ -762,8 +769,8 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
       {openDecision && (
         <DecisionPanel
           decision={openDecision}
-          all={decisions}
-          close={() => setOpenDecision(null)}
+          all={governance.data?.decisions ?? decisions}
+          close={() => setOpenDecisionId(null)}
         />
       )}
     </div>
