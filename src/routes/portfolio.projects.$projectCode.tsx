@@ -285,7 +285,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <StateBadge state={project.state} />
-            <Button size="sm" onClick={() => openIssueTask(mockId)}>
+            <Button size="sm" onClick={() => openIssueTask(project.id)}>
               <ListPlus />
               Issue task
             </Button>
