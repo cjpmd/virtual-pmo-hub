@@ -20,7 +20,7 @@ This document records the Stage 1 decisions and turns them into a concrete schem
 | People | Every person field is a FK to **`resources`** (`*_id`). Only `created_by` and audit fields reference **`profiles`**. |
 | Audit columns | `created_at timestamptz not null default now()`, `updated_at timestamptz not null default now()` (maintained by the `set_updated_at()` trigger) and `created_by uuid default auth.uid() references profiles (id) on delete set null`. Append-only tables carry only `created_at`/`created_by`. |
 | Dates | `date` for calendar dates (start, finish, due, review, baseline…). `timestamptz` for events (created, responded, changed, synced). All conversion to and from `DD/MM/YYYY` happens in **one** module, `src/services/db/format.ts`, used only by services. |
-| "Today" | The database uses `org_today(organisation_id)`, which is `current_date` in the organisation's `settings->>'timeZone'`. The front end uses one `today()` helper (Stage 4) in place of the 33 hardcoded `21/09/2026` values. |
+| "Today" | The database uses `org_today(organisation_id)`, which is `current_date` in the organisation's `settings->>'timeZone'`. A session setting `vpmo.today` (a date) overrides it, for tests and the parity check only. The front end uses one `today()` helper (Stage 4) in place of the 33 hardcoded `21/09/2026` values. |
 | Naming | Tables are plural `snake_case`. Columns are the `snake_case` form of the front-end field name. That mechanical camelCase → snake_case change is **not** listed as a rename; §12 lists only real renames. Enum values are lower `snake_case`, and services map them to the Title Case labels the UI shows. |
 | Money | `numeric(14,2)`. Currency is per organisation (`settings.regional.baseCurrency`). Multi-currency stays out of scope apart from the `exchange_rates` table. |
 | Deletes | (review B) **Portfolios, programmes and projects have no client delete policy.** `state = 'closed'` is the lifecycle end (still reported). `archived_at timestamptz` hides a record created in error; every list view excludes `archived_at is not null` by default. **Work items are never hard-deleted by clients**: "delete" sets `deleted_at`, and views exclude those rows. Register rows (RAID, change requests, decisions…) can be deleted by managers, and `audit_log` captures it. History tables (`health_snapshots`, `milestone_forecast_history`, `work_item_events`) reference their parents `on delete restrict`. Other children cascade only from their direct parent. |
@@ -82,7 +82,7 @@ This document records the Stage 1 decisions and turns them into a concrete schem
 auth.users ─1:1─ profiles
 organisations ─< organisation_members >─ profiles
 organisations ─< workspaces ─< workspace_members >─ profiles
-organisations ─< resources (profile_id nullable, unique)
+organisations ─< resources (profile_id nullable, unique per organisation)
 workspaces ─< portfolios ─< programmes ─< projects
                       └──────────────────< projects   (direct, no programme)
 ```
@@ -131,7 +131,7 @@ Filled by an `after insert on auth.users` trigger, `handle_new_user()` (security
 |---|---|---|
 | id | uuid PK | |
 | organisation_id | uuid | org-level, not workspace-level: people span workspaces |
-| profile_id | uuid unique null → profiles | set when the person signs in. `on delete set null` |
+| profile_id | uuid null → profiles | set when the person signs in. `on delete set null`. Unique per organisation (`unique (organisation_id, profile_id)`), so one person can have a resource row in each organisation they belong to |
 | name | text not null | |
 | email | text | used to auto-link a profile on first sign-in |
 | job_title | text | |
@@ -428,7 +428,7 @@ Both ends must be in the same workspace (composite FKs). Cross-workspace depende
 - `benefit_projects`: benefit_id, project_id, attribution_percent numeric(5,2) check 0–100. Totals over 100% are allowed but surfaced as a warning column in `v_benefit_realisation`, which matches `getBenefitWarnings`.
 - `benefit_measures`: id, benefit_id, tenant columns, name, unit, measurement_method, data_source, frequency, data_provider text (a team name, not a person), baseline_value, baseline_date, next_due_date, sort_order, audit columns. `next_due_date` stays **stored** as a scheduling field the PMO edits, as the screens treat it.
 - `benefit_measure_targets`: measure_id, period_id → benefit_periods, value. PK `(measure_id, period_id)`.
-- `benefit_measurements`: id, measure_id, tenant columns, period_id, actual_value, evidence text, evidence_path null (Storage `evidence`), notes, submitted_by_id, submitted_date, validated_by_id, validated_date, query_note, status, audit columns. `unique (measure_id, period_id)`.
+- `benefit_measurements`: id, measure_id, tenant columns, period_id, actual_value, evidence text, evidence_path null (Storage `evidence`), notes, submitted_by_id, submitted_date, validated_by_id, validated_date, query_note, status, audit columns. Several rows per period are allowed (a resubmission after a query, or two data providers). The views use the validated row if there is one, otherwise the earliest submitted.
 - `benefit_reviews`: id, benefit_id, tenant columns, review_date, type, findings, lessons_learned, reviewer_id, audit columns.
 - `benefit_handovers` (0..1): benefit_id PK, tenant columns, bau_owner_id, bau_service, frequency, next_review_date, post_implementation_review_date, confirmed_by_id, confirmed_date, audit columns.
 - Benefit maps: `capabilities` (programme_id, title, description, owner_id), `capability_projects`, `outcomes` (programme_id, …), `outcome_capabilities`, `outcome_benefits`, `benefit_maps` (programme_id, name, description, layout jsonb `[{nodeKey, x, y}]`). The layout is UI state, so it stays jsonb.
@@ -643,40 +643,53 @@ Mechanical camelCase → snake_case (`dueDate` → `due_date`) is not listed. Se
 
 Small named migrations, applied through the Supabase connector. After each one I read `list_migrations` and save the committed file as `supabase/migrations/<version>_<name>.sql`, using **exactly** the version and name the database recorded.
 
-| # | Name | Contents |
+As built. The order differs from the original plan: `delivery` (milestones) comes before `work_items`, because milestone-linked work items need it. The `migrations` folder is the source of truth.
+
+| Version | Name | Contents |
 |---|---|---|
-| 1 | `extensions_enums_utils` | `pgcrypto`, `pg_cron`; all enums; `app_role_rank`, `set_updated_at`, `ref_counters` + `next_ref()` |
-| 2 | `tenancy_core` | profiles, organisations, subscriptions, organisation_members, workspaces, workspace_members, `handle_new_user`, last-admin guard |
-| 3 | `tenancy_rls_helpers` | helper functions (§9.2), RLS on the tenancy tables, `org_today`, `set_tenant_columns`, tenant immutability trigger |
-| 4 | `org_reference_data` | lookup_values, lifecycle_phases, gate_criteria, benefit_periods, exchange_rates, holidays, project_templates + RLS |
-| 5 | `resources` | resources, skills, leave, `link_profile_to_resource`, user_favourites + RLS |
-| 6 | `hierarchy` | portfolios, programmes, projects, strategic_objectives, collections, collection_projects + RLS |
-| 7 | `requests_roadmaps` | project_requests, request_benefit_drafts, roadmaps and children + RLS |
-| 8 | `work_items` | project_buckets, work_items + children, events and offers triggers + RLS |
-| 9 | `delivery` | milestones + forecast history, project_team_members, resource_assignments, status_reports + RLS |
-| 10 | `raid_change` | risks, issues, assumptions, change_requests + RLS |
-| 11 | `decisions_dependencies` | decisions + children + links, dependencies + links + RLS |
-| 12 | `benefits` | benefits and children, capabilities, outcomes, maps + RLS |
-| 13 | `lessons` | lessons, lesson_project_types, improvement_actions, phase_lessons_reviews + RLS |
-| 14 | `integrations` | ms_connections, plan links, outbox, conflicts, log + RLS |
-| 15 | `rollup_views` | all §10 views and functions |
-| 16 | `snapshots_audit` | health_snapshots, `capture_health_snapshots`, audit_log + triggers, cron jobs |
-| 17 | `create_organisation_rpc` | `create_organisation()` and defaults |
-| 18 | `storage` | buckets + storage.objects policies |
+| 20261005174438 | `extensions_enums_utils` | `pgcrypto`, `pg_cron`; all enums; `private` schema; `set_updated_at`, `ref_counters`, `next_ref()`, `assign_ref()` |
+| 20261005174507 | `tenancy_core` | profiles, organisations, subscriptions, organisation_members, workspaces, workspace_members, `handle_new_user`, last-admin guard |
+| 20261005174626 | `tenancy_rls_helpers` | helper functions (§9.2), `org_today`, `tenant_guard`, RLS on the tenancy tables |
+| 20261005174707 | `org_reference_data` | lookup_values, lifecycle_phases, gate_criteria, benefit_periods, exchange_rates, holidays, project_templates + RLS |
+| 20261005174736 | `resources` | resources, skills, leave, `link_profile_to_resource`, user_favourites + RLS |
+| 20261005174830 | `hierarchy` | portfolios, programmes, projects, strategic_objectives, collections, collection_projects, `can_edit_project` + RLS |
+| 20261005174922 | `requests_roadmaps` | project_requests, request_benefit_drafts, roadmaps and children + RLS |
+| 20261005175004 | `delivery` | milestones + forecast history, project_team_members, resource_assignments, status_reports + RLS |
+| 20261005175109 | `work_items` | project_buckets, work_items + children, events and offers triggers + RLS |
+| 20261005175156 | `raid_change` | risks, issues, assumptions, change_requests + RLS |
+| 20261005175302 | `decisions_dependencies` | decisions + children + links, dependencies + links + RLS |
+| 20261005175434 | `benefits` | benefits and children, capabilities, outcomes, maps + RLS |
+| 20261005175510 | `lessons` | lessons, lesson_project_types, improvement_actions, phase_lessons_reviews + RLS |
+| 20261005175540 | `integrations` | ms_connections, plan links, outbox, conflicts, log + RLS |
+| 20261005175656 | `rollup_views` | all §10 views and functions, `js_round()` |
+| 20261005175729 | `snapshots_audit` | health_snapshots, `capture_health_snapshots`, audit_log + triggers, cron jobs |
+| 20261005175820 | `create_organisation_rpc` | `create_organisation()`, `seed_org_defaults()`, `join_demo_organisation()` |
+| 20261005175833 | `storage` | buckets + storage.objects policies (one per action) |
+| 20261005183516 | `lock_down_rls_auto_enable` | security advisor fix (see below) |
 
 **Seed.** `scripts/generate-seed.ts` imports the current mock modules and writes `supabase/seed.sql`:
 - one demo organisation ("Demo University", `is_demo = true`) with one workspace
-- deterministic uuids (uuid v5 of the old string id), so reruns are stable
+- deterministic uuids (`md5('virtual-pmo-demo:' || kind:old_id)` cast to uuid), so reruns are stable
 - project codes from the existing lesson prefixes, the rest derived from initials and made unique
-- dates re-expressed relative to the run date: `current_date + (mock_date − 2026-09-21)`
+- dates re-expressed relative to the run: mock 21/09/2026 (a Monday) becomes the Monday of the current London week, so weekday patterns survive
 - every person name resolved to a `resources` row. Names that match neither directory become unlinked, non-bookable resources, listed with `raise notice`
 - synthetic `health_snapshots` backfill (`is_synthetic = true`)
 
 It has no auth users. After your first sign-in, `select public.join_demo_organisation()` adds you as admin. This works only for orgs flagged `is_demo` and only for profiles named in `organisations.settings->'demoAdmins'`.
 
-**Types.** I'll generate them with the connector's `generate_typescript_types` and write them to `src/integrations/supabase/types.ts`, identical to `supabase gen types typescript --linked`.
+The seed builds helper functions in a temporary `seed_tmp` schema and drops it at the end. On the hosted project the seed was loaded in chunks through the connector, which cannot run `drop schema` without a confirmation prompt, so `seed_tmp` has to be dropped by hand there (`drop schema seed_tmp cascade;`).
 
-**Advisors.** I'll run the security and performance advisors after migration 16, then again after the seed, and fix the findings.
+**Types.** Generated with the connector's `generate_typescript_types` into `src/integrations/supabase/types.ts`, identical to `supabase gen types typescript --linked`.
+
+**Advisors (after the seed).**
+- Security:
+  - `public.rls_auto_enable()` was executable by `anon` and `authenticated`. It is Supabase's platform event-trigger function, not ours. Fixed by revoking EXECUTE in `lock_down_rls_auto_enable`. The committed file guards the revoke so a local stack without the function still resets.
+  - `create_organisation()` and `join_demo_organisation()` are SECURITY DEFINER and callable by `authenticated`. This is intended: they are the onboarding RPCs and check the caller themselves. Accepted.
+- Performance: only `unused_index` (INFO). These are the FK-covering indexes, unused because the database has had no traffic yet. Kept; removing them would raise `unindexed_foreign_keys` instead.
+
+**Checks.**
+- `scripts/health-parity.sql` + `scripts/health-parity.ts` compare the SQL roll-ups with `pmo.ts`.
+- `supabase/tests/tenant_guard.sql` runs the cross-organisation checks in a rolled-back transaction.
 
 ---
 
