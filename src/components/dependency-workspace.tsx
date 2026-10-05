@@ -38,8 +38,8 @@ export function DependencyWorkspace() {
     rows.forEach(row => {
       const item = all.find(entry => entry.id === row.id);
       if (!item) return;
-      if (row.finish !== item.requiredBy || row.priority !== item.criticality || row.validation !== item.validation || row.dependencyType !== item.type) {
-        saveDependency({ ...item, requiredBy: String(row.finish ?? item.requiredBy), criticality: row.priority as ResolvedDependency["criticality"], validation: row.validation as ResolvedDependency["validation"], type: row.dependencyType as ResolvedDependency["type"] });
+      if (row.finish !== item.requiredBy || row.priority !== item.criticality || row["validation"] !== item.validation || row["dependencyType"] !== item.type) {
+        saveDependency({ ...item, requiredBy: String(row.finish ?? item.requiredBy), criticality: row.priority as ResolvedDependency["criticality"], validation: row["validation"] as ResolvedDependency["validation"], type: row["dependencyType"] as ResolvedDependency["type"] });
       }
     });
   };
@@ -73,7 +73,7 @@ export function DependencyWorkspace() {
     <BoardWorkspace title="Dependency register" itemLabel="dependency" manage={false} onRowsChange={updateRows} rows={dependenciesToRows(items)} columns={dependencyColumns} groupOptions={["group", "boundary", "dependencyType", "validation"]} seededViews={dependencyViews} seededAutomations={dependencyAutomationRecipes}
       renderTitle={row => <Button variant="link" className="h-auto p-0 text-left" onClick={event => { event.stopPropagation(); setEditing(items.find(item => item.id === row.id) ?? null) }}>{String(row["reference"])} · {row.title}</Button>} />
 
-    {editing && <DependencyEditor item={editing === "new" ? undefined : editing} onClose={() => setEditing(null)} />}
+    {editing && <DependencyEditor {...(editing === "new" ? {} : { item: editing })} onClose={() => setEditing(null)} />}
 
     {selected && <DependencyPanel dependency={items.find(item => item.id === selected.id) ?? selected} overrides={overrides} onAccept={accept} onRaise={raise} close={() => setSelected(null)} />}
 

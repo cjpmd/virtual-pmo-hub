@@ -356,6 +356,6 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
     {selected && <DependencyPanel dependency={items.find(item => item.id === selected.id) ?? selected} overrides={overrides}
       onAccept={(id, side) => setOverrides(current => { const base = current[id] ?? { giver: all.find(item => item.id === id)?.giverAccepted ?? false, receiver: all.find(item => item.id === id)?.receiverAccepted ?? false }; return { ...current, [id]: { ...base, [side]: true } } })}
       onRaise={() => undefined} close={() => setSelected(null)}/>}
-    {editing && <DependencyEditor item={"id" in editing ? editing : undefined} fromId={"from" in editing ? editing.from : undefined} toId={"to" in editing ? editing.to : undefined} onClose={() => setEditing(null)} />}
+    {editing && <DependencyEditor {...("id" in editing ? { item: editing } : { fromId: editing.from, toId: editing.to })} onClose={() => setEditing(null)} />}
   </div>;
 }
