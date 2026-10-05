@@ -3,7 +3,9 @@ import { useState } from "react";
 import { AutoBreadcrumbs } from "@/components/section-nav";
 import { RoadmapWorkspace } from "@/components/roadmap-workspace";
 import { PageHeader } from "@/components/pmo-ui";
-import { getRoadmaps } from "@/services/pmo";
+import { QueryState } from "@/components/query-state";
+import { useRoadmaps } from "@/hooks/use-roadmaps";
+import type { RoadmapView } from "@/services/roadmaps";
 
 const title = "Portfolio Roadmaps — Virtual PMO", description = "Plan and present portfolio delivery across linked projects and proposed initiatives.";
 export const Route = createFileRoute("/portfolio/roadmap")({
@@ -17,12 +19,16 @@ export const Route = createFileRoute("/portfolio/roadmap")({
 });
 
 function RoadmapsPage() {
-  const roadmaps = getRoadmaps();
+  const query = useRoadmaps();
+  return <QueryState query={query}>{roadmaps => roadmaps.length ? <Roadmaps roadmaps={roadmaps} /> : <div className="space-y-6"><AutoBreadcrumbs/><p className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">No roadmaps yet.</p></div>}</QueryState>;
+}
+
+function Roadmaps({ roadmaps }: { roadmaps: RoadmapView[] }) {
   const [roadmapId, setRoadmapId] = useState(roadmaps[0]?.id ?? "");
   const { focus } = useSearch({ from: "/portfolio/roadmap" });
   const navigate = useNavigate();
   const roadmap = roadmaps.find(item => item.id === roadmapId);
-  if (!roadmap) return <p>No roadmaps available.</p>;
+  if (!roadmap) return null;
   return <div className="space-y-6">
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <AutoBreadcrumbs/>

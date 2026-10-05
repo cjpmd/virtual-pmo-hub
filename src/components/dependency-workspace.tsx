@@ -5,49 +5,45 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { BoardWorkspace, dependencyAutomationRecipes } from "@/components/board-workspace";
-import { DependencyPanel, type AcceptanceState } from "@/components/dependency-panel";
+import { DependencyPanel } from "@/components/dependency-panel";
+import { QueryState } from "@/components/query-state";
+import { useBoardRecordSync } from "@/hooks/use-board-record-sync";
+import { useDependencies, useDependencyMutations } from "@/hooks/use-dependencies";
+import { useCan } from "@/hooks/use-permissions";
+import { toast } from "sonner";
 import { KpiCard } from "@/components/pmo-ui";
-import { dependencyColumns, dependenciesToRows, dependencyViews } from "@/lib/dependency-board-data";
-import { getDependencies, getDependencyMetrics, getDependencySyncAgenda, type ResolvedDependency } from "@/services/dependencies";
+import { dependencyColumns, dependenciesToRows, dependencyInputFromBoard, dependencyViews } from "@/lib/dependency-board-data";
+import { getDependencyMetrics, getDependencySyncAgenda, type DependenciesData, type DependencyInput, type ResolvedDependency } from "@/services/dependencies";
 import { cn } from "@/lib/utils";
+import { todayIso } from "@/lib/today";
 import { DependencyEditor } from "@/components/dependency-editor";
-import { useDependencyVersion, saveDependency } from "@/services/dependency-store";
-import type { BoardRow } from "@/components/board-workspace";
 
 interface RaidDraft { kind: "Risk" | "Issue"; title: string; description: string; owner: string; dueDate: string; dependency: ResolvedDependency }
 
 export function DependencyWorkspace() {
-  useDependencyVersion();
-  const all = getDependencies();
-  const [editing, setEditing] = useState<ResolvedDependency | "new" | null>(null);
-  const [overrides, setOverrides] = useState<Record<string, AcceptanceState>>({});
-  const [selected, setSelected] = useState<ResolvedDependency | null>(null);
+  const dependencies = useDependencies();
+  return <QueryState query={dependencies}>{data => <Workspace data={data} />}</QueryState>;
+}
+
+function Workspace({ data }: { data: DependenciesData }) {
+  const items = data.dependencies;
+  const [editingId, setEditingId] = useState<string | "new" | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sync, setSync] = useState(false);
   const [draft, setDraft] = useState<RaidDraft | null>(null);
-  const [raised, setRaised] = useState<string[]>([]);
-
-  const items = all.map(item => {
-    const override = overrides[item.id];
-    if (!override) return item;
-    const confirmed = override.giver && override.receiver;
-    return { ...item, giverAccepted: override.giver, receiverAccepted: override.receiver, acceptance: confirmed ? "Confirmed" : override.giver ? "Awaiting receiver" : override.receiver ? "Awaiting giver" : "Awaiting both", validation: confirmed && item.validation !== "Closed" && item.validation !== "Broken" ? "Confirmed" as const : item.validation };
-  });
+  const canEdit = useCan("contributor"), canDelete = useCan("manager");
+  const mutations = useDependencyMutations();
+  const editing = editingId === "new" ? "new" : items.find(item => item.id === editingId);
+  const selected = items.find(item => item.id === selectedId);
   const metrics = getDependencyMetrics(items);
   const agenda = getDependencySyncAgenda(items);
-  const updateRows = (rows: BoardRow[]) => {
-    rows.forEach(row => {
-      const item = all.find(entry => entry.id === row.id);
-      if (!item) return;
-      if (row.finish !== item.requiredBy || row.priority !== item.criticality || row["validation"] !== item.validation || row["dependencyType"] !== item.type) {
-        saveDependency({ ...item, requiredBy: String(row.finish ?? item.requiredBy), criticality: row.priority as ResolvedDependency["criticality"], validation: row["validation"] as ResolvedDependency["validation"], type: row["dependencyType"] as ResolvedDependency["type"] });
-      }
-    });
-  };
-
-  const accept = (id: string, side: "giver" | "receiver") => { const item = all.find(entry => entry.id === id); if (item) saveDependency({ ...item, [side === "giver" ? "giverAccepted" : "receiverAccepted"]: true }); setOverrides(current => {
-    const base = current[id] ?? { giver: all.find(item => item.id === id)?.giverAccepted ?? false, receiver: all.find(item => item.id === id)?.receiverAccepted ?? false };
-    return { ...current, [id]: { ...base, [side]: true } };
-  }); };
+  const onRecordChange = useBoardRecordSync<DependencyInput>({
+    toInput: dependencyInputFromBoard,
+    create: () => setEditingId("new"),
+    update: (id, input, lastSeen) => mutations.update.mutateAsync({ id, input, lastSeen }),
+    remove: ids => mutations.remove.mutate(ids),
+    lastSeen: id => items.find(item => item.id === id)?.updatedAt,
+  });
   const raise = (dependency: ResolvedDependency, kind: "Risk" | "Issue") => setDraft({
     kind, dependency,
     title: kind === "Risk" ? `${dependency.reference}: ${dependency.giverLabel} may not deliver by ${formatDate(dependency.requiredBy)}` : `${dependency.reference}: ${dependency.giverLabel} has not delivered by ${formatDate(dependency.requiredBy)}`,
@@ -66,18 +62,18 @@ export function DependencyWorkspace() {
 
     <div className="flex flex-wrap items-center gap-3">
       <Button onClick={() => setSync(true)}><ClipboardList />Dependency sync</Button>
-      <Button variant="outline" onClick={() => setEditing("new")}><Plus />New dependency</Button>
+      {canEdit && <Button variant="outline" onClick={() => setEditingId("new")}><Plus />New dependency</Button>}
       <p className="text-sm text-muted-foreground">Generates the agenda for the PM sync: cross-PM dependencies that are off track, awaiting confirmation, or needed in the next 30 days.</p>
     </div>
 
-    <BoardWorkspace title="Dependency register" itemLabel="dependency" manage={false} onRowsChange={updateRows} rows={dependenciesToRows(items)} columns={dependencyColumns} groupOptions={["group", "boundary", "dependencyType", "validation"]} seededViews={dependencyViews} seededAutomations={dependencyAutomationRecipes}
-      renderTitle={row => <Button variant="link" className="h-auto p-0 text-left" onClick={event => { event.stopPropagation(); setEditing(items.find(item => item.id === row.id) ?? null) }}>{String(row["reference"])} · {row.title}</Button>} />
+    <BoardWorkspace key={String(canEdit)} title="Dependency register" itemLabel="dependency" manage={canEdit} canDelete={canDelete} canCreate={false} onRecordChange={onRecordChange} rows={dependenciesToRows(items)} columns={canEdit ? dependencyColumns : dependencyColumns.map(column => ({ ...column, editable: false }))} groupOptions={["group", "boundary", "dependencyType", "validation"]} seededViews={dependencyViews} seededAutomations={dependencyAutomationRecipes}
+      renderTitle={row => <Button variant="link" className="h-auto p-0 text-left" onClick={event => { event.stopPropagation(); if (canEdit) setEditingId(row.id); else setSelectedId(row.id) }}>{String(row["reference"])} · {row.title}</Button>} />
 
-    {editing && <DependencyEditor {...(editing === "new" ? {} : { item: editing })} onClose={() => setEditing(null)} />}
+    {editing && <DependencyEditor data={data} {...(editing === "new" ? {} : { item: editing })} onClose={() => setEditingId(null)} />}
 
-    {selected && <DependencyPanel dependency={items.find(item => item.id === selected.id) ?? selected} overrides={overrides} onAccept={accept} onRaise={raise} close={() => setSelected(null)} />}
+    {selected && <DependencyPanel dependency={selected} onRaise={raise} close={() => setSelectedId(null)} />}
 
-    {sync && <SyncAgenda agenda={agenda} close={() => setSync(false)} onOpen={dependency => { setSync(false); setSelected(dependency) }} />}
+    {sync && <SyncAgenda agenda={agenda} people={data.people} close={() => setSync(false)} onOpen={dependency => { setSync(false); setSelectedId(dependency.id) }} />}
 
     {draft && <>
       <button aria-label="Close RAID draft" className="fixed inset-0 z-[60] bg-overlay" onClick={() => setDraft(null)} />
@@ -90,23 +86,25 @@ export function DependencyWorkspace() {
         <label className="mt-5 block space-y-1.5"><span className="text-xs font-semibold text-muted-foreground">Title</span><Input value={draft.title} onChange={event => setDraft({ ...draft, title: event.target.value })} /></label>
         <label className="mt-4 block space-y-1.5"><span className="text-xs font-semibold text-muted-foreground">Description</span><Textarea rows={6} value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} /></label>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <label className="space-y-1.5"><span className="text-xs font-semibold text-muted-foreground">Owner</span><Input value={draft.owner} onChange={event => setDraft({ ...draft, owner: event.target.value })} /></label>
-          <label className="space-y-1.5"><span className="text-xs font-semibold text-muted-foreground">{draft.kind === "Risk" ? "Review date" : "Due date"}</span><Input value={draft.dueDate} onChange={event => setDraft({ ...draft, dueDate: event.target.value })} /></label>
+          <label className="space-y-1.5"><span className="text-xs font-semibold text-muted-foreground">Owner</span><Input list="raid-draft-people" value={draft.owner} onChange={event => setDraft({ ...draft, owner: event.target.value })} /><datalist id="raid-draft-people">{data.people.map(person => <option key={person.id} value={person.name} />)}</datalist></label>
+          <label className="space-y-1.5"><span className="text-xs font-semibold text-muted-foreground">{draft.kind === "Risk" ? "Review date" : "Due date"}</span><Input type="date" value={draft.dueDate} onChange={event => setDraft({ ...draft, dueDate: event.target.value })} /></label>
         </div>
         <div className="mt-6 flex gap-2">
-          <Button onClick={() => { setRaised(current => [...current, `${draft.dependency.reference}-${draft.kind}`]); setDraft(null) }}>{draft.kind === "Risk" ? <ShieldAlert /> : <TriangleAlert />}Create {draft.kind.toLowerCase()}</Button>
+          <Button disabled={mutations.raise.isPending} onClick={() => mutations.raise.mutate({ dependency: draft.dependency, kind: draft.kind, title: draft.title, description: draft.description, ownerId: data.people.find(person => person.name === draft.owner)?.id ?? null, date: draft.dueDate || null }, { onSuccess: () => { toast.success(`${draft.kind} raised and linked to ${draft.dependency.reference}.`); setDraft(null) } })}>{draft.kind === "Risk" ? <ShieldAlert /> : <TriangleAlert />}Create {draft.kind.toLowerCase()}</Button>
           <Button variant="outline" onClick={() => setDraft(null)}>Cancel</Button>
         </div>
       </aside>
     </>}
 
-    {raised.length > 0 && <div className="flex items-center gap-2 rounded-md border border-health-good/40 bg-health-good/10 p-3 text-sm">
-      <CheckCircle2 className="size-4 text-health-good-foreground" />{raised.length} RAID item{raised.length === 1 ? "" : "s"} raised from dependencies in this session: {raised.join(", ")}.
-    </div>}
   </div>;
 }
 
-function SyncAgenda({ agenda, close, onOpen }: { agenda: ReturnType<typeof getDependencySyncAgenda>; close: () => void; onOpen: (dependency: ResolvedDependency) => void }) {
+function SyncAgenda({ agenda, people, close, onOpen }: { agenda: ReturnType<typeof getDependencySyncAgenda>; people: DependenciesData["people"]; close: () => void; onOpen: (dependency: ResolvedDependency) => void }) {
+  const items = [...agenda.offTrack, ...agenda.awaitingConfirmation, ...agenda.dueSoon];
+  const ownerIds = new Set(items.flatMap(item => [item.giver.ownerId, item.receiver.ownerId]));
+  const emails = people.filter(person => ownerIds.has(person.id) && person.email).map(person => person.email);
+  const body = [["Off track", agenda.offTrack], ["Awaiting confirmation", agenda.awaitingConfirmation], ["Required in the next 30 days", agenda.dueSoon]].map(([title, list]) => `${title as string}\n${(list as ResolvedDependency[]).map(item => `- ${item.reference} ${item.giverLabel} -> ${item.receiverLabel} (required by ${formatDate(item.requiredBy)})`).join("\n") || "- None"}`).join("\n\n");
+  const mailto = `mailto:${emails.join(",")}?subject=${encodeURIComponent("Dependency sync agenda")}&body=${encodeURIComponent(body)}`;
   const sections: Array<{ title: string; note: string; items: ResolvedDependency[]; tone: string; Icon: typeof TriangleAlert }> = [
     { title: "Off track", note: "The giving side will miss the required-by date.", items: agenda.offTrack, tone: "border-health-bad/40 bg-health-bad/5", Icon: TriangleAlert },
     { title: "Awaiting confirmation", note: "One or both owners have not accepted the dependency.", items: agenda.awaitingConfirmation, tone: "border-health-warn/40 bg-health-warn/5", Icon: Handshake },
@@ -119,7 +117,7 @@ function SyncAgenda({ agenda, close, onOpen }: { agenda: ReturnType<typeof getDe
         <div>
           <p className="text-xs font-semibold uppercase text-primary">Project manager sync</p>
           <h2 className="mt-2 font-display text-2xl font-semibold">Dependency sync agenda</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Cross-PM and external dependencies needing a conversation · generated 21/09/2026</p>
+          <p className="mt-2 text-sm text-muted-foreground">Cross-PM and external dependencies needing a conversation · generated {formatDate(todayIso())}</p>
         </div>
         <Button size="icon" variant="ghost" onClick={close} aria-label="Close"><X /></Button>
       </div>
@@ -137,7 +135,7 @@ function SyncAgenda({ agenda, close, onOpen }: { agenda: ReturnType<typeof getDe
           </div>
         </section>)}
       </div>
-      <div className="mt-6 flex gap-2"><Button variant="outline" onClick={close}>Close</Button><Button onClick={close}>Send agenda to PMs</Button></div>
+      <div className="mt-6 flex gap-2"><Button variant="outline" onClick={close}>Close</Button>{emails.length > 0 && <Button asChild><a href={mailto}>Email agenda to owners</a></Button>}</div>
     </aside>
   </>;
 }

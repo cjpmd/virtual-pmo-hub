@@ -394,3 +394,20 @@ export async function listOrgRaid(orgId: string) {
     })),
   };
 }
+
+/** Forecast date recorded for each milestone at each reporting point (milestone trend analysis). */
+export async function listForecastHistory(projectId: string) {
+  const rows = unwrap(
+    await supabase
+      .from("milestone_forecast_history")
+      .select("milestone_id, reporting_date, forecast_date")
+      .eq("project_id", projectId)
+      .order("reporting_date"),
+    "Loading forecast history",
+  );
+  return rows.map((row) => ({
+    milestoneId: row.milestone_id,
+    reportingDate: row.reporting_date,
+    forecastDate: row.forecast_date,
+  }));
+}

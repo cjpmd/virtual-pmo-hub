@@ -1,5 +1,7 @@
 import type { BoardColumn, BoardRow, SavedView } from "@/components/board-workspace";
-import type { ResolvedDependency } from "@/services/dependencies";
+import type { Dependency, DependencyType } from "@/data/types";
+import { fromIsoDate, toIsoDate } from "@/lib/format";
+import type { DependencyInput, ResolvedDependency } from "@/services/dependencies";
 
 export const dependencyColumns: BoardColumn[] = [
   { key: "reference", label: "Reference", type: "text", width: 110 },
@@ -28,8 +30,8 @@ export const dependenciesToRows = (items: ResolvedDependency[]): BoardRow[] => i
   receiverOwner: item.receiver.owner,
   dependencyType: item.type,
   boundary: item.boundary,
-  finish: item.requiredBy,
-  start: item.raisedDate,
+  finish: fromIsoDate(item.requiredBy),
+  start: fromIsoDate(item.raisedDate),
   priority: item.criticality,
   validation: item.validation,
   acceptance: item.acceptance,
@@ -52,3 +54,14 @@ export const dependencyViews: SavedView[] = [
   { id: "external", name: "External", type: "table", groupBy: "", sortKey: "finish", filter: "", filters: [{ key: "isExternal", operator: "truthy" }], visible, isDefault: false },
   { id: "programme", name: "By programme", type: "table", groupBy: "group", sortKey: "reference", filter: "", visible, isDefault: false },
 ];
+
+/** Board column key → dependency field. Undefined while a value isn't valid yet. */
+export function dependencyInputFromBoard(patch: Partial<BoardRow>): DependencyInput | undefined {
+  const input: DependencyInput = {};
+  if (patch["dependencyType"] !== undefined) { const value = patch["dependencyType"] as DependencyType; if (!["Sequencing", "Alignment", "Information", "Resource", "External"].includes(value)) return undefined; input.type = value; }
+  if (patch.finish !== undefined) { const date = toIsoDate(String(patch.finish)); if (!date) return undefined; input.requiredBy = date; }
+  if (patch.priority !== undefined) { const value = patch.priority as Dependency["criticality"]; if (!["Low", "Medium", "High"].includes(value)) return undefined; input.criticality = value; }
+  if (patch["validation"] !== undefined) { const value = patch["validation"] as Dependency["validation"]; if (!["Inferred", "Proposed", "Confirmed", "Closed", "Broken"].includes(value)) return undefined; input.validation = value; }
+  if (typeof patch.title === "string") { if (!patch.title.trim()) return undefined; input.description = patch.title; }
+  return input;
+}

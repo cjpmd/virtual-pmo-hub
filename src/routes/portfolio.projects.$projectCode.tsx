@@ -654,7 +654,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
             <ProjectResources members={getProjectTeam(legacy)} projectId={mockId} />
           )}
           {tab === "benefits" && <ProjectBenefits projectId={project.id} />}
-          {tab === "dependencies" && <DependencyTab projectId={mockId} />}
+          {tab === "dependencies" && <DependencyTab projectId={project.id} />}
           {tab === "decisions" && (
             <div className="space-y-4">
               {decisions.map((item) => (

@@ -32,6 +32,8 @@ export const qk = {
       ["org", orgId, "projects", projectId, "milestones"] as const,
     raid: (orgId: string, projectId: string) =>
       ["org", orgId, "projects", projectId, "raid"] as const,
+    forecastHistory: (orgId: string, projectId: string) =>
+      ["org", orgId, "projects", projectId, "forecast-history"] as const,
     canEdit: (orgId: string, projectId: string) =>
       ["org", orgId, "projects", projectId, "can-edit"] as const,
   },
@@ -39,6 +41,8 @@ export const qk = {
     all: (orgId: string) => ["org", orgId, "benefits"] as const,
     list: (orgId: string) => ["org", orgId, "benefits", "list"] as const,
   },
+  dependencies: (orgId: string) => ["org", orgId, "projects", "dependencies"] as const,
+  roadmaps: (orgId: string) => ["org", orgId, "projects", "roadmaps"] as const,
   governance: (orgId: string) => ["org", orgId, "governance"] as const,
   orgRaid: (orgId: string) => ["org", orgId, "projects", "org-raid"] as const,
   requests: (orgId: string) => ["org", orgId, "requests"] as const,

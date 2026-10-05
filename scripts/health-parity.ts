@@ -37,7 +37,7 @@ import {
   roadmaps,
 } from "../src/data/mock-data";
 import { dependencies } from "../src/data/dependencies-data";
-import { getDependencyHealth } from "../src/services/dependencies";
+import { getDependencyHealth } from "../src/services/pmo";
 import {
   getBenefitDimensionHealth,
   getBenefitHealth,

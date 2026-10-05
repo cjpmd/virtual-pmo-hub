@@ -322,7 +322,7 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
 
       {/* Not yet on Supabase (Stage 4c): these tabs still read the prototype data for this programme. */}
       {tab === "benefits" && <ProgrammeBenefits programmeId={programme.id} />}
-      {tab === "dependencies" && <DependencyTab programmeId={mockId} />}
+      {tab === "dependencies" && <DependencyTab programmeId={programme.id} />}
       {tab === "decisions" && <ProgrammeDecisions programmeId={mockId} />}
       {tab === "assumptions" && <AssumptionsWorkspace scope={{ programmeId: mockId }} compact />}
 

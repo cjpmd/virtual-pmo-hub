@@ -15,7 +15,12 @@ import {
   listProjects,
 } from "@/services/hierarchy";
 import { loadPortfolioOverview } from "@/services/analytics";
-import { listMilestones, listOrgRaid, listRaid } from "@/services/project-records";
+import {
+  listForecastHistory,
+  listMilestones,
+  listOrgRaid,
+  listRaid,
+} from "@/services/project-records";
 import { qk } from "@/services/query-keys";
 
 export function usePortfolios() {
@@ -122,4 +127,13 @@ export function useMyResourceId() {
 export function useOrgRaid() {
   const orgId = useOrgId();
   return useQuery({ queryKey: qk.orgRaid(orgId), queryFn: () => listOrgRaid(orgId) });
+}
+
+export function useForecastHistory(projectId: string | undefined) {
+  const orgId = useOrgId();
+  return useQuery({
+    queryKey: qk.projects.forecastHistory(orgId, projectId ?? ""),
+    queryFn: () => listForecastHistory(projectId ?? ""),
+    enabled: Boolean(projectId),
+  });
 }

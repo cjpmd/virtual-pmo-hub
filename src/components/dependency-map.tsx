@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { DependencyEditor } from "@/components/dependency-editor";
-import { saveDependency, useDependencyVersion } from "@/services/dependency-store";
-import { DependencyPanel, typeLegend, type AcceptanceState } from "@/components/dependency-panel";
+import { DependencyPanel, typeLegend } from "@/components/dependency-panel";
+import { QueryState } from "@/components/query-state";
+import { useDependencies } from "@/hooks/use-dependencies";
+import { useCan } from "@/hooks/use-permissions";
 import { DependencyFocusList, FilterChips, FocusBanner, focusEdgeColour, focusLegend } from "@/components/dependency-focus";
-import { dependencyStrokeDash, dependencyTypes, getDependencies, healthStroke, type ResolvedDependency } from "@/services/dependencies";
+import { dependencyStrokeDash, dependencyTypes, healthStroke, type DependenciesData, type ResolvedDependency } from "@/services/dependencies";
 import { buildDependencyGraph, focusGraph, focusSummary, getDelayImpact, nodeForEnd, programmeNodeId, type Granularity, type GraphNode } from "@/services/dependency-graph";
-import { getProgrammes } from "@/services/pmo";
 import type { DependencyBoundary, DependencyType, Health } from "@/data/types";
 import { useMeasuredWidth } from "@/components/charts/use-measure";
 import { cn } from "@/lib/utils";
@@ -43,8 +44,13 @@ function edgePath(from: Box, to: Box, offset = 0) {
 }
 type View = { scale: number; x: number; y: number };
 
-export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefined; onFocus: (id: string | undefined) => void }) {
-  const dependencyVersion = useDependencyVersion();
+export function DependencyMap(props: { focusId?: string | undefined; onFocus: (id: string | undefined) => void }) {
+  const dependencies = useDependencies();
+  return <QueryState query={dependencies}>{data => <MapBody data={data} {...props} />}</QueryState>;
+}
+
+function MapBody({ data, focusId, onFocus }: { data: DependenciesData; focusId?: string | undefined; onFocus: (id: string | undefined) => void }) {
+  const canEdit = useCan("contributor");
   const [workshop, setWorkshop] = useState(false);
   const [linkFrom, setLinkFrom] = useState<string | null>(null);
   const [editing, setEditing] = useState<ResolvedDependency | { from: string; to: string } | null>(null);
@@ -59,27 +65,22 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
   const [showCritical, setShowCritical] = useState(true);
   const [hover, setHover] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<ResolvedDependency | null>(null);
-  const [overrides, setOverrides] = useState<Record<string, AcceptanceState>>({});
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const setSelected = (dependency: ResolvedDependency | null) => setSelectedId(dependency?.id ?? null);
   const [view, setView] = useState<View>({ scale: 1, x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const pan = useRef<{ x: number; y: number; view: View } | null>(null);
   const { ref: viewportRef, width: viewportWidth } = useMeasuredWidth(900);
 
-  const all = useMemo(() => getDependencies(), [dependencyVersion]);
-  const programmes = useMemo(() => getProgrammes(), [dependencyVersion]);
+  const items = data.dependencies;
+  const programmes = data.programmes;
+  const selected = items.find(item => item.id === selectedId);
   useEffect(() => {
     try {
       const saved = localStorage.getItem("virtual-pmo-dependency-layout");
       if (saved) setPositions(JSON.parse(saved) as Record<string, { x: number; y: number }>);
     } catch { /* Start with the default arrangement. */ }
   }, []);
-  const items = useMemo(() => all.map(item => {
-    const override = overrides[item.id];
-    if (!override) return item;
-    const confirmed = override.giver && override.receiver;
-    return { ...item, giverAccepted: override.giver, receiverAccepted: override.receiver, acceptance: confirmed ? "Confirmed" : override.giver ? "Awaiting receiver" : override.receiver ? "Awaiting giver" : "Awaiting both" };
-  }), [all, overrides]);
   const filtered = useMemo(() => items.filter(item =>
     (!types.length || types.includes(item.type)) && (!bounds.length || bounds.includes(item.boundary)) && (!states.length || states.includes(item.health))), [items, types, bounds, states]);
 
@@ -240,7 +241,7 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
   return <div className="space-y-4">
     <div className="space-y-3 rounded-lg border border-border/70 bg-card p-4 shadow-sm">
       <div className="flex flex-wrap items-center gap-3">
-        <label className="flex items-center gap-2 text-sm font-medium"><Sparkles className="size-4 text-primary" />Workshop mode<Switch checked={workshop} onCheckedChange={value => { setWorkshop(value); setLinkFrom(null); }} aria-label="Workshop mode" /></label>
+        <label className="flex items-center gap-2 text-sm font-medium"><Sparkles className="size-4 text-primary" />Workshop mode<Switch disabled={!canEdit} checked={workshop} onCheckedChange={value => { setWorkshop(value); setLinkFrom(null); }} aria-label="Workshop mode" /></label>
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground"/>
           <Input value={query} onChange={event => setQuery(event.target.value)} placeholder="Find and focus a node" aria-label="Find a node" className="h-9 w-60 pl-8"/>
@@ -305,7 +306,7 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
                   style={{ opacity: toneOpacity[tone] ?? 1, filter: tone === "muted" ? "grayscale(1)" : undefined, transition: "opacity 200ms ease, filter 200ms ease" }}
                   className={cn("block w-full text-left", isNode && "cursor-pointer rounded hover:underline")}>
                   <p className="line-clamp-2 text-sm font-semibold">{container.programme.name}</p>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">PM {container.programme.projectManager ?? container.programme.manager} · {involved.length} dependencies</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">PM {container.programme.manager || "Unassigned"} · {involved.length} dependencies</p>
                 </button>
                 {isNode && linkHandle(nodeId)}
                 {container.kids.map(child => {
@@ -369,9 +370,7 @@ export function DependencyMap({ focusId, onFocus }: { focusId?: string | undefin
       </div>
     </section>
 
-    {selected && <DependencyPanel dependency={items.find(item => item.id === selected.id) ?? selected} overrides={overrides}
-      onAccept={(id, side) => { const item = all.find(entry => entry.id === id); if (item) saveDependency({ ...item, [side === "giver" ? "giverAccepted" : "receiverAccepted"]: true }); setOverrides(current => { const base = current[id] ?? { giver: item?.giverAccepted ?? false, receiver: item?.receiverAccepted ?? false }; return { ...current, [id]: { ...base, [side]: true } } }); }}
-      onRaise={() => undefined} close={() => setSelected(null)}/>}
-    {editing && <DependencyEditor {...("id" in editing ? { item: editing } : { fromId: editing.from, toId: editing.to })} onClose={() => setEditing(null)} />}
+    {selected && <DependencyPanel dependency={selected} close={() => setSelected(null)}/>}
+    {editing && <DependencyEditor data={data} {...("id" in editing ? { item: editing } : { fromId: editing.from, toId: editing.to })} onClose={() => setEditing(null)} />}
   </div>;
 }

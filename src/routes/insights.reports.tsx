@@ -10,6 +10,7 @@ import { getValueMetrics } from "@/services/benefits-value";
 import { useBenefits } from "@/hooks/use-benefits";
 import { getDecisionMetrics } from "@/services/decisions";
 import { useGovernance } from "@/hooks/use-governance";
+import { useDependencies } from "@/hooks/use-dependencies";
 import { getDependencyMetrics } from "@/services/dependencies";
 import { getLessonMetrics } from "@/services/lessons";
 import { useSettings } from "@/services/settings";
@@ -29,7 +30,8 @@ function Page() {
   const governance = useGovernance();
   const allDecisions = governance.data?.decisions ?? [];
   const decisions = getDecisionMetrics(allDecisions);
-  const dependencies = getDependencyMetrics();
+  const dependencyQuery = useDependencies();
+  const dependencies = getDependencyMetrics(dependencyQuery.data?.dependencies ?? []);
   const lessons = getLessonMetrics();
 
   const reports: ReportDefinition[] = [
