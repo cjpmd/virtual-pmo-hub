@@ -39,6 +39,25 @@ export async function sendMagicLink(email: string, next = "/") {
   if (error) throw fromAuth(error);
 }
 
+/** Temporary demo access: the account this one-click sign-in uses. */
+export const DEMO_EMAIL = "chrisjpmcdonald@gmail.com";
+
+/** Password sign-in, used by the temporary one-click demo button (no email needed). */
+export async function signInWithPassword(email: string, password: string) {
+  const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+  if (error) throw fromAuth(error);
+}
+
+/** Signs in with the 6-digit code from a sign-in email, without leaving the page. */
+export async function verifyEmailCode(email: string, code: string) {
+  const { error } = await supabase.auth.verifyOtp({
+    email: email.trim(),
+    token: code.trim(),
+    type: "email",
+  });
+  if (error) throw fromAuth(error);
+}
+
 export async function signOut() {
   const { error } = await supabase.auth.signOut();
   if (error) throw fromAuth(error);
