@@ -56,7 +56,7 @@ select pg_temp.id('programme', n), portfolio, 'Programme ' || n, pg_temp.id('res
 from perf_ids, generate_series(1, 25) n;
 
 insert into public.projects (id, programme_id, name, code, manager_id, sponsor_id, tier, phase_id, state, priority,
-                             start_date, finish_date, baseline_finish_date, budget, actual, forecast, task_source)
+                             start_date, finish_date, baseline_finish_date, task_source)
 select pg_temp.id('project', n), pg_temp.id('programme', 1 + (n - 1) / 20), 'Project ' || n,
        'PT' || lpad(n::text, 4, '0'), pg_temp.id('resource', 1 + n % 60), pg_temp.id('resource', 1 + (n + 13) % 60),
        (array['small', 'medium', 'large']::public.project_tier[])[1 + n % 3],
@@ -66,11 +66,14 @@ select pg_temp.id('project', n), pg_temp.id('programme', 1 + (n - 1) / 20), 'Pro
        today - (60 + n % 300), today + (30 + n % 400),
        -- one in five has slipped against its baseline
        today + (30 + n % 400) - case when n % 5 = 0 then 45 else 0 end,
-       100000 + (n % 40) * 25000, (n % 40) * 9000,
-       -- one in seven forecasts over budget
-       (100000 + (n % 40) * 25000) * case when n % 7 = 0 then 1.15 else 1 end,
        'native'
 from perf_ids, generate_series(1, 500) n;
+
+-- ---- Financials: a baseline, four cost lines, 24 months of values ----
+-- Budget B = 100,000 + (n mod 40) x 25,000, phased evenly over 24 months: 12 months to the
+-- cut-off with actuals, 12 after it with forecast. One in seven runs 15% over budget; one in
+-- eleven has an actual in the open month above its forecast (the overrun warning).
+\ir seed-perf-org-financials.sql
 
 -- ---- Work: buckets, tasks, milestones ----
 insert into public.project_buckets (id, project_id, name, sort_order)

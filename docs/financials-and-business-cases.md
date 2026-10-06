@@ -412,6 +412,23 @@ After approval the page offers two **separate, user-confirmed** actions; nothing
 | **F4** | Business case tables, templates seeding, versioning and freezing, sections, options and benefits editor, documents table, bucket and storage policies, documents panel. Advisors including storage.                                                                      | Report                    |
 | **F5** | `decide_business_case`, approval UI, the two hand-off actions, request → project conversion carrying the case across (D9).                                                                                                                                               | Report                    |
 
+### F2 as built
+
+- Migrations `20261006133131_financials` and `20261006133444_financials_cutoff_once`, applied to the hosted project. Parity: project, programme and portfolio health and the money columns of `v_projects` are identical before and after on the hosted demo (no zero-budget projects there); locally only zero-budget projects changed, financial green → `not_set`, overall unchanged.
+- **Column drop held back.** `projects.budget`, `actual` and `forecast` stay until this branch is merged, because the app on `main` still writes them on project create and edit. After the merge, apply:
+
+  ```sql
+  alter table public.projects
+    drop column budget,
+    drop column actual,
+    drop column forecast;
+  ```
+
+  Tested on a fresh build: health is unchanged afterwards.
+
+- **`business_case` baselines** are rejected ("not available yet") until the business case tables exist (F4); the guard is completed in F5 with the approval rule from sign-off answer 4.
+- Tests: `supabase/tests/financials.sql` (closed months, close and reopen, baselines by source, forecast history, the overrun flag, who may write what).
+
 ## 6. Questions
 
 All answered at sign-off (see the top of this document).

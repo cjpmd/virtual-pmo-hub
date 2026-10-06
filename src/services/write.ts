@@ -51,10 +51,13 @@ const table = (name: TableName) => supabase.from(name) as unknown as LooseBuilde
 
 /** Tables without an updated_at column (link tables, append-only logs). */
 const NO_UPDATED_AT = new Set<TableName>([
+  "actuals_import_rows",
+  "actuals_imports",
   "audit_log",
   "benefit_measure_targets",
   "benefit_objectives",
   "benefit_projects",
+  "budget_baselines",
   "capability_projects",
   "collection_projects",
   "decision_benefits",
@@ -64,6 +67,7 @@ const NO_UPDATED_AT = new Set<TableName>([
   "decision_risks",
   "dependency_issues",
   "dependency_risks",
+  "financial_forecast_history",
   "health_snapshots",
   "lesson_project_types",
   "milestone_forecast_history",

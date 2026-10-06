@@ -301,13 +301,48 @@ insert(
     start_date: d(p.start),
     finish_date: d(p.finish),
     baseline_finish_date: d(p.baselineFinish),
-    budget: p.budget,
-    actual: p.actual,
-    forecast: p.forecast,
     business_case: p.businessCase,
     benefits_summary: p.benefits,
     task_source: taskSourceMap[p.taskSource],
   })),
+);
+// Project money lives in the financials (Stage F2), as the F2 data move left the hosted demo:
+// baseline v1 = budget (when above 0); one "Migrated balance" line with the actual in the
+// cut-off month and forecast - actual in the month after, so EAC = forecast.
+insert(
+  "budget_baselines",
+  projects
+    .filter((p) => p.budget > 0)
+    .map((p) => ({ project_id: P(p.id), total: p.budget, source: "initial" })),
+);
+insert(
+  "cost_lines",
+  projects
+    .filter((p) => p.actual !== 0 || p.forecast !== p.actual)
+    .map((p) => ({
+      project_id: P(p.id),
+      name: "Migrated balance",
+      category_id: lk("cost_category", "Other"),
+      spend_type: "operating",
+    })),
+);
+emit(
+  `insert into public.financial_values (cost_line_id, period_month, kind, amount)
+select cl.id, m.month, m.kind, m.amount
+from (values
+  ${projects
+    .filter((p) => p.actual !== 0 || p.forecast !== p.actual)
+    .map((p) => `(${lit(P(p.id))}::uuid, ${p.actual}, ${p.forecast})`)
+    .join(",\n  ")}
+) money(project_id, actual, forecast)
+join public.cost_lines cl on cl.project_id = money.project_id and cl.name = 'Migrated balance'
+cross join lateral (select private.financial_cutoff('${ORG.replace(/'/g, "")}') as cutoff) c
+cross join lateral (values
+  (c.cutoff, 'actual'::public.financial_kind, money.actual),
+  ((c.cutoff + interval '1 month')::date, 'forecast'::public.financial_kind, money.forecast - money.actual)
+) m(month, kind, amount)
+where m.amount <> 0;
+`,
 );
 insert(
   "collections",
