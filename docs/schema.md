@@ -726,6 +726,7 @@ As built. The order differs from the original plan: `delivery` (milestones) come
 | 20261005225559 | `roadmap_items_single_pass` | Stage 4c: `v_roadmap_items` computes project health and task stats once (materialised CTEs) instead of once per row                                                                                                                                                                      |
 | 20261006084142 | `optimism_bias_settings`    | Optimism bias required and validated in `organisations.settings`; defaults backfilled; PMO may update it (and only it)                                                                                                                                                                   |
 | 20261006084203 | `committee_packs`           | Issued committee packs: immutable once issued, never deleted, readable by workspace members                                                                                                                                                                                              |
+| 20261006090010 | `ref_numbers_past_999`      | `next_ref` pads to three digits but no longer truncates (RSK-1000, not RSK-100)                                                                                                                                                                                                          |
 
 **Seed.** `scripts/generate-seed.ts` imports the current mock modules and writes `supabase/seed.sql`:
 
