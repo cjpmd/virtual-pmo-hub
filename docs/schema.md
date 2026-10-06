@@ -505,7 +505,17 @@ All are `language sql stable security definer set search_path = ''`, use `(selec
 | `current_resource_id(org_id uuid)`                  | the caller's resource row (for offer responses and "my work")                                                                                                                                                  |
 | `can_edit_project(project_id uuid)`                 | (review E) **every project-scoped write policy calls this.** Today it returns `has_workspace_role(project's workspace, 'contributor')`. Per-project membership can later narrow it without touching any policy |
 
-Policies call these as `(select public.has_workspace_role(workspace_id, 'contributor'))` to keep the planner's initplan caching.
+**Policies don't call the per-row helpers above** (`rls_array_helpers`): through the health views that meant thousands of security-definer calls per query (8.4 s for the demo organisation as a signed-in admin, 190 ms with RLS bypassed). Instead they compare against the caller's ids, computed once per statement as an initplan:
+
+| Array helper                                  | Ids where                                                               | Replaces                                            |
+| --------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------- |
+| `my_workspace_ids(min_role default 'viewer')` | the effective workspace role (§9.1) is at least `min_role`              | `is_workspace_member`, `has_workspace_role`         |
+| `my_org_ids(min_role default 'viewer')`       | the organisation role is at least `min_role`                            | `is_org_member`, `has_org_role`                     |
+| `my_editable_project_ids()`                   | `can_edit_project`: not archived, contributor or above in its workspace | `can_edit_project`, the project half of `can_write` |
+| `my_resource_ids()`                           | resources linked to the caller's profile                                | `is_own_resource`                                   |
+| `my_colleague_ids()`                          | profiles sharing one of the caller's organisations                      | `shares_org_with`                                   |
+
+Written as `workspace_id = any ((select private.my_workspace_ids('contributor'))::uuid[])`. The cast matters: without it Postgres parses `any ((select ...))` as a row sub-query. The per-row helpers remain for RPCs and triggers that check one row. Check any policy change with `supabase/tests/rls_matrix.sql`: run it before and after and diff the output.
 
 ### 9.3 Policy matrix
 
@@ -727,6 +737,8 @@ As built. The order differs from the original plan: `delivery` (milestones) come
 | 20261006084142 | `optimism_bias_settings`    | Optimism bias required and validated in `organisations.settings`; defaults backfilled; PMO may update it (and only it)                                                                                                                                                                   |
 | 20261006084203 | `committee_packs`           | Issued committee packs: immutable once issued, never deleted, readable by workspace members                                                                                                                                                                                              |
 | 20261006090010 | `ref_numbers_past_999`      | `next_ref` pads to three digits but no longer truncates (RSK-1000, not RSK-100)                                                                                                                                                                                                          |
+| 20261006103801 | `rls_array_helpers`         | Every RLS policy compares against per-statement id arrays (`my_workspace_ids`, `my_org_ids`, `my_editable_project_ids`, `my_resource_ids`, `my_colleague_ids`) instead of calling a helper per row. Same permissions (`rls_matrix.sql`)                                                  |
+| 20261006104522 | `health_views_single_pass`  | Health views compute each piece once: materialised dimensions, benefit health in one pass over benefits, portfolio roll-ups joined. Same output (`health_views_snapshot.sql`)                                                                                                            |
 
 **Seed.** `scripts/generate-seed.ts` imports the current mock modules and writes `supabase/seed.sql`:
 

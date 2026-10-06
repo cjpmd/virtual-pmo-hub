@@ -38,7 +38,7 @@ projects list, project detail); Stage 4c applied it to every screen.
 - `insertRow` / `insertRows` select the row back; `updateRow` sends `.eq("updated_at", lastSeen)` whenever the screen edited a loaded copy. If no row comes back it reads the row again: a newer `updated_at` means **"Changed by someone else, reload to see the latest"** (`conflict`), the same `updated_at` means RLS refused (`forbidden`), no row means it is gone (`not_found`).
 - Tenant columns (`organisation_id`, `workspace_id`) and `ref` are filled by triggers; services send only the parent id. Tables with no tenant trigger (`portfolios`, `ms_connections`) pass their parent explicitly.
 - The hierarchy is never deleted: closing sets `state = closed` with a reason, archiving sets `archived_at`. Record-level deletes (risks, milestones...) are offered only when `project_permissions().can_delete` is true.
-- Where a screen writes the same row twice in quick succession (task saves, entity dialogs) it keeps the `updated_at` its own write returned, so it doesn't trip the concurrency check on itself.
+- **Own writes:** the helper remembers the `updated_at` each of its writes returned, per row, and `updateRow` sends the newer of that and the caller's `lastSeen`. A screen still holding a copy from before its own last save (a refetch in flight, a debounced form, the settings queue, a cached list) therefore doesn't trip the check on itself, while someone else's later save, being newer than both, is still reported. Callers just pass the `updated_at` they loaded; none keeps its own copy.
 
 ## Boards writing to records
 
@@ -63,9 +63,10 @@ projects list, project detail); Stage 4c applied it to every screen.
 
 ## Errors (`src/services/service-error.ts`)
 
-- `ServiceError.kind`: `unauthenticated | forbidden | not_found | conflict | invalid | network | unknown`, with a message written for people.
+- `ServiceError.kind`: `unauthenticated | forbidden | not_found | conflict | invalid | network | timeout | unknown`, with a message written for people. `timeout` (Postgres 57014, or HTTP 500/504 from PostgREST without a more specific code) reads "This is taking too long — please try again."
 - Reads: `<QueryState>` shows a skeleton, an inline error with retry, or a not-found card. Writes: one `MutationCache.onError` toast, unless a mutation opts out (`meta: { silent: true }`) and shows the error inline.
-- Only `network` and `unknown` reads are retried (twice). Mutations are never retried.
+- Only `network` and `unknown` reads are retried (twice); a `timeout` is not, as it would most likely time out again. Mutations are never retried.
+- The settings save queue doesn't wait for the organisation's queries to refetch before taking the next edit.
 
 ## Permissions
 

@@ -1,32 +1,43 @@
 # Performance notes
 
-## `v_project_health`
+## Rule: measure as a signed-in user, through RLS
 
-### What we know
+Performance is always measured the way the app runs: `set role authenticated` with `request.jwt.claims` (and `request.jwt.claim.sub`) set to a real member, never as `postgres`. RLS is part of the cost; bypassing it hid an 8 s query behind a 190 ms one. `supabase/tests/health_timings.sql` does this:
 
-- **Hosted (Supabase), demo organisation:** about **5 ms per project with RLS bypassed** (39 projects).
-- **How the view works:** project health is computed on read. `v_project_health` builds a `base` CTE over projects and joins org-wide aggregates (`v_project_task_stats` groups every visible work item by project, plus milestone, risk, issue and benefit roll-ups) before any filter applies. A filter on `project_id` or `organisation_id` is not pushed into those aggregates.
-- **Consequence:** asking for one project still aggregates every project the caller can see. With RLS bypassed (service role, SQL editor), that is every project in the database, across all tenants.
+```sh
+psql "$DATABASE_URL" -v uid=<profile id> -v org=demo-university -f supabase/tests/health_timings.sql
+```
 
-### Local measurements (sandbox Postgres 16, after `ANALYZE`)
+It selects `sum(length(h::text))` so every column is computed; `count(*)` alone lets the planner skip the expensive ones.
 
-Absolute times here are far slower than hosted. Use the ratios, not the numbers.
+## Health views
 
-| Query (signed in, RLS on)                                                        | Visible projects | Time                |
-| -------------------------------------------------------------------------------- | ---------------- | ------------------- |
-| Demo organisation, one project                                                   | 39               | 0.65 s              |
-| Demo organisation, all projects                                                  | 39               | 25 s                |
-| Perf test organisation, one project                                              | 500              | 6.2 s               |
-| Perf test organisation, first 20 rows                                            | 500              | 7.0 s               |
-| Perf test organisation, all projects                                             | 500              | > 280 s (timed out) |
-| Demo organisation, all projects, for a user who is also in the perf organisation | 539              | 46 s                |
+### Timings (signed-in organisation admin, RLS on)
 
-Reading:
+|                                                 | Project health | Programme health | Portfolio health |
+| ----------------------------------------------- | -------------- | ---------------- | ---------------- |
+| Hosted, demo organisation (37 projects), before | 8.4 s          | 6.8 s            | 5.9 s            |
+| Hosted, demo organisation, after both fixes     | 92–131 ms      | 150–159 ms       | 238–286 ms       |
+| Local, demo organisation (39 projects), after   | 68 ms          | 46 ms            | 107 ms           |
+| Local, 500-project organisation, after          | 443 ms         | 857 ms           | 1.44 s           |
 
-- **A single project's cost grows with the organisation's size:** about 10× slower for 13× the projects.
-- **A full list grows roughly with the square of the project count.** At 500 projects the portfolio screens would not load.
-- **A user in two organisations pays for both.** The aggregates cover everything RLS lets them see.
-- **With RLS bypassed, one large tenant slows queries about every other tenant**, for example the demo organisation query timed out once the perf organisation existed.
+Before the fixes the 500-project organisation timed out on all three (over 280 s locally). The local sandbox is several times slower than hosted (the demo organisation's project health took 25 s locally against 8.4 s hosted before the fixes), so read the local figures for scale. The 500-project organisation hasn't been measured on the hosted project; see below.
+
+### What was slow, and the fixes
+
+1. **RLS helpers called per row** (`rls_array_helpers`). Every policy called a security-definer helper (`is_workspace_member(workspace_id)`, `can_edit_project(project_id)`, ...) for every row read, thousands of calls per health query. Policies now compare against arrays computed once per statement: `workspace_id = any ((select private.my_workspace_ids())::uuid[])`. The `::uuid[]` cast matters: without it Postgres reads `any ((select ...))` as a row sub-query. `supabase/tests/rls_matrix.sql` showed identical permissions before and after (7 kinds of user × every table × read, update, delete, insert).
+2. **Work repeated inside the views** (`health_views_single_pass`).
+   - The project dimensions CTE was inlined, so each dimension was computed three times per project.
+   - `benefit_dimension_health()` was called per project and per programme, and each call recomputed `v_benefit_realisation` for every benefit.
+   - `v_portfolio_health` ran five correlated sub-queries per portfolio.
+
+   Each piece is now computed once. `supabase/tests/health_views_snapshot.sql` showed identical output before and after, and the benefit rule matched the old function for all 539 local projects.
+
+What remains: the views still compute every project the caller can see, then filter. A user in two organisations pays for both; with RLS bypassed (service role) a query covers every tenant. Cost now grows roughly linearly with project count, not with its square.
+
+### JIT
+
+The health views' estimated cost crosses `jit_above_cost`, and JIT compilation then dominates: locally `v_portfolio_health` took 9.9 s with JIT on against 114 ms with it off. The hosted project has `jit = off`. Keep it off on any database that serves the app (a branch, a self-hosted copy, local tests: `alter database <db> set jit = off`).
 
 ### Plan (not built yet)
 
@@ -38,7 +49,7 @@ Store computed health per project once an organisation passes **about 150 projec
 4. **Read path.** `v_project_health` keeps its columns. Below the threshold it computes on read as now. Above it, it reads the table. Callers don't change; programme and portfolio roll-ups read the same source.
 5. **Check.** Run `scripts/health-parity.ts` against both paths before switching an organisation over.
 
-Before building, re-measure on the hosted project with the 500-project organisation (below). The local results suggest the threshold may need to be lower than 150, because the cost grows with the square of the project count. Filtering the aggregates by organisation inside the view may be a cheaper first step.
+Before building, measure the 500-project organisation on the hosted project (below), signed in through RLS. After the fixes above, cost grows roughly linearly; locally, portfolio health for 500 projects is 1.4 s, so about 150 projects still looks like the right point to switch.
 
 ## Measuring with a 500-project organisation
 
