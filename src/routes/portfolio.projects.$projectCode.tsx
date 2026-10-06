@@ -281,7 +281,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
               <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
                 {project.code}
               </span>
-              <FavouriteButton item={{ id: project.code, type: "Project", label: project.name }} />
+              <FavouriteButton target={{ projectId: project.id }} />
               <span
                 title={tierInfo?.description}
                 className="rounded-full border border-primary/40 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary"

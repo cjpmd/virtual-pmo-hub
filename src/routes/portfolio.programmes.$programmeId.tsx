@@ -142,9 +142,7 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
           health={
             <div className="flex items-center gap-3">
               <HealthPill health={programme.health} />
-              <FavouriteButton
-                item={{ id: programme.id, type: "Programme", label: programme.name }}
-              />
+              <FavouriteButton target={{ programmeId: programme.id }} />
               <StateBadge state={programme.state} />
             </div>
           }
