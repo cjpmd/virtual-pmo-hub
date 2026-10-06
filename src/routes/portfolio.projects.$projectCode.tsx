@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   CalendarDays,
   CheckCircle2,
@@ -17,7 +17,7 @@ import { DeliveryStatusIcon } from "@/components/board-workspace";
 import { DecisionPanel } from "@/components/decision-panel";
 import { DeliveryWorkspace, ForecastPanel } from "@/components/delivery-workspace";
 import { DependencyTab } from "@/components/dependency-tab";
-import { StateBadge } from "@/components/entity-management";
+import { ProjectEditButton, StateBadge } from "@/components/entity-management";
 import { DeclaredVsEvidenced } from "@/components/evidence-ui";
 import { FavouriteButton } from "@/components/favourite-button";
 import { GateChecklist } from "@/components/gate-checklist";
@@ -134,6 +134,7 @@ function Section({
 /** Placeholder for tabs that still need the prototype record (demo organisation only until 4c). */
 
 function ProjectBody({ project }: { project: ProjectDetail }) {
+  const navigate = useNavigate();
   const settings = useSettings();
   const format = useFormat();
   const [tab, setTab] = useState("overview");
@@ -277,6 +278,10 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <StateBadge state={project.state} />
+            <ProjectEditButton
+              project={project}
+              onArchived={() => void navigate({ to: "/portfolio/projects" })}
+            />
             <Button size="sm" onClick={() => openIssueTask(project.id)}>
               <ListPlus />
               Issue task

@@ -55,6 +55,13 @@ export interface PortfolioSummary {
 export interface ProgrammeSummary {
   id: string;
   portfolioId: string;
+  workspaceId: string;
+  managerId: string | null;
+  sponsorId: string | null;
+  projectManagerId: string | null;
+  projectOfficerId: string | null;
+  closedReason: string | null;
+  updatedAt: string;
   name: string;
   description: string | null;
   state: EntityStateLabel;
@@ -86,6 +93,12 @@ export interface ProjectSummary {
   code: string;
   name: string;
   workspaceId: string;
+  managerId: string | null;
+  projectOfficerId: string | null;
+  sponsorId: string | null;
+  phaseId: string | null;
+  closedReason: string | null;
+  updatedAt: string | null;
   portfolioId: string | null;
   programmeId: string | null;
   programmeName: string;
@@ -212,7 +225,7 @@ export async function listProgrammes(orgId: string): Promise<ProgrammeSummary[]>
     supabase
       .from("programmes")
       .select(
-        "id, portfolio_id, name, description, state, manager_id, project_manager_id, project_officer_id, sponsor_id, start_date, finish_date, budget, value_statement",
+        "id, portfolio_id, workspace_id, name, description, state, closed_reason, manager_id, project_manager_id, project_officer_id, sponsor_id, start_date, finish_date, budget, value_statement, updated_at",
       )
       .eq("organisation_id", orgId)
       .is("archived_at", null)
@@ -230,6 +243,13 @@ export async function listProgrammes(orgId: string): Promise<ProgrammeSummary[]>
   return unwrap(programmes, "Loading programmes").map((row) => ({
     id: row.id,
     portfolioId: row.portfolio_id,
+    workspaceId: row.workspace_id,
+    managerId: row.manager_id,
+    sponsorId: row.sponsor_id,
+    projectManagerId: row.project_manager_id,
+    projectOfficerId: row.project_officer_id,
+    closedReason: row.closed_reason,
+    updatedAt: row.updated_at,
     name: row.name,
     description: row.description,
     state: entityStateLabel[row.state],
@@ -259,7 +279,7 @@ export async function getProgramme(orgId: string, programmeId: string): Promise<
 // ---- Projects -----------------------------------------------------------------------
 
 const PROJECT_COLUMNS =
-  "id, code, name, workspace_id, effective_portfolio_id, programme_id, state, priority, tier, phase_id, phase_index, manager_id, project_officer_id, sponsor_id, start_date, finish_date, baseline_finish_date, budget, actual, forecast, business_case, benefits_summary, task_source";
+  "id, code, name, workspace_id, effective_portfolio_id, programme_id, state, closed_reason, priority, tier, phase_id, phase_index, manager_id, project_officer_id, sponsor_id, start_date, finish_date, baseline_finish_date, budget, actual, forecast, business_case, benefits_summary, task_source, updated_at";
 
 type ProjectRow = {
   id: string | null;
@@ -285,6 +305,8 @@ type ProjectRow = {
   business_case: string | null;
   benefits_summary: string | null;
   task_source: string | null;
+  closed_reason: string | null;
+  updated_at: string | null;
 };
 
 /** Everything a project list or page needs besides the project rows themselves. */
@@ -367,6 +389,12 @@ function toProjectSummary(
   return {
     id,
     code: row.code ?? "",
+    managerId: row.manager_id,
+    projectOfficerId: row.project_officer_id,
+    sponsorId: row.sponsor_id,
+    phaseId: row.phase_id,
+    closedReason: row.closed_reason,
+    updatedAt: row.updated_at,
     name: row.name ?? "",
     workspaceId: row.workspace_id ?? "",
     portfolioId: row.effective_portfolio_id,

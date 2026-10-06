@@ -1,6 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Download, ListPlus } from "lucide-react";
-import { useMemo } from "react";
+import { Download, ListPlus, Plus } from "lucide-react";
+import { NewProjectSheet } from "@/components/new-project-sheet";
+import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
+import { useCan } from "@/hooks/use-permissions";
+import { useMemo, useState } from "react";
 import { BoardWorkspace, type SavedView } from "@/components/board-workspace";
 import { openIssueTask } from "@/components/issue-task-sheet";
 import { KpiCard, PageHeader } from "@/components/pmo-ui";
@@ -110,6 +113,10 @@ function ProjectsPage() {
 
 function ProjectsBody({ items }: { items: ProjectSummary[] }) {
   const format = useFormat();
+  const navigate = Route.useNavigate();
+  const { portfolio } = useCurrentPortfolio();
+  const canCreate = useCan("manager", portfolio?.workspaceId);
+  const [creating, setCreating] = useState(false);
   const rows = useMemo(() => projectSummariesToRows(items), [items]);
   const metrics = useMemo(() => {
     const counts = { Proposed: 0, Active: 0, "On Hold": 0, Closed: 0 };
@@ -156,6 +163,12 @@ function ProjectsBody({ items }: { items: ProjectSummary[] }) {
         description="Plan, track and report on every project in one connected workspace."
         actions={
           <div className="flex flex-wrap gap-2">
+            {canCreate && (
+              <Button onClick={() => setCreating(true)}>
+                <Plus />
+                New project
+              </Button>
+            )}
             <Button variant="outline" onClick={() => openIssueTask()}>
               <ListPlus />
               Issue task
@@ -165,6 +178,13 @@ function ProjectsBody({ items }: { items: ProjectSummary[] }) {
               Export CSV
             </Button>
           </div>
+        }
+      />
+      <NewProjectSheet
+        open={creating}
+        onOpenChange={setCreating}
+        onCreated={(code) =>
+          void navigate({ to: "/portfolio/projects/$projectCode", params: { projectCode: code } })
         }
       />
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

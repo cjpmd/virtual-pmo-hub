@@ -1,11 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { UserRound } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AssumptionsWorkspace } from "@/components/assumptions-workspace";
 import { ProgrammeBenefits } from "@/components/project-benefits";
 import { BoardWorkspace } from "@/components/board-workspace";
 import { DependencyTab } from "@/components/dependency-tab";
-import { StateBadge } from "@/components/entity-management";
+import { ProgrammeActions } from "@/components/entity-management";
 import { FavouriteButton } from "@/components/favourite-button";
 import { HealthPill } from "@/components/health-pill";
 import { MilestoneSummary, type SummaryMilestone } from "@/components/milestone-summary";
@@ -78,6 +78,7 @@ const elapsedPercent = (start: string | null, finish: string | null) => {
 };
 
 function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
+  const navigate = useNavigate();
   const settings = useSettings();
   const format = useFormat();
   const [tab, setTab] = useState("overview");
@@ -131,7 +132,10 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
             <div className="flex items-center gap-3">
               <HealthPill health={programme.health} />
               <FavouriteButton target={{ programmeId: programme.id }} />
-              <StateBadge state={programme.state} />
+              <ProgrammeActions
+                programme={programme}
+                onArchived={() => void navigate({ to: "/portfolio/programmes" })}
+              />
             </div>
           }
         >

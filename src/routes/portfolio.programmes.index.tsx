@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { StateBadge } from "@/components/entity-management";
 import { HealthPill } from "@/components/health-pill";
 import { PageHeader } from "@/components/pmo-ui";
+import { NewProgrammeButton } from "@/components/entity-management";
 import { QueryError, QueryState } from "@/components/query-state";
 import { AutoBreadcrumbs } from "@/components/section-nav";
 import { usePortfolios, useProgrammes, useProjects } from "@/hooks/use-hierarchy";
@@ -37,6 +38,7 @@ function Programmes() {
             ? `Programmes delivering the ${portfolioName} portfolio.`
             : "Programmes in your portfolio."
         }
+        actions={<NewProgrammeButton />}
       />
       {projects.isError && (
         <QueryError error={projects.error} retry={() => void projects.refetch()} />

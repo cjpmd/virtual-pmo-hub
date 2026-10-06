@@ -1,4 +1,3 @@
-import { loadEntities, useEntityVersion } from "@/services/entity-store";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -127,8 +126,6 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const entityVersion = useEntityVersion();
-  useEffect(() => { loadEntities(); }, []);
   // Public only when both the target and the page actually rendered are public: during a
   // redirect the target changes first, and a protected page must never render outside the gate.
   const bare = useRouterState({
@@ -138,7 +135,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
-        {bare ? <Outlet /> : <AuthGate><AppShell><Fragment key={entityVersion}><Outlet /></Fragment><IssueTaskSheet /></AppShell></AuthGate>}
+        {bare ? <Outlet /> : <AuthGate><AppShell><Outlet /><IssueTaskSheet /></AppShell></AuthGate>}
       </SessionProvider>
       <Toaster richColors closeButton />
     </QueryClientProvider>

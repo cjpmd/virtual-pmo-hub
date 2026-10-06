@@ -9,6 +9,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { SectionTabs } from "@/components/section-nav";
 import { useProgrammes, useProjects } from "@/hooks/use-hierarchy";
 import { useFavourites } from "@/hooks/use-favourites";
+import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
+import { useWorkspaceRole } from "@/hooks/use-permissions";
+import { appRoleLabel } from "@/services/org-settings";
+import type { AppRole } from "@/services/auth";
 import { hydrateSettings, term, useSettings } from "@/services/settings";
 import { useOrganisation } from "@/components/auth/organisation-provider";
 import { signOut } from "@/services/auth";
@@ -62,7 +66,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const activeSection = findSection(path);
   const { profile, organisation, organisations, switchOrganisation, switching } = useOrganisation();
-  const user = { name: profile.displayName, email: profile.email, role: organisation.role.charAt(0).toUpperCase() + organisation.role.slice(1) };
+  // Header: the effective role in the workspace being viewed (the selected portfolio's), which is
+  // what decides the buttons on screen. The organisation role is shown in the profile menu.
+  const { portfolio: currentPortfolio } = useCurrentPortfolio();
+  const workspaceRole = useWorkspaceRole(currentPortfolio?.workspaceId);
+  const roleName = (role: string | null) => (role ? (appRoleLabel[role as AppRole] ?? role) : "No access");
+  const user = { name: profile.displayName, email: profile.email, role: roleName(workspaceRole ?? organisation.role), orgRole: roleName(organisation.role) };
   // Signing out ends the session; the auth gate then shows the sign-in page.
   const logOut = () => { signOut().catch(error => toast.error(errorMessage(error))) };
 
@@ -252,12 +261,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-11 gap-2 px-1 sm:px-2" aria-label={`Account menu for ${user?.name ?? "user"}`}>
-                <span className="hidden min-w-0 text-right sm:block"><span className="block text-xs font-semibold">{user?.name}</span><span className="block text-[10px] text-muted-foreground">{user?.role}</span></span>
+                <span className="hidden min-w-0 text-right sm:block"><span className="block text-xs font-semibold">{user?.name}</span><span className="block text-[10px] text-muted-foreground" title="Your role in the workspace you're viewing">{user?.role}</span></span>
                 <Avatar className="size-9 shrink-0"><AvatarFallback className="bg-primary text-primary-foreground">{(user?.name ?? "").split(" ").map(part => part[0]).join("").slice(0, 2)}</AvatarFallback></Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <div className="px-2 py-1.5 text-xs text-muted-foreground">{user?.email}</div>
+              <div className="px-2 pb-1.5 text-xs text-muted-foreground">Organisation role: <span className="font-medium text-foreground">{user.orgRole}</span></div>
+              {currentPortfolio && <div className="px-2 pb-1.5 text-xs text-muted-foreground">In this workspace: <span className="font-medium text-foreground">{user.role}</span></div>}
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => navigate({ to: "/settings/$section", params: { section: "account" } })}><UserRound />Account settings</DropdownMenuItem>
               <DropdownMenuItem onSelect={logOut}><LogOut />Log out</DropdownMenuItem>

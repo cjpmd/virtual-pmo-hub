@@ -14,7 +14,7 @@ import {
   StatStrip,
   type DumbbellDatum,
 } from "@/components/charts/primitives";
-import { StateBadge } from "@/components/entity-management";
+import { ManagePortfoliosButton, StateBadge } from "@/components/entity-management";
 import { PageHeader } from "@/components/pmo-ui";
 import { HealthPill } from "@/components/health-pill";
 import { PageSkeleton, QueryState } from "@/components/query-state";
@@ -85,9 +85,12 @@ function PortfolioPage() {
             items.length ? (
               <PageSkeleton />
             ) : (
-              <p className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-                No portfolios yet.
-              </p>
+              <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
+                <p>No portfolios yet. A portfolio holds your programmes and projects.</p>
+                <div className="mt-4 flex justify-center">
+                  <ManagePortfoliosButton />
+                </div>
+              </div>
             )
           }
         </QueryState>
@@ -203,6 +206,7 @@ function PortfolioBody({ data, switcher }: { data: PortfolioOverview; switcher: 
         actions={
           <div className="flex items-center gap-3">
             {switcher}
+            <ManagePortfoliosButton />
             <StateBadge state={portfolio.state} />
             <HealthPill health={portfolio.health} />
           </div>

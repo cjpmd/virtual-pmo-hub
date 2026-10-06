@@ -1,7 +1,9 @@
 import { benefits, collections, genericResources, issuedTasks, people, portfolio, programmes, projectRequests, projects, resourceAssignments, roadmaps, strategicObjectives } from "@/data/mock-data";
 import { defaultLifecyclePhases, defaultTierDefinitions } from "@/data/lifecycle";
 import { getSettings } from "@/services/settings";
-import { getCurrentPortfolioId, portfolios } from "@/services/entity-store";
+// Parity fixture only: the prototype had a single sample portfolio.
+const portfolios: Portfolio[] = [portfolio];
+const getCurrentPortfolioId = () => portfolio.id;
 import type { ChangeRequest, Dependency, DependencyEnd, Issue, GateCriterion, LifecyclePhase, ProjectStage, ProjectTier, TierDefinition, Benefit, BenefitMeasure, BookingType, GenericResource, Health, IssuedTask, Milestone, MilestoneStatus, Person, Portfolio, Programme, Project, ProjectRequest, ResourceAssignment as Assignment, ResourceTeam, Risk, Roadmap, RoadmapHealth, RoadmapItem, Task, TeamMember } from "@/data/types";
 
 const rank: Record<Health,number> = {"Not Set":0,"On Track":1,"At Risk":2,"Off Track":3};
