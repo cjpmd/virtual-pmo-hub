@@ -289,7 +289,7 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
                 title="Programme projects"
                 manage={false}
                 rows={projectSummariesToRows(projects)}
-                columns={projectColumns}
+                columns={projectColumns()}
                 groupOptions={["status", "stage", "priority"]}
                 renderTitle={(row) => (
                   <Link

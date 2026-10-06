@@ -28,7 +28,7 @@ export const Route = createFileRoute("/portfolio/projects/")({
   component: ProjectsPage,
 });
 
-const visible = projectColumns.map((column) => column.key);
+const visible = projectColumns().map((column) => column.key);
 const seededViews: SavedView[] = [
   {
     id: "all-active",
@@ -127,9 +127,9 @@ function ProjectsBody({ items }: { items: ProjectSummary[] }) {
   }, [items]);
 
   const exportCsv = () => {
-    const headings = projectColumns.map((column) => column.label);
+    const headings = projectColumns().map((column) => column.label);
     const values = rows.map((row) =>
-      projectColumns
+      projectColumns()
         .map((column) => {
           const value = row[column.key];
           const text = Array.isArray(value) ? value.join("; ") : String(value ?? "");
@@ -197,7 +197,7 @@ function ProjectsBody({ items }: { items: ProjectSummary[] }) {
         title="Projects"
         manage={false}
         rows={rows}
-        columns={projectColumns}
+        columns={projectColumns()}
         seededViews={seededViews}
         groupOptions={["programme", "manager", "state", "status", "stage", "tier", "priority"]}
         renderTitle={(row) => (
