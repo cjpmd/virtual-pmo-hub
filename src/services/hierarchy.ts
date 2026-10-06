@@ -113,9 +113,14 @@ export interface ProjectSummary {
   startDate: string | null;
   finishDate: string | null;
   baselineFinishDate: string | null;
+  /** Current budget baseline (0 when there is none). */
   budget: number;
+  /** Actual spend up to the financial cut-off. */
   actual: number;
+  /** Estimate at completion: actual to date plus forecast remaining. */
   forecast: number;
+  /** False until the project's first budget baseline; financial health is then not set. */
+  hasBaseline: boolean;
   health: ProjectHealth;
   taskCount: number;
   overdueTaskCount: number;
@@ -279,7 +284,7 @@ export async function getProgramme(orgId: string, programmeId: string): Promise<
 // ---- Projects -----------------------------------------------------------------------
 
 const PROJECT_COLUMNS =
-  "id, code, name, workspace_id, effective_portfolio_id, programme_id, state, closed_reason, priority, tier, phase_id, phase_index, manager_id, project_officer_id, sponsor_id, start_date, finish_date, baseline_finish_date, budget, actual, forecast, business_case, benefits_summary, task_source, updated_at";
+  "id, code, name, workspace_id, effective_portfolio_id, programme_id, state, closed_reason, priority, tier, phase_id, phase_index, manager_id, project_officer_id, sponsor_id, start_date, finish_date, baseline_finish_date, budget, actual, forecast, has_baseline, business_case, benefits_summary, task_source, updated_at";
 
 type ProjectRow = {
   id: string | null;
@@ -299,6 +304,7 @@ type ProjectRow = {
   start_date: string | null;
   finish_date: string | null;
   baseline_finish_date: string | null;
+  has_baseline: boolean | null;
   budget: number | null;
   actual: number | null;
   forecast: number | null;
@@ -416,6 +422,7 @@ function toProjectSummary(
     budget: num(row.budget),
     actual: num(row.actual),
     forecast: num(row.forecast),
+    hasBaseline: Boolean(row.has_baseline),
     health: {
       overall: toHealth(health?.overall),
       schedule: toHealth(health?.schedule),

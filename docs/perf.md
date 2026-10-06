@@ -51,11 +51,26 @@ Store computed health per project once an organisation passes **about 150 projec
 
 Before building, measure the 500-project organisation on the hosted project (below), signed in through RLS. After the fixes above, cost grows roughly linearly; locally, portfolio health for 500 projects is 1.4 s, so about 150 projects still looks like the right point to switch.
 
+## Financial views
+
+Signed-in organisation admin, RLS on (`health_timings.sql` times these too):
+
+|                                                            | `v_project_financials` | `v_programme_financials` | `v_portfolio_financials` | `v_projects` |
+| ---------------------------------------------------------- | ---------------------- | ------------------------ | ------------------------ | ------------ |
+| Hosted, demo organisation                                  | 2–20 ms                | 11–17 ms                 | 11–14 ms                 | 3–4 ms       |
+| Local, demo organisation                                   | 8–11 ms                | 8–11 ms                  | 8–11 ms                  |              |
+| Local, 500-project organisation (24 months × 4 lines each) | 42–48 ms (125 ms cold) | 42–48 ms                 | 42–48 ms                 | 41 ms        |
+
+With the financials in place, health on the hosted demo was 95–116 ms (project), 162–170 ms (programme) and 246–258 ms (portfolio); locally for 500 projects 441–470 ms, 664–772 ms and 1.2–1.6 s, in line with the figures above.
+
+The first version took 700 ms for 500 projects: the cut-off (latest closed month, else last month) was written as a lateral sub-query, inlined into the monthly-value filters, so `org_today` ran once per value. `20261006133444_financials_cutoff_once` computes it once per organisation in a materialised CTE.
+
 ## Measuring with a 500-project organisation
 
 `scripts/seed-perf-org.sql` creates **Perf Test University** (slug `perf-test-university`):
 
 - 25 programmes and 500 projects;
+- per project: a baseline, four cost lines and 24 months of budget, actuals and forecast (`scripts/seed-perf-org-financials.sql`; one in seven over budget, one in eleven with an open-month overrun);
 - per project: 3 buckets, 30 tasks, 6 milestones, 4 risks, 2 issues and 1 benefit;
 - 60 people;
 - dates relative to today, with a fixed mix of slipped, over-budget, overdue and closed work.

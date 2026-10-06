@@ -146,11 +146,13 @@ export interface ProjectInput {
   sponsorId: string | null;
   startDate: string | null;
   finishDate: string | null;
-  budget: number;
-  forecast: number;
   businessCase: string;
 }
 
+/**
+ * Budget, actuals and forecast are no longer project fields: they live in the financials
+ * (budget baselines, cost lines and monthly values; docs/financials-and-business-cases.md).
+ */
 export async function updateProject(id: string, input: ProjectInput, lastSeen: string | null) {
   return updateRow(
     "projects",
@@ -168,8 +170,6 @@ export async function updateProject(id: string, input: ProjectInput, lastSeen: s
       sponsor_id: input.sponsorId,
       start_date: input.startDate,
       finish_date: input.finishDate,
-      budget: input.budget,
-      forecast: input.forecast,
       business_case: input.businessCase.trim() || null,
     },
     { context: "Saving the project", lastSeen },
@@ -192,7 +192,10 @@ export interface NewProjectInput {
   collectionIds: string[];
 }
 
-/** Create a project (the database assigns its code) and add it to collections. Returns the code. */
+/**
+ * Create a project (the database assigns its code) and add it to collections. A budget above 0
+ * becomes the project's first budget baseline (source "initial"). Returns the id and code.
+ */
 export async function createProject(input: NewProjectInput) {
   const project = await insertRow(
     "projects",
@@ -211,13 +214,21 @@ export async function createProject(input: NewProjectInput) {
       start_date: input.startDate,
       finish_date: input.finishDate,
       baseline_finish_date: input.finishDate,
-      budget: input.budget,
-      forecast: input.budget,
       business_case: input.businessCase.trim() || null,
       task_source: input.taskSource,
     } as NewRow<"projects">,
     "Creating the project",
   );
+  if (input.budget > 0)
+    await insertRow(
+      "budget_baselines",
+      {
+        project_id: project.id,
+        total: input.budget,
+        source: "initial",
+      } as NewRow<"budget_baselines">,
+      "Setting the project budget",
+    );
   await insertRows(
     "collection_projects",
     input.collectionIds.map((collectionId) => ({

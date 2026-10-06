@@ -20,7 +20,7 @@ import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
 import { useEntityMutations } from "@/hooks/use-entities";
 import { usePeople, usePhases, usePortfolios, useProgrammes } from "@/hooks/use-hierarchy";
 import { useCan, useWorkspaceRoles } from "@/hooks/use-permissions";
-import { currencySymbol } from "@/lib/format";
+import { currencySymbol, formatCurrency } from "@/lib/format";
 import { atLeast } from "@/services/auth";
 import type { Kind } from "@/services/entities";
 import type { PortfolioSummary, ProgrammeSummary, ProjectSummary } from "@/services/hierarchy";
@@ -677,8 +677,6 @@ export function ProjectEditDialog({
     sponsorId: project.sponsorId,
     startDate: project.startDate,
     finishDate: project.finishDate,
-    budget: project.budget,
-    forecast: project.forecast,
     businessCase: project.businessCase ?? "",
   }));
   const [error, setError] = useState("");
@@ -795,23 +793,13 @@ export function ProjectEditDialog({
               onChange={(e) => set({ finishDate: e.target.value || null })}
             />
           </Field>
-          <Field label={`Budget (${currencySymbol()})`}>
-            <Input
-              type="number"
-              min="0"
-              step="1000"
-              value={d.budget}
-              onChange={(e) => set({ budget: Number(e.target.value) || 0 })}
-            />
-          </Field>
-          <Field label={`Forecast (${currencySymbol()})`}>
-            <Input
-              type="number"
-              min="0"
-              step="1000"
-              value={d.forecast}
-              onChange={(e) => set({ forecast: Number(e.target.value) || 0 })}
-            />
+          <Field label="Budget and forecast" wide>
+            <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+              Budget {formatCurrency(project.budget)}
+              {project.hasBaseline ? "" : " (no baseline yet)"} · Estimate at completion{" "}
+              {formatCurrency(project.forecast)}. These come from the project&apos;s financials:
+              baselines change through an approved change request or the PMO.
+            </p>
           </Field>
           <Field label="Business case summary" wide>
             <Textarea

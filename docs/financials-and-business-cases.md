@@ -1,6 +1,6 @@
 # Financials and Business Cases: design (Stage F1)
 
-Status: **for sign-off**. Nothing here is built yet. Stages F2–F5 follow sign-off; each stops for review.
+Status: **signed off** (F1 approved with the answers and changes in "Sign-off" below). F2 onwards follow this document; each stage stops for review.
 
 Conventions carried over from `docs/schema.md`:
 
@@ -13,7 +13,24 @@ Conventions carried over from `docs/schema.md`:
 
 ---
 
-## Decisions to sign off
+## Sign-off
+
+Answers to the F1 questions:
+
+1. **Cut-off (D2): kept.** `v_project_financials` adds `open_month_overrun`: true when any line has, in any month after the cut-off, an actual greater than its forecast. The Financials tab then warns "Actuals for <month> already exceed the forecast; EAC may be understated."
+2. **Approval:** PMO and admin call `decide_business_case`, but it records **the governance body's decision**, not the caller's. See §2.3.
+3. **Negative actuals:** allowed, flagged in the UI.
+4. **Initial baseline (D5):** manager or PMO only. If the project has an approved business case version, the initial baseline must have source `business_case`.
+
+Changes:
+
+- **A.** `business_case_options.delivery_cost` (`numeric(14,2)`), required on the preferred option at submit, alongside `whole_life_cost`. A business-case baseline's total is the preferred option's `delivery_cost`. The confirm dialog shows it and lets the PMO adjust it with a reason, stored on the baseline.
+- **B.** Financial health is `not_set` when the project has no baseline. In the roll-ups `not_set` ranks below green, as for the benefit dimension (the `health` enum order is `not_set < green < amber < red`, and overall is the worst dimension). Projects with a budget of 0 today get no baseline in the data move, so their financial dimension changes to `not_set`; the parity report lists them.
+- **C.** Forecast history has a `source` (`close` or `scheduled`). A `pg_cron` job on the 1st of each month writes the previous month for any project without a row (`scheduled`); the month-end close writes `close`. Still append-only, one row per project and month.
+
+Not in this phase: AI pre-fill from uploaded documents.
+
+## Decisions (signed off)
 
 These are the choices where I've gone beyond, or slightly away from, the brief. Everything else follows the brief as written.
 
@@ -23,7 +40,7 @@ These are the choices where I've gone beyond, or slightly away from, the brief. 
 | D2  | How "actual to date" and "forecast remaining" meet    | **One cut-off month per organisation:** the latest closed financial period, or the previous calendar month if none is closed. Months up to and including the cut-off use actuals; later months use forecast. EAC = actuals ≤ cut-off + forecast > cut-off.                                                |
 | D3  | Business case versions                                | Split into **`business_cases`** (the case: which request or project it belongs to) and **`business_case_versions`** (version, status, totals, content). Submitted versions can then stay fully immutable while the case itself moves from request to project on conversion.                               |
 | D4  | Benefits the case hands to the register               | A **`business_case_benefits`** table (same shape as `request_benefit_drafts`). For a case on a request it is prefilled from that request's drafts. Option text alone isn't structured enough to create register entries.                                                                                  |
-| D5  | First baseline of a new project                       | Version 1 may be created by whoever creates the project (source `initial`), or from an approved business case. After that, only an approved change request or PMO with a reason.                                                                                                                          |
+| D5  | First baseline of a new project                       | Version 1 by a manager or PMO (source `initial`), or from an approved business case, which is then required if the project has one. After that, only an approved change request or PMO with a reason.                                                                                                     |
 | D6  | Documents link to their owner                         | **Typed foreign keys** (`business_case_id`, `project_id`, `programme_id`, exactly one set, matching `scope`) instead of a bare `entity_id`. RLS and integrity then work like every other table; `audit_log` stays the only polymorphic reference.                                                         |
 | D7  | Rich text in business case sections                   | **Markdown** in a plain editor with preview. Stored as text, rendered sanitised. No new editor dependency. A WYSIWYG editor (TipTap) can come later.                                                                                                                                                      |
 | D8  | CSV parsing for actuals import                        | A small in-house parser (quoted fields, commas, CRLF; UTF-8 with or without BOM). No new dependency.                                                                                                                                                                                                      |
@@ -60,22 +77,22 @@ Currency is the organisation's base currency (`settings.regional.baseCurrency`);
 
 **`budget_baselines`**: the approved budget, append-only.
 
-| Column                                        | Notes                                                                                                |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| id, organisation_id, workspace_id, project_id |                                                                                                      |
-| version                                       | `int`, 1, 2, 3… per project (assigned by trigger)                                                    |
-| total                                         | `numeric(14,2) not null`                                                                             |
-| source                                        | enum `baseline_source` = `initial`, `business_case`, `change_request`, `pmo_adjustment`, `migration` |
-| business_case_version_id, change_request_id   | set when the source is that kind                                                                     |
-| reason                                        | required for `pmo_adjustment`                                                                        |
-| approved_at, approved_by → profiles           | set by the trigger to `now()` and `auth.uid()`                                                       |
+| Column                                        | Notes                                                                                                                |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| id, organisation_id, workspace_id, project_id |                                                                                                                      |
+| version                                       | `int`, 1, 2, 3… per project (assigned by trigger)                                                                    |
+| total                                         | `numeric(14,2) not null`                                                                                             |
+| source                                        | enum `baseline_source` = `initial`, `business_case`, `change_request`, `pmo_adjustment`, `migration`                 |
+| business_case_version_id, change_request_id   | set when the source is that kind                                                                                     |
+| reason                                        | required for `pmo_adjustment`, and when a business-case baseline differs from the preferred option's `delivery_cost` |
+| approved_at, approved_by → profiles           | set by the trigger to `now()` and `auth.uid()`                                                                       |
 
 - **Current budget** = the latest version.
 - **Monthly phasing:** the `budget` rows in `financial_values` phase that budget across months. When the phasing doesn't add up to the baseline total, the financials view reports `phasing_gap` and the screen shows a warning; it isn't blocked.
 - **Rules (trigger `budget_baseline_guard`, raising readable errors):**
   - Rows are never updated or deleted.
-  - `initial`: only when the project has no baseline yet.
-  - `business_case`: the version must be `approved` and belong to this project.
+  - `initial`: only when the project has no baseline yet, the caller is manager or PMO in the workspace, and the project has no approved business case version (if it has one, the first baseline must come from it).
+  - `business_case`: the version must be `approved` and belong to this project. `total` defaults to the preferred option's `delivery_cost`; any other total needs PMO and a `reason`.
   - `change_request`: the CR must belong to this project, be `approved`, not already used by another baseline, and `total` must equal the previous total + `cost_impact`.
   - `pmo_adjustment`: caller is PMO in the workspace and `reason` is not blank.
   - `migration`: only without a signed-in user (the F2 data move).
@@ -85,10 +102,11 @@ Currency is the organisation's base currency (`settings.regional.baseCurrency`);
 | Column                                          | Notes                                                  |
 | ----------------------------------------------- | ------------------------------------------------------ |
 | project_id, reporting_month                     | primary key                                            |
-| budget, actual_to_date, forecast_remaining, eac | as `v_project_financials` showed when the month closed |
+| budget, actual_to_date, forecast_remaining, eac | as `v_project_financials` showed at capture            |
+| source                                          | `close` (month-end close) or `scheduled` (monthly job) |
 | captured_at                                     |                                                        |
 
-Written by the month-end close for every project in the organisation, and never changed afterwards. Reopening a month doesn't rewrite history; closing it again adds nothing, because the row for that month already exists. A note on the period records that it was reopened.
+Written by the month-end close for every project in the organisation (`close`), and by a `pg_cron` job on the 1st of each month for the previous month, for any project without a row yet (`scheduled`). Rows are never changed afterwards. Reopening a month doesn't rewrite history; closing it again adds nothing, because the row for that month already exists. A note on the period records that it was reopened.
 
 **`financial_periods`**: month-end close.
 
@@ -118,19 +136,20 @@ Written by the month-end close for every project in the organisation, and never 
 
 **`v_project_financials`**, one row per project:
 
-| Column             | Definition                                             |
-| ------------------ | ------------------------------------------------------ |
-| budget             | latest `budget_baselines.total`, or 0                  |
-| baseline_version   | latest version, or `null`                              |
-| budget_phased      | Σ budget values                                        |
-| phasing_gap        | budget − budget_phased                                 |
-| actuals_through    | the organisation's cut-off month (D2)                  |
-| actual_to_date     | Σ actual where month ≤ cut-off                         |
-| actual_open_months | Σ actual where month > cut-off (shown, not in EAC)     |
-| forecast_remaining | Σ forecast where month > cut-off                       |
-| eac                | actual_to_date + forecast_remaining                    |
-| variance           | budget − eac (positive = under budget)                 |
-| variance_percent   | (eac − budget) / budget × 100, `null` when budget is 0 |
+| Column             | Definition                                                              |
+| ------------------ | ----------------------------------------------------------------------- |
+| budget             | latest `budget_baselines.total`, or 0                                   |
+| baseline_version   | latest version, or `null`                                               |
+| budget_phased      | Σ budget values                                                         |
+| phasing_gap        | budget − budget_phased                                                  |
+| actuals_through    | the organisation's cut-off month (D2)                                   |
+| actual_to_date     | Σ actual where month ≤ cut-off                                          |
+| actual_open_months | Σ actual where month > cut-off (shown, not in EAC)                      |
+| forecast_remaining | Σ forecast where month > cut-off                                        |
+| eac                | actual_to_date + forecast_remaining                                     |
+| variance           | budget − eac (positive = under budget)                                  |
+| variance_percent   | (eac − budget) / budget × 100, `null` when budget is 0                  |
+| open_month_overrun | true when any line has, in a month after the cut-off, actual > forecast |
 
 **`v_programme_financials`** and **`v_portfolio_financials`** sum the same columns over their projects; variance % is recomputed from the sums. A portfolio counts projects directly under it as well as those in its programmes, like `v_portfolio_health`.
 
@@ -148,16 +167,16 @@ amber when eac > budget × (1 + financialAtRiskPercent / 100)
 green otherwise
 ```
 
-Same tolerances from `organisations.settings.health`, same shape: only the source changes, so no new thresholds are needed.
+Same tolerances from `organisations.settings.health`, same shape: only the source changes, so no new thresholds are needed. **With no baseline, the dimension is `not_set`** (change B).
 
 **Parity:**
 
 - **The data move:** F2 moves each project's current figures as follows.
-  - Baseline v1 (`migration`) = `budget`.
+  - Baseline v1 (`migration`) = `budget`, for projects with a budget above 0. Projects with a budget of 0 get no baseline (change B).
   - One line "Migrated balance", category Other, operating.
   - One `actual` row = `actual` in the cut-off month.
   - One `forecast` row = `forecast − actual` in the month after the cut-off.
-- **Why it matches:** EAC then equals today's `forecast` and the budget equals today's `budget`, so every project's financial health and overall health stay the same.
+- **Why it matches:** EAC then equals today's `forecast` and the budget equals today's `budget`, so every project with a budget keeps its financial and overall health. The only expected differences are projects with a budget of 0, whose financial dimension becomes `not_set` (change B); the parity report lists each one with old and new values.
 - **How it's checked:** `health_views_snapshot.sql` before and after the move, diffed as in the RLS work, plus `scripts/health-parity.ts`.
 
 `status_reports.evidenced_financial` keeps being copied from `v_project_health` at submission, so status reports need no change.
@@ -171,7 +190,7 @@ Same tolerances from `organisations.settings.health`, same shape: only the sourc
 | Forecast values                                |        | ✓                                  | ✓       | ✓                    |
 | Actual values, actuals import                  |        |                                    |         | ✓                    |
 | Budget phasing values                          |        |                                    |         | ✓                    |
-| Baseline: initial (D5)                         |        | creator of the project             | ✓       | ✓                    |
+| Baseline: initial (D5)                         |        |                                    | ✓       | ✓                    |
 | Baseline: from an approved CR or business case |        |                                    | ✓       | ✓                    |
 | Baseline: adjustment with reason               |        |                                    |         | ✓                    |
 | Close / reopen a month                         |        |                                    |         | ✓ (organisation PMO) |
@@ -240,25 +259,26 @@ One case per request or project (unique). On conversion (D9) the row moves from 
 
 **`business_case_versions`**
 
-| Column                                                                      | Notes                                                                                    |
-| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| id, organisation_id, workspace_id, business_case_id                         |                                                                                          |
-| version                                                                     | 1, 2, 3… per case                                                                        |
-| status                                                                      | enum `business_case_status` = `draft`, `submitted`, `approved`, `rejected`, `superseded` |
-| whole_life_cost, funding_requested                                          | `numeric(14,2)`                                                                          |
-| preferred_option_id → business_case_options                                 |                                                                                          |
-| submitted_at, submitted_by, decided_at, decided_by, decision_id → decisions |                                                                                          |
+| Column                                                                                  | Notes                                                                                    |
+| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| id, organisation_id, workspace_id, business_case_id                                     |                                                                                          |
+| version                                                                                 | 1, 2, 3… per case                                                                        |
+| status                                                                                  | enum `business_case_status` = `draft`, `submitted`, `approved`, `rejected`, `superseded` |
+| whole_life_cost, funding_requested                                                      | `numeric(14,2)`                                                                          |
+| preferred_option_id → business_case_options                                             |                                                                                          |
+| submitted_at, submitted_by, decided_at, decision_id → decisions, recorded_by → profiles |                                                                                          |
 
 **`business_case_sections`**: version, template section (key and title copied at creation, so later template edits don't rewrite history), content (Markdown, D7), sort_order.
 
 **`business_case_options`**
 
-| Column                         | Notes                                         |
-| ------------------------------ | --------------------------------------------- |
-| version_id, name, description  |                                               |
-| whole_life_cost                |                                               |
-| benefits_summary, risk_summary |                                               |
-| is_preferred                   | partial unique index: at most one per version |
+| Column                         | Notes                                                                                               |
+| ------------------------------ | --------------------------------------------------------------------------------------------------- |
+| version_id, name, description  |                                                                                                     |
+| whole_life_cost                | cost over the whole appraisal period                                                                |
+| delivery_cost                  | cost to deliver; required on the preferred option at submit; the source of a business-case baseline |
+| benefits_summary, risk_summary |                                                                                                     |
+| is_preferred                   | partial unique index: at most one per version                                                       |
 
 **`business_case_benefits`** (D4): version, title, classification, category, measure, baseline, target, annual value, years counted, owner. Same shape as `request_benefit_drafts`.
 
@@ -266,7 +286,7 @@ One case per request or project (unique). On conversion (D9) the row moves from 
 
 - **One draft per case:** a partial unique index on `(business_case_id) where status = 'draft'`.
 - **Submit** (anyone who can edit the request or project, RPC `submit_business_case(version_id)`):
-  - checks there is exactly one preferred option, whole-life cost is set and no required section is empty;
+  - checks there is exactly one preferred option, with `whole_life_cost` and `delivery_cost` set, and that no required section is empty;
   - sets `submitted`, `submitted_at` and `submitted_by`.
 - **Frozen once submitted:** a submitted, approved, rejected or superseded version, and its sections, options and benefits, can't be updated or deleted; a trigger raises "This version has been submitted and can't be changed."
 - **Editing after submission:** "Start a new version" copies the latest version's sections, options and benefits into a new draft (version + 1).
@@ -274,19 +294,25 @@ One case per request or project (unique). On conversion (D9) the row moves from 
 
 ### 2.3 Approval
 
-RPC `decide_business_case(version_id, outcome approved|rejected, rationale, forum_id?)`. Callers: PMO or admin in the workspace. In one transaction it:
+RPC `decide_business_case(version_id, outcome approved|rejected, rationale, forum_id, decision_maker_resource_id, decision_date, minutes_document_id?)`. PMO or admin in the workspace call it to **record the governance body's decision**:
+
+- `forum_id`: required; the decision forum (lookup list `decision_forum`).
+- `decision_maker_resource_id`: required; any resource in the organisation. People don't need accounts.
+- `minutes_document_id`: optional; a `documents` row on this business case (the minutes).
+
+In one transaction it:
 
 1. Records a decision in `decisions`:
    - title "Business case v<n> approved" or "… rejected";
-   - rationale, decision date today, status `made`;
-   - decision maker = the caller's resource;
-   - forum (optional);
+   - rationale, status `made`, decision date as given;
+   - decision maker and forum **from the parameters, not the caller**;
+   - `evidence_link` pointing to the minutes document when given;
    - scope: the project, or for a request the request's portfolio.
-2. Sets the version's status, `decided_at`, `decided_by` and `decision_id`; supersedes the earlier approved version.
+2. Sets the version's status, `decided_at`, `decision_id`, and `recorded_by` = the caller; supersedes the earlier approved version.
 
 After approval the page offers two **separate, user-confirmed** actions; nothing happens automatically.
 
-- **(a) Create the budget baseline from the preferred option:** next version, source `business_case`, total = the preferred option's whole-life cost.
+- **(a) Create the budget baseline from the preferred option:** next version, source `business_case`, total = the preferred option's `delivery_cost` (change A). The confirm dialog shows that figure; a PMO may change it with a reason, stored on the baseline.
   - For a request-level case, this is offered when the request is converted.
   - The phasing is left for the PMO to spread across months.
 - **(b) Add benefits to the register:** creates `benefits` rows from `business_case_benefits`, linked to the project (or to the portfolio for a request-level case until conversion).
@@ -330,6 +356,7 @@ After approval the page offers two **separate, user-confirmed** actions; nothing
 **Project → Financials tab**
 
 - **Summary cards:** budget (with baseline version), actual to date (actuals through <month>), EAC, variance (amount and %, coloured with the health thresholds).
+- **Warnings:** "Actuals for <month> already exceed the forecast; EAC may be understated." when `open_month_overrun` is true; negative actuals flagged in the grid; phasing gap when the budget phasing doesn't match the baseline.
 - **Monthly grid:** cost lines × months, with a Budget / Actual / Forecast toggle.
   - Closed months are greyed and locked.
   - Cells are editable only where the role allows (§1.4).
@@ -385,9 +412,23 @@ After approval the page offers two **separate, user-confirmed** actions; nothing
 | **F4** | Business case tables, templates seeding, versioning and freezing, sections, options and benefits editor, documents table, bucket and storage policies, documents panel. Advisors including storage.                                                                      | Report                    |
 | **F5** | `decide_business_case`, approval UI, the two hand-off actions, request → project conversion carrying the case across (D9).                                                                                                                                               | Report                    |
 
-## 6. Questions for you
+### F2 as built
 
-1. **Cut-off (D2):** is "latest closed month, else last month" right, or should actuals in the open month count towards EAC as they arrive?
-2. **Who approves business cases:** PMO and admin, as proposed, or also the request's or project's sponsor? Sponsors are resources and may not have accounts.
-3. **Negative actuals (credits):** allow, as proposed, or reject?
-4. **Initial baseline (D5):** allow the project creator to set version 1, or require PMO from the start?
+- Migrations `20261006133131_financials` and `20261006133444_financials_cutoff_once`, applied to the hosted project. Parity: project, programme and portfolio health and the money columns of `v_projects` are identical before and after on the hosted demo (no zero-budget projects there); locally only zero-budget projects changed, financial green → `not_set`, overall unchanged.
+- **Column drop held back.** `projects.budget`, `actual` and `forecast` stay until this branch is merged, because the app on `main` still writes them on project create and edit. After the merge, apply:
+
+  ```sql
+  alter table public.projects
+    drop column budget,
+    drop column actual,
+    drop column forecast;
+  ```
+
+  Tested on a fresh build: health is unchanged afterwards.
+
+- **`business_case` baselines** are rejected ("not available yet") until the business case tables exist (F4); the guard is completed in F5 with the approval rule from sign-off answer 4.
+- Tests: `supabase/tests/financials.sql` (closed months, close and reopen, baselines by source, forecast history, the overrun flag, who may write what).
+
+## 6. Questions
+
+All answered at sign-off (see the top of this document).

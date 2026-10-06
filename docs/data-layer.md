@@ -19,19 +19,19 @@ projects list, project detail); Stage 4c applied it to every screen.
 
 ### Services by domain
 
-| Service                                                           | Covers                                                                                                    |
-| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `hierarchy.ts`, `entities.ts`                                     | portfolios, programmes, projects (read; create, edit, close/reopen, archive), people, phases, permissions |
-| `analytics.ts`, `trends.ts`                                       | portfolio overview (views) and trends (`health_snapshots`)                                                |
-| `project-records.ts`                                              | milestones, risks, issues, forecast history, organisation-wide RAID                                       |
-| `benefits.ts`, `benefits-value.ts`, `benefits-map.ts`             | benefits domain (load + pure calculations)                                                                |
-| `decisions.ts`                                                    | decisions, assumptions, change requests                                                                   |
-| `dependencies.ts`, `roadmaps.ts`, `requests.ts`, `collections.ts` | as named; collections also load committee-pack facts                                                      |
-| `committee-packs.ts`                                              | issued packs (`committee_packs`): list, issue. Issued packs are immutable                                 |
-| `lessons.ts`, `gates.ts`                                          | lessons, improvement actions, phase reviews; stage-gate checklist and lifecycle helpers                   |
-| `work-items.ts`, `issued-tasks.ts`, `status-reports.ts`           | project tasks (diff-based save), portfolio and personal task views; issued work (offers); status reports  |
-| `resources.ts`, `assurance.ts`                                    | capacity planning; declared versus evidenced RAG                                                          |
-| `integrations.ts`, `favourites.ts`, `org-settings.ts`, `auth.ts`  | Microsoft 365 state, starred items, organisation settings, sign-up/sign-in                                |
+| Service                                                           | Covers                                                                                                                                                 |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `hierarchy.ts`, `entities.ts`                                     | portfolios, programmes, projects (read; create, edit, close/reopen, archive), people, phases, permissions. Project money is read-only here (see below) |
+| `analytics.ts`, `trends.ts`                                       | portfolio overview (views) and trends (`health_snapshots`)                                                                                             |
+| `project-records.ts`                                              | milestones, risks, issues, forecast history, organisation-wide RAID                                                                                    |
+| `benefits.ts`, `benefits-value.ts`, `benefits-map.ts`             | benefits domain (load + pure calculations)                                                                                                             |
+| `decisions.ts`                                                    | decisions, assumptions, change requests                                                                                                                |
+| `dependencies.ts`, `roadmaps.ts`, `requests.ts`, `collections.ts` | as named; collections also load committee-pack facts                                                                                                   |
+| `committee-packs.ts`                                              | issued packs (`committee_packs`): list, issue. Issued packs are immutable                                                                              |
+| `lessons.ts`, `gates.ts`                                          | lessons, improvement actions, phase reviews; stage-gate checklist and lifecycle helpers                                                                |
+| `work-items.ts`, `issued-tasks.ts`, `status-reports.ts`           | project tasks (diff-based save), portfolio and personal task views; issued work (offers); status reports                                               |
+| `resources.ts`, `assurance.ts`                                    | capacity planning; declared versus evidenced RAG                                                                                                       |
+| `integrations.ts`, `favourites.ts`, `org-settings.ts`, `auth.ts`  | Microsoft 365 state, starred items, organisation settings, sign-up/sign-in                                                                             |
 
 ## Writes (`src/services/write.ts`)
 
@@ -39,6 +39,10 @@ projects list, project detail); Stage 4c applied it to every screen.
 - Tenant columns (`organisation_id`, `workspace_id`) and `ref` are filled by triggers; services send only the parent id. Tables with no tenant trigger (`portfolios`, `ms_connections`) pass their parent explicitly.
 - The hierarchy is never deleted: closing sets `state = closed` with a reason, archiving sets `archived_at`. Record-level deletes (risks, milestones...) are offered only when `project_permissions().can_delete` is true.
 - **Own writes:** the helper remembers the `updated_at` each of its writes returned, per row, and `updateRow` sends the newer of that and the caller's `lastSeen`. A screen still holding a copy from before its own last save (a refetch in flight, a debounced form, the settings queue, a cached list) therefore doesn't trip the check on itself, while someone else's later save, being newer than both, is still reported. Callers just pass the `updated_at` they loaded; none keeps its own copy.
+
+## Project money
+
+Project budget, actual and forecast come from the financials tables (Financials F2, `docs/financials-and-business-cases.md`): `v_projects.budget` is the current baseline, `actual` the actuals to the cut-off and `forecast` the estimate at completion, with `has_baseline`. Creating a project with a budget inserts an `initial` row into `budget_baselines`; editing a project never writes money (the dialog shows it read-only). Baselines change through an approved change request or a PMO adjustment, from the Financials tab (F3).
 
 ## Boards writing to records
 
