@@ -19,7 +19,11 @@ export async function listFavourites(orgId: string): Promise<FavouriteRow[]> {
       .order("created_at"),
     "Loading favourites",
   );
-  return rows.map((row) => ({ id: row.id, projectId: row.project_id, programmeId: row.programme_id }));
+  return rows.map((row) => ({
+    id: row.id,
+    projectId: row.project_id,
+    programmeId: row.programme_id,
+  }));
 }
 
 export async function addFavourite(target: { projectId: string } | { programmeId: string }) {

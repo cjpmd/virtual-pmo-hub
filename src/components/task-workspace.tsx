@@ -170,7 +170,7 @@ function TaskEditor({data,projectId,taskSource}:{data:ProjectTasks;projectId:str
  const find=(id:string)=>tasks.find(t=>t.id===id);
  const blank=(ref:TaskView,parentId?:string):TaskView=>({id:tempId(),ref:"",status:"not_started",updatedAt:null,attachments:[],title:parentId?"New subtask":"New task",bucket:ref.bucket,assignees:[],start:ref.start,finish:ref.start,percentComplete:0,priority:"Moderate" as Priority,isMilestone:false,checklistCount:0,checklistItems:[],dependencies:[],labels:[],...(parentId?{parentId}:{})});
  const prevTop=(id:string)=>{const i=rows.findIndex(r=>r.task.id===id);for(let j=i-1;j>=0;j--)if(rows[j]!.depth===0)return rows[j]!.task.id;return undefined};
- const a:Actions={canPaste:!!clip,collapsed,toggleCollapse:id=>setCollapsed(c=>{const n=new Set(c);n.has(id)?n.delete(id):n.add(id);return n}),
+ const a:Actions={canPaste:!!clip,collapsed,toggleCollapse:id=>setCollapsed(c=>{const n=new Set(c);if(n.has(id))n.delete(id);else n.add(id);return n}),
   canDemote:id=>!kidsOf(tasks,id).length&&!!prevTop(id),
   addSub:id=>{const ref=find(id);if(!ref||ref.parentId)return;const kids=kidsOf(tasks,id);const last=kids.length?tasks.findIndex(t=>t.id===kids[kids.length-1]!.id):tasks.findIndex(t=>t.id===id);const item=blank(ref,id);const next=[...tasks];next.splice(last+1,0,item);setCollapsed(c=>{const n=new Set(c);n.delete(id);return n});commit(next,"Subtask added.",tasks);setOpenId(item.id)},
   demote:id=>{const p=prevTop(id);if(!p||kidsOf(tasks,id).length)return;setCollapsed(c=>{const n=new Set(c);n.delete(p);return n});commit(tasks.map(t=>t.id===id?{...t,parentId:p}:t),`Now a subtask of "${find(p)?.title}".`,tasks)},
