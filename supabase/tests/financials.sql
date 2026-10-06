@@ -1,6 +1,6 @@
--- Financial rules (Stage F2), as the browser sends them: closed months, month-end close and
--- reopen, budget baselines by source, forecast history, the open-month overrun flag, and who
--- may write which values. Creates throwaway users in the demo organisation's workspace and
+-- Financial rules (Stages F2 and F3), as the browser sends them: closed months, month-end
+-- close and reopen (RPCs), budget baselines by source, forecast history, the open-month
+-- overrun flag, who may write which values, and the actuals import (replace and add). Creates throwaway users in the demo organisation's workspace and
 -- runs under the authenticated role; one transaction ending in an exception, so nothing is
 -- kept (the final message carries the results).
 --   psql "$DB_URL" -f supabase/tests/financials.sql
@@ -20,6 +20,9 @@ declare
   open_month date;
   m date;
   n integer;
+  amt numeric;
+  staff_cat uuid := (select id from public.lookup_values where organisation_id = demo_org and list_key = 'cost_category' and value = 'Staff');
+  imported jsonb;
   f record;
   results text[] := '{}';
   failures integer := 0;
@@ -180,6 +183,75 @@ begin
   n := private.capture_forecast_history(demo_org, cutoff, 'scheduled');
   select count(*) into n from public.financial_forecast_history where project_id = proj and reporting_month = cutoff;
   if n = 1 then results := array_append(results, 'scheduled capture skips existing rows: ok'); else failures := failures + 1; results := array_append(results, 'scheduled: FAIL'); end if;
+
+  -- ---- Month-end RPCs and the actuals import (F3) ----
+  perform set_config('request.jwt.claim.sub', manager::text, true);
+  perform set_config('request.jwt.claims', json_build_object('sub', manager, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  procedure_ok := false;
+  begin
+    perform public.commit_actuals_import(ws, 'x.csv', 'replace',
+      jsonb_build_array(jsonb_build_object('row_number', 1, 'project_id', proj, 'cost_line_id', line, 'period_month', open_month, 'amount', 1)));
+  exception when insufficient_privilege then procedure_ok := true;
+  end;
+  if procedure_ok then results := array_append(results, 'manager import rejected: ok'); else failures := failures + 1; results := array_append(results, 'manager import: FAIL'); end if;
+  procedure_ok := false;
+  begin
+    perform public.close_financial_period(demo_org, open_month);
+  exception when insufficient_privilege then procedure_ok := true;
+  end;
+  if procedure_ok then results := array_append(results, 'manager close rejected: ok'); else failures := failures + 1; results := array_append(results, 'manager close: FAIL'); end if;
+  reset role;
+
+  perform set_config('request.jwt.claim.sub', pmo::text, true);
+  perform set_config('request.jwt.claims', json_build_object('sub', pmo, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  -- Replace: a named line, a row by category (the project's one Other line) and a new category (creates a line).
+  imported := public.commit_actuals_import(ws, 'march.csv', 'replace', jsonb_build_array(
+    jsonb_build_object('row_number', 1, 'project_id', proj, 'cost_line_id', line, 'period_month', open_month, 'amount', 100, 'reference', 'INV-1'),
+    jsonb_build_object('row_number', 2, 'project_id', proj, 'category_id', other_cat, 'period_month', open_month, 'amount', 50, 'reference', 'INV-2'),
+    jsonb_build_object('row_number', 3, 'project_id', proj, 'category_id', staff_cat, 'period_month', open_month, 'amount', 70)));
+  select fv.amount into amt from public.financial_values fv where fv.cost_line_id = line and fv.period_month = open_month and fv.kind = 'actual';
+  select count(*) into n from public.cost_lines where project_id = proj;
+  if amt = 150 and n = 2 and (imported->>'row_count')::int = 3 and (imported->>'total')::numeric = 220 and (imported->>'lines_created')::int = 1 then
+    results := array_append(results, 'import replace: sums by line, resolves category, creates a missing line: ok');
+  else failures := failures + 1; results := array_append(results, format('import replace: FAIL (%s, %s, %s)', amt, n, imported)); end if;
+  perform public.commit_actuals_import(ws, 'march.csv', 'replace', jsonb_build_array(
+    jsonb_build_object('row_number', 1, 'project_id', proj, 'cost_line_id', line, 'period_month', open_month, 'amount', 100),
+    jsonb_build_object('row_number', 2, 'project_id', proj, 'category_id', other_cat, 'period_month', open_month, 'amount', 50)));
+  select fv.amount into amt from public.financial_values fv where fv.cost_line_id = line and fv.period_month = open_month and fv.kind = 'actual';
+  if amt = 150 then results := array_append(results, 'import replace again is idempotent: ok'); else failures := failures + 1; results := array_append(results, format('reimport: FAIL (%s)', amt)); end if;
+  perform public.commit_actuals_import(ws, 'late.csv', 'add', jsonb_build_array(
+    jsonb_build_object('row_number', 1, 'project_id', proj, 'cost_line_id', line, 'period_month', open_month, 'amount', -25)));
+  select fv.amount into amt from public.financial_values fv where fv.cost_line_id = line and fv.period_month = open_month and fv.kind = 'actual';
+  select count(*) into n from public.actuals_import_rows r join public.actuals_imports i on i.id = r.import_id where r.project_id = proj;
+  if amt = 125 and n = 6 then results := array_append(results, 'import add (a credit) and the import log: ok'); else failures := failures + 1; results := array_append(results, format('import add: FAIL (%s, %s)', amt, n)); end if;
+  procedure_ok := false;
+  begin
+    perform public.commit_actuals_import(ws, 'old.csv', 'replace', jsonb_build_array(
+      jsonb_build_object('row_number', 1, 'project_id', proj, 'cost_line_id', line, 'period_month', cutoff, 'amount', 1)));
+  exception when raise_exception then procedure_ok := (sqlerrm like '%is closed%');
+  end;
+  if procedure_ok then results := array_append(results, 'import into a closed month rejected: ok'); else failures := failures + 1; results := array_append(results, 'import closed month: FAIL'); end if;
+  insert into public.cost_lines (project_id, name, category_id) values (proj, 'More licences', other_cat);
+  procedure_ok := false;
+  begin
+    perform public.commit_actuals_import(ws, 'amb.csv', 'replace', jsonb_build_array(
+      jsonb_build_object('row_number', 1, 'project_id', proj, 'category_id', other_cat, 'period_month', open_month, 'amount', 1)));
+  exception when raise_exception then procedure_ok := (sqlerrm like '%more than one line%');
+  end;
+  if procedure_ok then results := array_append(results, 'import by an ambiguous category rejected: ok'); else failures := failures + 1; results := array_append(results, 'ambiguous: FAIL'); end if;
+  -- Reopen and close through the RPCs.
+  procedure_ok := false;
+  begin
+    perform public.reopen_financial_period(demo_org, cutoff, '');
+  exception when raise_exception then procedure_ok := true;
+  end;
+  perform public.reopen_financial_period(demo_org, cutoff, 'Late invoice');
+  perform public.close_financial_period(demo_org, cutoff);
+  select count(*) into n from public.financial_periods where organisation_id = demo_org and period_month = cutoff and closed_at is not null and reopen_reason = 'Late invoice';
+  if procedure_ok and n = 1 then results := array_append(results, 'reopen and close RPCs: ok'); else failures := failures + 1; results := array_append(results, format('RPCs: FAIL (%s, %s)', procedure_ok, n)); end if;
+  reset role;
 
   raise exception 'FINANCIALS_RESULT: % failure(s) | %', failures, array_to_string(results, ' | ');
 end $$;

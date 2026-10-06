@@ -44,6 +44,8 @@ projects list, project detail); Stage 4c applied it to every screen.
 
 Project budget, actual and forecast come from the financials tables (Financials F2, `docs/financials-and-business-cases.md`): `v_projects.budget` is the current baseline, `actual` the actuals to the cut-off and `forecast` the estimate at completion, with `has_baseline`. Creating a project with a budget inserts an `initial` row into `budget_baselines`; editing a project never writes money (the dialog shows it read-only). Baselines change through an approved change request or a PMO adjustment, from the Financials tab (F3).
 
+`financials.ts` reads the Financials tab in one parallel load (summary view, lines, values, baselines, import log, closed months) and writes cells one row at a time through `write.ts`. Month-end close, reopen and the actuals import are RPCs. `financials-calc.ts` and `actuals-import.ts` are pure (unit-tested): month arithmetic, the cut-off and EAC sums the view uses, and the import preview. Financial mutations refresh the roll-ups without awaiting them, so the grid's save queue and the import dialog don't wait for every health view on the page to reload.
+
 ## Boards writing to records
 
 - `BoardWorkspace` is editable only with `onRecordChange`; without it the board is read-only. Nothing is ever saved only in the browser (the prototype record, entity and dependency stores are gone).

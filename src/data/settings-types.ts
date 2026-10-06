@@ -141,6 +141,8 @@ export interface ListSettings {
   decisionForums: string[];
   dependencyTypes: string[];
   changeTypes: string[];
+  costCategories: string[];
+  fundingSources: string[];
 }
 
 // ---- 9. Users, roles & permissions ----

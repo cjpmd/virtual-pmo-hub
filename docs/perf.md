@@ -65,6 +65,10 @@ With the financials in place, health on the hosted demo was 95–116 ms (project
 
 The first version took 700 ms for 500 projects: the cut-off (latest closed month, else last month) was written as a lateral sub-query, inlined into the monthly-value filters, so `org_today` ran once per value. `20261006133444_financials_cutoff_once` computes it once per organisation in a materialised CTE.
 
+### Actuals import
+
+`commit_actuals_import` for 2,000 rows across 400 projects of the 500-project organisation (local, signed in as its admin, rolled back): 2.0 s in replace mode, 1.4 s in add mode. Each row passes the `financial_values` triggers (tenant guard, closed month, audit). The local sandbox is several times slower than hosted.
+
 ## Measuring with a 500-project organisation
 
 `scripts/seed-perf-org.sql` creates **Perf Test University** (slug `perf-test-university`):

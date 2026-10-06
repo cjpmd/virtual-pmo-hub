@@ -9855,6 +9855,35 @@ export type Database = {
       };
     };
     Functions: {
+      close_financial_period: {
+        Args: { p_month: string; p_organisation_id: string };
+        Returns: {
+          closed_at: string | null;
+          closed_by: string | null;
+          created_at: string;
+          organisation_id: string;
+          period_month: string;
+          reopen_reason: string | null;
+          reopened_at: string | null;
+          reopened_by: string | null;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "financial_periods";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      commit_actuals_import: {
+        Args: {
+          p_file_name: string;
+          p_mode: Database["public"]["Enums"]["actuals_import_mode"];
+          p_rows: Json;
+          p_workspace_id: string;
+        };
+        Returns: Json;
+      };
       create_organisation: {
         Args: {
           p_currency?: string;
@@ -9890,6 +9919,26 @@ export type Database = {
           can_edit: boolean;
           can_manage_project: boolean;
         }[];
+      };
+      reopen_financial_period: {
+        Args: { p_month: string; p_organisation_id: string; p_reason: string };
+        Returns: {
+          closed_at: string | null;
+          closed_by: string | null;
+          created_at: string;
+          organisation_id: string;
+          period_month: string;
+          reopen_reason: string | null;
+          reopened_at: string | null;
+          reopened_by: string | null;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "financial_periods";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
     };
     Enums: {

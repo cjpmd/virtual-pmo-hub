@@ -8,6 +8,7 @@ import {
   settingsSections,
 } from "@/components/settings/settings-shell";
 import { AccountSettings } from "@/components/settings/account-settings";
+import { FinanceSettings } from "@/components/settings/finance-settings";
 import {
   BenefitSettingsSection,
   DataSettings,
@@ -57,6 +58,7 @@ const panels: Record<string, () => JSX.Element> = {
   risk: RiskSettings,
   benefits: BenefitSettingsSection,
   lists: ListsSettings,
+  finance: FinanceSettings,
   users: UserSettings,
   notifications: NotificationSettings,
   templates: TemplateSettings,

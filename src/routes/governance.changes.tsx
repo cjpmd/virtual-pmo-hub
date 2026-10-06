@@ -7,6 +7,9 @@ import { KpiCard, PageHeader } from "@/components/pmo-ui";
 import { QueryState } from "@/components/query-state";
 import { useBoardRecordSync } from "@/hooks/use-board-record-sync";
 import { useGovernance, useGovernanceMutations } from "@/hooks/use-governance";
+import { ChangeBaselineAction } from "@/components/change-baseline";
+import { toBaselineChange } from "@/services/financials";
+import { useBaselinedChanges } from "@/hooks/use-financials";
 import { useCan } from "@/hooks/use-permissions";
 import { formatCompactCurrency } from "@/lib/format";
 import type { ChangeRequest } from "@/data/types";
@@ -111,6 +114,15 @@ function Changes({ data }: { data: GovernanceData }) {
     lastSeen: (id) => changes.find((item) => item.id === id)?.updatedAt,
   });
   const approved = changes.filter((item) => item.status === "Approved");
+  const baselined = useBaselinedChanges();
+  const canBaseline = useCan("manager");
+  const awaitingBaseline = approved.filter(
+    (item) =>
+      item.costImpact !== 0 &&
+      item.scope.projectId &&
+      baselined.data &&
+      !baselined.data.has(item.id),
+  );
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -139,6 +151,35 @@ function Changes({ data }: { data: GovernanceData }) {
           icon="forecast"
         />
       </div>
+      {canBaseline && awaitingBaseline.length > 0 && (
+        <section className="rounded-lg border border-border/70 bg-card p-5 shadow-sm">
+          <h2 className="font-display text-lg font-semibold">
+            Approved changes not yet in a budget baseline
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Applying a change creates the project's next baseline version: the current baseline plus
+            the change's cost impact. It is never done automatically.
+          </p>
+          <div className="mt-3 divide-y divide-border/60">
+            {awaitingBaseline.map((change) => (
+              <div
+                key={change.id}
+                className="flex flex-wrap items-center justify-between gap-3 py-2.5"
+              >
+                <div>
+                  <p className="text-sm font-medium">
+                    {change.ref} · {change.title}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {change.projectName} · cost impact {formatCompactCurrency(change.costImpact)}
+                  </p>
+                </div>
+                <ChangeBaselineAction change={toBaselineChange(change)} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
       <BoardWorkspace
         key={String(canEdit)}
         title="Change register"

@@ -10,6 +10,7 @@ import { FavouriteButton } from "@/components/favourite-button";
 import { HealthPill } from "@/components/health-pill";
 import { MilestoneSummary, type SummaryMilestone } from "@/components/milestone-summary";
 import { EntityHeader, Fact, KpiCard } from "@/components/pmo-ui";
+import { RollupFinancials } from "@/components/rollup-financials";
 import { ProgrammeDecisions } from "@/components/programme-decisions";
 import { QueryState } from "@/components/query-state";
 import { Breadcrumbs } from "@/components/section-nav";
@@ -318,28 +319,7 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
         <AssumptionsWorkspace scope={{ programmeId: programme.id }} compact />
       )}
 
-      {tab === "financials" && (
-        <div className="grid gap-4 md:grid-cols-3">
-          <KpiCard
-            label="Programme budget"
-            value={format.compact(programme.budget)}
-            detail="Approved allocation"
-            icon="budget"
-          />
-          <KpiCard
-            label="Project budgets"
-            value={format.compact(metrics.budget)}
-            detail="Current delivery baseline"
-            icon="budget"
-          />
-          <KpiCard
-            label="Forecast"
-            value={format.compact(metrics.forecast)}
-            detail={`${format.compact(metrics.forecast - metrics.budget)} variance`}
-            icon="forecast"
-          />
-        </div>
-      )}
+      {tab === "financials" && <RollupFinancials scope={{ programmeId: programme.id }} />}
       {tab === "status" && (
         <div className="rounded-lg border border-border/70 bg-card p-6 shadow-sm">
           <h2 className="font-display text-lg font-semibold">Programme status</h2>

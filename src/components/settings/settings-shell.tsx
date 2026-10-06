@@ -86,6 +86,12 @@ export const settingsSections: SettingsSectionDefinition[] = [
     blurb: "Lessons categories, project types, units and tags.",
   },
   {
+    id: "finance",
+    label: "Finance",
+    icon: Banknote,
+    blurb: "Month-end close and actuals import.",
+  },
+  {
     id: "users",
     label: "Users, roles & permissions",
     icon: Users,

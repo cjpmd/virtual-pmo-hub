@@ -66,6 +66,8 @@ export const LIST_KEYS = {
   tags: "tag",
   decisionForums: "decision_forum",
   changeTypes: "change_type",
+  costCategories: "cost_category",
+  fundingSources: "funding_source",
 } as const;
 type ListName = keyof typeof LIST_KEYS;
 
