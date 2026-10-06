@@ -13,7 +13,9 @@ export function useFavourites() {
   const query = useQuery({ queryKey: qk.favourites(orgId), queryFn: () => listFavourites(orgId) });
   const find = (target: FavouriteTarget) =>
     (query.data ?? []).find((row) =>
-      "projectId" in target ? row.projectId === target.projectId : row.programmeId === target.programmeId,
+      "projectId" in target
+        ? row.projectId === target.projectId
+        : row.programmeId === target.programmeId,
     );
   const toggle = useMutation({
     mutationFn: async (target: FavouriteTarget) => {
@@ -24,5 +26,9 @@ export function useFavourites() {
     onError: (error) => toast.error(error.message),
     onSettled: () => queryClient.invalidateQueries({ queryKey: qk.favourites(orgId) }),
   });
-  return { favourites: query.data ?? [], isFavourite: (target: FavouriteTarget) => Boolean(find(target)), toggle };
+  return {
+    favourites: query.data ?? [],
+    isFavourite: (target: FavouriteTarget) => Boolean(find(target)),
+    toggle,
+  };
 }

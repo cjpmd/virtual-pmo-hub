@@ -6,3 +6,8 @@ pnpm-lock.yaml
 package-lock.json
 bun.lock
 routeTree.gen.ts
+# Lovable's own files and the agreed design reference: kept as written.
+AGENTS.md
+roadmap.md
+.lovable
+docs/design

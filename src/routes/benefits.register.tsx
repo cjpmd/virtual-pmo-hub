@@ -15,9 +15,142 @@ import { useCan } from "@/hooks/use-permissions";
 import { benefitInputFromBoard } from "@/lib/benefit-board-data";
 import { getBenefitMetrics, getBenefitWarnings } from "@/services/benefits-value";
 import type { BenefitInput, BenefitsData } from "@/services/benefits";
-export const Route=createFileRoute("/benefits/register")({head:()=>({meta:[{title:"Benefits Register — Virtual PMO"},{name:"description",content:"Portfolio benefits, disbenefits, ownership and realisation evidence."},{property:"og:title",content:"Benefits Register — Virtual PMO"},{property:"og:description",content:"Portfolio benefits, disbenefits, ownership and realisation evidence."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary_large_image"}]}),component:BenefitsRegister});
+export const Route = createFileRoute("/benefits/register")({
+  head: () => ({
+    meta: [
+      { title: "Benefits Register — Virtual PMO" },
+      {
+        name: "description",
+        content: "Portfolio benefits, disbenefits, ownership and realisation evidence.",
+      },
+      { property: "og:title", content: "Benefits Register — Virtual PMO" },
+      {
+        property: "og:description",
+        content: "Portfolio benefits, disbenefits, ownership and realisation evidence.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: BenefitsRegister,
+});
 const money = formatCompactCurrency;
-function BenefitsRegister(){const benefits=useBenefits();return <div className="space-y-6"><AutoBreadcrumbs/><PageHeader eyebrow="Benefits management" title="Benefits Register" description="Own, evidence and realise portfolio outcomes using MSP and Green Book-aligned controls."/><QueryState query={benefits}>{data=><Register data={data}/>}</QueryState></div>}
-function Register({data}:{data:BenefitsData}){const benefits=data.benefits,metrics=getBenefitMetrics(benefits),warnings=getBenefitWarnings(benefits);const canEdit=useCan("contributor"),canDelete=useCan("manager");const {portfolio}=useCurrentPortfolio();const mutations=useBenefitMutations();const rows=useMemo(()=>benefitsToRows(data),[data]);
-const onRecordChange=useBoardRecordSync<BenefitInput>({toInput:patch=>benefitInputFromBoard(patch,data.people),create:input=>{const category=data.categories[0];if(!input.title)return void toast.error("Give the benefit a title.");if(!portfolio||!category)return void toast.error("Set up a portfolio and benefit categories first.");mutations.create.mutate({title:input.title,portfolioId:portfolio.id,ownerId:input.ownerId??null,categoryId:category.id,classification:input.classification??"Non-cash-releasing"})},update:(id,input,lastSeen)=>mutations.update.mutateAsync({id,input,lastSeen}),remove:ids=>mutations.remove.mutate(ids),lastSeen:id=>data.benefits.find(item=>item.id===id)?.updatedAt});
-return <><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5"><KpiCard label="Benefits" value={String(benefits.filter(item=>item.type==="Benefit").length)} detail={`Across ${new Set(benefits.flatMap(item=>item.enablingProjects.map(link=>link.projectId))).size} projects`} icon="projects"/><KpiCard label="Disbenefits" value={String(benefits.filter(item=>item.type==="Disbenefit").length)} detail="Explicitly monitored" icon="health"/><KpiCard label="Planned value" value={money(metrics.planned)} detail="Quantified portfolio value" icon="budget"/><KpiCard label="Realised" value={`${metrics.percent}%`} detail={money(metrics.realised)} icon="forecast"/><KpiCard label="Measurements overdue" value={String(metrics.overdue)} detail="Require evidence" icon="health"/></div>{warnings.length>0&&<div className="flex gap-3 rounded-md border border-health-warn/40 bg-health-warn/10 p-4"><TriangleAlert className="size-5 shrink-0 text-health-warn-foreground"/><div><p className="text-sm font-semibold">Assurance warnings</p>{warnings.map(item=><p key={item} className="mt-1 text-xs text-muted-foreground">{item}</p>)}</div></div>}<BoardWorkspace key={String(canEdit)} title="Benefits register" itemLabel="benefit" seededAutomations={benefitAutomationRecipes} rows={rows} columns={canEdit?benefitColumns:benefitColumns.map(column=>({...column,editable:false}))} manage={canEdit} canDelete={canDelete} onRecordChange={onRecordChange} groupOptions={["objective","programme","classification","status","confidence"]} seededViews={benefitViews} renderTitle={row=><Link to="/benefits/$benefitId" params={{benefitId:row.id}} className="text-primary hover:underline">{Boolean(row["disbenefit"])&&<span className="mr-2 text-health-bad">●</span>}{row.title}</Link>}/></>}
+function BenefitsRegister() {
+  const benefits = useBenefits();
+  return (
+    <div className="space-y-6">
+      <AutoBreadcrumbs />
+      <PageHeader
+        eyebrow="Benefits management"
+        title="Benefits Register"
+        description="Own, evidence and realise portfolio outcomes using MSP and Green Book-aligned controls."
+      />
+      <QueryState query={benefits}>{(data) => <Register data={data} />}</QueryState>
+    </div>
+  );
+}
+function Register({ data }: { data: BenefitsData }) {
+  const benefits = data.benefits,
+    metrics = getBenefitMetrics(benefits),
+    warnings = getBenefitWarnings(benefits);
+  const canEdit = useCan("contributor"),
+    canDelete = useCan("manager");
+  const { portfolio } = useCurrentPortfolio();
+  const mutations = useBenefitMutations();
+  const rows = useMemo(() => benefitsToRows(data), [data]);
+  const onRecordChange = useBoardRecordSync<BenefitInput>({
+    toInput: (patch) => benefitInputFromBoard(patch, data.people),
+    create: (input) => {
+      const category = data.categories[0];
+      if (!input.title) return void toast.error("Give the benefit a title.");
+      if (!portfolio || !category)
+        return void toast.error("Set up a portfolio and benefit categories first.");
+      mutations.create.mutate({
+        title: input.title,
+        portfolioId: portfolio.id,
+        ownerId: input.ownerId ?? null,
+        categoryId: category.id,
+        classification: input.classification ?? "Non-cash-releasing",
+      });
+    },
+    update: (id, input, lastSeen) => mutations.update.mutateAsync({ id, input, lastSeen }),
+    remove: (ids) => mutations.remove.mutate(ids),
+    lastSeen: (id) => data.benefits.find((item) => item.id === id)?.updatedAt,
+  });
+  return (
+    <>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <KpiCard
+          label="Benefits"
+          value={String(benefits.filter((item) => item.type === "Benefit").length)}
+          detail={`Across ${new Set(benefits.flatMap((item) => item.enablingProjects.map((link) => link.projectId))).size} projects`}
+          icon="projects"
+        />
+        <KpiCard
+          label="Disbenefits"
+          value={String(benefits.filter((item) => item.type === "Disbenefit").length)}
+          detail="Explicitly monitored"
+          icon="health"
+        />
+        <KpiCard
+          label="Planned value"
+          value={money(metrics.planned)}
+          detail="Quantified portfolio value"
+          icon="budget"
+        />
+        <KpiCard
+          label="Realised"
+          value={`${metrics.percent}%`}
+          detail={money(metrics.realised)}
+          icon="forecast"
+        />
+        <KpiCard
+          label="Measurements overdue"
+          value={String(metrics.overdue)}
+          detail="Require evidence"
+          icon="health"
+        />
+      </div>
+      {warnings.length > 0 && (
+        <div className="flex gap-3 rounded-md border border-health-warn/40 bg-health-warn/10 p-4">
+          <TriangleAlert className="size-5 shrink-0 text-health-warn-foreground" />
+          <div>
+            <p className="text-sm font-semibold">Assurance warnings</p>
+            {warnings.map((item) => (
+              <p key={item} className="mt-1 text-xs text-muted-foreground">
+                {item}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+      <BoardWorkspace
+        key={String(canEdit)}
+        title="Benefits register"
+        itemLabel="benefit"
+        seededAutomations={benefitAutomationRecipes}
+        rows={rows}
+        columns={
+          canEdit
+            ? benefitColumns
+            : benefitColumns.map((column) => ({ ...column, editable: false }))
+        }
+        manage={canEdit}
+        canDelete={canDelete}
+        onRecordChange={onRecordChange}
+        groupOptions={["objective", "programme", "classification", "status", "confidence"]}
+        seededViews={benefitViews}
+        renderTitle={(row) => (
+          <Link
+            to="/benefits/$benefitId"
+            params={{ benefitId: row.id }}
+            className="text-primary hover:underline"
+          >
+            {Boolean(row["disbenefit"]) && <span className="mr-2 text-health-bad">●</span>}
+            {row.title}
+          </Link>
+        )}
+      />
+    </>
+  );
+}

@@ -8,10 +8,234 @@ import type { RequestView } from "@/services/requests";
 import { roleDemand, weekStarts, type ResourceData } from "@/services/resources";
 import { cn } from "@/lib/utils";
 
-type Demand={id:string;role:string;hours:number};
+type Demand = { id: string; role: string; hours: number };
 /** What-if: add a request's or proposed project's demand to current bookings. Nothing is saved. */
-export function ResourceScenarios(){const query=useResourceData(),requests=useRequests();return <QueryState query={query}>{data=><Scenarios data={data} requests={requests.data?.requests??[]}/>}</QueryState>}
-function Scenarios({data,requests}:{data:ResourceData;requests:RequestView[]}){const candidates=[...requests.filter(item=>item.status!=="Rejected").map(item=>({id:`request:${item.id}`,name:item.title,type:"Request"})),...data.projects.filter(item=>item.state==="proposed").map(item=>({id:`project:${item.id}`,name:item.name,type:"Proposed project"}))];const roles=Array.from(new Set([...data.generics.flatMap(item=>[item.role,...item.skills.map(skill=>skill.name)]),...data.people.flatMap(person=>person.skills.map(skill=>skill.name))])).sort(),[candidate,setCandidate]=useState(""),[start,setStart]=useState(()=>weekStarts(14)[13]??weekStarts(1)[0]??""),[duration,setDuration]=useState(12),[demands,setDemands]=useState<Demand[]>(()=>roles.slice(0,2).map((role,index)=>({id:`d${index+1}`,role,hours:index?24:18})));const weeks=useMemo(()=>weekStarts(26),[]),baseline=useMemo(()=>roleDemand(data,weeks),[data,weeks]);const chosen=candidate||candidates[0]?.id||"";const scenarioStart=parse(start),scenarioEnd=new Date(scenarioStart.getTime()+(duration-1)*7*86400000);return <div className="grid gap-6 xl:grid-cols-[360px_1fr]"><aside className="space-y-5 rounded-lg border border-border/70 bg-card p-5 shadow-sm"><div><label className="text-xs font-semibold">Request or proposed project</label><select value={chosen} onChange={event=>setCandidate(event.target.value)} className="mt-2 h-10 w-full rounded-md border bg-background px-3 text-sm">{candidates.map(item=><option key={item.id} value={item.id}>{item.name} · {item.type}</option>)}</select></div><div className="grid grid-cols-2 gap-3"><label className="text-xs font-semibold">Start<input aria-label="Scenario start" type="date" value={iso(start)} onChange={event=>setStart(display(event.target.value))} className="mt-2 h-10 w-full rounded-md border bg-background px-2"/></label><label className="text-xs font-semibold">Weeks<input type="number" min={1} max={26} value={duration} onChange={event=>setDuration(Number(event.target.value))} className="mt-2 h-10 w-full rounded-md border bg-background px-2"/></label></div><div><div className="flex items-center justify-between"><h2 className="text-sm font-semibold">Resource demand</h2><Button size="sm" variant="outline" onClick={()=>setDemands(items=>[...items,{id:`d-${Date.now()}`,role:roles[0]??"Business Analyst",hours:12}])}><Plus/>Add role</Button></div><div className="mt-3 space-y-3">{demands.map(demand=><div key={demand.id} className="grid grid-cols-[1fr_72px_32px] gap-2"><select aria-label="Demand role" value={demand.role} onChange={event=>setDemands(items=>items.map(item=>item.id===demand.id?{...item,role:event.target.value}:item))} className="h-9 rounded-md border bg-background px-2 text-xs">{roles.map(role=><option key={role}>{role}</option>)}</select><input aria-label="Hours per week" type="number" value={demand.hours} onChange={event=>setDemands(items=>items.map(item=>item.id===demand.id?{...item,hours:Number(event.target.value)}:item))} className="h-9 rounded-md border bg-background px-2 text-xs"/><Button variant="ghost" size="icon" onClick={()=>setDemands(items=>items.filter(item=>item.id!==demand.id))}><Trash2/></Button></div>)}</div></div><p className="text-xs text-muted-foreground">A what-if view: nothing here is saved. Book people from the project's Resources tab once the work is approved.</p></aside><section className="overflow-hidden rounded-lg border border-border/70 bg-card shadow-sm"><div className="border-b p-5"><h2 className="font-display text-lg font-semibold">Capacity impact</h2><p className="mt-1 text-xs text-muted-foreground">Baseline demand plus the proposed work. Change the date to test “what if we start this in January?”.</p></div><div className="overflow-x-auto"><table className="min-w-[1800px] border-collapse"><thead><tr><th className="sticky left-0 min-w-48 border-b border-r bg-table-head p-3 text-left text-xs">Role</th>{weeks.map(week=><th key={week} className="border-b border-r p-2 text-[10px] text-muted-foreground">{week.slice(0,5)}</th>)}</tr></thead><tbody>{demands.map(demand=>{const role=baseline.find(item=>item.role===demand.role);return <tr key={demand.id}><td className="sticky left-0 border-b border-r bg-card p-3 text-sm font-semibold">{demand.role}<span className="block text-[10px] font-normal text-muted-foreground">+{demand.hours}h/week</span></td>{weeks.map((week,index)=>{const point=role?.weeks[index],active=parse(week)>=scenarioStart&&parse(week)<=scenarioEnd,total=(point?.demand??0)+(active?demand.hours:0),capacity=point?.capacity??0,percent=capacity?Math.round(total/capacity*100):total?150:0;return <td key={week} className={cn("h-16 border-b border-r text-center",percent>100?"bg-health-bad/20":percent>=80?"bg-health-warn/25":"bg-health-good/20")}><span className="text-xs font-semibold">{percent}%</span>{active&&<span className="block text-[10px] text-primary">+{demand.hours}h</span>}</td>})}</tr>})}</tbody></table></div></section></div>}
-const parse=(value:string)=>{const [d=1,m=1,y=1970]=value.split("/").map(Number);return new Date(y,m-1,d)};
-const iso=(value:string)=>{const [d,m,y]=value.split("/");return `${y}-${m}-${d}`};
-const display=(value:string)=>{const [y,m,d]=value.split("-");return `${d}/${m}/${y}`};
+export function ResourceScenarios() {
+  const query = useResourceData(),
+    requests = useRequests();
+  return (
+    <QueryState query={query}>
+      {(data) => <Scenarios data={data} requests={requests.data?.requests ?? []} />}
+    </QueryState>
+  );
+}
+function Scenarios({ data, requests }: { data: ResourceData; requests: RequestView[] }) {
+  const candidates = [
+    ...requests
+      .filter((item) => item.status !== "Rejected")
+      .map((item) => ({ id: `request:${item.id}`, name: item.title, type: "Request" })),
+    ...data.projects
+      .filter((item) => item.state === "proposed")
+      .map((item) => ({ id: `project:${item.id}`, name: item.name, type: "Proposed project" })),
+  ];
+  const roles = Array.from(
+      new Set([
+        ...data.generics.flatMap((item) => [item.role, ...item.skills.map((skill) => skill.name)]),
+        ...data.people.flatMap((person) => person.skills.map((skill) => skill.name)),
+      ]),
+    ).sort(),
+    [candidate, setCandidate] = useState(""),
+    [start, setStart] = useState(() => weekStarts(14)[13] ?? weekStarts(1)[0] ?? ""),
+    [duration, setDuration] = useState(12),
+    [demands, setDemands] = useState<Demand[]>(() =>
+      roles
+        .slice(0, 2)
+        .map((role, index) => ({ id: `d${index + 1}`, role, hours: index ? 24 : 18 })),
+    );
+  const weeks = useMemo(() => weekStarts(26), []),
+    baseline = useMemo(() => roleDemand(data, weeks), [data, weeks]);
+  const chosen = candidate || candidates[0]?.id || "";
+  const scenarioStart = parse(start),
+    scenarioEnd = new Date(scenarioStart.getTime() + (duration - 1) * 7 * 86400000);
+  return (
+    <div className="grid gap-6 xl:grid-cols-[360px_1fr]">
+      <aside className="space-y-5 rounded-lg border border-border/70 bg-card p-5 shadow-sm">
+        <div>
+          <label className="text-xs font-semibold">Request or proposed project</label>
+          <select
+            value={chosen}
+            onChange={(event) => setCandidate(event.target.value)}
+            className="mt-2 h-10 w-full rounded-md border bg-background px-3 text-sm"
+          >
+            {candidates.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name} · {item.type}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="text-xs font-semibold">
+            Start
+            <input
+              aria-label="Scenario start"
+              type="date"
+              value={iso(start)}
+              onChange={(event) => setStart(display(event.target.value))}
+              className="mt-2 h-10 w-full rounded-md border bg-background px-2"
+            />
+          </label>
+          <label className="text-xs font-semibold">
+            Weeks
+            <input
+              type="number"
+              min={1}
+              max={26}
+              value={duration}
+              onChange={(event) => setDuration(Number(event.target.value))}
+              className="mt-2 h-10 w-full rounded-md border bg-background px-2"
+            />
+          </label>
+        </div>
+        <div>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold">Resource demand</h2>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                setDemands((items) => [
+                  ...items,
+                  { id: `d-${Date.now()}`, role: roles[0] ?? "Business Analyst", hours: 12 },
+                ])
+              }
+            >
+              <Plus />
+              Add role
+            </Button>
+          </div>
+          <div className="mt-3 space-y-3">
+            {demands.map((demand) => (
+              <div key={demand.id} className="grid grid-cols-[1fr_72px_32px] gap-2">
+                <select
+                  aria-label="Demand role"
+                  value={demand.role}
+                  onChange={(event) =>
+                    setDemands((items) =>
+                      items.map((item) =>
+                        item.id === demand.id ? { ...item, role: event.target.value } : item,
+                      ),
+                    )
+                  }
+                  className="h-9 rounded-md border bg-background px-2 text-xs"
+                >
+                  {roles.map((role) => (
+                    <option key={role}>{role}</option>
+                  ))}
+                </select>
+                <input
+                  aria-label="Hours per week"
+                  type="number"
+                  value={demand.hours}
+                  onChange={(event) =>
+                    setDemands((items) =>
+                      items.map((item) =>
+                        item.id === demand.id
+                          ? { ...item, hours: Number(event.target.value) }
+                          : item,
+                      ),
+                    )
+                  }
+                  className="h-9 rounded-md border bg-background px-2 text-xs"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() =>
+                    setDemands((items) => items.filter((item) => item.id !== demand.id))
+                  }
+                >
+                  <Trash2 />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          A what-if view: nothing here is saved. Book people from the project's Resources tab once
+          the work is approved.
+        </p>
+      </aside>
+      <section className="overflow-hidden rounded-lg border border-border/70 bg-card shadow-sm">
+        <div className="border-b p-5">
+          <h2 className="font-display text-lg font-semibold">Capacity impact</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Baseline demand plus the proposed work. Change the date to test “what if we start this
+            in January?”.
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-[1800px] border-collapse">
+            <thead>
+              <tr>
+                <th className="sticky left-0 min-w-48 border-b border-r bg-table-head p-3 text-left text-xs">
+                  Role
+                </th>
+                {weeks.map((week) => (
+                  <th
+                    key={week}
+                    className="border-b border-r p-2 text-[10px] text-muted-foreground"
+                  >
+                    {week.slice(0, 5)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {demands.map((demand) => {
+                const role = baseline.find((item) => item.role === demand.role);
+                return (
+                  <tr key={demand.id}>
+                    <td className="sticky left-0 border-b border-r bg-card p-3 text-sm font-semibold">
+                      {demand.role}
+                      <span className="block text-[10px] font-normal text-muted-foreground">
+                        +{demand.hours}h/week
+                      </span>
+                    </td>
+                    {weeks.map((week, index) => {
+                      const point = role?.weeks[index],
+                        active = parse(week) >= scenarioStart && parse(week) <= scenarioEnd,
+                        total = (point?.demand ?? 0) + (active ? demand.hours : 0),
+                        capacity = point?.capacity ?? 0,
+                        percent = capacity ? Math.round((total / capacity) * 100) : total ? 150 : 0;
+                      return (
+                        <td
+                          key={week}
+                          className={cn(
+                            "h-16 border-b border-r text-center",
+                            percent > 100
+                              ? "bg-health-bad/20"
+                              : percent >= 80
+                                ? "bg-health-warn/25"
+                                : "bg-health-good/20",
+                          )}
+                        >
+                          <span className="text-xs font-semibold">{percent}%</span>
+                          {active && (
+                            <span className="block text-[10px] text-primary">+{demand.hours}h</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
+const parse = (value: string) => {
+  const [d = 1, m = 1, y = 1970] = value.split("/").map(Number);
+  return new Date(y, m - 1, d);
+};
+const iso = (value: string) => {
+  const [d, m, y] = value.split("/");
+  return `${y}-${m}-${d}`;
+};
+const display = (value: string) => {
+  const [y, m, d] = value.split("-");
+  return `${d}/${m}/${y}`;
+};

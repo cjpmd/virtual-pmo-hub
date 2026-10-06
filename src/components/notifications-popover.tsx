@@ -1,10 +1,6 @@
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const notifications = [
   {
@@ -60,14 +56,10 @@ export function NotificationsPopover() {
             >
               <div className="mt-1 flex-1">
                 <p className="text-xs font-semibold">{n.title}</p>
-                <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-                  {n.description}
-                </p>
+                <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{n.description}</p>
                 <p className="mt-2 text-[10px] text-muted-foreground">{n.time}</p>
               </div>
-              {n.unread && (
-                <div className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
-              )}
+              {n.unread && <div className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />}
             </div>
           ))}
         </div>

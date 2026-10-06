@@ -438,13 +438,22 @@ async function saveJsonb(
   previous: AppSettings,
   next: AppSettings,
 ) {
+  // Optimism bias is written on its own first: PMO members may change it, while the rest of
+  // the document is admin-only (a database trigger enforces both).
+  if (!same(previous.benefits.optimismBias, next.benefits.optimismBias))
+    await saveOptimismBias(orgId, data, next.benefits.optimismBias);
   const strip = (settings: AppSettings) => ({
     regional: { ...settings.regional, exchangeRates: undefined },
     workingTime: { ...settings.workingTime, holidayCalendars: undefined },
     terminology: settings.terminology,
     health: settings.health,
     risk: settings.risk,
-    benefits: { ...settings.benefits, categories: undefined, classifications: undefined },
+    benefits: {
+      ...settings.benefits,
+      categories: undefined,
+      classifications: undefined,
+      optimismBias: undefined,
+    },
     notifications: settings.notifications,
     templates: { ...settings.templates, projectTemplates: undefined },
     data: { retentionMonths: settings.data.retentionMonths },
@@ -454,7 +463,14 @@ async function saveJsonb(
   const before = strip(previous),
     after = strip(next);
   if (same(before, after)) return;
-  const document = JSON.parse(JSON.stringify({ ...data.rawSettings, ...after })) as Json;
+  const storedBenefits = isObject(data.rawSettings["benefits"]) ? data.rawSettings["benefits"] : {};
+  const document = JSON.parse(
+    JSON.stringify({
+      ...data.rawSettings,
+      ...after,
+      benefits: { ...after.benefits, optimismBias: storedBenefits["optimismBias"] },
+    }),
+  ) as Json;
   const written = await updateRow(
     "organisations",
     orgId,
@@ -463,6 +479,34 @@ async function saveJsonb(
   );
   data.updatedAt = written.updatedAt ?? data.updatedAt;
   data.rawSettings = document as Record<string, Json>;
+}
+
+/**
+ * Write only settings.benefits.optimismBias, leaving the stored document otherwise exactly as
+ * loaded, so the change is allowed for PMO members as well as admins. The database validates
+ * the values (0–80%, one per category).
+ */
+async function saveOptimismBias(
+  orgId: string,
+  data: OrgSettingsData,
+  bias: AppSettings["benefits"]["optimismBias"],
+) {
+  const benefits = isObject(data.rawSettings["benefits"]) ? data.rawSettings["benefits"] : {};
+  const document = {
+    ...data.rawSettings,
+    benefits: {
+      ...benefits,
+      optimismBias: bias.map(({ category, percentage }) => ({ category, percentage })),
+    },
+  } as Record<string, Json>;
+  const written = await updateRow(
+    "organisations",
+    orgId,
+    { settings: document },
+    { context: "Saving the optimism bias", lastSeen: data.updatedAt },
+  );
+  data.updatedAt = written.updatedAt ?? data.updatedAt;
+  data.rawSettings = document;
 }
 
 const slug = (label: string) =>

@@ -9,191 +9,1591 @@ import { invalidateRollups } from "@/hooks/use-project-records";
 import { useProjectTasks } from "@/hooks/use-work-items";
 import { today } from "@/lib/today";
 import { qk } from "@/services/query-keys";
-import { saveTaskChanges, statusFor, tempId, type ProjectTasks, type TaskView } from "@/services/work-items";
-import { ArrowLeftToLine, ArrowRightToLine, Check, CheckCircle2, ChevronDown, ChevronRight, CornerDownRight, Circle, ClipboardPaste, Copy, Diamond, ExternalLink, Link2, ListPlus, LoaderCircle, Lock, MoreHorizontal, PanelRightOpen, Scissors, Trash2, Unlink, X } from "lucide-react";
+import {
+  saveTaskChanges,
+  statusFor,
+  tempId,
+  type ProjectTasks,
+  type TaskView,
+} from "@/services/work-items";
+import {
+  ArrowLeftToLine,
+  ArrowRightToLine,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  CornerDownRight,
+  Circle,
+  ClipboardPaste,
+  Copy,
+  Diamond,
+  ExternalLink,
+  Link2,
+  ListPlus,
+  LoaderCircle,
+  Lock,
+  MoreHorizontal,
+  PanelRightOpen,
+  Scissors,
+  Trash2,
+  Unlink,
+  X,
+} from "lucide-react";
 import { BoardWorkspace } from "@/components/board-workspace";
 import { taskColumns, tasksToRows } from "@/lib/board-data";
 import { Button } from "@/components/ui/button";
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuSub, ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger } from "@/components/ui/context-menu";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { Priority, Task, TaskSource } from "@/data/types";
 
-const toDate=(s:string)=>{const [d,m,y]=s.split("/").map(Number);return new Date(y??2026,(m??1)-1,d??1)};
-const fromDate=(d:Date)=>`${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
-const toIso=(s:string)=>s.split("/").reverse().join("-");
-const fromIso=(s:string)=>s.split("-").reverse().join("/");
-const DAY=86400000;
-const initials=(n:string)=>n.split(" ").map(p=>p[0]).join("").slice(0,2);
-const priorities:Priority[]=["Low","Moderate","High","Critical"] as Priority[];
-const checklistOf=(t:Task)=>t.checklistItems??(t.checklist??Array.from({length:Math.min(t.checklistCount,4)},(_,i)=>`Checklist item ${i+1}`)).map((label,i)=>({id:`${t.id}-c${i}`,label,done:t.percentComplete===100||i<Math.round(Math.min(t.checklistCount,4)*t.percentComplete/100)}));
-const wouldLoop=(tasks:Task[],from:string,dep:string)=>{const seen=new Set<string>();const walk=(id:string):boolean=>{if(id===from)return true;if(seen.has(id))return false;seen.add(id);return (tasks.find(t=>t.id===id)?.dependencies??[]).some(walk)};return walk(dep)};
+const toDate = (s: string) => {
+  const [d, m, y] = s.split("/").map(Number);
+  return new Date(y ?? 2026, (m ?? 1) - 1, d ?? 1);
+};
+const fromDate = (d: Date) =>
+  `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+const toIso = (s: string) => s.split("/").reverse().join("-");
+const fromIso = (s: string) => s.split("-").reverse().join("/");
+const DAY = 86400000;
+const initials = (n: string) =>
+  n
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2);
+const priorities: Priority[] = ["Low", "Moderate", "High", "Critical"] as Priority[];
+const checklistOf = (t: Task) =>
+  t.checklistItems ??
+  (
+    t.checklist ??
+    Array.from({ length: Math.min(t.checklistCount, 4) }, (_, i) => `Checklist item ${i + 1}`)
+  ).map((label, i) => ({
+    id: `${t.id}-c${i}`,
+    label,
+    done:
+      t.percentComplete === 100 ||
+      i < Math.round((Math.min(t.checklistCount, 4) * t.percentComplete) / 100),
+  }));
+const wouldLoop = (tasks: Task[], from: string, dep: string) => {
+  const seen = new Set<string>();
+  const walk = (id: string): boolean => {
+    if (id === from) return true;
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return (tasks.find((t) => t.id === id)?.dependencies ?? []).some(walk);
+  };
+  return walk(dep);
+};
 
-type Actions={open:(id:string)=>void;cut:(id:string)=>void;copy:(id:string)=>void;paste:(id:string)=>void;insertAbove:(id:string)=>void;remove:(id:string)=>void;link:(id:string)=>void;addDep:(id:string,dep:string)=>void;removeDep:(id:string,dep:string)=>void;toggle:(id:string)=>void;canPaste:boolean;addSub:(id:string)=>void;demote:(id:string)=>void;promote:(id:string)=>void;canDemote:(id:string)=>boolean;collapsed:Set<string>;toggleCollapse:(id:string)=>void};
-type Row={task:Task;depth:number;kids:number};
-const kidsOf=(tasks:Task[],id:string)=>tasks.filter(t=>t.parentId===id);
+type Actions = {
+  open: (id: string) => void;
+  cut: (id: string) => void;
+  copy: (id: string) => void;
+  paste: (id: string) => void;
+  insertAbove: (id: string) => void;
+  remove: (id: string) => void;
+  link: (id: string) => void;
+  addDep: (id: string, dep: string) => void;
+  removeDep: (id: string, dep: string) => void;
+  toggle: (id: string) => void;
+  canPaste: boolean;
+  addSub: (id: string) => void;
+  demote: (id: string) => void;
+  promote: (id: string) => void;
+  canDemote: (id: string) => boolean;
+  collapsed: Set<string>;
+  toggleCollapse: (id: string) => void;
+};
+type Row = { task: Task; depth: number; kids: number };
+const kidsOf = (tasks: Task[], id: string) => tasks.filter((t) => t.parentId === id);
 /** Parents in list order, each followed by its subtasks; parent dates and % roll up from subtasks. */
-function buildRows(tasks:Task[],collapsed:Set<string>):Row[]{const ids=new Set(tasks.map(t=>t.id));const out:Row[]=[];for(const t of tasks){if(t.parentId&&ids.has(t.parentId))continue;const kids=kidsOf(tasks,t.id);let task=t;if(kids.length){const s=Math.min(...kids.map(k=>toDate(k.start).getTime())),f=Math.max(...kids.map(k=>toDate(k.finish).getTime()));task={...t,start:fromDate(new Date(s)),finish:fromDate(new Date(f)),percentComplete:Math.round(kids.reduce((n,k)=>n+k.percentComplete,0)/kids.length)}}out.push({task,depth:0,kids:kids.length});if(!collapsed.has(t.id))kids.forEach(k=>out.push({task:k,depth:1,kids:0}))}return out}
-function TitleCell({row,a,className}:{row:Row;a:Actions;className?:string}){const t=row.task,done=t.percentComplete===100;return <div className={cn("flex min-w-0 items-center gap-1",className)} style={{paddingLeft:row.depth*20}}>{row.kids?<button aria-label={a.collapsed.has(t.id)?"Expand subtasks":"Collapse subtasks"} onClick={e=>{e.stopPropagation();a.toggleCollapse(t.id)}} className="text-muted-foreground hover:text-foreground">{a.collapsed.has(t.id)?<ChevronRight className="size-4"/>:<ChevronDown className="size-4"/>}</button>:row.depth?<CornerDownRight className="size-3.5 shrink-0 text-muted-foreground/60"/>:<span className="w-4"/>}<button onClick={e=>{e.stopPropagation();a.open(t.id)}} className={cn("flex min-w-0 items-center gap-1.5 truncate text-left hover:text-primary",row.kids?"font-semibold":"font-medium",done&&"text-muted-foreground line-through")}>{t.isMilestone&&<Diamond className="size-3.5 shrink-0 fill-primary text-primary"/>}<span className="truncate">{t.title}</span>{row.kids>0&&<span className="text-xs font-normal text-muted-foreground">({row.kids})</span>}</button></div>}
-
-function Avatars({names}:{names:string[]}){return <div className="flex -space-x-1.5">{names.slice(0,2).map(n=><span key={n} title={n} className="grid size-6 place-items-center rounded-full border-2 border-card bg-primary/15 text-[9px] font-semibold text-primary">{initials(n)}</span>)}{names.length>2&&<span className="grid size-6 place-items-center rounded-full border-2 border-card bg-muted text-[9px]">+{names.length-2}</span>}</div>}
-
-function MenuItems({task,tasks,a,kind}:{task:Task;tasks:Task[];a:Actions;kind:"context"|"dropdown"}){
- const I=kind==="context"?ContextMenuItem:DropdownMenuItem,S=kind==="context"?ContextMenuSeparator:DropdownMenuSeparator,Sub=kind==="context"?ContextMenuSub:DropdownMenuSub,ST=kind==="context"?ContextMenuSubTrigger:DropdownMenuSubTrigger,SC=kind==="context"?ContextMenuSubContent:DropdownMenuSubContent;
- const candidates=tasks.filter(t=>t.id!==task.id&&!task.dependencies.includes(t.id)&&!wouldLoop(tasks,task.id,t.id));
- return <><I onSelect={()=>a.open(task.id)}><PanelRightOpen/>Open details</I><S/><I onSelect={()=>a.cut(task.id)}><Scissors/>Cut task</I><I onSelect={()=>a.copy(task.id)}><Copy/>Copy task</I><I disabled={!a.canPaste} onSelect={()=>a.paste(task.id)}><ClipboardPaste/>Paste task</I><I onSelect={()=>a.insertAbove(task.id)}><ListPlus/>Insert task above</I><I onSelect={()=>a.addSub(task.id)} disabled={!!task.parentId}><CornerDownRight/>Add subtask</I>{task.parentId?<I onSelect={()=>a.promote(task.id)}><ArrowLeftToLine/>Promote to main task</I>:<I disabled={!a.canDemote(task.id)} onSelect={()=>a.demote(task.id)}><ArrowRightToLine/>Make subtask</I>}<I onSelect={()=>a.remove(task.id)} className="text-destructive"><Trash2/>Delete task</I><S/><I onSelect={()=>a.link(task.id)}><Link2/>Copy link to task</I>
-  <Sub><ST><Link2 className="mr-2 size-4"/>Add dependency</ST><SC className="max-h-72 overflow-y-auto">{candidates.map(t=><I key={t.id} onSelect={()=>a.addDep(task.id,t.id)}>{t.title}</I>)}{!candidates.length&&<I disabled>No tasks available</I>}</SC></Sub>
-  <Sub><ST><Unlink className="mr-2 size-4"/>Remove dependency</ST><SC>{task.dependencies.map(d=><I key={d} onSelect={()=>a.removeDep(task.id,d)}>{tasks.find(t=>t.id===d)?.title??d}</I>)}{!task.dependencies.length&&<I disabled>No dependencies</I>}</SC></Sub>
-  <S/><I onSelect={()=>a.toggle(task.id)}><CheckCircle2/>{task.percentComplete===100?"Mark as incomplete":"Mark as complete"}</I></>}
-
-function RowMenu({task,tasks,a,children}:{task:Task;tasks:Task[];a:Actions;children:React.ReactNode}){return <ContextMenu><ContextMenuTrigger asChild>{children}</ContextMenuTrigger><ContextMenuContent className="w-60"><MenuItems task={task} tasks={tasks} a={a} kind="context"/></ContextMenuContent></ContextMenu>}
-function DotsMenu({task,tasks,a}:{task:Task;tasks:Task[];a:Actions}){return <DropdownMenu><DropdownMenuTrigger asChild><Button size="icon" variant="ghost" className="size-7" aria-label={`Actions for ${task.title}`} onClick={e=>e.stopPropagation()}><MoreHorizontal/></Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-60"><MenuItems task={task} tasks={tasks} a={a} kind="dropdown"/></DropdownMenuContent></DropdownMenu>}
-function Tick({task,a}:{task:Task;a:Actions}){const done=task.percentComplete===100;return <button aria-label={done?"Mark as incomplete":"Mark as complete"} onClick={e=>{e.stopPropagation();a.toggle(task.id)}} className="text-primary">{done?<CheckCircle2 className="size-5 fill-primary text-primary-foreground"/>:<Circle className="size-5 text-muted-foreground"/>}</button>}
-
-function GridView({rows,tasks,a,selected,setSelected}:{rows:Row[];tasks:Task[];a:Actions;selected:string|null;setSelected:(id:string)=>void}){
- return <div className="overflow-x-auto rounded-lg border border-border/70 bg-card shadow-sm"><table className="w-full min-w-[860px] text-sm"><thead className="bg-muted/50 text-xs text-muted-foreground"><tr>{["#","","Task","Assignees","Bucket","Start","Finish","% Complete","Depends on",""].map((h,i)=><th key={i} className="px-3 py-2 text-left font-semibold">{h}</th>)}</tr></thead><tbody>{rows.map((row,i)=>{const t=row.task;return <RowMenu key={t.id} task={t} tasks={tasks} a={a}><tr tabIndex={0} onClick={()=>setSelected(t.id)} onDoubleClick={()=>a.open(t.id)} className={cn("cursor-pointer border-t outline-none hover:bg-accent/30",row.kids>0&&"bg-muted/30",selected===t.id&&"bg-accent/50")}><td className="px-3 py-2 text-xs text-muted-foreground">{i+1}</td><td className="px-1"><Tick task={t} a={a}/></td><td className="max-w-[360px] px-3 py-2"><TitleCell row={row} a={a}/></td><td className="px-3"><Avatars names={t.assignees}/></td><td className="px-3 text-xs">{t.bucket}</td><td className="px-3 text-xs">{t.start}</td><td className="px-3 text-xs">{t.finish}</td><td className="px-3"><div className="flex items-center gap-2"><div className="h-1.5 w-16 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{width:`${t.percentComplete}%`}}/></div><span className="text-xs">{t.percentComplete}%</span></div></td><td className="px-3 text-xs text-muted-foreground">{t.dependencies.map(d=>rows.findIndex(x=>x.task.id===d)+1).filter(Boolean).join(", ")||"—"}</td><td className="px-2"><DotsMenu task={t} tasks={tasks} a={a}/></td></tr></RowMenu>})}</tbody></table>{!rows.length&&<p className="p-8 text-center text-sm text-muted-foreground">No tasks.</p>}</div>}
-
-function TimelineView({rows,a,all}:{rows:Row[];a:Actions;all:Task[]}){
- const tasks=rows.map(r=>r.task);
- const [zoom,setZoom]=useState<"week"|"month">("week");const [hover,setHover]=useState<string|null>(null);
- const ROW=44,px=zoom==="week"?9:4;
- const starts=tasks.map(t=>toDate(t.start).getTime()),ends=tasks.map(t=>toDate(t.finish).getTime());
- const min=(starts.length?Math.min(...starts):Date.now())-7*DAY,max=(ends.length?Math.max(...ends):Date.now())+14*DAY;
- const x=(ms:number)=>(ms-min)/DAY*px,width=(max-min)/DAY*px,idx=new Map(tasks.map((t,i)=>[t.id,i]));
- const ticks:number[]=[];for(let d=new Date(min);d.getTime()<max;d.setDate(d.getDate()+(zoom==="week"?7:0)),zoom==="month"&&d.setMonth(d.getMonth()+1,1))ticks.push(d.getTime());
- const bar=(t:Task)=>({l:x(toDate(t.start).getTime()),r:x(toDate(t.finish).getTime()+DAY)});
- const lines=tasks.flatMap((t,i)=>t.dependencies.filter(d=>idx.has(d)).map(d=>{const p=tasks[idx.get(d)!]!,pi=idx.get(d)!,pb=bar(p),tb=bar(t);const x1=p.isMilestone?pb.l+8:pb.r,y1=pi*ROW+ROW/2,x2=t.isMilestone?tb.l:tb.l,y2=i*ROW+ROW/2,mid=x1+10;const path=x2>=mid+4?`M${x1},${y1} H${mid} V${y2} H${x2}`:`M${x1},${y1} H${mid} V${y1+(y2>y1?ROW/2:-ROW/2)} H${x2-10} V${y2} H${x2}`;return {key:`${d}-${t.id}`,path,warn:toDate(t.start)<=toDate(p.finish)&&!(p.isMilestone&&t.start===p.finish),active:hover===t.id||hover===d}}));
- return <div className="rounded-lg border border-border/70 bg-card shadow-sm"><div className="flex items-center justify-between border-b p-2"><p className="px-2 text-xs text-muted-foreground">Lines show task dependencies. Amber means a task starts before its predecessor finishes.</p><div className="flex gap-1">{(["week","month"] as const).map(z=><Button key={z} size="sm" variant={zoom===z?"secondary":"ghost"} onClick={()=>setZoom(z)} className="capitalize">{z}</Button>)}</div></div>
- <div className="flex overflow-hidden"><div className="w-[340px] shrink-0 border-r"><div className="h-8 border-b"/>{tasks.map((t,i)=><RowMenu key={t.id} task={t} tasks={all} a={a}><div onMouseEnter={()=>setHover(t.id)} onMouseLeave={()=>setHover(null)} style={{height:ROW}} className="flex items-center gap-2 border-b px-3 text-sm"><span className="w-5 text-right text-xs text-muted-foreground">{i+1}</span><Tick task={t} a={a}/><TitleCell row={rows[i]!} a={a} className="flex-1"/><Avatars names={t.assignees}/></div></RowMenu>)}</div>
- <div className="min-w-0 flex-1 overflow-x-auto"><div className="relative" style={{width}}><div className="flex h-8 border-b text-[10px] text-muted-foreground">{ticks.map((tk,i)=><span key={tk} className="absolute top-2 whitespace-nowrap pl-1" style={{left:x(tk)}}>{zoom==="week"?fromDate(new Date(tk)).slice(0,5):new Date(tk).toLocaleDateString("en-GB",{month:"short",year:"2-digit"})}{i<0&&""}</span>)}</div>
- <div className="relative" style={{height:tasks.length*ROW}}>{ticks.map((tk,i)=><div key={tk} className={cn("absolute inset-y-0",i%2?"bg-muted/40":"")} style={{left:x(tk),width:(ticks[i+1]?x(ticks[i+1]!):width)-x(tk)}}/>)}{tasks.map((_,i)=><div key={i} className="absolute inset-x-0 border-b" style={{top:(i+1)*ROW-1}}/>)}
-  <div className="absolute inset-y-0 w-px bg-destructive/60" style={{left:x(today().getTime())}}/>
-  <svg className="pointer-events-none absolute inset-0" width={width} height={tasks.length*ROW}>{lines.map(l=><path key={l.key} d={l.path} fill="none" strokeLinejoin="round" className={cn(l.warn?"stroke-health-warn":"stroke-muted-foreground",l.active&&"stroke-primary")} strokeWidth={l.active?2:1.25}/>)}</svg>
-  {tasks.map((t,i)=>{const b=bar(t);return t.isMilestone?<button key={t.id} title={t.title} onClick={()=>a.open(t.id)} onMouseEnter={()=>setHover(t.id)} onMouseLeave={()=>setHover(null)} className="absolute size-4 rotate-45 bg-primary" style={{left:b.l,top:i*ROW+ROW/2-8}}/>:<button key={t.id} title={`${t.title} · ${t.start} – ${t.finish}`} onClick={()=>a.open(t.id)} onMouseEnter={()=>setHover(t.id)} onMouseLeave={()=>setHover(null)} className={cn("absolute overflow-hidden rounded-sm",rows[i]!.kids?"h-2.5":"h-5",t.percentComplete===100?"bg-primary/60":"bg-primary/25")} style={{left:b.l,width:Math.max(b.r-b.l,8),top:i*ROW+ROW/2-(rows[i]!.kids?5:10)}}><span className="block h-full bg-primary" style={{width:`${t.percentComplete}%`}}/></button>})}
- </div></div></div></div></div>}
-
-function TaskPanel({task,tasks,people,buckets,premium,a,update,close}:{task:TaskView;tasks:Task[];people:string[];buckets:string[];premium:boolean;a:Actions;update:(patch:Partial<Task>)=>void;close:()=>void}){
- const [more,setMore]=useState(false),[newItem,setNewItem]=useState(""),[label,setLabel]=useState(""),[depPick,setDepPick]=useState("");
- const files=task.attachments;
- const done=task.percentComplete===100,checklist=checklistOf(task),total=task.estimatedEffortHours??0,completed=task.effortCompletedHours??Math.round(total*task.percentComplete/100*10)/10;
- const duration=Math.round((toDate(task.finish).getTime()-toDate(task.start).getTime())/DAY)+1;
- const setChecklist=(items:typeof checklist)=>update({checklistItems:items,checklistCount:items.length});
- const candidates=tasks.filter(t=>t.id!==task.id&&!task.dependencies.includes(t.id)&&!wouldLoop(tasks,task.id,t.id));
- const field="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm disabled:opacity-60";
- const notes=task.notes??"";
- return <><button aria-label="Close task" className="fixed inset-0 z-40 bg-overlay" onClick={close}/><aside role="dialog" aria-label={`${task.title} details`} className="fixed inset-y-0 right-0 z-50 w-full max-w-lg space-y-5 overflow-y-auto border-l bg-background p-6 shadow-xl">
-  <div className="flex items-center justify-end gap-1"><Button size="icon" variant="ghost" aria-label="Copy link to task" onClick={()=>a.link(task.id)}><Link2/></Button><DotsMenu task={task} tasks={tasks} a={a}/><Button size="icon" variant="ghost" aria-label="Close" onClick={close}><X/></Button></div>
-  <div className="flex items-start gap-2"><div className="pt-2"><Tick task={task} a={a}/></div><input aria-label="Task title" value={task.title} onChange={e=>update({title:e.target.value})} className={cn("flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-lg font-semibold",done&&"text-muted-foreground line-through")}/></div>
-  <div className="flex flex-wrap items-center gap-1.5">{task.assignees.map(n=><span key={n} className="inline-flex items-center gap-1 rounded-full bg-muted py-0.5 pl-0.5 pr-2 text-xs"><span className="grid size-5 place-items-center rounded-full bg-primary/15 text-[9px] font-semibold text-primary">{initials(n)}</span>{n}<button aria-label={`Remove ${n}`} onClick={()=>update({assignees:task.assignees.filter(x=>x!==n)})}><X className="size-3"/></button></span>)}<select aria-label="Add assignee" value="" onChange={e=>e.target.value&&update({assignees:[...task.assignees,e.target.value]})} className="h-7 rounded-md border bg-background px-1 text-xs"><option value="">+ Assign</option>{people.filter(p=>!task.assignees.includes(p)).map(p=><option key={p}>{p}</option>)}</select></div>
-  <div className="flex flex-wrap items-center gap-1.5">{(task.labels??[]).map(l=><span key={l} className="inline-flex items-center gap-1 rounded bg-accent px-2 py-0.5 text-xs text-accent-foreground">{l}<button aria-label={`Remove ${l}`} onClick={()=>update({labels:(task.labels??[]).filter(x=>x!==l)})}><X className="size-3"/></button></span>)}<form onSubmit={e=>{e.preventDefault();if(label.trim())update({labels:[...(task.labels??[]),label.trim()]});setLabel("")}}><input value={label} onChange={e=>setLabel(e.target.value)} placeholder="+ Add label" className="h-7 w-28 rounded-md border bg-background px-2 text-xs"/></form></div>
-  <div><p className="text-xs font-semibold">Notes</p><textarea aria-label="Notes" value={notes} onChange={e=>update({notes:e.target.value})} rows={more?8:3} className="mt-1 w-full rounded-md border border-input bg-background p-2 text-sm"/><button onClick={()=>setMore(!more)} className="text-xs font-semibold text-primary">{more?"Show less":"Show more"}</button></div>
-  <div className="grid grid-cols-2 gap-3 text-xs">
-   <label>Start{premium&&task.isMilestone?null:null}<input type="date" disabled={premium&&task.dependencies.length>0&&false} value={toIso(task.start)} onChange={e=>e.target.value&&update({start:fromIso(e.target.value)})} className={field}/></label>
-   <label>Finish<input type="date" value={toIso(task.finish)} onChange={e=>e.target.value&&update({finish:fromIso(e.target.value)})} className={field}/></label>
-   <label><span className="inline-flex items-center gap-1">Duration{premium&&<Lock className="size-3" aria-label="Calculated by Planner"/>}</span><input disabled value={`${duration} day${duration===1?"":"s"}`} className={field}/></label>
-   <label>% Complete<input type="number" min={0} max={100} value={task.percentComplete} onChange={e=>update({percentComplete:Math.max(0,Math.min(100,Number(e.target.value)))})} className={field}/></label>
-   <label>Bucket<select value={task.bucket} onChange={e=>update({bucket:e.target.value})} className={field}>{buckets.map(b=><option key={b}>{b}</option>)}</select></label>
-   <label>Priority<select value={task.priority} onChange={e=>update({priority:e.target.value as Priority})} className={field}>{priorities.map(p=><option key={p}>{p}</option>)}</select></label>
-  </div>
-  <div><div className="flex items-center gap-3"><p className="text-sm font-semibold">Checklist {checklist.filter(c=>c.done).length} / {checklist.length}</p><div className="h-1 flex-1 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{width:`${checklist.length?checklist.filter(c=>c.done).length/checklist.length*100:0}%`}}/></div></div>
-   <div className="mt-2 space-y-1">{checklist.map(c=><div key={c.id} className="group flex items-center gap-2 text-sm"><button aria-label={c.done?"Untick":"Tick"} onClick={()=>setChecklist(checklist.map(x=>x.id===c.id?{...x,done:!x.done}:x))}>{c.done?<CheckCircle2 className="size-4 fill-primary text-primary-foreground"/>:<Circle className="size-4 text-muted-foreground"/>}</button><input value={c.label} onChange={e=>setChecklist(checklist.map(x=>x.id===c.id?{...x,label:e.target.value}:x))} className={cn("flex-1 bg-transparent",c.done&&"line-through text-muted-foreground")}/><button aria-label="Remove item" className="opacity-0 group-hover:opacity-100" onClick={()=>setChecklist(checklist.filter(x=>x.id!==c.id))}><X className="size-3.5"/></button></div>)}
-   <form onSubmit={e=>{e.preventDefault();if(newItem.trim())setChecklist([...checklist,{id:tempId(),label:newItem.trim(),done:false}]);setNewItem("")}} className="flex items-center gap-2"><Circle className="size-4 text-muted-foreground/50"/><input value={newItem} onChange={e=>setNewItem(e.target.value)} placeholder="Add an item" className="flex-1 bg-transparent text-sm"/></form></div></div>
-  <div><p className="text-sm font-semibold">Effort</p><div className="mt-1 grid grid-cols-[1fr_auto_1fr_auto_1fr] items-end gap-2 text-xs"><label>Completed<input type="number" min={0} value={completed} onChange={e=>update({effortCompletedHours:Number(e.target.value)})} className={field}/></label><span className="pb-2">+</span><label>Remaining<input disabled value={`${Math.max(0,Math.round((total-completed)*10)/10)} hours`} className={field}/></label><span className="pb-2">=</span><label>Total<input type="number" min={0} value={total} onChange={e=>update({estimatedEffortHours:Number(e.target.value)})} className={field}/></label></div></div>
-  <div><p className="text-sm font-semibold">Depends on</p>{task.dependencies.length?<div className="mt-1 space-y-1">{task.dependencies.map(d=>{const p=tasks.find(t=>t.id===d);return <div key={d} className="flex items-center justify-between rounded-md border px-2 py-1.5 text-sm"><span>{p?.title??d}<span className="ml-2 text-xs text-muted-foreground">Finish-to-start · {p?.finish}</span></span><Button size="icon" variant="ghost" className="size-7" aria-label="Remove dependency" onClick={()=>a.removeDep(task.id,d)}><X/></Button></div>})}</div>:<p className="mt-1 text-xs text-muted-foreground">This task doesn't depend on other tasks</p>}
-   <div className="mt-2 flex gap-2"><select aria-label="Choose dependency" value={depPick} onChange={e=>setDepPick(e.target.value)} className="h-9 flex-1 rounded-md border bg-background px-2 text-sm"><option value="">Choose a task…</option>{candidates.map(t=><option key={t.id} value={t.id}>{t.title}</option>)}</select><Button size="sm" variant="outline" disabled={!depPick} onClick={()=>{a.addDep(task.id,depPick);setDepPick("")}}>Add dependency</Button></div></div>
-  <div><p className="text-sm font-semibold">Attachments</p>{files.map(f=><p key={f} className="mt-1 rounded-md border px-2 py-1.5 text-sm">{f}</p>)}{!files.length&&<p className="mt-1 text-xs text-muted-foreground">No attachments.</p>}</div>
- </aside></>}
-
-/** A project's tasks, loaded from and saved to Supabase (services/work-items.ts). */
-export function TaskWorkspace({projectId,taskSource}:{projectId:string;taskSource:TaskSource}){
- const query=useProjectTasks(projectId);
- return <QueryState query={query}>{data=><TaskEditor data={data} projectId={projectId} taskSource={taskSource}/>}</QueryState>;
+function buildRows(tasks: Task[], collapsed: Set<string>): Row[] {
+  const ids = new Set(tasks.map((t) => t.id));
+  const out: Row[] = [];
+  for (const t of tasks) {
+    if (t.parentId && ids.has(t.parentId)) continue;
+    const kids = kidsOf(tasks, t.id);
+    let task = t;
+    if (kids.length) {
+      const s = Math.min(...kids.map((k) => toDate(k.start).getTime())),
+        f = Math.max(...kids.map((k) => toDate(k.finish).getTime()));
+      task = {
+        ...t,
+        start: fromDate(new Date(s)),
+        finish: fromDate(new Date(f)),
+        percentComplete: Math.round(kids.reduce((n, k) => n + k.percentComplete, 0) / kids.length),
+      };
+    }
+    out.push({ task, depth: 0, kids: kids.length });
+    if (!collapsed.has(t.id)) kids.forEach((k) => out.push({ task: k, depth: 1, kids: 0 }));
+  }
+  return out;
+}
+function TitleCell({ row, a, className }: { row: Row; a: Actions; className?: string }) {
+  const t = row.task,
+    done = t.percentComplete === 100;
+  return (
+    <div
+      className={cn("flex min-w-0 items-center gap-1", className)}
+      style={{ paddingLeft: row.depth * 20 }}
+    >
+      {row.kids ? (
+        <button
+          aria-label={a.collapsed.has(t.id) ? "Expand subtasks" : "Collapse subtasks"}
+          onClick={(e) => {
+            e.stopPropagation();
+            a.toggleCollapse(t.id);
+          }}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          {a.collapsed.has(t.id) ? (
+            <ChevronRight className="size-4" />
+          ) : (
+            <ChevronDown className="size-4" />
+          )}
+        </button>
+      ) : row.depth ? (
+        <CornerDownRight className="size-3.5 shrink-0 text-muted-foreground/60" />
+      ) : (
+        <span className="w-4" />
+      )}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          a.open(t.id);
+        }}
+        className={cn(
+          "flex min-w-0 items-center gap-1.5 truncate text-left hover:text-primary",
+          row.kids ? "font-semibold" : "font-medium",
+          done && "text-muted-foreground line-through",
+        )}
+      >
+        {t.isMilestone && <Diamond className="size-3.5 shrink-0 fill-primary text-primary" />}
+        <span className="truncate">{t.title}</span>
+        {row.kids > 0 && (
+          <span className="text-xs font-normal text-muted-foreground">({row.kids})</span>
+        )}
+      </button>
+    </div>
+  );
 }
 
-function TaskEditor({data,projectId,taskSource}:{data:ProjectTasks;projectId:string;taskSource:TaskSource}){
- const [tasks,setTasksState]=useState<TaskView[]>(data.tasks),[view,setView]=useState<"grid"|"board"|"timeline">("grid"),[openId,setOpenId]=useState<string|null>(null),[selected,setSelected]=useState<string|null>(null),[clip,setClip]=useState<{task:TaskView;cut:boolean}|null>(null),[notice,setNotice]=useState<{text:string;undo?:TaskView[]|undefined}|null>(null),[confirm,setConfirm]=useState<string|null>(null),[syncing,setSyncing]=useState(false),[collapsed,setCollapsed]=useState<Set<string>>(new Set());
- const rows=useMemo(()=>buildRows(tasks,collapsed),[tasks,collapsed]);
- const planner=taskSource!=="Native";
- const {canEdit}=useProjectPermissions(projectId);
- const orgId=useOrgId(),queryClient=useQueryClient(),router=useRouter();
- // Saving: the screen edits `tasks`; `saved` is what the database holds. Edits are written after
- // a short pause (structural changes straight away), one save at a time, and never dropped:
- // pending edits flush on route change, tab hide and unmount.
- const latest=useRef(tasks),saved=useRef<TaskView[]>(data.tasks),timer=useRef<ReturnType<typeof setTimeout>|null>(null),dirty=useRef(false),chain=useRef<Promise<void>>(Promise.resolve()),inFlight=useRef(0);
- const flush=useCallback(()=>{
-  if(timer.current){clearTimeout(timer.current);timer.current=null}
-  if(!dirty.current)return chain.current;
-  dirty.current=false;
-  chain.current=chain.current.then(async()=>{
-   const next=latest.current,prev=saved.current;
-   inFlight.current++;setSyncing(true);
-   try{
-    const r=await saveTaskChanges({projectId,buckets:data.buckets,people:data.people,prev,next});
-    const id=(value:string)=>r.ids.get(value)??value;
-    const fix=(t:TaskView):TaskView=>({...t,id:id(t.id),...(t.parentId?{parentId:id(t.parentId)}:{}),dependencies:t.dependencies.map(id),updatedAt:r.updatedAt.has(t.id)?r.updatedAt.get(t.id)??null:t.updatedAt,status:statusFor(t,t.status),checklistItems:t.checklistItems.map(c=>({...c,id:r.checklistIds.get(c.id)??c.id}))});
-    saved.current=next.map(fix);
-    latest.current=latest.current.map(fix);setTasksState(latest.current);
-    setOpenId(v=>v&&id(v));setSelected(v=>v&&id(v));setNotice(n=>n?.undo?{...n,undo:n.undo.map(fix)}:n);
-   }catch(error){
-    toast.error(error instanceof Error?error.message:"The tasks could not be saved.");
-    // Show what the database holds now; anything typed since this save started is kept as pending.
-    const key=qk.projects.tasks(orgId,projectId);
-    await queryClient.refetchQueries({queryKey:key});
-    const fresh=queryClient.getQueryData<ProjectTasks>(key)?.tasks;
-    if(fresh&&!dirty.current){saved.current=fresh;latest.current=fresh;setTasksState(fresh)}
-   }finally{
-    inFlight.current--;if(!inFlight.current)setSyncing(false);
-    void invalidateRollups(queryClient,orgId);
-   }
+function Avatars({ names }: { names: string[] }) {
+  return (
+    <div className="flex -space-x-1.5">
+      {names.slice(0, 2).map((n) => (
+        <span
+          key={n}
+          title={n}
+          className="grid size-6 place-items-center rounded-full border-2 border-card bg-primary/15 text-[9px] font-semibold text-primary"
+        >
+          {initials(n)}
+        </span>
+      ))}
+      {names.length > 2 && (
+        <span className="grid size-6 place-items-center rounded-full border-2 border-card bg-muted text-[9px]">
+          +{names.length - 2}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function MenuItems({
+  task,
+  tasks,
+  a,
+  kind,
+}: {
+  task: Task;
+  tasks: Task[];
+  a: Actions;
+  kind: "context" | "dropdown";
+}) {
+  const I = kind === "context" ? ContextMenuItem : DropdownMenuItem,
+    S = kind === "context" ? ContextMenuSeparator : DropdownMenuSeparator,
+    Sub = kind === "context" ? ContextMenuSub : DropdownMenuSub,
+    ST = kind === "context" ? ContextMenuSubTrigger : DropdownMenuSubTrigger,
+    SC = kind === "context" ? ContextMenuSubContent : DropdownMenuSubContent;
+  const candidates = tasks.filter(
+    (t) =>
+      t.id !== task.id && !task.dependencies.includes(t.id) && !wouldLoop(tasks, task.id, t.id),
+  );
+  return (
+    <>
+      <I onSelect={() => a.open(task.id)}>
+        <PanelRightOpen />
+        Open details
+      </I>
+      <S />
+      <I onSelect={() => a.cut(task.id)}>
+        <Scissors />
+        Cut task
+      </I>
+      <I onSelect={() => a.copy(task.id)}>
+        <Copy />
+        Copy task
+      </I>
+      <I disabled={!a.canPaste} onSelect={() => a.paste(task.id)}>
+        <ClipboardPaste />
+        Paste task
+      </I>
+      <I onSelect={() => a.insertAbove(task.id)}>
+        <ListPlus />
+        Insert task above
+      </I>
+      <I onSelect={() => a.addSub(task.id)} disabled={!!task.parentId}>
+        <CornerDownRight />
+        Add subtask
+      </I>
+      {task.parentId ? (
+        <I onSelect={() => a.promote(task.id)}>
+          <ArrowLeftToLine />
+          Promote to main task
+        </I>
+      ) : (
+        <I disabled={!a.canDemote(task.id)} onSelect={() => a.demote(task.id)}>
+          <ArrowRightToLine />
+          Make subtask
+        </I>
+      )}
+      <I onSelect={() => a.remove(task.id)} className="text-destructive">
+        <Trash2 />
+        Delete task
+      </I>
+      <S />
+      <I onSelect={() => a.link(task.id)}>
+        <Link2 />
+        Copy link to task
+      </I>
+      <Sub>
+        <ST>
+          <Link2 className="mr-2 size-4" />
+          Add dependency
+        </ST>
+        <SC className="max-h-72 overflow-y-auto">
+          {candidates.map((t) => (
+            <I key={t.id} onSelect={() => a.addDep(task.id, t.id)}>
+              {t.title}
+            </I>
+          ))}
+          {!candidates.length && <I disabled>No tasks available</I>}
+        </SC>
+      </Sub>
+      <Sub>
+        <ST>
+          <Unlink className="mr-2 size-4" />
+          Remove dependency
+        </ST>
+        <SC>
+          {task.dependencies.map((d) => (
+            <I key={d} onSelect={() => a.removeDep(task.id, d)}>
+              {tasks.find((t) => t.id === d)?.title ?? d}
+            </I>
+          ))}
+          {!task.dependencies.length && <I disabled>No dependencies</I>}
+        </SC>
+      </Sub>
+      <S />
+      <I onSelect={() => a.toggle(task.id)}>
+        <CheckCircle2 />
+        {task.percentComplete === 100 ? "Mark as incomplete" : "Mark as complete"}
+      </I>
+    </>
+  );
+}
+
+function RowMenu({
+  task,
+  tasks,
+  a,
+  children,
+}: {
+  task: Task;
+  tasks: Task[];
+  a: Actions;
+  children: React.ReactNode;
+}) {
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+      <ContextMenuContent className="w-60">
+        <MenuItems task={task} tasks={tasks} a={a} kind="context" />
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+}
+function DotsMenu({ task, tasks, a }: { task: Task; tasks: Task[]; a: Actions }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="size-7"
+          aria-label={`Actions for ${task.title}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MoreHorizontal />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-60">
+        <MenuItems task={task} tasks={tasks} a={a} kind="dropdown" />
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+function Tick({ task, a }: { task: Task; a: Actions }) {
+  const done = task.percentComplete === 100;
+  return (
+    <button
+      aria-label={done ? "Mark as incomplete" : "Mark as complete"}
+      onClick={(e) => {
+        e.stopPropagation();
+        a.toggle(task.id);
+      }}
+      className="text-primary"
+    >
+      {done ? (
+        <CheckCircle2 className="size-5 fill-primary text-primary-foreground" />
+      ) : (
+        <Circle className="size-5 text-muted-foreground" />
+      )}
+    </button>
+  );
+}
+
+function GridView({
+  rows,
+  tasks,
+  a,
+  selected,
+  setSelected,
+}: {
+  rows: Row[];
+  tasks: Task[];
+  a: Actions;
+  selected: string | null;
+  setSelected: (id: string) => void;
+}) {
+  return (
+    <div className="overflow-x-auto rounded-lg border border-border/70 bg-card shadow-sm">
+      <table className="w-full min-w-[860px] text-sm">
+        <thead className="bg-muted/50 text-xs text-muted-foreground">
+          <tr>
+            {[
+              "#",
+              "",
+              "Task",
+              "Assignees",
+              "Bucket",
+              "Start",
+              "Finish",
+              "% Complete",
+              "Depends on",
+              "",
+            ].map((h, i) => (
+              <th key={i} className="px-3 py-2 text-left font-semibold">
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => {
+            const t = row.task;
+            return (
+              <RowMenu key={t.id} task={t} tasks={tasks} a={a}>
+                <tr
+                  tabIndex={0}
+                  onClick={() => setSelected(t.id)}
+                  onDoubleClick={() => a.open(t.id)}
+                  className={cn(
+                    "cursor-pointer border-t outline-none hover:bg-accent/30",
+                    row.kids > 0 && "bg-muted/30",
+                    selected === t.id && "bg-accent/50",
+                  )}
+                >
+                  <td className="px-3 py-2 text-xs text-muted-foreground">{i + 1}</td>
+                  <td className="px-1">
+                    <Tick task={t} a={a} />
+                  </td>
+                  <td className="max-w-[360px] px-3 py-2">
+                    <TitleCell row={row} a={a} />
+                  </td>
+                  <td className="px-3">
+                    <Avatars names={t.assignees} />
+                  </td>
+                  <td className="px-3 text-xs">{t.bucket}</td>
+                  <td className="px-3 text-xs">{t.start}</td>
+                  <td className="px-3 text-xs">{t.finish}</td>
+                  <td className="px-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-16 rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full bg-primary"
+                          style={{ width: `${t.percentComplete}%` }}
+                        />
+                      </div>
+                      <span className="text-xs">{t.percentComplete}%</span>
+                    </div>
+                  </td>
+                  <td className="px-3 text-xs text-muted-foreground">
+                    {t.dependencies
+                      .map((d) => rows.findIndex((x) => x.task.id === d) + 1)
+                      .filter(Boolean)
+                      .join(", ") || "—"}
+                  </td>
+                  <td className="px-2">
+                    <DotsMenu task={t} tasks={tasks} a={a} />
+                  </td>
+                </tr>
+              </RowMenu>
+            );
+          })}
+        </tbody>
+      </table>
+      {!rows.length && <p className="p-8 text-center text-sm text-muted-foreground">No tasks.</p>}
+    </div>
+  );
+}
+
+function TimelineView({ rows, a, all }: { rows: Row[]; a: Actions; all: Task[] }) {
+  const tasks = rows.map((r) => r.task);
+  const [zoom, setZoom] = useState<"week" | "month">("week");
+  const [hover, setHover] = useState<string | null>(null);
+  const ROW = 44,
+    px = zoom === "week" ? 9 : 4;
+  const starts = tasks.map((t) => toDate(t.start).getTime()),
+    ends = tasks.map((t) => toDate(t.finish).getTime());
+  const min = (starts.length ? Math.min(...starts) : Date.now()) - 7 * DAY,
+    max = (ends.length ? Math.max(...ends) : Date.now()) + 14 * DAY;
+  const x = (ms: number) => ((ms - min) / DAY) * px,
+    width = ((max - min) / DAY) * px,
+    idx = new Map(tasks.map((t, i) => [t.id, i]));
+  const ticks: number[] = [];
+  for (
+    let d = new Date(min);
+    d.getTime() < max;
+    d.setDate(d.getDate() + (zoom === "week" ? 7 : 0)),
+      zoom === "month" && d.setMonth(d.getMonth() + 1, 1)
+  )
+    ticks.push(d.getTime());
+  const bar = (t: Task) => ({
+    l: x(toDate(t.start).getTime()),
+    r: x(toDate(t.finish).getTime() + DAY),
   });
-  return chain.current;
- },[projectId,data.buckets,data.people,queryClient,orgId]);
- const schedule=(delay:number)=>{dirty.current=true;if(timer.current)clearTimeout(timer.current);timer.current=setTimeout(()=>void flush(),delay)};
- const setTasks=(value:TaskView[]|((current:TaskView[])=>TaskView[]),delay=700)=>{
-  if(!canEdit){toast.error("You can view this project's tasks but not change them.");return}
-  const next=typeof value==="function"?value(latest.current):value;latest.current=next;setTasksState(next);schedule(delay);
- };
- // Take the server's copy whenever nothing is waiting to be written (after a save, a reload,
- // or a failed save, which reset `saved` so the screen shows the database again).
- useEffect(()=>{if(dirty.current||inFlight.current||timer.current)return;saved.current=data.tasks;latest.current=data.tasks;setTasksState(data.tasks)},[data.tasks]);
- useEffect(()=>{
-  const off=router.subscribe("onBeforeNavigate",()=>void flush());
-  const hide=()=>{if(document.visibilityState==="hidden")void flush()};
-  const leave=(e:BeforeUnloadEvent)=>{if(dirty.current||inFlight.current){void flush();e.preventDefault()}};
-  document.addEventListener("visibilitychange",hide);window.addEventListener("beforeunload",leave);
-  return ()=>{off();document.removeEventListener("visibilitychange",hide);window.removeEventListener("beforeunload",leave);void flush()};
- },[router,flush]);
- useEffect(()=>{const id=new URLSearchParams(window.location.search).get("task");if(id&&data.tasks.some(t=>t.id===id))setOpenId(id)},[data.tasks]);
- const commit=(next:TaskView[],text?:string,undo?:TaskView[])=>{setTasks(next,0);if(text)setNotice({text,undo})};
- const people=useMemo(()=>data.people.map(p=>p.name).sort(),[data.people]);
- const buckets=useMemo(()=>Array.from(new Set([...data.buckets.map(b=>b.name),...tasks.map(t=>t.bucket)])),[data.buckets,tasks]);
- const find=(id:string)=>tasks.find(t=>t.id===id);
- const blank=(ref:TaskView,parentId?:string):TaskView=>({id:tempId(),ref:"",status:"not_started",updatedAt:null,attachments:[],title:parentId?"New subtask":"New task",bucket:ref.bucket,assignees:[],start:ref.start,finish:ref.start,percentComplete:0,priority:"Moderate" as Priority,isMilestone:false,checklistCount:0,checklistItems:[],dependencies:[],labels:[],...(parentId?{parentId}:{})});
- const prevTop=(id:string)=>{const i=rows.findIndex(r=>r.task.id===id);for(let j=i-1;j>=0;j--)if(rows[j]!.depth===0)return rows[j]!.task.id;return undefined};
- const a:Actions={canPaste:!!clip,collapsed,toggleCollapse:id=>setCollapsed(c=>{const n=new Set(c);if(n.has(id))n.delete(id);else n.add(id);return n}),
-  canDemote:id=>!kidsOf(tasks,id).length&&!!prevTop(id),
-  addSub:id=>{const ref=find(id);if(!ref||ref.parentId)return;const kids=kidsOf(tasks,id);const last=kids.length?tasks.findIndex(t=>t.id===kids[kids.length-1]!.id):tasks.findIndex(t=>t.id===id);const item=blank(ref,id);const next=[...tasks];next.splice(last+1,0,item);setCollapsed(c=>{const n=new Set(c);n.delete(id);return n});commit(next,"Subtask added.",tasks);setOpenId(item.id)},
-  demote:id=>{const p=prevTop(id);if(!p||kidsOf(tasks,id).length)return;setCollapsed(c=>{const n=new Set(c);n.delete(p);return n});commit(tasks.map(t=>t.id===id?{...t,parentId:p}:t),`Now a subtask of "${find(p)?.title}".`,tasks)},
-  promote:id=>{const t=find(id);if(!t?.parentId)return;const pid=t.parentId;const base=tasks.filter(x=>x.id!==id);let last=base.findIndex(x=>x.id===pid);base.forEach((x,i)=>{if(x.parentId===pid)last=Math.max(last,i)});const {parentId:_p,...rest}=t;const next=[...base];next.splice(last+1,0,rest);commit(next,`"${t.title}" is now a main task.`,tasks)},open:id=>setOpenId(id),
-  cut:id=>{const t=find(id);if(t){setClip({task:t,cut:true});setNotice({text:`Cut "${t.title}". Choose Paste on another task to move it.`})}},
-  copy:id=>{const t=find(id);if(t){setClip({task:t,cut:false});setNotice({text:`Copied "${t.title}".`})}},
-  paste:id=>{if(!clip)return;const base=clip.cut?tasks.filter(t=>t.id!==clip.task.id):tasks;const i=base.findIndex(t=>t.id===id);const ref=find(id);const par=ref?.parentId&&clip.task.id!==ref.parentId&&!kidsOf(tasks,clip.task.id).length?ref.parentId:undefined;const {parentId:_x,...clipBase}=clip.task;const item:TaskView={...(clip.cut?clipBase:{...clipBase,id:tempId(),ref:"",updatedAt:null,attachments:[],checklistItems:clipBase.checklistItems.map(c=>({...c,id:tempId()})),title:`${clip.task.title} (copy)`,dependencies:[...clip.task.dependencies]}),...(par?{parentId:par}:{})};const next=[...base];next.splice(i+1,0,item);commit(next,clip.cut?`Moved "${item.title}".`:`Pasted "${item.title}".`,tasks);if(clip.cut)setClip(null)},
-  insertAbove:id=>{const ref=find(id);if(!ref)return;const i=tasks.findIndex(t=>t.id===id);const item=blank(ref,ref.parentId);const next=[...tasks];next.splice(i,0,item);commit(next,"Task inserted.");setOpenId(item.id)},
-  remove:id=>setConfirm(id),
-  link:id=>{const url=`${window.location.origin}${window.location.pathname}?task=${id}`;navigator.clipboard?.writeText(url).catch(()=>undefined);setNotice({text:"Link copied."})},
-  addDep:(id,dep)=>{if(wouldLoop(tasks,id,dep))return setNotice({text:"That would create a loop of dependencies."});commit(tasks.map(t=>t.id===id?{...t,dependencies:[...t.dependencies,dep]}:t),"Dependency added.")},
-  removeDep:(id,dep)=>commit(tasks.map(t=>t.id===id?{...t,dependencies:t.dependencies.filter(d=>d!==dep)}:t),"Dependency removed."),
-  toggle:id=>commit(tasks.map(t=>t.id===id?{...t,percentComplete:t.percentComplete===100?0:100}:t))};
- useEffect(()=>{const onKey=(e:KeyboardEvent)=>{if(!selected||openId||view!=="grid")return;const tag=(e.target as HTMLElement)?.tagName;if(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT")return;const mod=e.ctrlKey||e.metaKey;if(mod&&e.key==="x")a.cut(selected);else if(mod&&e.key==="c")a.copy(selected);else if(mod&&e.key==="v")a.paste(selected);else if(e.key==="Delete")a.remove(selected);else if(e.key==="Enter")a.open(selected);else return;e.preventDefault()};window.addEventListener("keydown",onKey);return ()=>window.removeEventListener("keydown",onKey)});
- const open=openId?find(openId):undefined,confirmTask=confirm?find(confirm):undefined;
- return <div className="space-y-3">
-  <div className="flex flex-wrap items-center justify-between gap-2"><div className="inline-flex rounded-md border bg-card p-0.5">{(["grid","board","timeline"] as const).map(v=><Button key={v} size="sm" variant={view===v?"secondary":"ghost"} onClick={()=>setView(v)} className="capitalize">{v}</Button>)}</div>
-   <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground"><span className="inline-flex items-center gap-2" role="status">{syncing?<LoaderCircle className="size-3.5 animate-spin text-primary"/>:<Check className="size-3.5 text-health-good"/>}{syncing?"Saving…":planner?"Saved · Planner sync not connected yet":"All changes saved"}</span>{taskSource==="Planner (Premium)"&&<span className="inline-flex items-center gap-1" title="Planner Premium calculates summary task dates and remaining effort, so they can only be changed in Planner."><Lock className="size-3.5"/>Some fields calculated by Planner</span>}{planner&&<a href="https://planner.cloud.microsoft" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline"><ExternalLink className="size-3.5"/>Open in Planner</a>}</div></div>
-  {notice&&<div role="status" className="flex items-center justify-between rounded-md border bg-accent/40 px-3 py-2 text-sm"><span>{notice.text}</span><div className="flex gap-1">{notice.undo&&<Button size="sm" variant="ghost" onClick={()=>{setTasks(notice.undo!,0);setNotice(null)}}>Undo</Button>}<Button size="icon" variant="ghost" className="size-7" aria-label="Dismiss" onClick={()=>setNotice(null)}><X/></Button></div></div>}
-  <p className="text-xs text-muted-foreground">Right-click a task, or use its ⋯ button, for subtasks, cut, copy, paste, dependencies and more.</p>
-  {view==="grid"&&<GridView rows={rows} tasks={tasks} a={a} selected={selected} setSelected={setSelected}/>}
-  {view==="timeline"&&<TimelineView rows={rows} all={tasks} a={a}/>}
-  {view==="board"&&<BoardWorkspace key={tasks.map(t=>`${t.id}${t.bucket}${t.percentComplete}`).join()} title="Tasks" manage={false} rows={tasksToRows(tasks)} columns={taskColumns} groupOptions={["group","deliveryStatus","priority"]} initialView="kanban" planner={false} onRowsChange={rows=>setTasks(ts=>ts.map(t=>{const r=rows.find(x=>x.id===t.id);return r?{...t,bucket:String(r.group??r.status??t.bucket)}:t}),0)}/>}
-  {open&&<TaskPanel key={open.id} task={open} tasks={tasks} people={people} buckets={buckets} premium={taskSource==="Planner (Premium)"} a={a} update={patch=>setTasks(ts=>ts.map(t=>t.id===open.id?{...t,...patch}:t))} close={()=>setOpenId(null)}/>}
-  {confirmTask&&<><div className="fixed inset-0 z-50 bg-overlay" onClick={()=>setConfirm(null)}/><div role="alertdialog" aria-label="Delete task" className="fixed left-1/2 top-1/3 z-50 w-full max-w-sm -translate-x-1/2 rounded-lg border bg-background p-5 shadow-xl"><p className="font-semibold">Delete task?</p><p className="mt-1 text-sm text-muted-foreground">"{confirmTask.title}" will be removed, along with {kidsOf(tasks,confirmTask.id).length?"its subtasks and ":""}any dependencies on it.</p><div className="mt-4 flex justify-end gap-2"><Button variant="outline" size="sm" onClick={()=>setConfirm(null)}>Cancel</Button><Button variant="destructive" size="sm" onClick={()=>{const prev=tasks;const gone=new Set([confirmTask.id,...kidsOf(tasks,confirmTask.id).map(k=>k.id)]);commit(tasks.filter(t=>!gone.has(t.id)).map(t=>({...t,dependencies:t.dependencies.filter(d=>!gone.has(d))})),`Deleted "${confirmTask.title}".`,prev);if(openId===confirmTask.id)setOpenId(null);setConfirm(null)}}>Delete</Button></div></div></>}
- </div>}
+  const lines = tasks.flatMap((t, i) =>
+    t.dependencies
+      .filter((d) => idx.has(d))
+      .map((d) => {
+        const p = tasks[idx.get(d)!]!,
+          pi = idx.get(d)!,
+          pb = bar(p),
+          tb = bar(t);
+        const x1 = p.isMilestone ? pb.l + 8 : pb.r,
+          y1 = pi * ROW + ROW / 2,
+          x2 = t.isMilestone ? tb.l : tb.l,
+          y2 = i * ROW + ROW / 2,
+          mid = x1 + 10;
+        const path =
+          x2 >= mid + 4
+            ? `M${x1},${y1} H${mid} V${y2} H${x2}`
+            : `M${x1},${y1} H${mid} V${y1 + (y2 > y1 ? ROW / 2 : -ROW / 2)} H${x2 - 10} V${y2} H${x2}`;
+        return {
+          key: `${d}-${t.id}`,
+          path,
+          warn: toDate(t.start) <= toDate(p.finish) && !(p.isMilestone && t.start === p.finish),
+          active: hover === t.id || hover === d,
+        };
+      }),
+  );
+  return (
+    <div className="rounded-lg border border-border/70 bg-card shadow-sm">
+      <div className="flex items-center justify-between border-b p-2">
+        <p className="px-2 text-xs text-muted-foreground">
+          Lines show task dependencies. Amber means a task starts before its predecessor finishes.
+        </p>
+        <div className="flex gap-1">
+          {(["week", "month"] as const).map((z) => (
+            <Button
+              key={z}
+              size="sm"
+              variant={zoom === z ? "secondary" : "ghost"}
+              onClick={() => setZoom(z)}
+              className="capitalize"
+            >
+              {z}
+            </Button>
+          ))}
+        </div>
+      </div>
+      <div className="flex overflow-hidden">
+        <div className="w-[340px] shrink-0 border-r">
+          <div className="h-8 border-b" />
+          {tasks.map((t, i) => (
+            <RowMenu key={t.id} task={t} tasks={all} a={a}>
+              <div
+                onMouseEnter={() => setHover(t.id)}
+                onMouseLeave={() => setHover(null)}
+                style={{ height: ROW }}
+                className="flex items-center gap-2 border-b px-3 text-sm"
+              >
+                <span className="w-5 text-right text-xs text-muted-foreground">{i + 1}</span>
+                <Tick task={t} a={a} />
+                <TitleCell row={rows[i]!} a={a} className="flex-1" />
+                <Avatars names={t.assignees} />
+              </div>
+            </RowMenu>
+          ))}
+        </div>
+        <div className="min-w-0 flex-1 overflow-x-auto">
+          <div className="relative" style={{ width }}>
+            <div className="flex h-8 border-b text-[10px] text-muted-foreground">
+              {ticks.map((tk, i) => (
+                <span
+                  key={tk}
+                  className="absolute top-2 whitespace-nowrap pl-1"
+                  style={{ left: x(tk) }}
+                >
+                  {zoom === "week"
+                    ? fromDate(new Date(tk)).slice(0, 5)
+                    : new Date(tk).toLocaleDateString("en-GB", { month: "short", year: "2-digit" })}
+                  {i < 0 && ""}
+                </span>
+              ))}
+            </div>
+            <div className="relative" style={{ height: tasks.length * ROW }}>
+              {ticks.map((tk, i) => (
+                <div
+                  key={tk}
+                  className={cn("absolute inset-y-0", i % 2 ? "bg-muted/40" : "")}
+                  style={{ left: x(tk), width: (ticks[i + 1] ? x(ticks[i + 1]!) : width) - x(tk) }}
+                />
+              ))}
+              {tasks.map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute inset-x-0 border-b"
+                  style={{ top: (i + 1) * ROW - 1 }}
+                />
+              ))}
+              <div
+                className="absolute inset-y-0 w-px bg-destructive/60"
+                style={{ left: x(today().getTime()) }}
+              />
+              <svg
+                className="pointer-events-none absolute inset-0"
+                width={width}
+                height={tasks.length * ROW}
+              >
+                {lines.map((l) => (
+                  <path
+                    key={l.key}
+                    d={l.path}
+                    fill="none"
+                    strokeLinejoin="round"
+                    className={cn(
+                      l.warn ? "stroke-health-warn" : "stroke-muted-foreground",
+                      l.active && "stroke-primary",
+                    )}
+                    strokeWidth={l.active ? 2 : 1.25}
+                  />
+                ))}
+              </svg>
+              {tasks.map((t, i) => {
+                const b = bar(t);
+                return t.isMilestone ? (
+                  <button
+                    key={t.id}
+                    title={t.title}
+                    onClick={() => a.open(t.id)}
+                    onMouseEnter={() => setHover(t.id)}
+                    onMouseLeave={() => setHover(null)}
+                    className="absolute size-4 rotate-45 bg-primary"
+                    style={{ left: b.l, top: i * ROW + ROW / 2 - 8 }}
+                  />
+                ) : (
+                  <button
+                    key={t.id}
+                    title={`${t.title} · ${t.start} – ${t.finish}`}
+                    onClick={() => a.open(t.id)}
+                    onMouseEnter={() => setHover(t.id)}
+                    onMouseLeave={() => setHover(null)}
+                    className={cn(
+                      "absolute overflow-hidden rounded-sm",
+                      rows[i]!.kids ? "h-2.5" : "h-5",
+                      t.percentComplete === 100 ? "bg-primary/60" : "bg-primary/25",
+                    )}
+                    style={{
+                      left: b.l,
+                      width: Math.max(b.r - b.l, 8),
+                      top: i * ROW + ROW / 2 - (rows[i]!.kids ? 5 : 10),
+                    }}
+                  >
+                    <span
+                      className="block h-full bg-primary"
+                      style={{ width: `${t.percentComplete}%` }}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TaskPanel({
+  task,
+  tasks,
+  people,
+  buckets,
+  premium,
+  a,
+  update,
+  close,
+}: {
+  task: TaskView;
+  tasks: Task[];
+  people: string[];
+  buckets: string[];
+  premium: boolean;
+  a: Actions;
+  update: (patch: Partial<Task>) => void;
+  close: () => void;
+}) {
+  const [more, setMore] = useState(false),
+    [newItem, setNewItem] = useState(""),
+    [label, setLabel] = useState(""),
+    [depPick, setDepPick] = useState("");
+  const files = task.attachments;
+  const done = task.percentComplete === 100,
+    checklist = checklistOf(task),
+    total = task.estimatedEffortHours ?? 0,
+    completed =
+      task.effortCompletedHours ?? Math.round(((total * task.percentComplete) / 100) * 10) / 10;
+  const duration =
+    Math.round((toDate(task.finish).getTime() - toDate(task.start).getTime()) / DAY) + 1;
+  const setChecklist = (items: typeof checklist) =>
+    update({ checklistItems: items, checklistCount: items.length });
+  const candidates = tasks.filter(
+    (t) =>
+      t.id !== task.id && !task.dependencies.includes(t.id) && !wouldLoop(tasks, task.id, t.id),
+  );
+  const field =
+    "mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm disabled:opacity-60";
+  const notes = task.notes ?? "";
+  return (
+    <>
+      <button aria-label="Close task" className="fixed inset-0 z-40 bg-overlay" onClick={close} />
+      <aside
+        role="dialog"
+        aria-label={`${task.title} details`}
+        className="fixed inset-y-0 right-0 z-50 w-full max-w-lg space-y-5 overflow-y-auto border-l bg-background p-6 shadow-xl"
+      >
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            size="icon"
+            variant="ghost"
+            aria-label="Copy link to task"
+            onClick={() => a.link(task.id)}
+          >
+            <Link2 />
+          </Button>
+          <DotsMenu task={task} tasks={tasks} a={a} />
+          <Button size="icon" variant="ghost" aria-label="Close" onClick={close}>
+            <X />
+          </Button>
+        </div>
+        <div className="flex items-start gap-2">
+          <div className="pt-2">
+            <Tick task={task} a={a} />
+          </div>
+          <input
+            aria-label="Task title"
+            value={task.title}
+            onChange={(e) => update({ title: e.target.value })}
+            className={cn(
+              "flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-lg font-semibold",
+              done && "text-muted-foreground line-through",
+            )}
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {task.assignees.map((n) => (
+            <span
+              key={n}
+              className="inline-flex items-center gap-1 rounded-full bg-muted py-0.5 pl-0.5 pr-2 text-xs"
+            >
+              <span className="grid size-5 place-items-center rounded-full bg-primary/15 text-[9px] font-semibold text-primary">
+                {initials(n)}
+              </span>
+              {n}
+              <button
+                aria-label={`Remove ${n}`}
+                onClick={() => update({ assignees: task.assignees.filter((x) => x !== n) })}
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          ))}
+          <select
+            aria-label="Add assignee"
+            value=""
+            onChange={(e) =>
+              e.target.value && update({ assignees: [...task.assignees, e.target.value] })
+            }
+            className="h-7 rounded-md border bg-background px-1 text-xs"
+          >
+            <option value="">+ Assign</option>
+            {people
+              .filter((p) => !task.assignees.includes(p))
+              .map((p) => (
+                <option key={p}>{p}</option>
+              ))}
+          </select>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {(task.labels ?? []).map((l) => (
+            <span
+              key={l}
+              className="inline-flex items-center gap-1 rounded bg-accent px-2 py-0.5 text-xs text-accent-foreground"
+            >
+              {l}
+              <button
+                aria-label={`Remove ${l}`}
+                onClick={() => update({ labels: (task.labels ?? []).filter((x) => x !== l) })}
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          ))}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (label.trim()) update({ labels: [...(task.labels ?? []), label.trim()] });
+              setLabel("");
+            }}
+          >
+            <input
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              placeholder="+ Add label"
+              className="h-7 w-28 rounded-md border bg-background px-2 text-xs"
+            />
+          </form>
+        </div>
+        <div>
+          <p className="text-xs font-semibold">Notes</p>
+          <textarea
+            aria-label="Notes"
+            value={notes}
+            onChange={(e) => update({ notes: e.target.value })}
+            rows={more ? 8 : 3}
+            className="mt-1 w-full rounded-md border border-input bg-background p-2 text-sm"
+          />
+          <button onClick={() => setMore(!more)} className="text-xs font-semibold text-primary">
+            {more ? "Show less" : "Show more"}
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-3 text-xs">
+          <label>
+            Start{premium && task.isMilestone ? null : null}
+            <input
+              type="date"
+              disabled={premium && task.dependencies.length > 0 && false}
+              value={toIso(task.start)}
+              onChange={(e) => e.target.value && update({ start: fromIso(e.target.value) })}
+              className={field}
+            />
+          </label>
+          <label>
+            Finish
+            <input
+              type="date"
+              value={toIso(task.finish)}
+              onChange={(e) => e.target.value && update({ finish: fromIso(e.target.value) })}
+              className={field}
+            />
+          </label>
+          <label>
+            <span className="inline-flex items-center gap-1">
+              Duration{premium && <Lock className="size-3" aria-label="Calculated by Planner" />}
+            </span>
+            <input
+              disabled
+              value={`${duration} day${duration === 1 ? "" : "s"}`}
+              className={field}
+            />
+          </label>
+          <label>
+            % Complete
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={task.percentComplete}
+              onChange={(e) =>
+                update({ percentComplete: Math.max(0, Math.min(100, Number(e.target.value))) })
+              }
+              className={field}
+            />
+          </label>
+          <label>
+            Bucket
+            <select
+              value={task.bucket}
+              onChange={(e) => update({ bucket: e.target.value })}
+              className={field}
+            >
+              {buckets.map((b) => (
+                <option key={b}>{b}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Priority
+            <select
+              value={task.priority}
+              onChange={(e) => update({ priority: e.target.value as Priority })}
+              className={field}
+            >
+              {priorities.map((p) => (
+                <option key={p}>{p}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div>
+          <div className="flex items-center gap-3">
+            <p className="text-sm font-semibold">
+              Checklist {checklist.filter((c) => c.done).length} / {checklist.length}
+            </p>
+            <div className="h-1 flex-1 rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary"
+                style={{
+                  width: `${checklist.length ? (checklist.filter((c) => c.done).length / checklist.length) * 100 : 0}%`,
+                }}
+              />
+            </div>
+          </div>
+          <div className="mt-2 space-y-1">
+            {checklist.map((c) => (
+              <div key={c.id} className="group flex items-center gap-2 text-sm">
+                <button
+                  aria-label={c.done ? "Untick" : "Tick"}
+                  onClick={() =>
+                    setChecklist(
+                      checklist.map((x) => (x.id === c.id ? { ...x, done: !x.done } : x)),
+                    )
+                  }
+                >
+                  {c.done ? (
+                    <CheckCircle2 className="size-4 fill-primary text-primary-foreground" />
+                  ) : (
+                    <Circle className="size-4 text-muted-foreground" />
+                  )}
+                </button>
+                <input
+                  value={c.label}
+                  onChange={(e) =>
+                    setChecklist(
+                      checklist.map((x) => (x.id === c.id ? { ...x, label: e.target.value } : x)),
+                    )
+                  }
+                  className={cn(
+                    "flex-1 bg-transparent",
+                    c.done && "line-through text-muted-foreground",
+                  )}
+                />
+                <button
+                  aria-label="Remove item"
+                  className="opacity-0 group-hover:opacity-100"
+                  onClick={() => setChecklist(checklist.filter((x) => x.id !== c.id))}
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+            ))}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (newItem.trim())
+                  setChecklist([
+                    ...checklist,
+                    { id: tempId(), label: newItem.trim(), done: false },
+                  ]);
+                setNewItem("");
+              }}
+              className="flex items-center gap-2"
+            >
+              <Circle className="size-4 text-muted-foreground/50" />
+              <input
+                value={newItem}
+                onChange={(e) => setNewItem(e.target.value)}
+                placeholder="Add an item"
+                className="flex-1 bg-transparent text-sm"
+              />
+            </form>
+          </div>
+        </div>
+        <div>
+          <p className="text-sm font-semibold">Effort</p>
+          <div className="mt-1 grid grid-cols-[1fr_auto_1fr_auto_1fr] items-end gap-2 text-xs">
+            <label>
+              Completed
+              <input
+                type="number"
+                min={0}
+                value={completed}
+                onChange={(e) => update({ effortCompletedHours: Number(e.target.value) })}
+                className={field}
+              />
+            </label>
+            <span className="pb-2">+</span>
+            <label>
+              Remaining
+              <input
+                disabled
+                value={`${Math.max(0, Math.round((total - completed) * 10) / 10)} hours`}
+                className={field}
+              />
+            </label>
+            <span className="pb-2">=</span>
+            <label>
+              Total
+              <input
+                type="number"
+                min={0}
+                value={total}
+                onChange={(e) => update({ estimatedEffortHours: Number(e.target.value) })}
+                className={field}
+              />
+            </label>
+          </div>
+        </div>
+        <div>
+          <p className="text-sm font-semibold">Depends on</p>
+          {task.dependencies.length ? (
+            <div className="mt-1 space-y-1">
+              {task.dependencies.map((d) => {
+                const p = tasks.find((t) => t.id === d);
+                return (
+                  <div
+                    key={d}
+                    className="flex items-center justify-between rounded-md border px-2 py-1.5 text-sm"
+                  >
+                    <span>
+                      {p?.title ?? d}
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        Finish-to-start · {p?.finish}
+                      </span>
+                    </span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="size-7"
+                      aria-label="Remove dependency"
+                      onClick={() => a.removeDep(task.id, d)}
+                    >
+                      <X />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="mt-1 text-xs text-muted-foreground">
+              This task doesn't depend on other tasks
+            </p>
+          )}
+          <div className="mt-2 flex gap-2">
+            <select
+              aria-label="Choose dependency"
+              value={depPick}
+              onChange={(e) => setDepPick(e.target.value)}
+              className="h-9 flex-1 rounded-md border bg-background px-2 text-sm"
+            >
+              <option value="">Choose a task…</option>
+              {candidates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.title}
+                </option>
+              ))}
+            </select>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!depPick}
+              onClick={() => {
+                a.addDep(task.id, depPick);
+                setDepPick("");
+              }}
+            >
+              Add dependency
+            </Button>
+          </div>
+        </div>
+        <div>
+          <p className="text-sm font-semibold">Attachments</p>
+          {files.map((f) => (
+            <p key={f} className="mt-1 rounded-md border px-2 py-1.5 text-sm">
+              {f}
+            </p>
+          ))}
+          {!files.length && <p className="mt-1 text-xs text-muted-foreground">No attachments.</p>}
+        </div>
+      </aside>
+    </>
+  );
+}
+
+/** A project's tasks, loaded from and saved to Supabase (services/work-items.ts). */
+export function TaskWorkspace({
+  projectId,
+  taskSource,
+}: {
+  projectId: string;
+  taskSource: TaskSource;
+}) {
+  const query = useProjectTasks(projectId);
+  return (
+    <QueryState query={query}>
+      {(data) => <TaskEditor data={data} projectId={projectId} taskSource={taskSource} />}
+    </QueryState>
+  );
+}
+
+function TaskEditor({
+  data,
+  projectId,
+  taskSource,
+}: {
+  data: ProjectTasks;
+  projectId: string;
+  taskSource: TaskSource;
+}) {
+  const [tasks, setTasksState] = useState<TaskView[]>(data.tasks),
+    [view, setView] = useState<"grid" | "board" | "timeline">("grid"),
+    [openId, setOpenId] = useState<string | null>(null),
+    [selected, setSelected] = useState<string | null>(null),
+    [clip, setClip] = useState<{ task: TaskView; cut: boolean } | null>(null),
+    [notice, setNotice] = useState<{ text: string; undo?: TaskView[] | undefined } | null>(null),
+    [confirm, setConfirm] = useState<string | null>(null),
+    [syncing, setSyncing] = useState(false),
+    [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const rows = useMemo(() => buildRows(tasks, collapsed), [tasks, collapsed]);
+  const planner = taskSource !== "Native";
+  const { canEdit } = useProjectPermissions(projectId);
+  const orgId = useOrgId(),
+    queryClient = useQueryClient(),
+    router = useRouter();
+  // Saving: the screen edits `tasks`; `saved` is what the database holds. Edits are written after
+  // a short pause (structural changes straight away), one save at a time, and never dropped:
+  // pending edits flush on route change, tab hide and unmount.
+  const latest = useRef(tasks),
+    saved = useRef<TaskView[]>(data.tasks),
+    timer = useRef<ReturnType<typeof setTimeout> | null>(null),
+    dirty = useRef(false),
+    chain = useRef<Promise<void>>(Promise.resolve()),
+    inFlight = useRef(0);
+  const flush = useCallback(() => {
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+    if (!dirty.current) return chain.current;
+    dirty.current = false;
+    chain.current = chain.current.then(async () => {
+      const next = latest.current,
+        prev = saved.current;
+      inFlight.current++;
+      setSyncing(true);
+      try {
+        const r = await saveTaskChanges({
+          projectId,
+          buckets: data.buckets,
+          people: data.people,
+          prev,
+          next,
+        });
+        const id = (value: string) => r.ids.get(value) ?? value;
+        const fix = (t: TaskView): TaskView => ({
+          ...t,
+          id: id(t.id),
+          ...(t.parentId ? { parentId: id(t.parentId) } : {}),
+          dependencies: t.dependencies.map(id),
+          updatedAt: r.updatedAt.has(t.id) ? (r.updatedAt.get(t.id) ?? null) : t.updatedAt,
+          status: statusFor(t, t.status),
+          checklistItems: t.checklistItems.map((c) => ({
+            ...c,
+            id: r.checklistIds.get(c.id) ?? c.id,
+          })),
+        });
+        saved.current = next.map(fix);
+        latest.current = latest.current.map(fix);
+        setTasksState(latest.current);
+        setOpenId((v) => v && id(v));
+        setSelected((v) => v && id(v));
+        setNotice((n) => (n?.undo ? { ...n, undo: n.undo.map(fix) } : n));
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "The tasks could not be saved.");
+        // Show what the database holds now; anything typed since this save started is kept as pending.
+        const key = qk.projects.tasks(orgId, projectId);
+        await queryClient.refetchQueries({ queryKey: key });
+        const fresh = queryClient.getQueryData<ProjectTasks>(key)?.tasks;
+        if (fresh && !dirty.current) {
+          saved.current = fresh;
+          latest.current = fresh;
+          setTasksState(fresh);
+        }
+      } finally {
+        inFlight.current--;
+        if (!inFlight.current) setSyncing(false);
+        void invalidateRollups(queryClient, orgId);
+      }
+    });
+    return chain.current;
+  }, [projectId, data.buckets, data.people, queryClient, orgId]);
+  const schedule = (delay: number) => {
+    dirty.current = true;
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => void flush(), delay);
+  };
+  const setTasks = (value: TaskView[] | ((current: TaskView[]) => TaskView[]), delay = 700) => {
+    if (!canEdit) {
+      toast.error("You can view this project's tasks but not change them.");
+      return;
+    }
+    const next = typeof value === "function" ? value(latest.current) : value;
+    latest.current = next;
+    setTasksState(next);
+    schedule(delay);
+  };
+  // Take the server's copy whenever nothing is waiting to be written (after a save, a reload,
+  // or a failed save, which reset `saved` so the screen shows the database again).
+  useEffect(() => {
+    if (dirty.current || inFlight.current || timer.current) return;
+    saved.current = data.tasks;
+    latest.current = data.tasks;
+    setTasksState(data.tasks);
+  }, [data.tasks]);
+  useEffect(() => {
+    const off = router.subscribe("onBeforeNavigate", () => void flush());
+    const hide = () => {
+      if (document.visibilityState === "hidden") void flush();
+    };
+    const leave = (e: BeforeUnloadEvent) => {
+      if (dirty.current || inFlight.current) {
+        void flush();
+        e.preventDefault();
+      }
+    };
+    document.addEventListener("visibilitychange", hide);
+    window.addEventListener("beforeunload", leave);
+    return () => {
+      off();
+      document.removeEventListener("visibilitychange", hide);
+      window.removeEventListener("beforeunload", leave);
+      void flush();
+    };
+  }, [router, flush]);
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("task");
+    if (id && data.tasks.some((t) => t.id === id)) setOpenId(id);
+  }, [data.tasks]);
+  const commit = (next: TaskView[], text?: string, undo?: TaskView[]) => {
+    setTasks(next, 0);
+    if (text) setNotice({ text, undo });
+  };
+  const people = useMemo(() => data.people.map((p) => p.name).sort(), [data.people]);
+  const buckets = useMemo(
+    () => Array.from(new Set([...data.buckets.map((b) => b.name), ...tasks.map((t) => t.bucket)])),
+    [data.buckets, tasks],
+  );
+  const find = (id: string) => tasks.find((t) => t.id === id);
+  const blank = (ref: TaskView, parentId?: string): TaskView => ({
+    id: tempId(),
+    ref: "",
+    status: "not_started",
+    updatedAt: null,
+    attachments: [],
+    title: parentId ? "New subtask" : "New task",
+    bucket: ref.bucket,
+    assignees: [],
+    start: ref.start,
+    finish: ref.start,
+    percentComplete: 0,
+    priority: "Moderate" as Priority,
+    isMilestone: false,
+    checklistCount: 0,
+    checklistItems: [],
+    dependencies: [],
+    labels: [],
+    ...(parentId ? { parentId } : {}),
+  });
+  const prevTop = (id: string) => {
+    const i = rows.findIndex((r) => r.task.id === id);
+    for (let j = i - 1; j >= 0; j--) if (rows[j]!.depth === 0) return rows[j]!.task.id;
+    return undefined;
+  };
+  const a: Actions = {
+    canPaste: !!clip,
+    collapsed,
+    toggleCollapse: (id) =>
+      setCollapsed((c) => {
+        const n = new Set(c);
+        if (n.has(id)) n.delete(id);
+        else n.add(id);
+        return n;
+      }),
+    canDemote: (id) => !kidsOf(tasks, id).length && !!prevTop(id),
+    addSub: (id) => {
+      const ref = find(id);
+      if (!ref || ref.parentId) return;
+      const kids = kidsOf(tasks, id);
+      const last = kids.length
+        ? tasks.findIndex((t) => t.id === kids[kids.length - 1]!.id)
+        : tasks.findIndex((t) => t.id === id);
+      const item = blank(ref, id);
+      const next = [...tasks];
+      next.splice(last + 1, 0, item);
+      setCollapsed((c) => {
+        const n = new Set(c);
+        n.delete(id);
+        return n;
+      });
+      commit(next, "Subtask added.", tasks);
+      setOpenId(item.id);
+    },
+    demote: (id) => {
+      const p = prevTop(id);
+      if (!p || kidsOf(tasks, id).length) return;
+      setCollapsed((c) => {
+        const n = new Set(c);
+        n.delete(p);
+        return n;
+      });
+      commit(
+        tasks.map((t) => (t.id === id ? { ...t, parentId: p } : t)),
+        `Now a subtask of "${find(p)?.title}".`,
+        tasks,
+      );
+    },
+    promote: (id) => {
+      const t = find(id);
+      if (!t?.parentId) return;
+      const pid = t.parentId;
+      const base = tasks.filter((x) => x.id !== id);
+      let last = base.findIndex((x) => x.id === pid);
+      base.forEach((x, i) => {
+        if (x.parentId === pid) last = Math.max(last, i);
+      });
+      const { parentId: _p, ...rest } = t;
+      const next = [...base];
+      next.splice(last + 1, 0, rest);
+      commit(next, `"${t.title}" is now a main task.`, tasks);
+    },
+    open: (id) => setOpenId(id),
+    cut: (id) => {
+      const t = find(id);
+      if (t) {
+        setClip({ task: t, cut: true });
+        setNotice({ text: `Cut "${t.title}". Choose Paste on another task to move it.` });
+      }
+    },
+    copy: (id) => {
+      const t = find(id);
+      if (t) {
+        setClip({ task: t, cut: false });
+        setNotice({ text: `Copied "${t.title}".` });
+      }
+    },
+    paste: (id) => {
+      if (!clip) return;
+      const base = clip.cut ? tasks.filter((t) => t.id !== clip.task.id) : tasks;
+      const i = base.findIndex((t) => t.id === id);
+      const ref = find(id);
+      const par =
+        ref?.parentId && clip.task.id !== ref.parentId && !kidsOf(tasks, clip.task.id).length
+          ? ref.parentId
+          : undefined;
+      const { parentId: _x, ...clipBase } = clip.task;
+      const item: TaskView = {
+        ...(clip.cut
+          ? clipBase
+          : {
+              ...clipBase,
+              id: tempId(),
+              ref: "",
+              updatedAt: null,
+              attachments: [],
+              checklistItems: clipBase.checklistItems.map((c) => ({ ...c, id: tempId() })),
+              title: `${clip.task.title} (copy)`,
+              dependencies: [...clip.task.dependencies],
+            }),
+        ...(par ? { parentId: par } : {}),
+      };
+      const next = [...base];
+      next.splice(i + 1, 0, item);
+      commit(next, clip.cut ? `Moved "${item.title}".` : `Pasted "${item.title}".`, tasks);
+      if (clip.cut) setClip(null);
+    },
+    insertAbove: (id) => {
+      const ref = find(id);
+      if (!ref) return;
+      const i = tasks.findIndex((t) => t.id === id);
+      const item = blank(ref, ref.parentId);
+      const next = [...tasks];
+      next.splice(i, 0, item);
+      commit(next, "Task inserted.");
+      setOpenId(item.id);
+    },
+    remove: (id) => setConfirm(id),
+    link: (id) => {
+      const url = `${window.location.origin}${window.location.pathname}?task=${id}`;
+      navigator.clipboard?.writeText(url).catch(() => undefined);
+      setNotice({ text: "Link copied." });
+    },
+    addDep: (id, dep) => {
+      if (wouldLoop(tasks, id, dep))
+        return setNotice({ text: "That would create a loop of dependencies." });
+      commit(
+        tasks.map((t) => (t.id === id ? { ...t, dependencies: [...t.dependencies, dep] } : t)),
+        "Dependency added.",
+      );
+    },
+    removeDep: (id, dep) =>
+      commit(
+        tasks.map((t) =>
+          t.id === id ? { ...t, dependencies: t.dependencies.filter((d) => d !== dep) } : t,
+        ),
+        "Dependency removed.",
+      ),
+    toggle: (id) =>
+      commit(
+        tasks.map((t) =>
+          t.id === id ? { ...t, percentComplete: t.percentComplete === 100 ? 0 : 100 } : t,
+        ),
+      ),
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!selected || openId || view !== "grid") return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key === "x") a.cut(selected);
+      else if (mod && e.key === "c") a.copy(selected);
+      else if (mod && e.key === "v") a.paste(selected);
+      else if (e.key === "Delete") a.remove(selected);
+      else if (e.key === "Enter") a.open(selected);
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+  const open = openId ? find(openId) : undefined,
+    confirmTask = confirm ? find(confirm) : undefined;
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="inline-flex rounded-md border bg-card p-0.5">
+          {(["grid", "board", "timeline"] as const).map((v) => (
+            <Button
+              key={v}
+              size="sm"
+              variant={view === v ? "secondary" : "ghost"}
+              onClick={() => setView(v)}
+              className="capitalize"
+            >
+              {v}
+            </Button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-2" role="status">
+            {syncing ? (
+              <LoaderCircle className="size-3.5 animate-spin text-primary" />
+            ) : (
+              <Check className="size-3.5 text-health-good" />
+            )}
+            {syncing
+              ? "Saving…"
+              : planner
+                ? "Saved · Planner sync not connected yet"
+                : "All changes saved"}
+          </span>
+          {taskSource === "Planner (Premium)" && (
+            <span
+              className="inline-flex items-center gap-1"
+              title="Planner Premium calculates summary task dates and remaining effort, so they can only be changed in Planner."
+            >
+              <Lock className="size-3.5" />
+              Some fields calculated by Planner
+            </span>
+          )}
+          {planner && (
+            <a
+              href="https://planner.cloud.microsoft"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-primary hover:underline"
+            >
+              <ExternalLink className="size-3.5" />
+              Open in Planner
+            </a>
+          )}
+        </div>
+      </div>
+      {notice && (
+        <div
+          role="status"
+          className="flex items-center justify-between rounded-md border bg-accent/40 px-3 py-2 text-sm"
+        >
+          <span>{notice.text}</span>
+          <div className="flex gap-1">
+            {notice.undo && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setTasks(notice.undo!, 0);
+                  setNotice(null);
+                }}
+              >
+                Undo
+              </Button>
+            )}
+            <Button
+              size="icon"
+              variant="ghost"
+              className="size-7"
+              aria-label="Dismiss"
+              onClick={() => setNotice(null)}
+            >
+              <X />
+            </Button>
+          </div>
+        </div>
+      )}
+      <p className="text-xs text-muted-foreground">
+        Right-click a task, or use its ⋯ button, for subtasks, cut, copy, paste, dependencies and
+        more.
+      </p>
+      {view === "grid" && (
+        <GridView rows={rows} tasks={tasks} a={a} selected={selected} setSelected={setSelected} />
+      )}
+      {view === "timeline" && <TimelineView rows={rows} all={tasks} a={a} />}
+      {view === "board" && (
+        <BoardWorkspace
+          key={tasks.map((t) => `${t.id}${t.bucket}${t.percentComplete}`).join()}
+          title="Tasks"
+          manage={false}
+          rows={tasksToRows(tasks)}
+          columns={taskColumns}
+          groupOptions={["group", "deliveryStatus", "priority"]}
+          initialView="kanban"
+          planner={false}
+          onRowsChange={(rows) =>
+            setTasks(
+              (ts) =>
+                ts.map((t) => {
+                  const r = rows.find((x) => x.id === t.id);
+                  return r ? { ...t, bucket: String(r.group ?? r.status ?? t.bucket) } : t;
+                }),
+              0,
+            )
+          }
+        />
+      )}
+      {open && (
+        <TaskPanel
+          key={open.id}
+          task={open}
+          tasks={tasks}
+          people={people}
+          buckets={buckets}
+          premium={taskSource === "Planner (Premium)"}
+          a={a}
+          update={(patch) =>
+            setTasks((ts) => ts.map((t) => (t.id === open.id ? { ...t, ...patch } : t)))
+          }
+          close={() => setOpenId(null)}
+        />
+      )}
+      {confirmTask && (
+        <>
+          <div className="fixed inset-0 z-50 bg-overlay" onClick={() => setConfirm(null)} />
+          <div
+            role="alertdialog"
+            aria-label="Delete task"
+            className="fixed left-1/2 top-1/3 z-50 w-full max-w-sm -translate-x-1/2 rounded-lg border bg-background p-5 shadow-xl"
+          >
+            <p className="font-semibold">Delete task?</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              "{confirmTask.title}" will be removed, along with{" "}
+              {kidsOf(tasks, confirmTask.id).length ? "its subtasks and " : ""}any dependencies on
+              it.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setConfirm(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  const prev = tasks;
+                  const gone = new Set([
+                    confirmTask.id,
+                    ...kidsOf(tasks, confirmTask.id).map((k) => k.id),
+                  ]);
+                  commit(
+                    tasks
+                      .filter((t) => !gone.has(t.id))
+                      .map((t) => ({
+                        ...t,
+                        dependencies: t.dependencies.filter((d) => !gone.has(d)),
+                      })),
+                    `Deleted "${confirmTask.title}".`,
+                    prev,
+                  );
+                  if (openId === confirmTask.id) setOpenId(null);
+                  setConfirm(null);
+                }}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

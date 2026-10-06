@@ -85,10 +85,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Virtual PMO" },
-      { name: "description", content: "University digital portfolio, programme and project management." },
+      {
+        name: "description",
+        content: "University digital portfolio, programme and project management.",
+      },
       { name: "author", content: "Virtual PMO" },
       { property: "og:title", content: "Virtual PMO" },
-      { property: "og:description", content: "University digital portfolio, programme and project management." },
+      {
+        property: "og:description",
+        content: "University digital portfolio, programme and project management.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
@@ -100,7 +106,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700&display=swap",
+      },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
@@ -129,13 +138,24 @@ function RootComponent() {
   // Public only when both the target and the page actually rendered are public: during a
   // redirect the target changes first, and a protected page must never render outside the gate.
   const bare = useRouterState({
-    select: state => isPublicPath(state.location.pathname) && isPublicPath(state.matches[state.matches.length - 1]?.pathname ?? state.location.pathname),
+    select: (state) =>
+      isPublicPath(state.location.pathname) &&
+      isPublicPath(state.matches[state.matches.length - 1]?.pathname ?? state.location.pathname),
   });
 
   return (
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
-        {bare ? <Outlet /> : <AuthGate><AppShell><Outlet /><IssueTaskSheet /></AppShell></AuthGate>}
+        {bare ? (
+          <Outlet />
+        ) : (
+          <AuthGate>
+            <AppShell>
+              <Outlet />
+              <IssueTaskSheet />
+            </AppShell>
+          </AuthGate>
+        )}
       </SessionProvider>
       <Toaster richColors closeButton />
     </QueryClientProvider>

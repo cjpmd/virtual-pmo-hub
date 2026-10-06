@@ -5,12 +5,12 @@ projects list, project detail); Stage 4c applied it to every screen.
 
 ## Layers
 
-| Layer | Where | Rule |
-|---|---|---|
-| Client | `src/integrations/supabase/client.ts` | One browser client (Lovable convention). Publishable key only. |
-| Services | `src/services/<domain>.ts` | Plain async functions, no React. Return view models (labels such as "At Risk", ISO dates, database ids). Never compute health: read the `v_*` views. Every result goes through `unwrap()`; every write through `src/services/write.ts`. |
-| Query hooks | `src/hooks/use-<domain>.ts` | `useQuery` / `useMutation` around the services, keyed by `qk` under the current organisation. |
-| Screens | `src/routes`, `src/components` | Call hooks only, never `supabase` directly. Render reads with `<QueryState>`. "Today" comes from `src/lib/today.ts` (organisation time zone), never a literal date. |
+| Layer       | Where                                 | Rule                                                                                                                                                                                                                                    |
+| ----------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Client      | `src/integrations/supabase/client.ts` | One browser client (Lovable convention). Publishable key only.                                                                                                                                                                          |
+| Services    | `src/services/<domain>.ts`            | Plain async functions, no React. Return view models (labels such as "At Risk", ISO dates, database ids). Never compute health: read the `v_*` views. Every result goes through `unwrap()`; every write through `src/services/write.ts`. |
+| Query hooks | `src/hooks/use-<domain>.ts`           | `useQuery` / `useMutation` around the services, keyed by `qk` under the current organisation.                                                                                                                                           |
+| Screens     | `src/routes`, `src/components`        | Call hooks only, never `supabase` directly. Render reads with `<QueryState>`. "Today" comes from `src/lib/today.ts` (organisation time zone), never a literal date.                                                                     |
 
 ### Reads: embedding versus parallel queries
 
@@ -19,18 +19,19 @@ projects list, project detail); Stage 4c applied it to every screen.
 
 ### Services by domain
 
-| Service | Covers |
-|---|---|
-| `hierarchy.ts`, `entities.ts` | portfolios, programmes, projects (read; create, edit, close/reopen, archive), people, phases, permissions |
-| `analytics.ts`, `trends.ts` | portfolio overview (views) and trends (`health_snapshots`) |
-| `project-records.ts` | milestones, risks, issues, forecast history, organisation-wide RAID |
-| `benefits.ts`, `benefits-value.ts`, `benefits-map.ts` | benefits domain (load + pure calculations) |
-| `decisions.ts` | decisions, assumptions, change requests |
-| `dependencies.ts`, `roadmaps.ts`, `requests.ts`, `collections.ts` | as named; collections also load committee-pack facts |
-| `lessons.ts`, `gates.ts` | lessons, improvement actions, phase reviews; stage-gate checklist and lifecycle helpers |
-| `work-items.ts`, `issued-tasks.ts`, `status-reports.ts` | project tasks (diff-based save), portfolio and personal task views; issued work (offers); status reports |
-| `resources.ts`, `assurance.ts` | capacity planning; declared versus evidenced RAG |
-| `integrations.ts`, `favourites.ts`, `org-settings.ts`, `auth.ts` | Microsoft 365 state, starred items, organisation settings, sign-up/sign-in |
+| Service                                                           | Covers                                                                                                    |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `hierarchy.ts`, `entities.ts`                                     | portfolios, programmes, projects (read; create, edit, close/reopen, archive), people, phases, permissions |
+| `analytics.ts`, `trends.ts`                                       | portfolio overview (views) and trends (`health_snapshots`)                                                |
+| `project-records.ts`                                              | milestones, risks, issues, forecast history, organisation-wide RAID                                       |
+| `benefits.ts`, `benefits-value.ts`, `benefits-map.ts`             | benefits domain (load + pure calculations)                                                                |
+| `decisions.ts`                                                    | decisions, assumptions, change requests                                                                   |
+| `dependencies.ts`, `roadmaps.ts`, `requests.ts`, `collections.ts` | as named; collections also load committee-pack facts                                                      |
+| `committee-packs.ts`                                              | issued packs (`committee_packs`): list, issue. Issued packs are immutable                                 |
+| `lessons.ts`, `gates.ts`                                          | lessons, improvement actions, phase reviews; stage-gate checklist and lifecycle helpers                   |
+| `work-items.ts`, `issued-tasks.ts`, `status-reports.ts`           | project tasks (diff-based save), portfolio and personal task views; issued work (offers); status reports  |
+| `resources.ts`, `assurance.ts`                                    | capacity planning; declared versus evidenced RAG                                                          |
+| `integrations.ts`, `favourites.ts`, `org-settings.ts`, `auth.ts`  | Microsoft 365 state, starred items, organisation settings, sign-up/sign-in                                |
 
 ## Writes (`src/services/write.ts`)
 
@@ -73,11 +74,10 @@ projects list, project detail); Stage 4c applied it to every screen.
 
 ## Still browser-local, by design
 
-| What | Why |
-|---|---|
-| Sprints, backlog, delivery settings, justifications (`sprints.ts`) | Not migrated until the sprints phase (schema §6). Keyed by project code, generated from the Supabase project; closures default to the organisation's holiday calendars. |
-| Selected portfolio, recent items, notification read state, saved board views | Per-viewer conveniences. |
-| Committee pack snapshots | Session only until document storage exists. |
+| What                                                                         | Why                                                                                                                                                                     |
+| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sprints, backlog, delivery settings, justifications (`sprints.ts`)           | Not migrated until the sprints phase (schema §6). Keyed by project code, generated from the Supabase project; closures default to the organisation's holiday calendars. |
+| Selected portfolio, recent items, notification read state, saved board views | Per-viewer conveniences.                                                                                                                                                |
 
 ## Prototype data still in the repo
 

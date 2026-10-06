@@ -334,7 +334,10 @@
 
 @layer base {
   /* Figures line up column to column: every number in the product is tabular. */
-  .tabular, table td, table th, .font-display {
+  .tabular,
+  table td,
+  table th,
+  .font-display {
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
   }
@@ -348,8 +351,14 @@
 }
 
 @keyframes viz-rise {
-  from { opacity: 0; transform: translateY(4px) }
-  to { opacity: 1; transform: none }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .viz-animate {
