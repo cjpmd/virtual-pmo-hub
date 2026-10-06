@@ -12,6 +12,7 @@ import { SettingsSync } from "./settings-sync";
 
 /** Paths anyone can open. Everything else needs a session and an organisation. */
 export const isPublicPath = (path: string) =>
+  path === "/" ||
   path === "/signin" ||
   path.startsWith("/auth/") ||
   path === "/signup" ||
