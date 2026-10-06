@@ -1,12 +1,12 @@
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { CheckCircle2, LoaderCircle, Mail } from "lucide-react";
+import { CheckCircle2, LoaderCircle, LogIn, Mail } from "lucide-react";
 import { useState } from "react";
 import { CentredCard, Splash } from "@/components/auth/auth-gate";
 import { useSession } from "@/components/auth/session-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { sendMagicLink } from "@/services/auth";
+import { DEMO_EMAIL, sendMagicLink, signInWithPassword, verifyEmailCode } from "@/services/auth";
 import { errorMessage } from "@/services/service-error";
 import { safeNext } from "@/lib/safe-next";
 
@@ -82,6 +82,76 @@ function SignInPage() {
           link
         </Button>
       </form>
+      <DemoSignIn />
     </CentredCard>
+  );
+}
+
+function DemoSignIn() {
+  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const demo = useMutation({
+    meta: { silent: true },
+    mutationFn: () => signInWithPassword(DEMO_EMAIL, password),
+  });
+  const verify = useMutation({
+    meta: { silent: true },
+    mutationFn: () => verifyEmailCode(DEMO_EMAIL, code),
+  });
+  const error = demo.error ?? verify.error;
+  return (
+    <div className="mt-6 border-t border-border/70 pt-5">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Demo access (temporary)
+      </p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Sign in as <strong className="text-foreground">{DEMO_EMAIL}</strong> without an email link.
+      </p>
+      <form
+        className="mt-3 space-y-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          demo.mutate();
+        }}
+      >
+        <Input
+          type="password"
+          aria-label="Demo password"
+          placeholder="Password"
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+        <Button type="submit" variant="secondary" className="w-full" disabled={demo.isPending}>
+          {demo.isPending ? <LoaderCircle className="animate-spin" /> : <LogIn />}Sign in as demo
+          user
+        </Button>
+      </form>
+      <form
+        className="mt-3 flex gap-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          verify.mutate();
+        }}
+      >
+        <Input
+          aria-label="Code from email"
+          inputMode="numeric"
+          placeholder="Or enter code from email"
+          required
+          value={code}
+          onChange={(event) => setCode(event.target.value)}
+        />
+        <Button type="submit" variant="outline" disabled={verify.isPending}>
+          {verify.isPending && <LoaderCircle className="animate-spin" />}Verify
+        </Button>
+      </form>
+      {error && (
+        <p role="alert" className="mt-3 rounded-md border border-health-bad/40 bg-health-bad/10 p-3 text-sm">
+          {errorMessage(error)}
+        </p>
+      )}
+    </div>
   );
 }
