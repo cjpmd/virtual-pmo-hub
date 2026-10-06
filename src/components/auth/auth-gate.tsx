@@ -3,6 +3,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { LoaderCircle, LogOut } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { selfSignup } from "@/lib/features";
 import { joinDemoOrganisation, signOut } from "@/services/auth";
 import { qk } from "@/services/query-keys";
 import { errorMessage } from "@/services/service-error";
@@ -15,6 +16,7 @@ export const isPublicPath = (path: string) =>
   path === "/" ||
   path === "/signin" ||
   path.startsWith("/auth/") ||
+  path === "/request-access" ||
   path === "/signup" ||
   path.startsWith("/signup/");
 
@@ -98,8 +100,8 @@ function NoOrganisation({ email }: { email: string }) {
     <CentredCard title="You're not in an organisation yet">
       <p className="text-sm text-muted-foreground">
         You're signed in as <strong className="text-foreground">{email}</strong>, but no
-        organisation has added you. Ask an organisation admin to invite this address, or create a
-        new organisation for your team.
+        organisation has added you. Ask an organisation admin to invite this address
+        {selfSignup ? ", or create a new organisation for your team." : "."}
       </p>
       <p className="mt-3 text-sm text-muted-foreground">
         If you've been given access to the demo organisation, you can join it now.
@@ -113,9 +115,11 @@ function NoOrganisation({ email }: { email: string }) {
         </p>
       )}
       <div className="mt-5 flex flex-wrap gap-2">
-        <Button asChild>
-          <Link to="/signup/setup">Create an organisation</Link>
-        </Button>
+        {selfSignup && (
+          <Button asChild>
+            <Link to="/signup/setup">Create an organisation</Link>
+          </Button>
+        )}
         <Button variant="outline" onClick={() => join.mutate()} disabled={join.isPending}>
           {join.isPending && <LoaderCircle className="animate-spin" />}Join the demo organisation
         </Button>

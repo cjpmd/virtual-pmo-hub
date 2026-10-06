@@ -29,6 +29,7 @@ import { Route as MyWorkRouteImport } from './routes/my-work'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as ProgrammesRouteImport } from './routes/programmes'
 import { Route as ProjectsRouteImport } from './routes/projects'
+import { Route as RequestAccessRouteImport } from './routes/request-access'
 import { Route as RequestsRouteImport } from './routes/requests'
 import { Route as ResourceAllocationRouteImport } from './routes/resource-allocation'
 import { Route as ResourceAssignmentsRouteImport } from './routes/resource-assignments'
@@ -201,6 +202,11 @@ const ProgrammesRoute = ProgrammesRouteImport.update({
 const ProjectsRoute = ProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RequestAccessRoute = RequestAccessRouteImport.update({
+  id: '/request-access',
+  path: '/request-access',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RequestsRoute = RequestsRouteImport.update({
@@ -598,6 +604,7 @@ export interface FileRoutesByFullPath {
   '/portfolio': typeof PortfolioRouteWithChildren
   '/programmes': typeof ProgrammesRouteWithChildren
   '/projects': typeof ProjectsRouteWithChildren
+  '/request-access': typeof RequestAccessRoute
   '/requests': typeof RequestsRoute
   '/resource-allocation': typeof ResourceAllocationRoute
   '/resource-assignments': typeof ResourceAssignmentsRoute
@@ -681,6 +688,7 @@ export interface FileRoutesByTo {
   '/milestones': typeof MilestonesRoute
   '/my-timeline': typeof MyTimelineRoute
   '/my-work': typeof MyWorkRoute
+  '/request-access': typeof RequestAccessRoute
   '/requests': typeof RequestsRoute
   '/resource-allocation': typeof ResourceAllocationRoute
   '/resource-assignments': typeof ResourceAssignmentsRoute
@@ -771,6 +779,7 @@ export interface FileRoutesById {
   '/portfolio': typeof PortfolioRouteWithChildren
   '/programmes': typeof ProgrammesRouteWithChildren
   '/projects': typeof ProjectsRouteWithChildren
+  '/request-access': typeof RequestAccessRoute
   '/requests': typeof RequestsRoute
   '/resource-allocation': typeof ResourceAllocationRoute
   '/resource-assignments': typeof ResourceAssignmentsRoute
@@ -868,6 +877,7 @@ export interface FileRouteTypes {
     | '/portfolio'
     | '/programmes'
     | '/projects'
+    | '/request-access'
     | '/requests'
     | '/resource-allocation'
     | '/resource-assignments'
@@ -951,6 +961,7 @@ export interface FileRouteTypes {
     | '/milestones'
     | '/my-timeline'
     | '/my-work'
+    | '/request-access'
     | '/requests'
     | '/resource-allocation'
     | '/resource-assignments'
@@ -1040,6 +1051,7 @@ export interface FileRouteTypes {
     | '/portfolio'
     | '/programmes'
     | '/projects'
+    | '/request-access'
     | '/requests'
     | '/resource-allocation'
     | '/resource-assignments'
@@ -1136,6 +1148,7 @@ export interface RootRouteChildren {
   PortfolioRoute: typeof PortfolioRouteWithChildren
   ProgrammesRoute: typeof ProgrammesRouteWithChildren
   ProjectsRoute: typeof ProjectsRouteWithChildren
+  RequestAccessRoute: typeof RequestAccessRoute
   RequestsRoute: typeof RequestsRoute
   ResourceAllocationRoute: typeof ResourceAllocationRoute
   ResourceAssignmentsRoute: typeof ResourceAssignmentsRoute
@@ -1291,6 +1304,13 @@ declare module '@tanstack/react-router' {
       path: '/projects'
       fullPath: '/projects'
       preLoaderRoute: typeof ProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/request-access': {
+      id: '/request-access'
+      path: '/request-access'
+      fullPath: '/request-access'
+      preLoaderRoute: typeof RequestAccessRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/requests': {
@@ -2121,6 +2141,7 @@ const rootRouteChildren: RootRouteChildren = {
   PortfolioRoute: PortfolioRouteWithChildren,
   ProgrammesRoute: ProgrammesRouteWithChildren,
   ProjectsRoute: ProjectsRouteWithChildren,
+  RequestAccessRoute: RequestAccessRoute,
   RequestsRoute: RequestsRoute,
   ResourceAllocationRoute: ResourceAllocationRoute,
   ResourceAssignmentsRoute: ResourceAssignmentsRoute,

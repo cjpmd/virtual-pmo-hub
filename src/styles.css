@@ -78,6 +78,42 @@
   --color-viz-grid: var(--viz-grid);
   --color-viz-axis: var(--viz-axis);
   --color-viz-track: var(--viz-track);
+
+  /* Public site (homepage and request access): design G, see docs/design/homepage-g.html. */
+  --font-geist: "Geist", "Helvetica Neue", sans-serif;
+  --font-geist-mono: "Geist Mono", ui-monospace, monospace;
+  --color-site-ink: var(--site-ink);
+  --color-site-ink-raised: var(--site-ink-raised);
+  --color-site-ink-sunken: var(--site-ink-sunken);
+  --color-site-ink-active: var(--site-ink-active);
+  --color-site-ink-line: var(--site-ink-line);
+  --color-site-ink-edge: var(--site-ink-edge);
+  --color-site-ink-outline: var(--site-ink-outline);
+  --color-site-ink-pill: var(--site-ink-pill);
+  --color-site-ink-dot: var(--site-ink-dot);
+  --color-site-on-ink: var(--site-on-ink);
+  --color-site-on-ink-table: var(--site-on-ink-table);
+  --color-site-on-ink-nav: var(--site-on-ink-nav);
+  --color-site-on-ink-muted: var(--site-on-ink-muted);
+  --color-site-on-ink-menu: var(--site-on-ink-menu);
+  --color-site-on-ink-faint: var(--site-on-ink-faint);
+  --color-site-accent: var(--site-accent);
+  --color-site-accent-strong: var(--site-accent-strong);
+  --color-site-link: var(--site-link);
+  --color-site-link-hover: var(--site-link-hover);
+  --color-site-good: var(--site-good);
+  --color-site-warn: var(--site-warn);
+  --color-site-bad: var(--site-bad);
+  --color-site-paper: var(--site-paper);
+  --color-site-text: var(--site-text);
+  --color-site-text-muted: var(--site-text-muted);
+  --color-site-text-soft: var(--site-text-soft);
+  --color-site-line: var(--site-line);
+  --color-site-tint-blue: var(--site-tint-blue);
+  --color-site-tint-green: var(--site-tint-green);
+  --color-site-icon-green: var(--site-icon-green);
+  --color-site-tint-violet: var(--site-tint-violet);
+  --color-site-icon-violet: var(--site-icon-violet);
 }
 
 :root {
@@ -122,6 +158,43 @@
   --health-bad-foreground: oklch(0.43 0.16 25);
   --table-head: oklch(0.96 0.008 250);
   --overlay: oklch(0.15 0.02 255 / 45%);
+
+  /* ---- Public site (design G) ------------------------------------------------
+   * A fixed scheme: the dark hero and white body are the design in both app themes,
+   * so these are not redefined under .dark.
+   */
+  --site-ink: #0a1120;
+  --site-ink-raised: #101a2e;
+  --site-ink-sunken: #0c1527;
+  --site-ink-active: #1a2640;
+  --site-ink-line: #1e2b44;
+  --site-ink-edge: #22304a;
+  --site-ink-outline: #33425f;
+  --site-ink-pill: #263452;
+  --site-ink-dot: #2a3753;
+  --site-on-ink: #f2f5fa;
+  --site-on-ink-table: #d5dce8;
+  --site-on-ink-nav: #c3ccdb;
+  --site-on-ink-muted: #aeb9cb;
+  --site-on-ink-menu: #a3afc3;
+  --site-on-ink-faint: #8592a8;
+  --site-accent: #2f6bff;
+  --site-accent-strong: #2457e6;
+  --site-link: #9db9ff;
+  --site-link-hover: #c9d8ff;
+  --site-good: #3dd68c;
+  --site-warn: #f5b841;
+  --site-bad: #f7686c;
+  --site-paper: #ffffff;
+  --site-text: #0e1526;
+  --site-text-muted: #4a5468;
+  --site-text-soft: #3a4458;
+  --site-line: #e6e9ef;
+  --site-tint-blue: #e8efff;
+  --site-tint-green: #ddf6ec;
+  --site-icon-green: #0e7a55;
+  --site-tint-violet: #f1e8ff;
+  --site-icon-violet: #6b3fd4;
 
   /* ---- Data visualisation tokens (see src/lib/chart-theme.ts) ---------------
    * Categorical hues are assigned in fixed order and never cycled; the ramp is a
