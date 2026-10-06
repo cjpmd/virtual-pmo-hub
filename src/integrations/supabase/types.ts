@@ -8518,6 +8518,22 @@ export type Database = {
         Returns: string;
       };
       join_demo_organisation: { Args: never; Returns: string };
+      my_workspace_roles: {
+        Args: never;
+        Returns: {
+          organisation_id: string;
+          role: Database["public"]["Enums"]["app_role"];
+          workspace_id: string;
+        }[];
+      };
+      project_permissions: {
+        Args: { p_project: string };
+        Returns: {
+          can_delete: boolean;
+          can_edit: boolean;
+          can_manage_project: boolean;
+        }[];
+      };
     };
     Enums: {
       action_status: "open" | "in_progress" | "done";

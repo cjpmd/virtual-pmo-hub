@@ -1,27 +1,29 @@
 import { useMemo, useState } from "react";
 import { BookOpenCheck, CheckCircle2, ChevronDown, Repeat2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { LessonCategory } from "@/data/types";
+import { useLessons } from "@/hooks/use-lessons";
 import { getRelevantLessons } from "@/services/lessons";
 import { cn } from "@/lib/utils";
 
 /** "Relevant lessons" shown at initiation and on a request (Prompt I3). */
-export function RelevantLessons({ projectTypeTags, categories, phaseId, excludeProjectId, requireTick = false, ticked, onTick, compact = false }: {
+export function RelevantLessons({ projectTypeTags, categories, phaseIndex, excludeProjectId, requireTick = false, ticked, onTick, compact = false }: {
   projectTypeTags?: string[];
-  categories?: LessonCategory[];
-  phaseId?: string;
+  categories?: string[];
+  /** Lifecycle position (0 = first phase) the lessons are for. */
+  phaseIndex?: number;
   excludeProjectId?: string;
   requireTick?: boolean;
   ticked?: boolean;
   onTick?: (value: boolean) => void;
   compact?: boolean;
 }) {
-  const { matched, themes } = useMemo(() => getRelevantLessons({
+  const lessons = useLessons();
+  const { matched, themes } = useMemo(() => lessons.data ? getRelevantLessons(lessons.data, {
     ...(projectTypeTags ? { projectTypeTags } : {}),
     ...(categories ? { categories } : {}),
-    ...(phaseId ? { phaseId } : {}),
+    ...(phaseIndex !== undefined ? { phaseIndex } : {}),
     ...(excludeProjectId ? { excludeProjectId } : {}),
-  }), [projectTypeTags, categories, phaseId, excludeProjectId]);
+  }) : { matched: [], themes: [] }, [lessons.data, projectTypeTags, categories, phaseIndex, excludeProjectId]);
   const [open, setOpen] = useState(!compact);
   const shown = open ? matched.slice(0, compact ? 6 : 12) : [];
 
@@ -30,7 +32,7 @@ export function RelevantLessons({ projectTypeTags, categories, phaseId, excludeP
       <BookOpenCheck className="size-5 shrink-0 text-primary" />
       <div className="flex-1">
         <p className="text-sm font-semibold">Relevant lessons</p>
-        <p className="text-xs text-muted-foreground">{matched.length} lessons from similar projects, {themes.length} recurring theme{themes.length === 1 ? "" : "s"}</p>
+        <p className="text-xs text-muted-foreground">{lessons.isPending ? "Loading lessons…" : lessons.isError ? "Lessons could not be loaded." : <>{matched.length} lessons from similar projects, {themes.length} recurring theme{themes.length === 1 ? "" : "s"}</>}</p>
       </div>
       <ChevronDown className={cn("size-4 text-muted-foreground transition-transform", open && "rotate-180")} />
     </button>

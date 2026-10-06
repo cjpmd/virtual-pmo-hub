@@ -37,7 +37,9 @@ import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as RisksRouteImport } from './routes/risks'
 import { Route as RoadmapsRouteImport } from './routes/roadmaps'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SigninRouteImport } from './routes/signin'
 import { Route as TaskOverviewRouteImport } from './routes/task-overview'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as BenefitsIndexRouteImport } from './routes/benefits.index'
 import { Route as BenefitsBenefitIdRouteImport } from './routes/benefits.$benefitId'
 import { Route as BenefitsDashboardRouteImport } from './routes/benefits.dashboard'
@@ -83,7 +85,7 @@ import { Route as PortfolioRoadmapRouteImport } from './routes/portfolio.roadmap
 import { Route as ProgrammesIndexRouteImport } from './routes/programmes.index'
 import { Route as ProgrammesProgrammeIdRouteImport } from './routes/programmes.$programmeId'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
-import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
+import { Route as ProjectsProjectCodeRouteImport } from './routes/projects.$projectCode'
 import { Route as ResourcesIndexRouteImport } from './routes/resources.index'
 import { Route as ResourcesAllocationRouteImport } from './routes/resources.allocation'
 import { Route as ResourcesAssignmentsRouteImport } from './routes/resources.assignments'
@@ -99,7 +101,7 @@ import { Route as PortfolioCollectionsCollectionIdRouteImport } from './routes/p
 import { Route as PortfolioProgrammesIndexRouteImport } from './routes/portfolio.programmes.index'
 import { Route as PortfolioProgrammesProgrammeIdRouteImport } from './routes/portfolio.programmes.$programmeId'
 import { Route as PortfolioProjectsIndexRouteImport } from './routes/portfolio.projects.index'
-import { Route as PortfolioProjectsProjectIdRouteImport } from './routes/portfolio.projects.$projectId'
+import { Route as PortfolioProjectsProjectCodeRouteImport } from './routes/portfolio.projects.$projectCode'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -241,9 +243,19 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SigninRoute = SigninRouteImport.update({
+  id: '/signin',
+  path: '/signin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TaskOverviewRoute = TaskOverviewRouteImport.update({
   id: '/task-overview',
   path: '/task-overview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BenefitsIndexRoute = BenefitsIndexRouteImport.update({
@@ -473,9 +485,9 @@ const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ProjectsRoute,
 } as any)
-const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
-  id: '/$projectId',
-  path: '/$projectId',
+const ProjectsProjectCodeRoute = ProjectsProjectCodeRouteImport.update({
+  id: '/$projectCode',
+  path: '/$projectCode',
   getParentRoute: () => ProjectsRoute,
 } as any)
 const ResourcesIndexRoute = ResourcesIndexRouteImport.update({
@@ -558,10 +570,10 @@ const PortfolioProjectsIndexRoute = PortfolioProjectsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PortfolioProjectsRoute,
 } as any)
-const PortfolioProjectsProjectIdRoute =
-  PortfolioProjectsProjectIdRouteImport.update({
-    id: '/$projectId',
-    path: '/$projectId',
+const PortfolioProjectsProjectCodeRoute =
+  PortfolioProjectsProjectCodeRouteImport.update({
+    id: '/$projectCode',
+    path: '/$projectCode',
     getParentRoute: () => PortfolioProjectsRoute,
   } as any)
 
@@ -594,7 +606,9 @@ export interface FileRoutesByFullPath {
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
   '/settings': typeof SettingsRouteWithChildren
+  '/signin': typeof SigninRoute
   '/task-overview': typeof TaskOverviewRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/benefits/$benefitId': typeof BenefitsBenefitIdRoute
   '/benefits/dashboard': typeof BenefitsDashboardRoute
   '/benefits/map': typeof BenefitsMapRoute
@@ -628,7 +642,7 @@ export interface FileRoutesByFullPath {
   '/portfolio/requests': typeof PortfolioRequestsRoute
   '/portfolio/roadmap': typeof PortfolioRoadmapRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRoute
+  '/projects/$projectCode': typeof ProjectsProjectCodeRoute
   '/resources/allocation': typeof ResourcesAllocationRoute
   '/resources/assignments': typeof ResourcesAssignmentsRoute
   '/resources/scenarios': typeof ResourcesScenariosRoute
@@ -652,7 +666,7 @@ export interface FileRoutesByFullPath {
   '/delivery/dependencies/map': typeof DeliveryDependenciesMapRoute
   '/portfolio/collections/$collectionId': typeof PortfolioCollectionsCollectionIdRoute
   '/portfolio/programmes/$programmeId': typeof PortfolioProgrammesProgrammeIdRoute
-  '/portfolio/projects/$projectId': typeof PortfolioProjectsProjectIdRoute
+  '/portfolio/projects/$projectCode': typeof PortfolioProjectsProjectCodeRoute
   '/delivery/dependencies/': typeof DeliveryDependenciesIndexRoute
   '/portfolio/collections/': typeof PortfolioCollectionsIndexRoute
   '/portfolio/programmes/': typeof PortfolioProgrammesIndexRoute
@@ -673,7 +687,9 @@ export interface FileRoutesByTo {
   '/resource-scenarios': typeof ResourceScenariosRoute
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
+  '/signin': typeof SigninRoute
   '/task-overview': typeof TaskOverviewRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/benefits/$benefitId': typeof BenefitsBenefitIdRoute
   '/benefits/dashboard': typeof BenefitsDashboardRoute
   '/benefits/map': typeof BenefitsMapRoute
@@ -703,7 +719,7 @@ export interface FileRoutesByTo {
   '/portfolio/requests': typeof PortfolioRequestsRoute
   '/portfolio/roadmap': typeof PortfolioRoadmapRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRoute
+  '/projects/$projectCode': typeof ProjectsProjectCodeRoute
   '/resources/allocation': typeof ResourcesAllocationRoute
   '/resources/assignments': typeof ResourcesAssignmentsRoute
   '/resources/scenarios': typeof ResourcesScenariosRoute
@@ -727,7 +743,7 @@ export interface FileRoutesByTo {
   '/delivery/dependencies/map': typeof DeliveryDependenciesMapRoute
   '/portfolio/collections/$collectionId': typeof PortfolioCollectionsCollectionIdRoute
   '/portfolio/programmes/$programmeId': typeof PortfolioProgrammesProgrammeIdRoute
-  '/portfolio/projects/$projectId': typeof PortfolioProjectsProjectIdRoute
+  '/portfolio/projects/$projectCode': typeof PortfolioProjectsProjectCodeRoute
   '/delivery/dependencies': typeof DeliveryDependenciesIndexRoute
   '/portfolio/collections': typeof PortfolioCollectionsIndexRoute
   '/portfolio/programmes': typeof PortfolioProgrammesIndexRoute
@@ -763,7 +779,9 @@ export interface FileRoutesById {
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
   '/settings': typeof SettingsRouteWithChildren
+  '/signin': typeof SigninRoute
   '/task-overview': typeof TaskOverviewRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/benefits/$benefitId': typeof BenefitsBenefitIdRoute
   '/benefits/dashboard': typeof BenefitsDashboardRoute
   '/benefits/map': typeof BenefitsMapRoute
@@ -797,7 +815,7 @@ export interface FileRoutesById {
   '/portfolio/requests': typeof PortfolioRequestsRoute
   '/portfolio/roadmap': typeof PortfolioRoadmapRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRoute
+  '/projects/$projectCode': typeof ProjectsProjectCodeRoute
   '/resources/allocation': typeof ResourcesAllocationRoute
   '/resources/assignments': typeof ResourcesAssignmentsRoute
   '/resources/scenarios': typeof ResourcesScenariosRoute
@@ -821,7 +839,7 @@ export interface FileRoutesById {
   '/delivery/dependencies/map': typeof DeliveryDependenciesMapRoute
   '/portfolio/collections/$collectionId': typeof PortfolioCollectionsCollectionIdRoute
   '/portfolio/programmes/$programmeId': typeof PortfolioProgrammesProgrammeIdRoute
-  '/portfolio/projects/$projectId': typeof PortfolioProjectsProjectIdRoute
+  '/portfolio/projects/$projectCode': typeof PortfolioProjectsProjectCodeRoute
   '/delivery/dependencies/': typeof DeliveryDependenciesIndexRoute
   '/portfolio/collections/': typeof PortfolioCollectionsIndexRoute
   '/portfolio/programmes/': typeof PortfolioProgrammesIndexRoute
@@ -858,7 +876,9 @@ export interface FileRouteTypes {
     | '/risks'
     | '/roadmaps'
     | '/settings'
+    | '/signin'
     | '/task-overview'
+    | '/auth/callback'
     | '/benefits/$benefitId'
     | '/benefits/dashboard'
     | '/benefits/map'
@@ -892,7 +912,7 @@ export interface FileRouteTypes {
     | '/portfolio/requests'
     | '/portfolio/roadmap'
     | '/programmes/$programmeId'
-    | '/projects/$projectId'
+    | '/projects/$projectCode'
     | '/resources/allocation'
     | '/resources/assignments'
     | '/resources/scenarios'
@@ -916,7 +936,7 @@ export interface FileRouteTypes {
     | '/delivery/dependencies/map'
     | '/portfolio/collections/$collectionId'
     | '/portfolio/programmes/$programmeId'
-    | '/portfolio/projects/$projectId'
+    | '/portfolio/projects/$projectCode'
     | '/delivery/dependencies/'
     | '/portfolio/collections/'
     | '/portfolio/programmes/'
@@ -937,7 +957,9 @@ export interface FileRouteTypes {
     | '/resource-scenarios'
     | '/risks'
     | '/roadmaps'
+    | '/signin'
     | '/task-overview'
+    | '/auth/callback'
     | '/benefits/$benefitId'
     | '/benefits/dashboard'
     | '/benefits/map'
@@ -967,7 +989,7 @@ export interface FileRouteTypes {
     | '/portfolio/requests'
     | '/portfolio/roadmap'
     | '/programmes/$programmeId'
-    | '/projects/$projectId'
+    | '/projects/$projectCode'
     | '/resources/allocation'
     | '/resources/assignments'
     | '/resources/scenarios'
@@ -991,7 +1013,7 @@ export interface FileRouteTypes {
     | '/delivery/dependencies/map'
     | '/portfolio/collections/$collectionId'
     | '/portfolio/programmes/$programmeId'
-    | '/portfolio/projects/$projectId'
+    | '/portfolio/projects/$projectCode'
     | '/delivery/dependencies'
     | '/portfolio/collections'
     | '/portfolio/programmes'
@@ -1026,7 +1048,9 @@ export interface FileRouteTypes {
     | '/risks'
     | '/roadmaps'
     | '/settings'
+    | '/signin'
     | '/task-overview'
+    | '/auth/callback'
     | '/benefits/$benefitId'
     | '/benefits/dashboard'
     | '/benefits/map'
@@ -1060,7 +1084,7 @@ export interface FileRouteTypes {
     | '/portfolio/requests'
     | '/portfolio/roadmap'
     | '/programmes/$programmeId'
-    | '/projects/$projectId'
+    | '/projects/$projectCode'
     | '/resources/allocation'
     | '/resources/assignments'
     | '/resources/scenarios'
@@ -1084,7 +1108,7 @@ export interface FileRouteTypes {
     | '/delivery/dependencies/map'
     | '/portfolio/collections/$collectionId'
     | '/portfolio/programmes/$programmeId'
-    | '/portfolio/projects/$projectId'
+    | '/portfolio/projects/$projectCode'
     | '/delivery/dependencies/'
     | '/portfolio/collections/'
     | '/portfolio/programmes/'
@@ -1120,7 +1144,9 @@ export interface RootRouteChildren {
   RisksRoute: typeof RisksRoute
   RoadmapsRoute: typeof RoadmapsRoute
   SettingsRoute: typeof SettingsRouteWithChildren
+  SigninRoute: typeof SigninRoute
   TaskOverviewRoute: typeof TaskOverviewRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   SignupSetupRoute: typeof SignupSetupRoute
   SignupIndexRoute: typeof SignupIndexRoute
 }
@@ -1323,11 +1349,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/signin': {
+      id: '/signin'
+      path: '/signin'
+      fullPath: '/signin'
+      preLoaderRoute: typeof SigninRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/task-overview': {
       id: '/task-overview'
       path: '/task-overview'
       fullPath: '/task-overview'
       preLoaderRoute: typeof TaskOverviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/benefits/': {
@@ -1645,11 +1685,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsIndexRouteImport
       parentRoute: typeof ProjectsRoute
     }
-    '/projects/$projectId': {
-      id: '/projects/$projectId'
-      path: '/$projectId'
-      fullPath: '/projects/$projectId'
-      preLoaderRoute: typeof ProjectsProjectIdRouteImport
+    '/projects/$projectCode': {
+      id: '/projects/$projectCode'
+      path: '/$projectCode'
+      fullPath: '/projects/$projectCode'
+      preLoaderRoute: typeof ProjectsProjectCodeRouteImport
       parentRoute: typeof ProjectsRoute
     }
     '/resources/': {
@@ -1757,11 +1797,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortfolioProjectsIndexRouteImport
       parentRoute: typeof PortfolioProjectsRoute
     }
-    '/portfolio/projects/$projectId': {
-      id: '/portfolio/projects/$projectId'
-      path: '/$projectId'
-      fullPath: '/portfolio/projects/$projectId'
-      preLoaderRoute: typeof PortfolioProjectsProjectIdRouteImport
+    '/portfolio/projects/$projectCode': {
+      id: '/portfolio/projects/$projectCode'
+      path: '/$projectCode'
+      fullPath: '/portfolio/projects/$projectCode'
+      preLoaderRoute: typeof PortfolioProjectsProjectCodeRouteImport
       parentRoute: typeof PortfolioProjectsRoute
     }
   }
@@ -1966,12 +2006,12 @@ const PortfolioProgrammesRouteWithChildren =
   PortfolioProgrammesRoute._addFileChildren(PortfolioProgrammesRouteChildren)
 
 interface PortfolioProjectsRouteChildren {
-  PortfolioProjectsProjectIdRoute: typeof PortfolioProjectsProjectIdRoute
+  PortfolioProjectsProjectCodeRoute: typeof PortfolioProjectsProjectCodeRoute
   PortfolioProjectsIndexRoute: typeof PortfolioProjectsIndexRoute
 }
 
 const PortfolioProjectsRouteChildren: PortfolioProjectsRouteChildren = {
-  PortfolioProjectsProjectIdRoute: PortfolioProjectsProjectIdRoute,
+  PortfolioProjectsProjectCodeRoute: PortfolioProjectsProjectCodeRoute,
   PortfolioProjectsIndexRoute: PortfolioProjectsIndexRoute,
 }
 
@@ -2015,12 +2055,12 @@ const ProgrammesRouteWithChildren = ProgrammesRoute._addFileChildren(
 )
 
 interface ProjectsRouteChildren {
-  ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
+  ProjectsProjectCodeRoute: typeof ProjectsProjectCodeRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
 }
 
 const ProjectsRouteChildren: ProjectsRouteChildren = {
-  ProjectsProjectIdRoute: ProjectsProjectIdRoute,
+  ProjectsProjectCodeRoute: ProjectsProjectCodeRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
 }
 
@@ -2089,7 +2129,9 @@ const rootRouteChildren: RootRouteChildren = {
   RisksRoute: RisksRoute,
   RoadmapsRoute: RoadmapsRoute,
   SettingsRoute: SettingsRouteWithChildren,
+  SigninRoute: SigninRoute,
   TaskOverviewRoute: TaskOverviewRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   SignupSetupRoute: SignupSetupRoute,
   SignupIndexRoute: SignupIndexRoute,
 }

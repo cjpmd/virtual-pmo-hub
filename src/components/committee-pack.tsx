@@ -1,14 +1,17 @@
-import { formatCompactCurrency, formatDate } from "@/lib/format";
+import { formatCompactCurrency, formatDate, fromIsoDate } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, CalendarDays, Check, ChevronLeft, Download, FileDown, FileText, Presentation, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { HealthPill } from "@/components/health-pill";
-import type { Collection, Project } from "@/data/types";
-import { getBenefitPercent, getBenefitRealised, getFinancialHealth, getIssueHealth, getProgramme, getProjectBenefits, getProjectHealth, getScheduleHealth } from "@/services/pmo";
+import type { Health } from "@/data/types";
+import type { CollectionView as Collection, PackProject as Project } from "@/services/collections";
 import { getBenefitsByObjective, getMeasurementSchedule, getValueMetrics } from "@/services/benefits-value";
-import { getDecisions, madeSince } from "@/services/decisions";
-import { isBenefitBehindProfile } from "@/services/pmo";
+import { useBenefits } from "@/hooks/use-benefits";
+import { madeSince } from "@/services/decisions";
+import { useGovernance } from "@/hooks/use-governance";
+import { usePackProjects } from "@/hooks/use-collections";
+import { addDaysIso, todayIso } from "@/lib/today";
 import { getSettings } from "@/services/settings";
 import { cn } from "@/lib/utils";
 
@@ -16,15 +19,9 @@ type Snapshot={id:string;meetingDate:string;generatedAt:string;pageCount:number}
 type PackPage={id:string;label:string;type:"cover"|"summary"|"milestones"|"exceptions"|"benefits"|"decisions"|"project";project?:Project};
 const money = formatCompactCurrency;
 
+/** The latest submitted status report; no invented narrative when there isn't one. */
 function latestNarrative(project:Project){
-  const report=project.reports?.[0];
-  if(report)return {accomplished:report.accomplished,planned:report.planned,comments:report.comments,date:report.reportingDate};
-  const health=getProjectHealth(project);
-  return health==="Off Track"
-    ? {accomplished:"Recovery actions have been agreed with technical leads and critical dependencies have been reviewed.",planned:"Complete the recovery plan, confirm revised dates and escalate blocked decisions.",comments:"Sponsor support is required to maintain the revised delivery window.",date:"18/09/2026"}
-    : health==="At Risk"
-      ? {accomplished:"The team progressed priority work and reviewed the areas affecting delivery confidence.",planned:"Close the outstanding actions and protect the next milestone date.",comments:"The position remains manageable with active mitigation in place.",date:"18/09/2026"}
-      : {accomplished:"Planned work completed during the period with no material exceptions.",planned:"Continue delivery against the agreed plan and prepare for the next stage gate.",comments:"No decisions or escalations are required.",date:"18/09/2026"};
+  return project.report??{accomplished:"No status report has been submitted for this project.",planned:"—",comments:"",date:""};
 }
 
 function PackHeader({collection,pageNumber,total}:{collection:Collection;pageNumber:number;total:number}){
@@ -36,15 +33,15 @@ function CoverPage({collection,meetingDate,generatedAt}:{collection:Collection;m
 }
 
 function SummaryPage({collection,projects,pageNumber,total}:{collection:Collection;projects:Project[];pageNumber:number;total:number}){
-  const rag={green:projects.filter(p=>getProjectHealth(p)==="On Track").length,amber:projects.filter(p=>getProjectHealth(p)==="At Risk").length,red:projects.filter(p=>getProjectHealth(p)==="Off Track").length};
+  const rag={green:projects.filter(p=>p.health.overall==="On Track").length,amber:projects.filter(p=>p.health.overall==="At Risk").length,red:projects.filter(p=>p.health.overall==="Off Track").length};
   const budget=projects.reduce((sum,p)=>sum+p.budget,0),forecast=projects.reduce((sum,p)=>sum+p.forecast,0);
-  const programmeRows=Object.values(projects.reduce<Record<string,{name:string;count:number;budget:number}>>((rows,project)=>{const programme=getProgramme(project.programmeId);const current=rows[project.programmeId]??{name:programme?.name??"Programme",count:0,budget:0};rows[project.programmeId]={...current,count:current.count+1,budget:current.budget+project.budget};return rows},{}));
+  const programmeRows=Object.values(projects.reduce<Record<string,{name:string;count:number;budget:number}>>((rows,project)=>{const key=project.programmeId??"none";const current=rows[key]??{name:project.programmeName,count:0,budget:0};rows[key]={...current,count:current.count+1,budget:current.budget+project.budget};return rows},{}));
   return <div className="min-h-[580px] p-7 sm:p-10"><PackHeader collection={collection} pageNumber={pageNumber} total={total}/><div className="mt-7"><p className="text-xs font-semibold uppercase text-primary">Portfolio summary</p><h2 className="mt-2 font-display text-3xl font-semibold">Delivery at a glance</h2></div><div className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-5"><Metric label="Projects" value={String(projects.length)}/><Metric label="On track" value={String(rag.green)} tone="good"/><Metric label="At risk" value={String(rag.amber)} tone="warn"/><Metric label="Off track" value={String(rag.red)} tone="bad"/><Metric label="Total budget" value={money(budget)}/></div><div className="mt-7 grid gap-5 lg:grid-cols-[1.2fr_1fr]"><div className="rounded-md border border-border p-5"><h3 className="font-semibold">Financial position</h3><div className="mt-5 grid grid-cols-2 gap-5"><div><p className="text-xs text-muted-foreground">Approved budget</p><p className="mt-1 text-2xl font-semibold">{money(budget)}</p></div><div><p className="text-xs text-muted-foreground">Forecast</p><p className="mt-1 text-2xl font-semibold">{money(forecast)}</p></div></div><div className="mt-5 h-2 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{width:`${Math.min(100,(forecast/budget)*100)}%`}}/></div><p className="mt-2 text-xs text-muted-foreground">Forecast is {money(Math.abs(forecast-budget))} {forecast>budget?"above":"below"} approved budget.</p></div><div className="rounded-md border border-border p-5"><h3 className="font-semibold">Programme coverage</h3><div className="mt-3 divide-y divide-border">{programmeRows.map(row=><div key={row.name} className="flex items-center justify-between gap-3 py-3 text-sm"><span className="line-clamp-1">{row.name}</span><span className="shrink-0 text-muted-foreground">{row.count} projects · {money(row.budget)}</span></div>)}</div></div></div></div>;
 }
 
 function ExceptionsPage({collection,projects,pageNumber,total}:{collection:Collection;projects:Project[];pageNumber:number;total:number}){
-  const exceptions=projects.filter(project=>getProjectHealth(project)!=="On Track");
-  return <div className="min-h-[580px] p-7 sm:p-10"><PackHeader collection={collection} pageNumber={pageNumber} total={total}/><div className="mt-7"><p className="text-xs font-semibold uppercase text-primary">Exceptions</p><h2 className="mt-2 font-display text-3xl font-semibold">Items requiring attention</h2><p className="mt-2 text-sm text-muted-foreground">Red and amber projects, ordered by severity.</p></div><div className="mt-6 space-y-4">{exceptions.map(project=>{const narrative=latestNarrative(project);return <div key={project.id} className="rounded-md border border-border p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold">{project.name}</h3><p className="mt-1 text-xs text-muted-foreground">{getProgramme(project.programmeId)?.name} · {project.manager}</p></div><HealthPill health={getProjectHealth(project)}/></div><div className="mt-4 grid gap-4 sm:grid-cols-2"><div><p className="text-xs font-semibold">Latest commentary</p><p className="mt-1 text-sm leading-6 text-muted-foreground">{narrative.comments}</p></div><div><p className="text-xs font-semibold">Next action</p><p className="mt-1 text-sm leading-6 text-muted-foreground">{narrative.planned}</p></div></div></div>})}</div></div>;
+  const exceptions=projects.filter(project=>project.health.overall!=="On Track");
+  return <div className="min-h-[580px] p-7 sm:p-10"><PackHeader collection={collection} pageNumber={pageNumber} total={total}/><div className="mt-7"><p className="text-xs font-semibold uppercase text-primary">Exceptions</p><h2 className="mt-2 font-display text-3xl font-semibold">Items requiring attention</h2><p className="mt-2 text-sm text-muted-foreground">Red and amber projects, ordered by severity.</p></div><div className="mt-6 space-y-4">{exceptions.map(project=>{const narrative=latestNarrative(project);return <div key={project.id} className="rounded-md border border-border p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold">{project.name}</h3><p className="mt-1 text-xs text-muted-foreground">{project.programmeName} · {project.managerName}</p></div><HealthPill health={project.health.overall}/></div><div className="mt-4 grid gap-4 sm:grid-cols-2"><div><p className="text-xs font-semibold">Latest commentary</p><p className="mt-1 text-sm leading-6 text-muted-foreground">{narrative.comments}</p></div><div><p className="text-xs font-semibold">Next action</p><p className="mt-1 text-sm leading-6 text-muted-foreground">{narrative.planned}</p></div></div></div>})}</div></div>;
 }
 
 function MilestonesPage({collection,projects,pageNumber,total}:{collection:Collection;projects:Project[];pageNumber:number;total:number}){
@@ -54,10 +51,12 @@ function MilestonesPage({collection,projects,pageNumber,total}:{collection:Colle
 
 
 function BenefitsPage({collection,projects,pageNumber,total}:{collection:Collection;projects:Project[];pageNumber:number;total:number}){
-  const benefits=Array.from(new Map(projects.flatMap(project=>getProjectBenefits(project.id)).map(benefit=>[benefit.id,benefit])).values());
+  const data=useBenefits().data;
+  const ids=new Set(projects.map(project=>project.id));
+  const benefits=(data?.benefits??[]).filter(benefit=>benefit.enablingProjects.some(link=>ids.has(link.projectId)));
   const metrics=getValueMetrics(benefits);
-  const objectives=getBenefitsByObjective(benefits).filter(row=>row.planned>0).slice(0,6);
-  const behind=benefits.filter(isBenefitBehindProfile);
+  const objectives=data?getBenefitsByObjective(data,benefits).filter(row=>row.planned>0).slice(0,6):[];
+  const behind=benefits.filter(benefit=>benefit.realisation.behindProfile);
   const overdue=getMeasurementSchedule(benefits).filter(item=>item.state==="Overdue");
   return <div className="min-h-[580px] p-7 sm:p-10"><PackHeader collection={collection} pageNumber={pageNumber} total={total}/>
     <div className="mt-7"><p className="text-xs font-semibold uppercase text-primary">Benefits realisation</p><h2 className="mt-2 font-display text-3xl font-semibold">Portfolio value and exceptions</h2><p className="mt-2 text-sm text-muted-foreground">Planned against realised value, contribution by objective, and the benefits needing attention.</p></div>
@@ -66,7 +65,7 @@ function BenefitsPage({collection,projects,pageNumber,total}:{collection:Collect
       <div className="rounded-md border border-border p-5"><h3 className="font-semibold">Benefits by strategic objective</h3><div className="mt-3 space-y-3">{objectives.map(row=><div key={row.id}><div className="flex justify-between text-xs"><span className="line-clamp-1">{row.name}</span><span className="shrink-0 text-muted-foreground">{money(row.realised)} of {money(row.planned)}</span></div><div className="mt-1 h-2 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{width:`${Math.min(100,Math.round(row.realised/Math.max(1,row.planned)*100))}%`}}/></div></div>)}{!objectives.length&&<p className="text-sm text-muted-foreground">No quantified benefits in this collection.</p>}</div></div>
       <div className="rounded-md border border-border p-5"><h3 className="font-semibold">Exceptions</h3>
         <p className="mt-3 text-xs font-semibold uppercase text-muted-foreground">Behind profile</p>
-        <div className="mt-1 space-y-1.5">{behind.slice(0,5).map(benefit=><p key={benefit.id} className="text-sm">{benefit.reference} · {benefit.title} <span className="text-muted-foreground">({getBenefitPercent(benefit)}% realised, {money(getBenefitRealised(benefit))})</span></p>)}{!behind.length&&<p className="text-sm text-muted-foreground">None behind profile.</p>}</div>
+        <div className="mt-1 space-y-1.5">{behind.slice(0,5).map(benefit=><p key={benefit.id} className="text-sm">{benefit.reference} · {benefit.title} <span className="text-muted-foreground">({benefit.realisation.percent}% realised, {money(benefit.realisation.realised)})</span></p>)}{!behind.length&&<p className="text-sm text-muted-foreground">None behind profile.</p>}</div>
         <p className="mt-4 text-xs font-semibold uppercase text-muted-foreground">Measurements overdue</p>
         <div className="mt-1 space-y-1.5">{overdue.slice(0,5).map(item=><p key={item.measure.id} className="text-sm">{item.benefit.reference} · {item.measure.name} <span className="text-muted-foreground">({item.daysOverdue} days overdue, {item.benefit.owner||"unowned"})</span></p>)}{!overdue.length&&<p className="text-sm text-muted-foreground">All measurements are up to date.</p>}</div>
       </div>
@@ -75,10 +74,10 @@ function BenefitsPage({collection,projects,pageNumber,total}:{collection:Collect
 }
 
 function DecisionsPage({collection,projects,pageNumber,total}:{collection:Collection;projects:Project[];pageNumber:number;total:number}){
-  const projectIds=new Set(projects.map(project=>project.id));
-  const decisions=getDecisions().filter(decision=>!decision.projectId||projectIds.has(decision.projectId));
+  const codes=new Set(projects.map(project=>project.code));
+  const decisions=(useGovernance().data?.decisions??[]).filter(decision=>!decision.projectCode||codes.has(decision.projectCode));
   const required=decisions.filter(decision=>decision.status==="Pending").sort((a,b)=>a.daysToNeededBy-b.daysToNeededBy);
-  const made=decisions.filter(decision=>madeSince(decision,"21/08/2026"));
+  const made=decisions.filter(decision=>madeSince(decision,addDaysIso(-31)));
   return <div className="min-h-[580px] p-7 sm:p-10"><PackHeader collection={collection} pageNumber={pageNumber} total={total}/>
     <div className="mt-7"><p className="text-xs font-semibold uppercase text-primary">Governance</p><h2 className="mt-2 font-display text-3xl font-semibold">Decisions</h2></div>
     <div className="mt-6"><h3 className="font-semibold">Decisions required</h3>
@@ -97,15 +96,15 @@ function DecisionsPage({collection,projects,pageNumber,total}:{collection:Collec
 
 function HighlightPage({collection,project,pageNumber,total}:{collection:Collection;project:Project;pageNumber:number;total:number}){
   const narrative=latestNarrative(project),risk=project.risks[0],milestone=project.milestones.find(item=>item.status!=="Completed");
-  return <div className="min-h-[580px] p-7 sm:p-10"><PackHeader collection={collection} pageNumber={pageNumber} total={total}/><div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-xs font-semibold uppercase text-primary">Project highlight report</p><h2 className="mt-2 font-display text-3xl font-semibold">{project.name}</h2><p className="mt-2 text-sm text-muted-foreground">{getProgramme(project.programmeId)?.name}</p></div><HealthPill health={getProjectHealth(project)}/></div><div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4"><Metric label="Stage" value={project.stage}/><Metric label="Budget" value={money(project.budget)}/><Metric label="Forecast" value={money(project.forecast)}/><Metric label="Finish" value={project.finish}/></div><div className="mt-5 grid gap-2 sm:grid-cols-3"><HealthFact label="Schedule" health={getScheduleHealth(project)}/><HealthFact label="Financial" health={getFinancialHealth(project)}/><HealthFact label="Issues & risks" health={getIssueHealth(project)}/></div><div className="mt-6 grid gap-5 lg:grid-cols-2"><div className="rounded-md border border-border p-5"><h3 className="font-semibold">Reporting narrative</h3><p className="mt-1 text-xs text-muted-foreground">Latest update · {formatDate(narrative.date)}</p><div className="mt-4"><p className="text-xs font-semibold">Accomplished</p><p className="mt-1 text-sm leading-6 text-muted-foreground">{narrative.accomplished}</p></div><div className="mt-4"><p className="text-xs font-semibold">Planned next</p><p className="mt-1 text-sm leading-6 text-muted-foreground">{narrative.planned}</p></div></div><div className="space-y-4"><div className="rounded-md border border-border p-5"><p className="text-xs font-semibold uppercase text-muted-foreground">Top risk</p><p className="mt-2 font-semibold">{risk?.title??"No open risks"}</p><p className="mt-1 text-sm text-muted-foreground">{risk?.description??"No material risk to report."}</p></div><div className="rounded-md border border-border p-5"><p className="text-xs font-semibold uppercase text-muted-foreground">Next milestone</p><p className="mt-2 font-semibold">{milestone?.title??"Stage closure"}</p><p className="mt-1 text-sm text-muted-foreground">Due {milestone?.forecastDate??project.finish}</p></div></div></div></div>;
+  return <div className="min-h-[580px] p-7 sm:p-10"><PackHeader collection={collection} pageNumber={pageNumber} total={total}/><div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-xs font-semibold uppercase text-primary">Project highlight report</p><h2 className="mt-2 font-display text-3xl font-semibold">{project.name}</h2><p className="mt-2 text-sm text-muted-foreground">{project.programmeName}</p></div><HealthPill health={project.health.overall}/></div><div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4"><Metric label="Stage" value={project.phaseName}/><Metric label="Budget" value={money(project.budget)}/><Metric label="Forecast" value={money(project.forecast)}/><Metric label="Finish" value={project.finishDate?formatDate(project.finishDate):"—"}/></div><div className="mt-5 grid gap-2 sm:grid-cols-3"><HealthFact label="Schedule" health={project.health.schedule}/><HealthFact label="Financial" health={project.health.financial}/><HealthFact label="Issues & risks" health={project.health.issue}/></div><div className="mt-6 grid gap-5 lg:grid-cols-2"><div className="rounded-md border border-border p-5"><h3 className="font-semibold">Reporting narrative</h3><p className="mt-1 text-xs text-muted-foreground">{narrative.date?`Latest update · ${formatDate(narrative.date)}`:"No status report yet"}</p><div className="mt-4"><p className="text-xs font-semibold">Accomplished</p><p className="mt-1 text-sm leading-6 text-muted-foreground">{narrative.accomplished}</p></div><div className="mt-4"><p className="text-xs font-semibold">Planned next</p><p className="mt-1 text-sm leading-6 text-muted-foreground">{narrative.planned}</p></div></div><div className="space-y-4"><div className="rounded-md border border-border p-5"><p className="text-xs font-semibold uppercase text-muted-foreground">Top risk</p><p className="mt-2 font-semibold">{risk?.title??"No open risks"}</p><p className="mt-1 text-sm text-muted-foreground">{risk?.description??"No material risk to report."}</p></div><div className="rounded-md border border-border p-5"><p className="text-xs font-semibold uppercase text-muted-foreground">Next milestone</p><p className="mt-2 font-semibold">{milestone?.title??"Stage closure"}</p><p className="mt-1 text-sm text-muted-foreground">Due {formatDate(milestone?.forecastDate??project.finishDate??"")}</p></div></div></div></div>;
 }
 
 function Metric({label,value,tone}:{label:string;value:string;tone?:"good"|"warn"|"bad"}){return <div className={cn("rounded-md border border-border bg-muted/35 p-4",tone==="good"&&"border-health-good/30",tone==="warn"&&"border-health-warn/35",tone==="bad"&&"border-health-bad/30")}><p className="text-xs text-muted-foreground">{label}</p><p className="mt-2 font-display text-xl font-semibold">{value}</p></div>}
-function HealthFact({label,health}:{label:string;health:ReturnType<typeof getProjectHealth>}){return <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2"><span className="text-xs text-muted-foreground">{label}</span><HealthPill health={health}/></div>}
+function HealthFact({label,health}:{label:string;health:Health}){return <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2"><span className="text-xs text-muted-foreground">{label}</span><HealthPill health={health}/></div>}
 
 export function CommitteePack({collection,projects,onClose,onSave}:{collection:Collection;projects:Project[];onClose:()=>void;onSave:(snapshot:Snapshot)=>void}){
-  const [pageIndex,setPageIndex]=useState(0),[meetingDate,setMeetingDate]=useState("21/09/2026");
-  const generatedAt="21/09/2026 at 14:49";
+  const [pageIndex,setPageIndex]=useState(0),[meetingDate,setMeetingDate]=useState(()=>fromIsoDate(todayIso()));
+  const [generatedAt]=useState(()=>`${fromIsoDate(todayIso())} at ${new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}`);
   const settings=getSettings();
   const pageByName:Record<string,PackPage>={
     "Cover":{id:"cover",label:"Cover",type:"cover"},
@@ -133,3 +132,10 @@ export function CommitteePack({collection,projects,onClose,onSave}:{collection:C
 }
 
 export type {Snapshot as CommitteePackSnapshot};
+/** Loads the collection's project facts from Supabase, then shows the pack. */
+export function CollectionCommitteePack({collection,onClose,onSave}:{collection:Collection;onClose:()=>void;onSave:(snapshot:Snapshot)=>void}){
+  const query=usePackProjects(collection.projectIds);
+  if(query.isError)return <div className="fixed inset-0 z-50 grid place-items-center bg-overlay p-6"><div className="max-w-md rounded-lg border bg-background p-6 text-sm shadow-xl"><p className="font-semibold">The pack could not be built.</p><p className="mt-1 text-muted-foreground">{query.error.message}</p><Button className="mt-4" variant="outline" onClick={onClose}>Close</Button></div></div>;
+  if(!query.data)return <div className="fixed inset-0 z-50 grid place-items-center bg-overlay"><p className="rounded-md bg-background px-4 py-3 text-sm shadow">Building the pack…</p></div>;
+  return <CommitteePack collection={collection} projects={query.data} onClose={onClose} onSave={onSave}/>;
+}

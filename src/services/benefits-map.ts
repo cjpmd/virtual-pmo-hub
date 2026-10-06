@@ -1,6 +1,7 @@
-import { benefitMaps, capabilities, outcomes } from "@/data/benefits-map-data";
-import type { Benefit, BenefitMapNodeType } from "@/data/types";
-import { getBenefitPercent, getBenefitRealised, getBenefits, getProgramme, getProject, getStrategicObjectives } from "@/services/pmo";
+// The benefits map (projects → capabilities → outcomes → benefits → objectives), built from
+// the data loaded by services/benefits.ts. Realised value and percent come from the view.
+import type { BenefitMapNodeType } from "@/data/types";
+import type { BenefitsData, BenefitView } from "@/services/benefits";
 
 export interface MapNode {
   id: string;
@@ -22,12 +23,9 @@ export interface MapLink { id: string; from: string; to: string; disbenefit: boo
 export interface BenefitMapModel { nodes: MapNode[]; links: MapLink[]; columns: BenefitMapNodeType[] }
 
 export const mapColumns: BenefitMapNodeType[] = ["Project", "Capability", "Outcome", "Benefit", "Objective"];
-export const getBenefitMaps = () => benefitMaps;
-export const getCapabilities = (programmeId?: string) => capabilities.filter(item => !programmeId || item.programmeId === programmeId);
-export const getOutcomes = (programmeId?: string) => outcomes.filter(item => !programmeId || item.programmeId === programmeId);
 
 /** Validation badges shown on benefit nodes (Prompt H2). */
-export function getBenefitMapWarnings(benefit: Benefit): string[] {
+export function getBenefitMapWarnings(benefit: BenefitView): string[] {
   const warnings: string[] = [];
   if (!benefit.measures.length) warnings.push("No measure defined");
   if (!benefit.owner) warnings.push("No benefit owner");
@@ -38,10 +36,14 @@ export function getBenefitMapWarnings(benefit: Benefit): string[] {
 export interface MapFilter { programmeId?: string; objectiveId?: string; projectId?: string }
 
 /** Builds the five-column network model: projects → capabilities → outcomes → benefits → objectives. */
-export function buildBenefitMap(filter: MapFilter = {}): BenefitMapModel {
-  const allBenefits = getBenefits();
-  const objectives = getStrategicObjectives();
-  const inProgramme = (programmeId?: string) => !filter.programmeId || programmeId === filter.programmeId;
+export function buildBenefitMap(data: BenefitsData, filter: MapFilter = {}): BenefitMapModel {
+  const allBenefits = data.benefits;
+  const objectives = data.objectives;
+  const { capabilities, outcomes } = data;
+  const projectById = new Map(data.projects.map(project => [project.id, project]));
+  const getProject = (id: string) => projectById.get(id);
+  const programmeName = new Map(data.programmes.map(programme => [programme.id, programme.name]));
+  const inProgramme = (programmeId?: string | null) => !filter.programmeId || programmeId === filter.programmeId;
   const scopedCapabilities = capabilities.filter(item => inProgramme(item.programmeId));
   const scopedOutcomes = outcomes.filter(item => inProgramme(item.programmeId));
 
@@ -81,7 +83,7 @@ export function buildBenefitMap(filter: MapFilter = {}): BenefitMapModel {
   for (const projectId of projectIds) {
     const project = getProject(projectId);
     if (!project) continue;
-    nodes.push({ id: `project:${projectId}`, type: "Project", title: project.name, subtitle: getProgramme(project.programmeId)?.name ?? "Unassigned", owner: project.manager, programmeId: project.programmeId, projectId, disbenefit: false, warnings: [] });
+    nodes.push({ id: `project:${projectId}`, type: "Project", title: project.name, subtitle: programmeName.get(project.programmeId ?? "") ?? "Unassigned", owner: project.managerName, ...(project.programmeId ? { programmeId: project.programmeId } : {}), projectId, disbenefit: false, warnings: [] });
   }
   for (const capability of capabilityList) {
     nodes.push({ id: `capability:${capability.id}`, type: "Capability", title: capability.title, subtitle: capability.description, owner: capability.owner, programmeId: capability.programmeId, disbenefit: false, warnings: capability.projectIds.length ? [] : ["No delivering project"] });
@@ -100,7 +102,7 @@ export function buildBenefitMap(filter: MapFilter = {}): BenefitMapModel {
     nodes.push({
       id: `benefit:${benefit.id}`, type: "Benefit", title: benefit.title, subtitle: `${benefit.reference} · ${benefit.classification}`,
       owner: benefit.owner || "Unassigned", benefitId: benefit.id, disbenefit,
-      value: benefit.plannedTotalValue, realised: getBenefitRealised(benefit), percent: getBenefitPercent(benefit),
+      value: benefit.plannedTotalValue, realised: benefit.realisation.realised, percent: benefit.realisation.percent,
       warnings,
     });
     for (const outcome of producing) links.push({ id: `l-${outcome.id}-${benefit.id}`, from: `outcome:${outcome.id}`, to: `benefit:${benefit.id}`, disbenefit });

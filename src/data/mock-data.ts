@@ -353,7 +353,9 @@ const pendingValidation:Array<[number,"Submitted"|"Queried",string,string]>=[
 for(const [index,status,evidence,notes] of pendingValidation){
   const measure=benefits[index]?.measures[0];
   if(!measure)continue;
-  measure.records=[...measure.records.filter(record=>record.period!=="Q2 Nov 2026–Jan 2027"),{id:`mr-pending-${index}`,period:"Q1 Aug–Oct 2026",actualValue:Math.round((measure.targetProfile[0]?.value??0)*(status==="Queried"?0.55:0.86)),evidence,notes,submittedBy:["Maya Harrison","Priya Ncube","Thomas Webb","Sofia Rahman"][index%4]??"Maya Harrison",submittedDate:["07/09/2026","11/09/2026","14/09/2026","17/09/2026"][index%4]??"14/09/2026",status,...(status==="Queried"?{queryNote:"Please reconcile against the assurance report and resubmit."}:{})}];
+  // The new record is this period's submission: it replaces an unvalidated placeholder for the
+  // same period (that one was generated against the whole-life target, not the Q1 profile).
+  measure.records=[...measure.records.filter(record=>record.period!=="Q2 Nov 2026–Jan 2027"&&!(record.period==="Q1 Aug–Oct 2026"&&record.status==="Submitted")),{id:`mr-pending-${index}`,period:"Q1 Aug–Oct 2026",actualValue:Math.round((measure.targetProfile[0]?.value??0)*(status==="Queried"?0.55:0.86)),evidence,notes,submittedBy:["Maya Harrison","Priya Ncube","Thomas Webb","Sofia Rahman"][index%4]??"Maya Harrison",submittedDate:["07/09/2026","11/09/2026","14/09/2026","17/09/2026"][index%4]??"14/09/2026",status,...(status==="Queried"?{queryNote:"Please reconcile against the assurance report and resubmit."}:{})}];
 }
 // Benefits that continue after their enabling project closes need a BAU handover.
 const handoverOwners:Array<[number,string,string,string,string]>=[

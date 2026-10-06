@@ -1,10 +1,22 @@
 import { useSyncExternalStore } from "react";
-import { people, projects } from "@/data/mock-data";
-import type { Project } from "@/data/types";
+import { todayIso } from "@/lib/today";
+import { getSettings } from "./settings";
 import { addDays, daysBetween, getProjectForecast, type ForecastInput, type ForecastOverrides, type ForecastResult, type VelocityBasis } from "./forecast";
 
 /** Browser-local sprint & work-item store. One work item list per project feeds the backlog,
- *  sprint board, burn charts and forecasts. Shaped so a real backend can replace it later. */
+ *  sprint board, burn charts and forecasts. Shaped so a real backend can replace it later.
+ *  Sprints stay in the browser until the sprints phase (schema §6). Each project's delivery
+ *  data is keyed by its project code and generated deterministically from the project's
+ *  Supabase record, which the screens register first (registerDeliveryProjects). */
+
+/** What the generator needs to know about a project (from Supabase). */
+export interface DeliveryProject { code: string; state: string; manager: string; taskSource: string; people: string[] }
+const registry = new Map<string, DeliveryProject>();
+let currentUser = "You";
+export function registerDeliveryProjects(list: DeliveryProject[]) { for (const project of list) registry.set(project.code, project); }
+export const isDeliveryRegistered = (code: string) => registry.has(code);
+/** Name stamped on sprint events and justifications. */
+export function setDeliveryUser(name: string) { currentUser = name || "You"; }
 
 export type DeliveryApproach = "agile" | "waterfall" | "hybrid";
 export type WorkUnit = "points" | "tasks" | "effort_hours";
@@ -20,22 +32,23 @@ export interface Justification { date: string; text: string; by: string }
 export interface ProjectDelivery { settings: DeliverySettings; statuses: ProjectStatus[]; items: WorkItem[]; sprints: Sprint[]; commitments: Commitment[]; events: WorkItemEvent[]; estimateDefaults: Partial<Record<ItemType, number>>; justifications: Justification[] }
 export interface NonWorkingPeriod { id: string; name: string; start: string; end: string }
 
-export const TODAY = "2026-09-21";
+export const TODAY = todayIso();
 export const toDate = (iso: string) => { const [y, m, d] = iso.slice(0, 10).split("-").map(Number); return new Date(y!, (m ?? 1) - 1, d ?? 1); };
 export const toIso = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 const today = toDate(TODAY);
-const USER = "Chris McDonald";
 
 const defaultStatuses: ProjectStatus[] = [
   { id: "backlog", name: "Backlog", category: "todo", sortOrder: 0 }, { id: "ready", name: "Ready", category: "todo", sortOrder: 1 },
   { id: "in-progress", name: "In Progress", category: "wip", sortOrder: 2 }, { id: "in-review", name: "In Review", category: "wip", sortOrder: 3 },
   { id: "blocked", name: "Blocked", category: "wip", sortOrder: 4 }, { id: "done", name: "Done", category: "done", sortOrder: 5 },
 ];
-const defaultNonWorking: NonWorkingPeriod[] = [
-  { id: "nw-xmas", name: "Christmas closure", start: "2026-12-24", end: "2027-01-01" },
-  { id: "nw-easter", name: "Easter closure", start: "2027-03-26", end: "2027-03-29" },
-  { id: "nw-may", name: "May bank holiday", start: "2027-05-03", end: "2027-05-03" },
-];
+/** Until someone edits the list, closures are the organisation's holiday calendars (Settings). */
+const fromHolidayCalendars = (): NonWorkingPeriod[] =>
+  getSettings().workingTime.holidayCalendars.flatMap(calendar =>
+    calendar.dates.map((day, index) => {
+      const iso = day.date.split("/").reverse().join("-");
+      return { id: `hol-${calendar.id}-${index}`, name: day.name, start: iso, end: iso };
+    }));
 
 // ---------- deterministic generator ----------
 function hash(text: string) { let h = 2166136261; for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -53,9 +66,9 @@ function split(total: number, r: () => number) {
 }
 
 interface Profile { completed: number[]; growth: number; baselineScope: number; baselinePeriods: number; approach: DeliveryApproach; workUnit: WorkUnit; stale: boolean; active: boolean }
-function profileFor(project: Project): Profile {
-  if (project.id === "ebbot-chatbot") return { completed: [22, 24, 26, 30, 38, 46], growth: 5, baselineScope: 480, baselinePeriods: 12, approach: "hybrid", workUnit: "points", stale: false, active: true };
-  const r = rng(hash(project.id));
+function profileFor(project: DeliveryProject): Profile {
+  if (project.code === "EBB") return { completed: [22, 24, 26, 30, 38, 46], growth: 5, baselineScope: 480, baselinePeriods: 12, approach: "hybrid", workUnit: "points", stale: false, active: true };
+  const r = rng(hash(project.code));
   const closed = project.state === "Closed";
   const n = closed ? 6 + Math.floor(r() * 4) : project.state === "Proposed" ? Math.floor(r() * 3) : 2 + Math.floor(r() * 7);
   const base = 14 + Math.floor(r() * 24), trend = (r() - 0.35) * 2.5;
@@ -69,16 +82,17 @@ function profileFor(project: Project): Profile {
   return { completed, growth: closed ? 0 : growth, baselineScope, baselinePeriods: periods, approach, workUnit: approach === "waterfall" ? "tasks" : "points", stale: !closed && r() > 0.82, active: !closed && project.state !== "Proposed" };
 }
 
-function generate(project: Project): ProjectDelivery {
-  const p = profileFor(project); const r = rng(hash(`${project.id}-items`));
+function generate(project: DeliveryProject): ProjectDelivery {
+  const p = profileFor(project); const r = rng(hash(`${project.code}-items`));
+  const people = project.people.length ? project.people : [project.manager];
   const len = 14, n = p.completed.length;
   const staleGap = p.stale ? 20 : 0;
   const start = addDays(today, -(n * len) - (p.active && !p.stale ? 6 : 0) - staleGap);
   const pEnd = (k: number) => addDays(start, k * len);
-  const names = [project.manager, ...Array.from({ length: 4 }, () => people[Math.floor(r() * people.length)]!.name)];
+  const names = [project.manager, ...Array.from({ length: 4 }, () => people[Math.floor(r() * people.length)]!)];
   const items: WorkItem[] = []; const events: WorkItemEvent[] = []; let rank = 0;
   const make = (units: number, created: Date, extra: Partial<WorkItem>) => {
-    const id = `${project.id}-wi-${items.length + 1}`;
+    const id = `${project.code}-wi-${items.length + 1}`;
     const item: WorkItem = { id, title: `${verbs[Math.floor(r() * verbs.length)]} ${subjects[Math.floor(r() * subjects.length)]}`, itemType: p.workUnit === "tasks" ? "task" : types[Math.floor(r() * types.length)]!, workstream: workstreams[Math.floor(r() * workstreams.length)]!, estimateUnits: p.workUnit === "tasks" ? null : units, statusId: "backlog", sprintId: null, assignee: names[Math.floor(r() * names.length)], backlogRank: rank++, createdAt: toIso(created), doneAt: null, source: project.taskSource === "Native" ? "native" : "planner", ...extra };
     items.push(item); events.push({ id: `${id}-e0`, workItemId: id, field: "created", oldValue: "", newValue: item.title, changedBy: project.manager, changedAt: item.createdAt });
     return item;
@@ -90,7 +104,7 @@ function generate(project: Project): ProjectDelivery {
   let baseUsed = 0;
   // closed periods
   for (let k = 0; k < n; k++) {
-    const sprintId = agile ? `${project.id}-s${k + 1}` : null;
+    const sprintId = agile ? `${project.code}-s${k + 1}` : null;
     const sizes = p.workUnit === "tasks" ? Array.from({ length: p.completed[k]! }, () => 1) : split(p.completed[k]!, r);
     for (const size of unitsOf(sizes)) { const doneDay = addDays(pEnd(k), 1 + Math.floor(r() * (len - 2))); make(size, baseCreated, { statusId: "done", sprintId, doneAt: toIso(doneDay) }); baseUsed += size; }
     if (agile) {
@@ -102,18 +116,18 @@ function generate(project: Project): ProjectDelivery {
   for (let k = 0; k < n; k++) for (const size of unitsOf(split(p.growth, r))) make(size, addDays(pEnd(k), 5), {});
   // active sprint
   if (agile && p.active && !p.stale) {
-    const sprintId = `${project.id}-s${n + 1}`;
+    const sprintId = `${project.code}-s${n + 1}`;
     const target = Math.round(p.completed.slice(-3).reduce((s, v) => s + v, 0) / Math.max(1, Math.min(3, n)) || 20);
     const sprintStart = pEnd(n);
     sprints.push({ id: sprintId, name: `Sprint ${n + 1}`, goal: "Close the gap on the baseline plan", start: toIso(sprintStart), end: toIso(addDays(pEnd(n + 1), -1)), status: "active", capacityUnits: target + 4 });
     let i = 0;
     for (const size of unitsOf(split(target, r))) {
-      const phase = i++ % 5; const statusId = phase === 0 || phase === 3 ? "done" : phase === 1 ? "in-progress" : phase === 2 ? (i === 3 && project.id === "ebbot-chatbot" ? "blocked" : "in-review") : "ready";
+      const phase = i++ % 5; const statusId = phase === 0 || phase === 3 ? "done" : phase === 1 ? "in-progress" : phase === 2 ? (i === 3 && project.code === "EBB" ? "blocked" : "in-review") : "ready";
       const item = make(size, baseCreated, { statusId, sprintId, doneAt: statusId === "done" ? toIso(addDays(sprintStart, 1 + (i % 5))) : null });
       baseUsed += size; commitments.push({ sprintId, workItemId: item.id, unitsAtStart: size, addedAfterStart: false });
       if (statusId === "blocked") events.push({ id: `${item.id}-eb`, workItemId: item.id, field: "status", oldValue: "in-progress", newValue: "blocked", changedBy: project.manager, changedAt: toIso(addDays(today, -15)) });
     }
-    sprints.push({ id: `${project.id}-s${n + 2}`, name: `Sprint ${n + 2}`, goal: "", start: toIso(pEnd(n + 1)), end: toIso(addDays(pEnd(n + 2), -1)), status: "planned", capacityUnits: target + 4 });
+    sprints.push({ id: `${project.code}-s${n + 2}`, name: `Sprint ${n + 2}`, goal: "", start: toIso(pEnd(n + 1)), end: toIso(addDays(pEnd(n + 2), -1)), status: "planned", capacityUnits: target + 4 });
   }
   // remaining baseline backlog
   const left = Math.max(0, p.baselineScope - baseUsed);
@@ -126,10 +140,11 @@ function generate(project: Project): ProjectDelivery {
 }
 
 // ---------- store ----------
-const KEY = "virtual-pmo-delivery";
+// v2: keyed by project code (v1 used prototype project ids).
+const KEY = "virtual-pmo-delivery-v2";
 const cache = new Map<string, ProjectDelivery>();
 let saved: { projects: Record<string, ProjectDelivery>; nonWorking?: NonWorkingPeriod[] } = { projects: {} };
-let nonWorking: NonWorkingPeriod[] = defaultNonWorking;
+let nonWorking: NonWorkingPeriod[] | null = null;
 let loaded = false, version = 0;
 const listeners = new Set<() => void>();
 
@@ -141,7 +156,7 @@ function load() {
 }
 function commit(projectId?: string) {
   if (projectId) saved.projects[projectId] = cache.get(projectId)!;
-  saved.nonWorking = nonWorking;
+  if (nonWorking) saved.nonWorking = nonWorking;
   try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch { /* ignore */ }
   version += 1; listeners.forEach(l => l());
 }
@@ -151,10 +166,10 @@ export function resetDelivery(projectId: string) { cache.delete(projectId); dele
 export function getDelivery(projectId: string): ProjectDelivery {
   load();
   let data = cache.get(projectId);
-  if (!data) { const project = projects.find(p => p.id === projectId); if (!project) throw new Error(`Unknown project ${projectId}`); data = generate(project); cache.set(projectId, data); }
+  if (!data) { const project = registry.get(projectId); if (!project) throw new Error(`Unknown project ${projectId}`); data = generate(project); cache.set(projectId, data); }
   return data;
 }
-export const getNonWorkingPeriods = () => { load(); return nonWorking; };
+export const getNonWorkingPeriods = () => { load(); return nonWorking ?? fromHolidayCalendars(); };
 export function saveNonWorkingPeriods(list: NonWorkingPeriod[]) { nonWorking = list; commit(); }
 
 // ---------- derived helpers ----------
@@ -207,7 +222,7 @@ export function sprintUnits(d: ProjectDelivery, sprintId: string) { return liveI
 
 // ---------- mutations ----------
 function now() { return TODAY; }
-function log(d: ProjectDelivery, item: WorkItem, field: WorkItemEvent["field"], oldValue: unknown, newValue: unknown) { d.events.push({ id: `${item.id}-e${d.events.length}-${Date.now()}`, workItemId: item.id, field, oldValue: String(oldValue ?? ""), newValue: String(newValue ?? ""), changedBy: USER, changedAt: now() }); }
+function log(d: ProjectDelivery, item: WorkItem, field: WorkItemEvent["field"], oldValue: unknown, newValue: unknown) { d.events.push({ id: `${item.id}-e${d.events.length}-${Date.now()}`, workItemId: item.id, field, oldValue: String(oldValue ?? ""), newValue: String(newValue ?? ""), changedBy: currentUser, changedAt: now() }); }
 
 export function updateItem(projectId: string, itemId: string, patch: Partial<WorkItem>) {
   const d = getDelivery(projectId); const item = d.items.find(i => i.id === itemId); if (!item) return;
@@ -269,4 +284,4 @@ export function closeSprint(projectId: string, sprintId: string, carryOver: "nex
   for (const item of items.filter(i => !isDone(d, i))) { const target = carryOver === "next" ? next!.id : null; log(d, item, "sprint", item.sprintId, target); item.sprintId = target; if (!target) item.statusId = "backlog"; }
   commit(projectId);
 }
-export function addJustification(projectId: string, text: string) { const d = getDelivery(projectId); d.justifications.unshift({ date: TODAY, text, by: USER }); commit(projectId); }
+export function addJustification(projectId: string, text: string) { const d = getDelivery(projectId); d.justifications.unshift({ date: TODAY, text, by: currentUser }); commit(projectId); }

@@ -1,8 +1,10 @@
 import { benefits, collections, genericResources, issuedTasks, people, portfolio, programmes, projectRequests, projects, resourceAssignments, roadmaps, strategicObjectives } from "@/data/mock-data";
 import { defaultLifecyclePhases, defaultTierDefinitions } from "@/data/lifecycle";
 import { getSettings } from "@/services/settings";
-import { getCurrentPortfolioId, portfolios } from "@/services/entity-store";
-import type { ChangeRequest, Issue, GateCriterion, LifecyclePhase, ProjectStage, ProjectTier, TierDefinition, Benefit, BenefitMeasure, BookingType, GenericResource, Health, IssuedTask, Milestone, MilestoneStatus, Person, Portfolio, Programme, Project, ProjectRequest, ResourceAssignment as Assignment, ResourceTeam, Risk, Roadmap, RoadmapHealth, RoadmapItem, Task, TeamMember } from "@/data/types";
+// Parity fixture only: the prototype had a single sample portfolio.
+const portfolios: Portfolio[] = [portfolio];
+const getCurrentPortfolioId = () => portfolio.id;
+import type { ChangeRequest, Dependency, DependencyEnd, Issue, GateCriterion, LifecyclePhase, ProjectStage, ProjectTier, TierDefinition, Benefit, BenefitMeasure, BookingType, GenericResource, Health, IssuedTask, Milestone, MilestoneStatus, Person, Portfolio, Programme, Project, ProjectRequest, ResourceAssignment as Assignment, ResourceTeam, Risk, Roadmap, RoadmapHealth, RoadmapItem, Task, TeamMember } from "@/data/types";
 
 const rank: Record<Health,number> = {"Not Set":0,"On Track":1,"At Risk":2,"Off Track":3};
 const worst = (items: Health[]): Health => {
@@ -115,7 +117,8 @@ export function getMilestoneMetrics(items=getPortfolioMilestones()){
   return {completed,upcoming,overdue,slipped,percentOnTime:recentCompleted.length?Math.round(hit/recentCompleted.length*100):0};
 }
 export interface ResolvedRoadmapItem extends RoadmapItem { start: string; finish: string; progress: number; health: RoadmapHealth; programmeId?: string; programmeName: string; projectManager: string; collectionNames: string[] }
-const roadmapHealth=(project:Project):RoadmapHealth=>project.state==="Closed"?"Done":project.state==="Proposed"?"Not set":project.priority==="Critical"&&getProjectHealth(project)==="Off Track"?"High risk":project.priority==="High"||getProjectHealth(project)==="At Risk"?"At risk":"On track";
+// Stage 4 decision: a red project is always "High risk" on the roadmap (was: only when also Critical).
+const roadmapHealth=(project:Project):RoadmapHealth=>project.state==="Closed"?"Done":project.state==="Proposed"?"Not set":getProjectHealth(project)==="Off Track"?"High risk":project.priority==="High"||getProjectHealth(project)==="At Risk"?"At risk":"On track";
 const projectProgress=(project:Project)=>project.tasks?.length?Math.round(project.tasks.reduce((sum,task)=>sum+task.percentComplete,0)/project.tasks.length):getStageProgress(project.stage);
 export function getRoadmaps():Roadmap[]{return roadmaps}
 export function getRoadmap(id:string):Roadmap|undefined{return roadmaps.find(roadmap=>roadmap.id===id)}
@@ -280,3 +283,40 @@ export interface PortfolioIssue extends Issue { projectId: string; projectName: 
 export function getPortfolioIssues():PortfolioIssue[]{return projects.flatMap(project=>{const programme=programmes.find(item=>item.id===project.programmeId);return project.issues.map(issue=>({...issue,projectId:project.id,projectName:project.name,programmeId:project.programmeId,programmeName:programme?.name??"Unassigned"}))})}
 export interface PortfolioChange extends ChangeRequest { projectId: string; projectName: string; programmeId: string; programmeName: string }
 export function getPortfolioChanges():PortfolioChange[]{return projects.flatMap(project=>{const programme=programmes.find(item=>item.id===project.programmeId);return (project.changes??[]).map(change=>({...change,projectId:project.id,projectName:project.name,programmeId:project.programmeId,programmeName:programme?.name??"Unassigned"}))})}
+
+// ---- Dependency health (parity fixture only) ----
+// The database computes dependency health in v_dependency_health. This port of the prototype
+// rule exists only so scripts/health-parity.ts can check the SQL against it.
+export function workingDaysBetween(from: Date, to: Date) {
+  const direction = to >= from ? 1 : -1;
+  let count = 0;
+  const cursor = new Date(from);
+  while (direction > 0 ? cursor < to : cursor > to) {
+    cursor.setDate(cursor.getDate() + direction);
+    const day = cursor.getDay();
+    if (day !== 0 && day !== 6) count += direction;
+  }
+  return count;
+}
+const isDependencyConfirmed = (dependency: Dependency) => dependency.giverAccepted && dependency.receiverAccepted;
+function getDependencyGiverMilestone(end: DependencyEnd): Milestone | undefined {
+  if (!end.milestoneId || !end.projectId) return undefined;
+  return getProject(end.projectId)?.milestones.find(item => item.id === end.milestoneId);
+}
+export function getDependencyHealth(dependency: Dependency): Health {
+  if (dependency.healthOverride) return dependency.healthOverride;
+  if (dependency.validation === "Closed") return "On Track";
+  if (dependency.validation === "Broken") return "Off Track";
+  const milestone = getDependencyGiverMilestone(dependency.giver);
+  if (dependency.type === "Sequencing" && milestone) {
+    if (milestone.actualDate) return "On Track";
+    const forecast = parseDate(milestone.forecastDate), requiredBy = parseDate(dependency.requiredBy);
+    if (forecast > requiredBy) return "Off Track";
+    if (workingDaysBetween(forecast, requiredBy) <= getSettings().health.dependencyAtRiskWorkingDays) return "At Risk";
+    return "On Track";
+  }
+  const requiredBy = parseDate(dependency.requiredBy);
+  if (requiredBy < today) return "Off Track";
+  if (!isDependencyConfirmed(dependency) && workingDaysBetween(today, requiredBy) <= 20) return "At Risk";
+  return "On Track";
+}

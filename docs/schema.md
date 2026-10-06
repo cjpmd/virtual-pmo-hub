@@ -20,7 +20,7 @@ This document records the Stage 1 decisions and turns them into a concrete schem
 | People | Every person field is a FK to **`resources`** (`*_id`). Only `created_by` and audit fields reference **`profiles`**. |
 | Audit columns | `created_at timestamptz not null default now()`, `updated_at timestamptz not null default now()` (maintained by the `set_updated_at()` trigger) and `created_by uuid default auth.uid() references profiles (id) on delete set null`. Append-only tables carry only `created_at`/`created_by`. |
 | Dates | `date` for calendar dates (start, finish, due, review, baseline…). `timestamptz` for events (created, responded, changed, synced). All conversion to and from `DD/MM/YYYY` happens in **one** module, `src/services/db/format.ts`, used only by services. |
-| "Today" | The database uses `org_today(organisation_id)`, which is `current_date` in the organisation's `settings->>'timeZone'`. A session setting `vpmo.today` (a date) overrides it, for tests and the parity check only. The front end uses one `today()` helper (Stage 4) in place of the 33 hardcoded `21/09/2026` values. |
+| "Today" | The database uses `org_today(organisation_id)`, which is `current_date` in the organisation's `settings->>'timeZone'`. A session setting `vpmo.today` (a date) overrides it, but only when `auth.uid()` is null (scripts, tests, the parity check). Signed-in sessions always get the real date. The front end uses one `today()` helper (Stage 4) in place of the 33 hardcoded `21/09/2026` values. |
 | Naming | Tables are plural `snake_case`. Columns are the `snake_case` form of the front-end field name. That mechanical camelCase → snake_case change is **not** listed as a rename; §12 lists only real renames. Enum values are lower `snake_case`, and services map them to the Title Case labels the UI shows. |
 | Money | `numeric(14,2)`. Currency is per organisation (`settings.regional.baseCurrency`). Multi-currency stays out of scope apart from the `exchange_rates` table. |
 | Deletes | (review B) **Portfolios, programmes and projects have no client delete policy.** `state = 'closed'` is the lifecycle end (still reported). `archived_at timestamptz` hides a record created in error; every list view excludes `archived_at is not null` by default. **Work items are never hard-deleted by clients**: "delete" sets `deleted_at`, and views exclude those rows. Register rows (RAID, change requests, decisions…) can be deleted by managers, and `audit_log` captures it. History tables (`health_snapshots`, `milestone_forecast_history`, `work_item_events`) reference their parents `on delete restrict`. Other children cascade only from their direct parent. |
@@ -428,7 +428,7 @@ Both ends must be in the same workspace (composite FKs). Cross-workspace depende
 - `benefit_projects`: benefit_id, project_id, attribution_percent numeric(5,2) check 0–100. Totals over 100% are allowed but surfaced as a warning column in `v_benefit_realisation`, which matches `getBenefitWarnings`.
 - `benefit_measures`: id, benefit_id, tenant columns, name, unit, measurement_method, data_source, frequency, data_provider text (a team name, not a person), baseline_value, baseline_date, next_due_date, sort_order, audit columns. `next_due_date` stays **stored** as a scheduling field the PMO edits, as the screens treat it.
 - `benefit_measure_targets`: measure_id, period_id → benefit_periods, value. PK `(measure_id, period_id)`.
-- `benefit_measurements`: id, measure_id, tenant columns, period_id, actual_value, evidence text, evidence_path null (Storage `evidence`), notes, submitted_by_id, submitted_date, validated_by_id, validated_date, query_note, status, audit columns. Several rows per period are allowed (a resubmission after a query, or two data providers). The views use the validated row if there is one, otherwise the earliest submitted.
+- `benefit_measurements`: id, measure_id, tenant columns, period_id, actual_value, evidence text, evidence_path null (Storage `evidence`), notes, submitted_by_id, submitted_date, validated_by_id, validated_date, query_note, status, audit columns. Several rows per period are allowed (a resubmission after a query, or two data providers). Queried rows never count. The views use the validated row if there is one, otherwise the latest submission (`submitted_date desc, created_at desc`).
 - `benefit_reviews`: id, benefit_id, tenant columns, review_date, type, findings, lessons_learned, reviewer_id, audit columns.
 - `benefit_handovers` (0..1): benefit_id PK, tenant columns, bau_owner_id, bau_service, frequency, next_review_date, post_implementation_review_date, confirmed_by_id, confirmed_date, audit columns.
 - Benefit maps: `capabilities` (programme_id, title, description, owner_id), `capability_projects`, `outcomes` (programme_id, …), `outcome_capabilities`, `outcome_benefits`, `benefit_maps` (programme_id, name, description, layout jsonb `[{nodeKey, x, y}]`). The layout is UI state, so it stays jsonb.
@@ -448,7 +448,7 @@ Both ends must be in the same workspace (composite FKs). Cross-workspace depende
 **Effective workspace role** = the higher of the `workspace_members.role` and the organisation role **when that is `pmo` or `admin`**. So org admins and PMO see and administer every workspace in their organisation, and everyone else needs explicit workspace membership.
 
 ### 9.2 Helper functions
-All are `language sql stable security definer set search_path = ''`, use `(select auth.uid())`, fully qualify tables (`public.organisation_members`), and are `revoke`d from `anon` and granted to `authenticated`.
+All are `language sql stable security definer set search_path = ''`, use `(select auth.uid())`, fully qualify tables (`public.organisation_members`), and are `revoke`d from `anon` and granted to `authenticated`. Every new `private` function must be revoked from `public, anon` **explicitly** in its own migration. `alter default privileges ... in schema private` cannot remove Postgres's global EXECUTE-for-PUBLIC default (fixed retroactively in `advisor_fixes_2`).
 
 | Function | Returns |
 |---|---|
@@ -512,6 +512,8 @@ All are `security_invoker` views over the tables above. "Today" is `org_today(or
 | `v_milestones` | milestone + `status` (`completed` if actual_date, `overdue` if forecast < today, `late` if forecast > baseline, `future` if more than 30 days out, else `on_track`) + `slip_days` | `Milestone.status`, `PortfolioMilestone.slipDays` |
 | `v_work_items` | work item + delivery status (same rules on finish/baseline) + checklist_count | `getTaskStatus`, `checklistCount` |
 | `benefit_realisation(benefit_id)` → `v_benefit_realisation` | realised value, percent, variance %, benefit health, behind_profile, measurement_overdue | `getBenefitRealised`, `getBenefitPercent`, `getBenefitVariance`, `getBenefitHealth` |
+
+> **Known limitation (benefits phase).** Realisation uses the benefit's **first measure only** (lowest `sort_order`), as `pmo.ts` did. Other measures are stored and shown, but they do not feed realised value, percent, variance or health. Combining measures is deferred to the benefits phase.
 | `v_project_health` | schedule, financial, effort, issue and benefit health, **overall = health_override, or else the worst of the five**, plus `forecast_finish_date` and `forecast_basis`. Today `forecast_basis = 'declared'` and the date is the declared `finish_date`; the forecast-engine phase switches the basis to `evidenced` without renaming the column, so callers don't break (review F) | `getProjectHealth` and the dimension functions |
 | `v_programme_health` | overall = override, or else the worst of its projects' overall + programme benefit health. `forecast_finish_date` = the latest of its projects' forecast finish | `getProgrammeHealth` |
 | `v_portfolio_health` | overall = override, or else the worst of its programmes **and** direct projects. Latest forecast finish | `getPortfolioHealth` |
@@ -666,6 +668,11 @@ As built. The order differs from the original plan: `delivery` (milestones) come
 | 20261005175820 | `create_organisation_rpc` | `create_organisation()`, `seed_org_defaults()`, `join_demo_organisation()` |
 | 20261005175833 | `storage` | buckets + storage.objects policies (one per action) |
 | 20261005183516 | `lock_down_rls_auto_enable` | security advisor fix (see below) |
+| 20261005185157 | `advisor_fixes_2` | revoke every `private` function from `public, anon`; `org_today` override only without a user; latest-submission rule in `v_benefit_period_values` |
+| 20261005190346 | `project_permissions_rpc` | Stage 4b: `project_permissions(project)` for the UI (SECURITY INVOKER) |
+| 20261005213047 | `permissions_can_delete` | Stage 4c: `project_permissions` returns `can_delete` alongside `can_edit`; `my_workspace_roles()` for the header role and button visibility. The 4b function is renamed `project_permissions_4b` and revoked (drop it by hand: the connector can't run `drop function` without a prompt) |
+| 20261005224326 | `roadmap_red_is_red` | Stage 4c: a red project is always "High risk" on the roadmap |
+| 20261005225559 | `roadmap_items_single_pass` | Stage 4c: `v_roadmap_items` computes project health and task stats once (materialised CTEs) instead of once per row |
 
 **Seed.** `scripts/generate-seed.ts` imports the current mock modules and writes `supabase/seed.sql`:
 - one demo organisation ("Demo University", `is_demo = true`) with one workspace

@@ -10,10 +10,13 @@ import { RaidWorkspace } from "@/components/raid-workspace";
 import { KpiCard, PageHeader } from "@/components/pmo-ui";
 import { Button } from "@/components/ui/button";
 import { issueColumns, issuesToRows } from "@/lib/board-data";
-import { getPortfolioIssues, getPortfolioRisks } from "@/services/pmo";
-import { getAssumptionMetrics, getAssumptions, getDecisionMetrics, getDecisions } from "@/services/decisions";
+import { getAssumptionMetrics, getDecisionMetrics } from "@/services/decisions";
+import { toIssue, toRisk } from "@/components/project-raid";
+import { usePeople, useOrgRaid } from "@/hooks/use-hierarchy";
+import { useGovernance } from "@/hooks/use-governance";
 import { useSettings } from "@/services/settings";
 import { cn } from "@/lib/utils";
+import { QueryError } from "@/components/query-state";
 
 const tabs = [
   { id: "risks", label: "Risks", icon: ShieldAlert },
@@ -40,10 +43,14 @@ function Page() {
   const active: TabId = search.tab ?? "risks";
   const setActive = (tab: TabId) => navigate({ to: "/governance/raidd", search: { tab }, replace: true });
 
-  const risks = useMemo(() => getPortfolioRisks(), []);
-  const issues = useMemo(() => getPortfolioIssues(), []);
-  const assumptions = useMemo(() => getAssumptions(), []);
-  const decisions = useMemo(() => getDecisions(), []);
+  const raid = useOrgRaid();
+  const governance = useGovernance();
+  const people = usePeople();
+  const names = useMemo(() => new Map((people.data ?? []).map(person => [person.id, person.name])), [people.data]);
+  const risks = useMemo(() => (raid.data?.risks ?? []).map(item => ({ ...toRisk(item, names), projectCode: item.projectCode, projectName: item.projectName, programmeName: item.programmeName })), [raid.data, names]);
+  const issues = useMemo(() => (raid.data?.issues ?? []).map(item => ({ ...toIssue(item, names), projectName: item.projectName, programmeName: item.programmeName })), [raid.data, names]);
+  const assumptions = governance.data?.assumptions ?? [];
+  const decisions = governance.data?.decisions ?? [];
   const assumptionMetrics = getAssumptionMetrics(assumptions);
   const decisionMetrics = getDecisionMetrics(decisions);
   const bands = settings.risk.bands;
@@ -51,6 +58,7 @@ function Page() {
 
   return <div className="space-y-6">
     <AutoBreadcrumbs />
+    {(raid.isError || governance.isError) && <QueryError error={raid.error ?? governance.error} retry={() => { void raid.refetch(); void governance.refetch(); }} />}
     <PageHeader eyebrow="Governance" title="RAIDD" description="One register for risks, assumptions, issues and decisions. Matrix size, score bands and option lists are configured in Settings → Risk & RAIDD." />
 
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -76,11 +84,12 @@ function Page() {
         {bands.map(band => <span key={band.id} className="inline-flex items-center gap-1.5"><span className="size-2.5 rounded-full" style={{ background: band.colour }} />{band.label} ({band.minScore}+)</span>)}
         <span className="ml-auto text-muted-foreground">Risk appetite threshold: {settings.risk.appetiteThreshold} · {risks.filter(item => item.score >= settings.risk.appetiteThreshold).length} risks above it</span>
       </div>
-      <RaidWorkspace risks={risks} issues={[]} />
+      <p className="text-xs text-muted-foreground">Edit a risk or issue on its project's RAID tab, where changes are checked against your project permissions.</p>
+      <RaidWorkspace risks={risks} issues={[]} editable={false} />
       <section>
         <h2 className="font-display text-lg font-semibold">Risks above appetite</h2>
         <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {risks.filter(item => item.score >= settings.risk.appetiteThreshold).slice(0, 12).map(risk => <Link key={`${risk.projectId}-${risk.id}`} to="/portfolio/projects/$projectId" params={{ projectId: risk.projectId }} className="rounded-lg border border-border/70 bg-card p-3 hover:bg-accent/40">
+          {risks.filter(item => item.status === "Open" && item.score >= settings.risk.appetiteThreshold).slice(0, 12).map(risk => <Link key={risk.id} to={risk.projectCode ? "/portfolio/projects/$projectCode" : "/governance/raidd"} params={{ projectCode: risk.projectCode ?? "" }} className="rounded-lg border border-border/70 bg-card p-3 hover:bg-accent/40">
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm font-medium">{risk.title}</p>
               <span className="shrink-0 rounded px-1.5 py-0.5 text-xs font-bold text-primary-foreground" style={{ background: bandFor(risk.score)?.colour }}>{risk.score}</span>
@@ -94,7 +103,7 @@ function Page() {
     {active === "assumptions" && <AssumptionsWorkspace />}
 
     {active === "issues" && <div className="space-y-5">
-      <BoardWorkspace title="Issue register" itemLabel="issue" rows={issuesToRows(issues).map((row, index) => ({ ...row, project: issues[index]?.projectName ?? "", group: issues[index]?.programmeName ?? "Unassigned" }))} columns={[...issueColumns, { key: "project", label: "Project", type: "text", width: 240 }]} groupOptions={["group", "status", "priority"]} />
+      <BoardWorkspace title="Issue register" itemLabel="issue" rows={issuesToRows(issues).map((row, index) => ({ ...row, project: issues[index]?.projectName ?? "", group: issues[index]?.programmeName ?? "Unassigned" }))} manage={false} columns={[...issueColumns, { key: "project", label: "Project", type: "text" as const, width: 240 }].map(column => ({ ...column, editable: false }))} groupOptions={["group", "status", "priority"]} />
       {!issues.length && <p className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">No issues are open across the portfolio.</p>}
     </div>}
 

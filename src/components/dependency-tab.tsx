@@ -2,37 +2,30 @@ import { formatDate } from "@/lib/format";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
-import { DependencyPanel, type AcceptanceState } from "@/components/dependency-panel";
+import { DependencyPanel } from "@/components/dependency-panel";
+import { QueryState } from "@/components/query-state";
+import { useDependencies } from "@/hooks/use-dependencies";
 import { HealthPill } from "@/components/health-pill";
-import { getDependencies, getDependenciesFor, type ResolvedDependency } from "@/services/dependencies";
+import { getDependenciesFor, type DependenciesData, type ResolvedDependency } from "@/services/dependencies";
 import { cn } from "@/lib/utils";
-import { saveDependency, useDependencyVersion } from "@/services/dependency-store";
 
 /** "We depend on" and "Depends on us" for a project or programme (Prompt I1). */
-export function DependencyTab({ projectId, programmeId }: { projectId?: string; programmeId?: string }) {
-  const [overrides, setOverrides] = useState<Record<string, AcceptanceState>>({});
-  const [selected, setSelected] = useState<ResolvedDependency | null>(null);
-  useDependencyVersion();
-  const all = getDependencies();
-  const applied = all.map(item => {
-    const override = overrides[item.id];
-    if (!override) return item;
-    const confirmed = override.giver && override.receiver;
-    return { ...item, giverAccepted: override.giver, receiverAccepted: override.receiver, acceptance: confirmed ? "Confirmed" : override.giver ? "Awaiting receiver" : override.receiver ? "Awaiting giver" : "Awaiting both" };
-  });
-  const scope = { ...(projectId ? { projectId } : {}), ...(programmeId ? { programmeId } : {}) };
-  const { weDependOn, dependsOnUs } = getDependenciesFor(scope, applied);
+export function DependencyTab(props: { projectId?: string; programmeId?: string }) {
+  const dependencies = useDependencies();
+  return <QueryState query={dependencies}>{data => <Tab data={data} {...props} />}</QueryState>;
+}
 
-  const accept = (id: string, side: "giver" | "receiver") => { const item = all.find(entry => entry.id === id); if (item) saveDependency({ ...item, [side === "giver" ? "giverAccepted" : "receiverAccepted"]: true }); setOverrides(current => {
-    const source = all.find(item => item.id === id);
-    const base = current[id] ?? { giver: source?.giverAccepted ?? false, receiver: source?.receiverAccepted ?? false };
-    return { ...current, [id]: { ...base, [side]: true } };
-  }); };
+function Tab({ data, projectId, programmeId }: { data: DependenciesData; projectId?: string; programmeId?: string }) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const scope = { ...(projectId ? { projectId } : {}), ...(programmeId ? { programmeId } : {}) };
+  const { weDependOn, dependsOnUs } = getDependenciesFor(scope, data.dependencies);
+  const selected = data.dependencies.find(item => item.id === selectedId);
+  const setSelected = (item: ResolvedDependency) => setSelectedId(item.id);
 
   return <div className="space-y-6">
     <Section title="We depend on" note="Other people owe this work something." items={weDependOn} icon={<ArrowDownLeft className="size-4 text-primary" />} otherSide={item => item.giverLabel} otherOwner={item => item.giver.owner} onOpen={setSelected} />
     <Section title="Depends on us" note="This work owes other people something." items={dependsOnUs} icon={<ArrowUpRight className="size-4 text-primary" />} otherSide={item => item.receiverLabel} otherOwner={item => item.receiver.owner} onOpen={setSelected} />
-    {selected && <DependencyPanel dependency={applied.find(item => item.id === selected.id) ?? selected} overrides={overrides} onAccept={accept} onRaise={() => undefined} close={() => setSelected(null)} />}
+    {selected && <DependencyPanel dependency={selected} close={() => setSelectedId(null)} />}
   </div>;
 }
 

@@ -1,31 +1,32 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Bell, CheckCheck, ChevronDown, ChevronLeft, ChevronRight, LogOut, Menu, Moon, Search, Settings, Star, Sun, UserRound, X } from "lucide-react";
+import { Bell, Building2, Check, CheckCheck, ChevronDown, ChevronLeft, ChevronRight, LoaderCircle, LogOut, Menu, Moon, Search, Settings, Star, Sun, UserRound, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { readFavourites, type Favourite } from "@/components/favourite-button";
 import { SectionTabs } from "@/components/section-nav";
-import { getProgrammes, getProjects } from "@/services/pmo";
-import { getCurrentUser, hydrateSettings, term, useSettings } from "@/services/settings";
+import { useProgrammes, useProjects } from "@/hooks/use-hierarchy";
+import { useFavourites } from "@/hooks/use-favourites";
+import { useNotifications } from "@/hooks/use-notifications";
+import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
+import { useWorkspaceRole } from "@/hooks/use-permissions";
+import { appRoleLabel } from "@/services/org-settings";
+import type { AppRole } from "@/services/auth";
+import { hydrateSettings, term, useSettings } from "@/services/settings";
+import { useOrganisation } from "@/components/auth/organisation-provider";
+import { signOut } from "@/services/auth";
+import { errorMessage } from "@/services/service-error";
+import { toast } from "sonner";
 import { allPages, findSection, sections, settingsSection } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 import { openIssueTask } from "@/components/issue-task-sheet";
 
 const COLLAPSE_KEY = "virtual-pmo-sidebar-collapsed";
-const RECENT_KEY = "virtual-pmo-recent";
+const RECENT_KEY = "virtual-pmo-recent-v2"; // v2: project codes and programme ids
 interface RecentEntry { id: string; label: string; type: "Project" | "Programme"; to: string }
 
-const seedNotifications = [
-  { id: "n1", text: "Maya Harrison mentioned you on Ebbot", kind: "Mention", read: false },
-  { id: "n2", text: "3 Ebbot tasks are overdue", kind: "Overdue alert", read: false },
-  { id: "n3", text: "Status report due Friday", kind: "Reminder", read: false },
-  { id: "n-ben", text: "Benefit measurement due: record this quarter's actuals for BEN-003", kind: "Benefit reminder", read: false },
-  { id: "n-div", text: "Divergence alert: declared RAG is better than the evidence on a project", kind: "Assurance", read: false },
-  { id: "n4", text: "Digital assessment pilot awaits approval", kind: "Approval request", read: true },
-];
 
 function readRecent(): RecentEntry[] {
   try { return JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]") as RecentEntry[] } catch { return [] }
@@ -36,11 +37,19 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dark, setDark] = useState(false);
-  const [notifications, setNotifications] = useState(seedNotifications);
+  const { feed: notifications, read: readNotifications, markRead, unread } = useNotifications();
   const [inbox, setInbox] = useState(false);
   const [palette, setPalette] = useState(false);
   const [query, setQuery] = useState("");
-  const [favourites, setFavourites] = useState<Favourite[]>([]);
+  const projectList = useProjects().data ?? [];
+  const programmeList = useProgrammes().data ?? [];
+  const { favourites: favouriteRows } = useFavourites();
+  const favourites = favouriteRows.flatMap((row): Array<{ id: string; type: "Project" | "Programme"; label: string; key: string }> => {
+    const project = row.projectId ? projectList.find(item => item.id === row.projectId) : undefined;
+    const programme = row.programmeId ? programmeList.find(item => item.id === row.programmeId) : undefined;
+    return project ? [{ id: row.id, type: "Project" as const, label: project.name, key: project.code }]
+      : programme ? [{ id: row.id, type: "Programme" as const, label: programme.name, key: programme.id }] : [];
+  });
   const [recent, setRecent] = useState<RecentEntry[]>([]);
   const [showFavourites, setShowFavourites] = useState(true);
   const [showRecent, setShowRecent] = useState(true);
@@ -49,7 +58,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   const path = useRouterState({ select: state => state.location.pathname });
   const navigate = useNavigate();
   const activeSection = findSection(path);
-  const user = getCurrentUser();
+  const { profile, organisation, organisations, switchOrganisation, switching } = useOrganisation();
+  // Header: the effective role in the workspace being viewed (the selected portfolio's), which is
+  // what decides the buttons on screen. The organisation role is shown in the profile menu.
+  const { portfolio: currentPortfolio } = useCurrentPortfolio();
+  const workspaceRole = useWorkspaceRole(currentPortfolio?.workspaceId);
+  const roleName = (role: string | null) => (role ? (appRoleLabel[role as AppRole] ?? role) : "No access");
+  const user = { name: profile.displayName, email: profile.email, role: roleName(workspaceRole ?? organisation.role), orgRole: roleName(organisation.role) };
+  // Signing out ends the session; the auth gate then shows the sign-in page.
+  const logOut = () => { signOut().catch(error => toast.error(errorMessage(error))) };
 
   useEffect(() => { hydrateSettings() }, []);
   useEffect(() => { document.documentElement.classList.toggle("dark", dark) }, [dark]);
@@ -61,19 +78,16 @@ export function AppShell({ children }: { children: ReactNode }) {
     return next;
   });
   useEffect(() => {
-    const refresh = () => setFavourites(readFavourites());
-    refresh(); setRecent(readRecent());
-    window.addEventListener("favourites-changed", refresh);
-    return () => window.removeEventListener("favourites-changed", refresh);
+    setRecent(readRecent());
   }, []);
   // Visiting a project or programme adds it to Recent.
   useEffect(() => {
     const project = /^\/portfolio\/projects\/([^/]+)/.exec(path)?.[1];
     const programme = /^\/portfolio\/programmes\/([^/]+)/.exec(path)?.[1];
     const entry: RecentEntry | undefined = project
-      ? { id: project, label: getProjects().find(item => item.id === project)?.name ?? project, type: "Project", to: path }
+      ? { id: decodeURIComponent(project), label: projectList.find(item => item.code === decodeURIComponent(project))?.name ?? decodeURIComponent(project), type: "Project", to: path }
       : programme
-        ? { id: programme, label: getProgrammes().find(item => item.id === programme)?.name ?? programme, type: "Programme", to: path }
+        ? { id: programme, label: programmeList.find(item => item.id === programme)?.name ?? "Programme", type: "Programme", to: path }
         : undefined;
     if (!entry) return;
     setRecent(current => {
@@ -106,10 +120,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (!text) return [];
     return [
       ...allPages.filter(page => page.label.toLowerCase().includes(text)).map(page => ({ id: page.to, label: page.label, detail: page.section.label, to: page.to, params: undefined })),
-      ...getProjects().filter(item => item.name.toLowerCase().includes(text)).slice(0, 6).map(item => ({ id: item.id, label: item.name, detail: term("project", settings), to: "/portfolio/projects/$projectId", params: { projectId: item.id } })),
-      ...getProgrammes().filter(item => item.name.toLowerCase().includes(text)).slice(0, 4).map(item => ({ id: item.id, label: item.name, detail: term("programme", settings), to: "/portfolio/programmes/$programmeId", params: { programmeId: item.id } })),
+      ...projectList.filter(item => item.name.toLowerCase().includes(text) || item.code.toLowerCase() === text).slice(0, 6).map(item => ({ id: item.id, label: item.name, detail: `${term("project", settings)} · ${item.code}`, to: "/portfolio/projects/$projectCode", params: { projectCode: item.code } })),
+      ...programmeList.filter(item => item.name.toLowerCase().includes(text)).slice(0, 4).map(item => ({ id: item.id, label: item.name, detail: term("programme", settings), to: "/portfolio/programmes/$programmeId", params: { programmeId: item.id } })),
     ].slice(0, 10);
-  }, [query, settings]);
+  }, [query, settings, projectList, programmeList]);
 
   const openFlyout = (id: string, element?: HTMLElement | null) => {
     if (flyoutTimer.current) clearTimeout(flyoutTimer.current);
@@ -169,18 +183,18 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           {favourites.length > 0 && <SidebarGroup title="Favourites" open={showFavourites} collapsed={collapsed} onToggle={() => setShowFavourites(value => !value)}>
             {favourites.map(item => item.type === "Project"
-              ? <Link key={item.id} to="/portfolio/projects/$projectId" params={{ projectId: item.id }} className="flex h-8 items-center gap-2.5 rounded px-3 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"><Star className="size-3.5 shrink-0 fill-primary text-primary" />{!collapsed && <span className="truncate">{item.label}</span>}</Link>
+              ? <Link key={item.id} to="/portfolio/projects/$projectCode" params={{ projectCode: item.key }} className="flex h-8 items-center gap-2.5 rounded px-3 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"><Star className="size-3.5 shrink-0 fill-primary text-primary" />{!collapsed && <span className="truncate">{item.label}</span>}</Link>
               : item.type === "Programme"
-                ? <Link key={item.id} to="/portfolio/programmes/$programmeId" params={{ programmeId: item.id }} className="flex h-8 items-center gap-2.5 rounded px-3 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"><Star className="size-3.5 shrink-0 fill-primary text-primary" />{!collapsed && <span className="truncate">{item.label}</span>}</Link>
+                ? <Link key={item.id} to="/portfolio/programmes/$programmeId" params={{ programmeId: item.key }} className="flex h-8 items-center gap-2.5 rounded px-3 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"><Star className="size-3.5 shrink-0 fill-primary text-primary" />{!collapsed && <span className="truncate">{item.label}</span>}</Link>
                 : null)}
           </SidebarGroup>}
 
           {recent.length > 0 && <SidebarGroup title="Recent" open={showRecent} collapsed={collapsed} onToggle={() => setShowRecent(value => !value)}>
-            {recent.map(item => <Link key={item.id} to={item.type === "Project" ? "/portfolio/projects/$projectId" : "/portfolio/programmes/$programmeId"}
-              params={item.type === "Project" ? { projectId: item.id } : { programmeId: item.id }}
+            {recent.map(item => <Link key={item.id} to={item.type === "Project" ? "/portfolio/projects/$projectCode" : "/portfolio/programmes/$programmeId"}
+              params={item.type === "Project" ? { projectCode: item.id } : { programmeId: item.id }}
               className="flex h-8 items-center gap-2.5 rounded px-3 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-foreground">
               <span className="grid size-3.5 shrink-0 place-items-center rounded-sm bg-muted text-[8px] font-bold">{item.type[0]}</span>
-              {!collapsed && <span className="truncate">{item.label}</span>}
+              {!collapsed && <span className="truncate">{(item.type === "Project" ? projectList.find(entry => entry.code === item.id)?.name : programmeList.find(entry => entry.id === item.id)?.name) ?? item.label}</span>}
             </Link>)}
           </SidebarGroup>}
         </nav>
@@ -212,28 +226,45 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
           <div className="relative">
-            <Button variant="ghost" size="icon" onClick={() => setInbox(!inbox)} aria-label="Notifications"><Bell />{notifications.some(item => !item.read) && <span className="absolute right-1 top-1 size-2 rounded-full bg-health-bad" />}</Button>
+            <Button variant="ghost" size="icon" onClick={() => setInbox(!inbox)} aria-label="Notifications"><Bell />{unread > 0 && <span className="absolute right-1 top-1 size-2 rounded-full bg-health-bad" />}</Button>
             {inbox && <div className="absolute right-0 top-12 w-[340px] rounded-md border bg-popover p-3 shadow-xl">
-              <div className="flex items-center justify-between"><strong>Notifications</strong><Button variant="ghost" size="sm" onClick={() => setNotifications(items => items.map(item => ({ ...item, read: true })))}><CheckCheck />Mark all read</Button></div>
-              <div className="mt-2 divide-y">{notifications.map(item => <button key={item.id} onClick={() => setNotifications(items => items.map(entry => entry.id === item.id ? { ...entry, read: true } : entry))} className={cn("block w-full py-3 text-left", !item.read && "font-semibold")}>
+              <div className="flex items-center justify-between"><strong>Notifications</strong><Button variant="ghost" size="sm" onClick={() => markRead(notifications.map(item => item.id))}><CheckCheck />Mark all read</Button></div>
+              <div className="mt-2 divide-y">{notifications.slice(0, 6).map(item => <button key={item.id} onClick={() => markRead([item.id])} className={cn("block w-full py-3 text-left", !readNotifications.includes(item.id) && "font-semibold")}>
                 <span className="text-[10px] uppercase text-primary">{item.kind}</span><p className="mt-1 text-sm">{item.text}</p>
-              </button>)}</div>
+              </button>)}{!notifications.length && <p className="py-4 text-sm text-muted-foreground">Nothing needs your attention.</p>}</div>
               <Link to="/home/notifications" onClick={() => setInbox(false)} className="mt-2 block text-xs font-semibold text-primary hover:underline">Open the notification centre →</Link>
             </div>}
           </div>
+          {organisations.length > 1
+            ? <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="hidden max-w-56 gap-2 sm:flex" aria-label={`Organisation: ${organisation.name}. Switch organisation`} disabled={switching}>
+                  {switching ? <LoaderCircle className="animate-spin" /> : <Building2 />}<span className="truncate">{organisation.name}</span><ChevronDown className="size-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">Switch organisation</div>
+                {organisations.map(item => <DropdownMenuItem key={item.organisationId} onSelect={() => switchOrganisation(item.organisationId)}>
+                  <Check className={cn("size-4", item.organisationId !== organisation.organisationId && "invisible")} /><span className="truncate">{item.name}</span>
+                </DropdownMenuItem>)}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            : <span className="hidden max-w-56 items-center gap-2 truncate px-2 text-sm text-muted-foreground sm:flex"><Building2 className="size-4" />{organisation.name}</span>}
           <Button variant="ghost" size="icon" onClick={() => setDark(!dark)} aria-label="Toggle theme">{dark ? <Sun /> : <Moon />}</Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-11 gap-2 px-1 sm:px-2" aria-label={`Account menu for ${user?.name ?? "user"}`}>
-                <span className="hidden min-w-0 text-right sm:block"><span className="block text-xs font-semibold">{user?.name}</span><span className="block text-[10px] text-muted-foreground">{user?.role}</span></span>
+                <span className="hidden min-w-0 text-right sm:block"><span className="block text-xs font-semibold">{user?.name}</span><span className="block text-[10px] text-muted-foreground" title="Your role in the workspace you're viewing">{user?.role}</span></span>
                 <Avatar className="size-9 shrink-0"><AvatarFallback className="bg-primary text-primary-foreground">{(user?.name ?? "").split(" ").map(part => part[0]).join("").slice(0, 2)}</AvatarFallback></Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <div className="px-2 py-1.5 text-xs text-muted-foreground">{user?.email}</div>
+              <div className="px-2 pb-1.5 text-xs text-muted-foreground">Organisation role: <span className="font-medium text-foreground">{user.orgRole}</span></div>
+              {currentPortfolio && <div className="px-2 pb-1.5 text-xs text-muted-foreground">In this workspace: <span className="font-medium text-foreground">{user.role}</span></div>}
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => navigate({ to: "/settings/$section", params: { section: "account" } })}><UserRound />Account settings</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => navigate({ to: "/signup" })}><LogOut />Log out</DropdownMenuItem>
+              <DropdownMenuItem onSelect={logOut}><LogOut />Log out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           </div>
@@ -253,7 +284,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {!query && <>
             <p className="px-2 pb-2 pt-4 text-[10px] font-semibold uppercase text-muted-foreground">Quick actions</p>
             <div className="grid gap-1 sm:grid-cols-3">
-              <Button variant="ghost" onClick={() => { navigate({ to: "/portfolio/projects/$projectId", params: { projectId: "ebbot-chatbot" } }); setPalette(false) }}>Go to Ebbot</Button>
+              <Button variant="ghost" onClick={() => { navigate({ to: "/home/my-work" }); setPalette(false) }}>My work</Button>
               <Button variant="ghost" onClick={() => { setPalette(false); openIssueTask() }}>Issue task</Button>
               <Button variant="ghost" onClick={() => { navigate({ to: "/settings" }); setPalette(false) }}>Open settings</Button>
             </div>

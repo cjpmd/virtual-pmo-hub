@@ -8,10 +8,12 @@
  * Two comparisons are reported:
  *   A. Logic parity: pmo.ts fed exactly what the database sees. Task counts are computed from
  *      tasks plus issued tasks (now one work_items table), milestone status is derived by rule,
- *      and programme benefit health uses the benefit's programme (review C). Any difference
- *      here is a porting bug.
+ *      programme benefit health uses the benefit's programme (review C), and each period's
+ *      measurement is chosen the database's way (non-queried; validated first, then the latest
+ *      submission). Any difference here is a porting bug.
  *   B. Behaviour change: pmo.ts on the untouched prototype data (stored taskCount and
- *      overdueTaskCount, stored milestone status, programme benefits via projects). These
+ *      overdueTaskCount, stored milestone status, programme benefits via projects, first
+ *      measurement record in array order). These
  *      differences are the intended consequence of no longer storing derived values.
  *
  * After Stage 4 this is the only place pmo.ts health logic runs.
@@ -20,6 +22,7 @@ import { readFileSync } from "node:fs";
 import type {
   Benefit,
   Health,
+  MeasurementRecord,
   Milestone,
   MilestoneStatus,
   Project,
@@ -34,7 +37,7 @@ import {
   roadmaps,
 } from "../src/data/mock-data";
 import { dependencies } from "../src/data/dependencies-data";
-import { getDependencyHealth } from "../src/services/dependencies";
+import { getDependencyHealth } from "../src/services/pmo";
 import {
   getBenefitDimensionHealth,
   getBenefitHealth,
@@ -120,6 +123,18 @@ const reshaped = (p: Project): Project => {
     milestones: p.milestones.map((m) => ({ ...m, status: milestoneStatus(m) })),
   };
 };
+
+// The database picks, per period, a validated measurement first and then the latest submission.
+// pmo.ts takes the first non-queried record in array order, so A sorts the records that way.
+const byDbPreference = (a: MeasurementRecord, b: MeasurementRecord) =>
+  Number(b.status === "Validated") - Number(a.status === "Validated") ||
+  (b.submittedDate ? parse(b.submittedDate) : -Infinity) -
+    (a.submittedDate ? parse(a.submittedDate) : -Infinity);
+const dbOrderedBenefits = (benefits as Benefit[]).map((b) => ({
+  ...b,
+  measures: b.measures.map((m) => ({ ...m, records: [...m.records].sort(byDbPreference) })),
+}));
+const prototypeBenefits = benefits.splice(0, benefits.length, ...dbOrderedBenefits);
 
 const rows: string[] = [];
 let failures = 0;
@@ -225,6 +240,7 @@ for (const dep of dependencies)
   projects.splice(0, projects.length, ...saved);
 }
 count("A failures", failures - before);
+benefits.splice(0, benefits.length, ...prototypeBenefits);
 
 // ---- B. Behaviour change vs the prototype ---------------------------------
 rows.push(
@@ -244,6 +260,25 @@ for (const programme of programmes) {
   const was = toDb[getProgrammeHealth(programme)],
     now = db.programmes[programme.name]?.overall;
   if (was !== now) changes.push(`  ~ programme ${programme.name}: ${was} → ${now}`);
+}
+for (const b of benefits as Benefit[]) {
+  const got = db.benefits[b.title];
+  const was = {
+    health: toDb[getBenefitHealth(b)],
+    realised: getBenefitRealised(b),
+    percent: getBenefitPercent(b),
+    variance: getBenefitVariance(b).variancePercent,
+  };
+  const now = got && {
+    health: got.health,
+    realised: Number(got.realised),
+    percent: got.percent,
+    variance: got.variance,
+  };
+  if (now && JSON.stringify(was) !== JSON.stringify(now))
+    changes.push(
+      `  ~ benefit ${b.title}: ${JSON.stringify(was)} → ${JSON.stringify(now)} (latest submission now preferred)`,
+    );
 }
 let milestoneChanges = 0;
 for (const p of projects)

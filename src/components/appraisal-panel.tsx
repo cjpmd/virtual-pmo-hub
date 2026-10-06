@@ -4,7 +4,7 @@ import { Calculator, Info, Percent } from "lucide-react";
 import type { DraftBenefitProfile, OptimismBiasSetting } from "@/data/types";
 import { getOptimismBias } from "@/data/settings";
 import { appraise } from "@/services/benefits-value";
-import { getStrategicObjectives } from "@/services/pmo";
+import { useBenefits } from "@/hooks/use-benefits";
 import { cn } from "@/lib/utils";
 
 const money = formatCompactCurrency;
@@ -20,7 +20,7 @@ export function AppraisalPanel({ drafts, wholeLifeCost, years = 5, settings = ge
 }) {
   const [showAdjusted, setShowAdjusted] = useState(true);
   const result = appraise({ drafts, wholeLifeCost, years, settings });
-  const objectives = getStrategicObjectives();
+  const objectives = useBenefits().data?.objectives ?? [];
 
   return <section className="rounded-lg border border-border/70 bg-card p-5 shadow-sm">
     <div className="flex flex-wrap items-start justify-between gap-3">

@@ -1,4 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "@tanstack/react-router";
+import { toast } from "sonner";
+import { useOrgId } from "@/components/auth/organisation-provider";
+import { QueryState } from "@/components/query-state";
+import { useProjectPermissions } from "@/hooks/use-hierarchy";
+import { invalidateRollups } from "@/hooks/use-project-records";
+import { useProjectTasks } from "@/hooks/use-work-items";
+import { today } from "@/lib/today";
+import { qk } from "@/services/query-keys";
+import { saveTaskChanges, statusFor, tempId, type ProjectTasks, type TaskView } from "@/services/work-items";
 import { ArrowLeftToLine, ArrowRightToLine, Check, CheckCircle2, ChevronDown, ChevronRight, CornerDownRight, Circle, ClipboardPaste, Copy, Diamond, ExternalLink, Link2, ListPlus, LoaderCircle, Lock, MoreHorizontal, PanelRightOpen, Scissors, Trash2, Unlink, X } from "lucide-react";
 import { BoardWorkspace } from "@/components/board-workspace";
 import { taskColumns, tasksToRows } from "@/lib/board-data";
@@ -56,19 +67,20 @@ function TimelineView({rows,a,all}:{rows:Row[];a:Actions;all:Task[]}){
  <div className="flex overflow-hidden"><div className="w-[340px] shrink-0 border-r"><div className="h-8 border-b"/>{tasks.map((t,i)=><RowMenu key={t.id} task={t} tasks={all} a={a}><div onMouseEnter={()=>setHover(t.id)} onMouseLeave={()=>setHover(null)} style={{height:ROW}} className="flex items-center gap-2 border-b px-3 text-sm"><span className="w-5 text-right text-xs text-muted-foreground">{i+1}</span><Tick task={t} a={a}/><TitleCell row={rows[i]!} a={a} className="flex-1"/><Avatars names={t.assignees}/></div></RowMenu>)}</div>
  <div className="min-w-0 flex-1 overflow-x-auto"><div className="relative" style={{width}}><div className="flex h-8 border-b text-[10px] text-muted-foreground">{ticks.map((tk,i)=><span key={tk} className="absolute top-2 whitespace-nowrap pl-1" style={{left:x(tk)}}>{zoom==="week"?fromDate(new Date(tk)).slice(0,5):new Date(tk).toLocaleDateString("en-GB",{month:"short",year:"2-digit"})}{i<0&&""}</span>)}</div>
  <div className="relative" style={{height:tasks.length*ROW}}>{ticks.map((tk,i)=><div key={tk} className={cn("absolute inset-y-0",i%2?"bg-muted/40":"")} style={{left:x(tk),width:(ticks[i+1]?x(ticks[i+1]!):width)-x(tk)}}/>)}{tasks.map((_,i)=><div key={i} className="absolute inset-x-0 border-b" style={{top:(i+1)*ROW-1}}/>)}
-  <div className="absolute inset-y-0 w-px bg-destructive/60" style={{left:x(toDate("21/09/2026").getTime())}}/>
+  <div className="absolute inset-y-0 w-px bg-destructive/60" style={{left:x(today().getTime())}}/>
   <svg className="pointer-events-none absolute inset-0" width={width} height={tasks.length*ROW}>{lines.map(l=><path key={l.key} d={l.path} fill="none" strokeLinejoin="round" className={cn(l.warn?"stroke-health-warn":"stroke-muted-foreground",l.active&&"stroke-primary")} strokeWidth={l.active?2:1.25}/>)}</svg>
   {tasks.map((t,i)=>{const b=bar(t);return t.isMilestone?<button key={t.id} title={t.title} onClick={()=>a.open(t.id)} onMouseEnter={()=>setHover(t.id)} onMouseLeave={()=>setHover(null)} className="absolute size-4 rotate-45 bg-primary" style={{left:b.l,top:i*ROW+ROW/2-8}}/>:<button key={t.id} title={`${t.title} · ${t.start} – ${t.finish}`} onClick={()=>a.open(t.id)} onMouseEnter={()=>setHover(t.id)} onMouseLeave={()=>setHover(null)} className={cn("absolute overflow-hidden rounded-sm",rows[i]!.kids?"h-2.5":"h-5",t.percentComplete===100?"bg-primary/60":"bg-primary/25")} style={{left:b.l,width:Math.max(b.r-b.l,8),top:i*ROW+ROW/2-(rows[i]!.kids?5:10)}}><span className="block h-full bg-primary" style={{width:`${t.percentComplete}%`}}/></button>})}
  </div></div></div></div></div>}
 
-function TaskPanel({task,tasks,people,buckets,premium,a,update,close}:{task:Task;tasks:Task[];people:string[];buckets:string[];premium:boolean;a:Actions;update:(patch:Partial<Task>)=>void;close:()=>void}){
- const [more,setMore]=useState(false),[newItem,setNewItem]=useState(""),[label,setLabel]=useState(""),[comment,setComment]=useState(""),[comments,setComments]=useState<string[]>([]),[files,setFiles]=useState<string[]>([]),[depPick,setDepPick]=useState("");
+function TaskPanel({task,tasks,people,buckets,premium,a,update,close}:{task:TaskView;tasks:Task[];people:string[];buckets:string[];premium:boolean;a:Actions;update:(patch:Partial<Task>)=>void;close:()=>void}){
+ const [more,setMore]=useState(false),[newItem,setNewItem]=useState(""),[label,setLabel]=useState(""),[depPick,setDepPick]=useState("");
+ const files=task.attachments;
  const done=task.percentComplete===100,checklist=checklistOf(task),total=task.estimatedEffortHours??0,completed=task.effortCompletedHours??Math.round(total*task.percentComplete/100*10)/10;
  const duration=Math.round((toDate(task.finish).getTime()-toDate(task.start).getTime())/DAY)+1;
  const setChecklist=(items:typeof checklist)=>update({checklistItems:items,checklistCount:items.length});
  const candidates=tasks.filter(t=>t.id!==task.id&&!task.dependencies.includes(t.id)&&!wouldLoop(tasks,task.id,t.id));
  const field="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm disabled:opacity-60";
- const notes=task.notes??`Owner - ${task.assignees[0]??"Unassigned"}\nDeliver "${task.title}" as part of the ${task.bucket} stage.\nAgreed scope confirmed at the weekly project call.`;
+ const notes=task.notes??"";
  return <><button aria-label="Close task" className="fixed inset-0 z-40 bg-overlay" onClick={close}/><aside role="dialog" aria-label={`${task.title} details`} className="fixed inset-y-0 right-0 z-50 w-full max-w-lg space-y-5 overflow-y-auto border-l bg-background p-6 shadow-xl">
   <div className="flex items-center justify-end gap-1"><Button size="icon" variant="ghost" aria-label="Copy link to task" onClick={()=>a.link(task.id)}><Link2/></Button><DotsMenu task={task} tasks={tasks} a={a}/><Button size="icon" variant="ghost" aria-label="Close" onClick={close}><X/></Button></div>
   <div className="flex items-start gap-2"><div className="pt-2"><Tick task={task} a={a}/></div><input aria-label="Task title" value={task.title} onChange={e=>update({title:e.target.value})} className={cn("flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-lg font-semibold",done&&"text-muted-foreground line-through")}/></div>
@@ -82,39 +94,90 @@ function TaskPanel({task,tasks,people,buckets,premium,a,update,close}:{task:Task
    <label>% Complete<input type="number" min={0} max={100} value={task.percentComplete} onChange={e=>update({percentComplete:Math.max(0,Math.min(100,Number(e.target.value)))})} className={field}/></label>
    <label>Bucket<select value={task.bucket} onChange={e=>update({bucket:e.target.value})} className={field}>{buckets.map(b=><option key={b}>{b}</option>)}</select></label>
    <label>Priority<select value={task.priority} onChange={e=>update({priority:e.target.value as Priority})} className={field}>{priorities.map(p=><option key={p}>{p}</option>)}</select></label>
-   <label>Sprint<select value={task.sprint??"Backlog"} onChange={e=>update({sprint:e.target.value})} className={field}>{["Backlog","Sprint 1","Sprint 2","Sprint 3"].map(s=><option key={s}>{s}</option>)}</select></label>
   </div>
   <div><div className="flex items-center gap-3"><p className="text-sm font-semibold">Checklist {checklist.filter(c=>c.done).length} / {checklist.length}</p><div className="h-1 flex-1 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{width:`${checklist.length?checklist.filter(c=>c.done).length/checklist.length*100:0}%`}}/></div></div>
    <div className="mt-2 space-y-1">{checklist.map(c=><div key={c.id} className="group flex items-center gap-2 text-sm"><button aria-label={c.done?"Untick":"Tick"} onClick={()=>setChecklist(checklist.map(x=>x.id===c.id?{...x,done:!x.done}:x))}>{c.done?<CheckCircle2 className="size-4 fill-primary text-primary-foreground"/>:<Circle className="size-4 text-muted-foreground"/>}</button><input value={c.label} onChange={e=>setChecklist(checklist.map(x=>x.id===c.id?{...x,label:e.target.value}:x))} className={cn("flex-1 bg-transparent",c.done&&"line-through text-muted-foreground")}/><button aria-label="Remove item" className="opacity-0 group-hover:opacity-100" onClick={()=>setChecklist(checklist.filter(x=>x.id!==c.id))}><X className="size-3.5"/></button></div>)}
-   <form onSubmit={e=>{e.preventDefault();if(newItem.trim())setChecklist([...checklist,{id:`${task.id}-${Date.now()}`,label:newItem.trim(),done:false}]);setNewItem("")}} className="flex items-center gap-2"><Circle className="size-4 text-muted-foreground/50"/><input value={newItem} onChange={e=>setNewItem(e.target.value)} placeholder="Add an item" className="flex-1 bg-transparent text-sm"/></form></div></div>
+   <form onSubmit={e=>{e.preventDefault();if(newItem.trim())setChecklist([...checklist,{id:tempId(),label:newItem.trim(),done:false}]);setNewItem("")}} className="flex items-center gap-2"><Circle className="size-4 text-muted-foreground/50"/><input value={newItem} onChange={e=>setNewItem(e.target.value)} placeholder="Add an item" className="flex-1 bg-transparent text-sm"/></form></div></div>
   <div><p className="text-sm font-semibold">Effort</p><div className="mt-1 grid grid-cols-[1fr_auto_1fr_auto_1fr] items-end gap-2 text-xs"><label>Completed<input type="number" min={0} value={completed} onChange={e=>update({effortCompletedHours:Number(e.target.value)})} className={field}/></label><span className="pb-2">+</span><label>Remaining<input disabled value={`${Math.max(0,Math.round((total-completed)*10)/10)} hours`} className={field}/></label><span className="pb-2">=</span><label>Total<input type="number" min={0} value={total} onChange={e=>update({estimatedEffortHours:Number(e.target.value)})} className={field}/></label></div></div>
   <div><p className="text-sm font-semibold">Depends on</p>{task.dependencies.length?<div className="mt-1 space-y-1">{task.dependencies.map(d=>{const p=tasks.find(t=>t.id===d);return <div key={d} className="flex items-center justify-between rounded-md border px-2 py-1.5 text-sm"><span>{p?.title??d}<span className="ml-2 text-xs text-muted-foreground">Finish-to-start · {p?.finish}</span></span><Button size="icon" variant="ghost" className="size-7" aria-label="Remove dependency" onClick={()=>a.removeDep(task.id,d)}><X/></Button></div>})}</div>:<p className="mt-1 text-xs text-muted-foreground">This task doesn't depend on other tasks</p>}
    <div className="mt-2 flex gap-2"><select aria-label="Choose dependency" value={depPick} onChange={e=>setDepPick(e.target.value)} className="h-9 flex-1 rounded-md border bg-background px-2 text-sm"><option value="">Choose a task…</option>{candidates.map(t=><option key={t.id} value={t.id}>{t.title}</option>)}</select><Button size="sm" variant="outline" disabled={!depPick} onClick={()=>{a.addDep(task.id,depPick);setDepPick("")}}>Add dependency</Button></div></div>
-  <div><p className="text-sm font-semibold">Attachments</p>{files.map(f=><p key={f} className="mt-1 rounded-md border px-2 py-1.5 text-sm">{f}</p>)}<Button size="sm" variant="outline" className="mt-2" onClick={()=>setFiles([...files,`Attachment ${files.length+1}.docx`])}>Add attachment</Button></div>
-  <div><p className="text-sm font-semibold">Conversation</p><div className="mt-2 space-y-2">{comments.map((c,i)=><div key={i} className="rounded-md bg-muted/60 p-2 text-sm"><p className="text-xs font-semibold">Chris McDonald · just now</p>{c}</div>)}</div><form onSubmit={e=>{e.preventDefault();if(comment.trim())setComments([...comments,comment.trim()]);setComment("")}} className="mt-2 flex gap-2"><input value={comment} onChange={e=>setComment(e.target.value)} placeholder="Type your message here" className="h-9 flex-1 rounded-md border bg-background px-2 text-sm"/><Button size="sm" type="submit">Send</Button></form></div>
+  <div><p className="text-sm font-semibold">Attachments</p>{files.map(f=><p key={f} className="mt-1 rounded-md border px-2 py-1.5 text-sm">{f}</p>)}{!files.length&&<p className="mt-1 text-xs text-muted-foreground">No attachments.</p>}</div>
  </aside></>}
 
-export function TaskWorkspace({initialTasks,taskSource}:{initialTasks:Task[];taskSource:TaskSource}){
- const [tasks,setTasks]=useState(initialTasks),[view,setView]=useState<"grid"|"board"|"timeline">("grid"),[openId,setOpenId]=useState<string|null>(null),[selected,setSelected]=useState<string|null>(null),[clip,setClip]=useState<{task:Task;cut:boolean}|null>(null),[notice,setNotice]=useState<{text:string;undo?:Task[]|undefined}|null>(null),[confirm,setConfirm]=useState<string|null>(null),[syncing,setSyncing]=useState(false),[collapsed,setCollapsed]=useState<Set<string>>(new Set());
+/** A project's tasks, loaded from and saved to Supabase (services/work-items.ts). */
+export function TaskWorkspace({projectId,taskSource}:{projectId:string;taskSource:TaskSource}){
+ const query=useProjectTasks(projectId);
+ return <QueryState query={query}>{data=><TaskEditor data={data} projectId={projectId} taskSource={taskSource}/>}</QueryState>;
+}
+
+function TaskEditor({data,projectId,taskSource}:{data:ProjectTasks;projectId:string;taskSource:TaskSource}){
+ const [tasks,setTasksState]=useState<TaskView[]>(data.tasks),[view,setView]=useState<"grid"|"board"|"timeline">("grid"),[openId,setOpenId]=useState<string|null>(null),[selected,setSelected]=useState<string|null>(null),[clip,setClip]=useState<{task:TaskView;cut:boolean}|null>(null),[notice,setNotice]=useState<{text:string;undo?:TaskView[]|undefined}|null>(null),[confirm,setConfirm]=useState<string|null>(null),[syncing,setSyncing]=useState(false),[collapsed,setCollapsed]=useState<Set<string>>(new Set());
  const rows=useMemo(()=>buildRows(tasks,collapsed),[tasks,collapsed]);
- const timer=useRef<ReturnType<typeof setTimeout>|null>(null),planner=taskSource!=="Native";
- useEffect(()=>()=>{if(timer.current)clearTimeout(timer.current)},[]);
- useEffect(()=>{const id=new URLSearchParams(window.location.search).get("task");if(id&&initialTasks.some(t=>t.id===id))setOpenId(id)},[initialTasks]);
- const sync=()=>{if(!planner)return;setSyncing(true);if(timer.current)clearTimeout(timer.current);timer.current=setTimeout(()=>setSyncing(false),1500)};
- const commit=(next:Task[],text?:string,undo?:Task[])=>{setTasks(next);sync();if(text)setNotice({text,undo})};
- const people=useMemo(()=>Array.from(new Set([...initialTasks.flatMap(t=>t.assignees),"Chris McDonald"])).sort(),[initialTasks]);
- const buckets=useMemo(()=>Array.from(new Set(tasks.map(t=>t.bucket))),[tasks]);
+ const planner=taskSource!=="Native";
+ const {canEdit}=useProjectPermissions(projectId);
+ const orgId=useOrgId(),queryClient=useQueryClient(),router=useRouter();
+ // Saving: the screen edits `tasks`; `saved` is what the database holds. Edits are written after
+ // a short pause (structural changes straight away), one save at a time, and never dropped:
+ // pending edits flush on route change, tab hide and unmount.
+ const latest=useRef(tasks),saved=useRef<TaskView[]>(data.tasks),timer=useRef<ReturnType<typeof setTimeout>|null>(null),dirty=useRef(false),chain=useRef<Promise<void>>(Promise.resolve()),inFlight=useRef(0);
+ const flush=useCallback(()=>{
+  if(timer.current){clearTimeout(timer.current);timer.current=null}
+  if(!dirty.current)return chain.current;
+  dirty.current=false;
+  chain.current=chain.current.then(async()=>{
+   const next=latest.current,prev=saved.current;
+   inFlight.current++;setSyncing(true);
+   try{
+    const r=await saveTaskChanges({projectId,buckets:data.buckets,people:data.people,prev,next});
+    const id=(value:string)=>r.ids.get(value)??value;
+    const fix=(t:TaskView):TaskView=>({...t,id:id(t.id),...(t.parentId?{parentId:id(t.parentId)}:{}),dependencies:t.dependencies.map(id),updatedAt:r.updatedAt.has(t.id)?r.updatedAt.get(t.id)??null:t.updatedAt,status:statusFor(t,t.status),checklistItems:t.checklistItems.map(c=>({...c,id:r.checklistIds.get(c.id)??c.id}))});
+    saved.current=next.map(fix);
+    latest.current=latest.current.map(fix);setTasksState(latest.current);
+    setOpenId(v=>v&&id(v));setSelected(v=>v&&id(v));setNotice(n=>n?.undo?{...n,undo:n.undo.map(fix)}:n);
+   }catch(error){
+    toast.error(error instanceof Error?error.message:"The tasks could not be saved.");
+    // Show what the database holds now; anything typed since this save started is kept as pending.
+    const key=qk.projects.tasks(orgId,projectId);
+    await queryClient.refetchQueries({queryKey:key});
+    const fresh=queryClient.getQueryData<ProjectTasks>(key)?.tasks;
+    if(fresh&&!dirty.current){saved.current=fresh;latest.current=fresh;setTasksState(fresh)}
+   }finally{
+    inFlight.current--;if(!inFlight.current)setSyncing(false);
+    void invalidateRollups(queryClient,orgId);
+   }
+  });
+  return chain.current;
+ },[projectId,data.buckets,data.people,queryClient,orgId]);
+ const schedule=(delay:number)=>{dirty.current=true;if(timer.current)clearTimeout(timer.current);timer.current=setTimeout(()=>void flush(),delay)};
+ const setTasks=(value:TaskView[]|((current:TaskView[])=>TaskView[]),delay=700)=>{
+  if(!canEdit){toast.error("You can view this project's tasks but not change them.");return}
+  const next=typeof value==="function"?value(latest.current):value;latest.current=next;setTasksState(next);schedule(delay);
+ };
+ // Take the server's copy whenever nothing is waiting to be written (after a save, a reload,
+ // or a failed save, which reset `saved` so the screen shows the database again).
+ useEffect(()=>{if(dirty.current||inFlight.current||timer.current)return;saved.current=data.tasks;latest.current=data.tasks;setTasksState(data.tasks)},[data.tasks]);
+ useEffect(()=>{
+  const off=router.subscribe("onBeforeNavigate",()=>void flush());
+  const hide=()=>{if(document.visibilityState==="hidden")void flush()};
+  const leave=(e:BeforeUnloadEvent)=>{if(dirty.current||inFlight.current){void flush();e.preventDefault()}};
+  document.addEventListener("visibilitychange",hide);window.addEventListener("beforeunload",leave);
+  return ()=>{off();document.removeEventListener("visibilitychange",hide);window.removeEventListener("beforeunload",leave);void flush()};
+ },[router,flush]);
+ useEffect(()=>{const id=new URLSearchParams(window.location.search).get("task");if(id&&data.tasks.some(t=>t.id===id))setOpenId(id)},[data.tasks]);
+ const commit=(next:TaskView[],text?:string,undo?:TaskView[])=>{setTasks(next,0);if(text)setNotice({text,undo})};
+ const people=useMemo(()=>data.people.map(p=>p.name).sort(),[data.people]);
+ const buckets=useMemo(()=>Array.from(new Set([...data.buckets.map(b=>b.name),...tasks.map(t=>t.bucket)])),[data.buckets,tasks]);
  const find=(id:string)=>tasks.find(t=>t.id===id);
- const blank=(ref:Task,parentId?:string):Task=>({id:`t-${Date.now()}`,title:parentId?"New subtask":"New task",bucket:ref.bucket,assignees:[],start:ref.start,finish:ref.start,percentComplete:0,priority:"Moderate" as Priority,isMilestone:false,checklistCount:0,checklistItems:[],dependencies:[],...(parentId?{parentId}:{})});
+ const blank=(ref:TaskView,parentId?:string):TaskView=>({id:tempId(),ref:"",status:"not_started",updatedAt:null,attachments:[],title:parentId?"New subtask":"New task",bucket:ref.bucket,assignees:[],start:ref.start,finish:ref.start,percentComplete:0,priority:"Moderate" as Priority,isMilestone:false,checklistCount:0,checklistItems:[],dependencies:[],labels:[],...(parentId?{parentId}:{})});
  const prevTop=(id:string)=>{const i=rows.findIndex(r=>r.task.id===id);for(let j=i-1;j>=0;j--)if(rows[j]!.depth===0)return rows[j]!.task.id;return undefined};
- const a:Actions={canPaste:!!clip,collapsed,toggleCollapse:id=>setCollapsed(c=>{const n=new Set(c);n.has(id)?n.delete(id):n.add(id);return n}),
+ const a:Actions={canPaste:!!clip,collapsed,toggleCollapse:id=>setCollapsed(c=>{const n=new Set(c);if(n.has(id))n.delete(id);else n.add(id);return n}),
   canDemote:id=>!kidsOf(tasks,id).length&&!!prevTop(id),
   addSub:id=>{const ref=find(id);if(!ref||ref.parentId)return;const kids=kidsOf(tasks,id);const last=kids.length?tasks.findIndex(t=>t.id===kids[kids.length-1]!.id):tasks.findIndex(t=>t.id===id);const item=blank(ref,id);const next=[...tasks];next.splice(last+1,0,item);setCollapsed(c=>{const n=new Set(c);n.delete(id);return n});commit(next,"Subtask added.",tasks);setOpenId(item.id)},
   demote:id=>{const p=prevTop(id);if(!p||kidsOf(tasks,id).length)return;setCollapsed(c=>{const n=new Set(c);n.delete(p);return n});commit(tasks.map(t=>t.id===id?{...t,parentId:p}:t),`Now a subtask of "${find(p)?.title}".`,tasks)},
   promote:id=>{const t=find(id);if(!t?.parentId)return;const pid=t.parentId;const base=tasks.filter(x=>x.id!==id);let last=base.findIndex(x=>x.id===pid);base.forEach((x,i)=>{if(x.parentId===pid)last=Math.max(last,i)});const {parentId:_p,...rest}=t;const next=[...base];next.splice(last+1,0,rest);commit(next,`"${t.title}" is now a main task.`,tasks)},open:id=>setOpenId(id),
   cut:id=>{const t=find(id);if(t){setClip({task:t,cut:true});setNotice({text:`Cut "${t.title}". Choose Paste on another task to move it.`})}},
   copy:id=>{const t=find(id);if(t){setClip({task:t,cut:false});setNotice({text:`Copied "${t.title}".`})}},
-  paste:id=>{if(!clip)return;const base=clip.cut?tasks.filter(t=>t.id!==clip.task.id):tasks;const i=base.findIndex(t=>t.id===id);const ref=find(id);const par=ref?.parentId&&clip.task.id!==ref.parentId&&!kidsOf(tasks,clip.task.id).length?ref.parentId:undefined;const {parentId:_x,...clipBase}=clip.task;const item:Task={...(clip.cut?clipBase:{...clipBase,id:`t-${Date.now()}`,title:`${clip.task.title} (copy)`,dependencies:[...clip.task.dependencies]}),...(par?{parentId:par}:{})};const next=[...base];next.splice(i+1,0,item);commit(next,clip.cut?`Moved "${item.title}".`:`Pasted "${item.title}".`,tasks);if(clip.cut)setClip(null)},
+  paste:id=>{if(!clip)return;const base=clip.cut?tasks.filter(t=>t.id!==clip.task.id):tasks;const i=base.findIndex(t=>t.id===id);const ref=find(id);const par=ref?.parentId&&clip.task.id!==ref.parentId&&!kidsOf(tasks,clip.task.id).length?ref.parentId:undefined;const {parentId:_x,...clipBase}=clip.task;const item:TaskView={...(clip.cut?clipBase:{...clipBase,id:tempId(),ref:"",updatedAt:null,attachments:[],checklistItems:clipBase.checklistItems.map(c=>({...c,id:tempId()})),title:`${clip.task.title} (copy)`,dependencies:[...clip.task.dependencies]}),...(par?{parentId:par}:{})};const next=[...base];next.splice(i+1,0,item);commit(next,clip.cut?`Moved "${item.title}".`:`Pasted "${item.title}".`,tasks);if(clip.cut)setClip(null)},
   insertAbove:id=>{const ref=find(id);if(!ref)return;const i=tasks.findIndex(t=>t.id===id);const item=blank(ref,ref.parentId);const next=[...tasks];next.splice(i,0,item);commit(next,"Task inserted.");setOpenId(item.id)},
   remove:id=>setConfirm(id),
   link:id=>{const url=`${window.location.origin}${window.location.pathname}?task=${id}`;navigator.clipboard?.writeText(url).catch(()=>undefined);setNotice({text:"Link copied."})},
@@ -125,12 +188,12 @@ export function TaskWorkspace({initialTasks,taskSource}:{initialTasks:Task[];tas
  const open=openId?find(openId):undefined,confirmTask=confirm?find(confirm):undefined;
  return <div className="space-y-3">
   <div className="flex flex-wrap items-center justify-between gap-2"><div className="inline-flex rounded-md border bg-card p-0.5">{(["grid","board","timeline"] as const).map(v=><Button key={v} size="sm" variant={view===v?"secondary":"ghost"} onClick={()=>setView(v)} className="capitalize">{v}</Button>)}</div>
-   <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground"><span className="inline-flex items-center gap-2" role="status">{syncing?<LoaderCircle className="size-3.5 animate-spin text-primary"/>:<Check className="size-3.5 text-health-good"/>}{syncing?"Syncing…":planner?"Synced with Planner":"Native tasks"}</span>{taskSource==="Planner (Premium)"&&<span className="inline-flex items-center gap-1" title="Planner Premium calculates summary task dates and remaining effort, so they can only be changed in Planner."><Lock className="size-3.5"/>Some fields calculated by Planner</span>}{planner&&<a href="https://planner.cloud.microsoft" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline"><ExternalLink className="size-3.5"/>Open in Planner</a>}</div></div>
-  {notice&&<div role="status" className="flex items-center justify-between rounded-md border bg-accent/40 px-3 py-2 text-sm"><span>{notice.text}</span><div className="flex gap-1">{notice.undo&&<Button size="sm" variant="ghost" onClick={()=>{setTasks(notice.undo!);setNotice(null);sync()}}>Undo</Button>}<Button size="icon" variant="ghost" className="size-7" aria-label="Dismiss" onClick={()=>setNotice(null)}><X/></Button></div></div>}
+   <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground"><span className="inline-flex items-center gap-2" role="status">{syncing?<LoaderCircle className="size-3.5 animate-spin text-primary"/>:<Check className="size-3.5 text-health-good"/>}{syncing?"Saving…":planner?"Saved · Planner sync not connected yet":"All changes saved"}</span>{taskSource==="Planner (Premium)"&&<span className="inline-flex items-center gap-1" title="Planner Premium calculates summary task dates and remaining effort, so they can only be changed in Planner."><Lock className="size-3.5"/>Some fields calculated by Planner</span>}{planner&&<a href="https://planner.cloud.microsoft" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline"><ExternalLink className="size-3.5"/>Open in Planner</a>}</div></div>
+  {notice&&<div role="status" className="flex items-center justify-between rounded-md border bg-accent/40 px-3 py-2 text-sm"><span>{notice.text}</span><div className="flex gap-1">{notice.undo&&<Button size="sm" variant="ghost" onClick={()=>{setTasks(notice.undo!,0);setNotice(null)}}>Undo</Button>}<Button size="icon" variant="ghost" className="size-7" aria-label="Dismiss" onClick={()=>setNotice(null)}><X/></Button></div></div>}
   <p className="text-xs text-muted-foreground">Right-click a task, or use its ⋯ button, for subtasks, cut, copy, paste, dependencies and more.</p>
   {view==="grid"&&<GridView rows={rows} tasks={tasks} a={a} selected={selected} setSelected={setSelected}/>}
   {view==="timeline"&&<TimelineView rows={rows} all={tasks} a={a}/>}
-  {view==="board"&&<BoardWorkspace key={tasks.map(t=>`${t.id}${t.bucket}${t.percentComplete}`).join()} title="Tasks" manage={false} rows={tasksToRows(tasks)} columns={taskColumns} groupOptions={["group","deliveryStatus","priority"]} initialView="kanban" planner={false} onEdit={sync} onRowsChange={rows=>setTasks(ts=>ts.map(t=>{const r=rows.find(x=>x.id===t.id);return r?{...t,bucket:String(r.group??r.status??t.bucket)}:t}))}/>}
-  {open&&<TaskPanel key={open.id} task={open} tasks={tasks} people={people} buckets={buckets} premium={taskSource==="Planner (Premium)"} a={a} update={patch=>commit(tasks.map(t=>t.id===open.id?{...t,...patch}:t))} close={()=>setOpenId(null)}/>}
+  {view==="board"&&<BoardWorkspace key={tasks.map(t=>`${t.id}${t.bucket}${t.percentComplete}`).join()} title="Tasks" manage={false} rows={tasksToRows(tasks)} columns={taskColumns} groupOptions={["group","deliveryStatus","priority"]} initialView="kanban" planner={false} onRowsChange={rows=>setTasks(ts=>ts.map(t=>{const r=rows.find(x=>x.id===t.id);return r?{...t,bucket:String(r.group??r.status??t.bucket)}:t}),0)}/>}
+  {open&&<TaskPanel key={open.id} task={open} tasks={tasks} people={people} buckets={buckets} premium={taskSource==="Planner (Premium)"} a={a} update={patch=>setTasks(ts=>ts.map(t=>t.id===open.id?{...t,...patch}:t))} close={()=>setOpenId(null)}/>}
   {confirmTask&&<><div className="fixed inset-0 z-50 bg-overlay" onClick={()=>setConfirm(null)}/><div role="alertdialog" aria-label="Delete task" className="fixed left-1/2 top-1/3 z-50 w-full max-w-sm -translate-x-1/2 rounded-lg border bg-background p-5 shadow-xl"><p className="font-semibold">Delete task?</p><p className="mt-1 text-sm text-muted-foreground">"{confirmTask.title}" will be removed, along with {kidsOf(tasks,confirmTask.id).length?"its subtasks and ":""}any dependencies on it.</p><div className="mt-4 flex justify-end gap-2"><Button variant="outline" size="sm" onClick={()=>setConfirm(null)}>Cancel</Button><Button variant="destructive" size="sm" onClick={()=>{const prev=tasks;const gone=new Set([confirmTask.id,...kidsOf(tasks,confirmTask.id).map(k=>k.id)]);commit(tasks.filter(t=>!gone.has(t.id)).map(t=>({...t,dependencies:t.dependencies.filter(d=>!gone.has(d))})),`Deleted "${confirmTask.title}".`,prev);if(openId===confirmTask.id)setOpenId(null);setConfirm(null)}}>Delete</Button></div></div></>}
  </div>}

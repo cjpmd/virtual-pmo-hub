@@ -3,23 +3,38 @@ import { useState } from "react";
 import { ArrowLeft, ArrowRight, CheckCircle2, PackageCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { BenefitMeasure, Project } from "@/data/types";
+import type { BenefitMeasure } from "@/data/types";
 import { getHandoverCandidates } from "@/services/benefits-value";
+import type { BenefitsData } from "@/services/benefits";
+import { QueryState } from "@/components/query-state";
+import { useBenefitMutations, useBenefits } from "@/hooks/use-benefits";
+import { useMyResourceId } from "@/hooks/use-hierarchy";
+import { todayIso } from "@/lib/today";
 import { cn } from "@/lib/utils";
 
 interface HandoverEntry { bauOwner: string; bauService: string; frequency: BenefitMeasure["frequency"]; nextReviewDate: string; postImplementationReviewDate: string; confirmed: boolean }
 const frequencies: BenefitMeasure["frequency"][] = ["Monthly", "Quarterly", "Annually"];
 
-/** Closing a project launches this wizard, one step per benefit (Prompt H3). */
-export function BenefitsHandoverWizard({ project, close, onComplete }: { project: Project; close: () => void; onComplete: (count: number) => void }) {
-  const benefits = getHandoverCandidates(project);
+interface WizardProps { project: { id: string; name: string }; close: () => void; onComplete: (count: number) => void }
+
+/** Closing a project launches this wizard, one step per benefit (Prompt H3). Confirmed handovers are saved to benefit_handovers. */
+export function BenefitsHandoverWizard(props: WizardProps) {
+  const benefits = useBenefits();
+  return <QueryState query={benefits}>{data => <Wizard {...props} data={data} />}</QueryState>;
+}
+
+function Wizard({ project, close, onComplete, data }: WizardProps & { data: BenefitsData }) {
+  const benefits = getHandoverCandidates(data, project.id);
+  const confirmerId = useMyResourceId();
+  const { saveHandover } = useBenefitMutations();
+  const [error, setError] = useState("");
   const [step, setStep] = useState(0);
   const [entries, setEntries] = useState<Record<string, HandoverEntry>>(() => Object.fromEntries(benefits.map(benefit => [benefit.id, {
     bauOwner: benefit.handover?.bauOwner ?? benefit.owner,
     bauService: benefit.handover?.bauService ?? "",
     frequency: benefit.handover?.frequency ?? benefit.measures[0]?.frequency ?? "Quarterly",
-    nextReviewDate: benefit.handover?.nextReviewDate ?? "31/12/2026",
-    postImplementationReviewDate: benefit.handover?.postImplementationReviewDate ?? "31/03/2027",
+    nextReviewDate: benefit.handover?.nextReviewDate ?? "",
+    postImplementationReviewDate: benefit.handover?.postImplementationReviewDate ?? "",
     confirmed: Boolean(benefit.handover),
   }])));
 
@@ -60,13 +75,13 @@ export function BenefitsHandoverWizard({ project, close, onComplete }: { project
           </div>
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <label className="space-y-1.5"><span className="text-xs font-semibold text-muted-foreground">BAU owner</span><Input value={entry.bauOwner} onChange={event => update({ bauOwner: event.target.value })} placeholder="Who owns this in business as usual?" /></label>
+            <label className="space-y-1.5"><span className="text-xs font-semibold text-muted-foreground">BAU owner</span><Input list="handover-people" value={entry.bauOwner} onChange={event => update({ bauOwner: event.target.value })} placeholder="Who owns this in business as usual?" /><datalist id="handover-people">{data.people.map(person => <option key={person.id} value={person.name} />)}</datalist></label>
             <label className="space-y-1.5"><span className="text-xs font-semibold text-muted-foreground">Receiving service</span><Input value={entry.bauService} onChange={event => update({ bauService: event.target.value })} placeholder="e.g. Service Desk" /></label>
             <label className="space-y-1.5"><span className="text-xs font-semibold text-muted-foreground">Measurement schedule</span>
               <select value={entry.frequency} onChange={event => update({ frequency: event.target.value as BenefitMeasure["frequency"] })} className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm">{frequencies.map(option => <option key={option}>{option}</option>)}</select>
             </label>
-            <label className="space-y-1.5"><span className="text-xs font-semibold text-muted-foreground">Next review date</span><Input value={entry.nextReviewDate} onChange={event => update({ nextReviewDate: event.target.value })} /></label>
-            <label className="space-y-1.5 sm:col-span-2"><span className="text-xs font-semibold text-muted-foreground">Post-implementation review date</span><Input value={entry.postImplementationReviewDate} onChange={event => update({ postImplementationReviewDate: event.target.value })} /></label>
+            <label className="space-y-1.5"><span className="text-xs font-semibold text-muted-foreground">Next review date</span><Input type="date" value={entry.nextReviewDate} onChange={event => update({ nextReviewDate: event.target.value })} /></label>
+            <label className="space-y-1.5 sm:col-span-2"><span className="text-xs font-semibold text-muted-foreground">Post-implementation review date</span><Input type="date" value={entry.postImplementationReviewDate} onChange={event => update({ postImplementationReviewDate: event.target.value })} /></label>
           </div>
 
           <label className={cn("mt-5 flex items-start gap-2.5 rounded-md border p-3", entry.confirmed ? "border-health-good/40 bg-health-good/10" : "border-health-warn/40 bg-health-warn/10")}>
@@ -82,7 +97,23 @@ export function BenefitsHandoverWizard({ project, close, onComplete }: { project
         <Button variant="outline" disabled={step === 0} onClick={() => setStep(step - 1)}><ArrowLeft />Previous</Button>
         <Button variant="outline" disabled={step >= benefits.length - 1} onClick={() => setStep(step + 1)}>Next<ArrowRight /></Button>
         <span className="ml-auto text-xs text-muted-foreground">{confirmedCount} of {benefits.length} confirmed</span>
-        <Button disabled={benefits.length > 0 && confirmedCount < benefits.length} onClick={() => onComplete(confirmedCount)}><CheckCircle2 />Complete handover and close</Button>
+        {error && <p role="alert" className="w-full text-xs text-health-bad-foreground">{error}</p>}
+        <Button disabled={(benefits.length > 0 && confirmedCount < benefits.length) || saveHandover.isPending} onClick={async () => {
+          setError("");
+          const owners = new Map(data.people.map(person => [person.name, person.id]));
+          const missing = benefits.find(item => !owners.has(entries[item.id]?.bauOwner ?? ""));
+          if (missing) { setError(`${missing.reference}: choose a BAU owner from the people list.`); setStep(benefits.indexOf(missing)); return; }
+          try {
+            for (const item of benefits) {
+              const value = entries[item.id];
+              if (!value) continue;
+              await saveHandover.mutateAsync({ benefitId: item.id, bauOwnerId: owners.get(value.bauOwner) ?? null, bauService: value.bauService, frequency: value.frequency, nextReviewDate: value.nextReviewDate || null, postImplementationReviewDate: value.postImplementationReviewDate || null, confirmedById: confirmerId, confirmedDate: todayIso(), lastSeen: item.handoverUpdatedAt });
+            }
+            onComplete(confirmedCount);
+          } catch {
+            // The failed save is reported by the mutation toast; stay open so nothing is lost.
+          }
+        }}><CheckCircle2 />Complete handover and close</Button>
       </footer>
     </aside>
   </>;

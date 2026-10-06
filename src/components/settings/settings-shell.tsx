@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useOrganisation } from "@/components/auth/organisation-provider";
 import { Link } from "@tanstack/react-router";
 import { Banknote, BellRing, Building2, ClipboardList, Clock4, CreditCard, Database, FileStack, Gift, Globe2, Languages, LayoutList, Plug, ShieldAlert, UserRound, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,13 +49,24 @@ export function SettingsShell({ active, children }: { active: string; children: 
   </div>;
 }
 
-export function SettingsCard({ title, description, children, actions }: { title: string; description?: string; children: ReactNode; actions?: ReactNode }) {
+const roleRank: Record<string, number> = { viewer: 0, contributor: 1, manager: 2, pmo: 3, admin: 4 };
+/** Who may change a card's settings (RLS: organisation settings need admin, shared lists and lifecycle need pmo). */
+export type SettingsAccess = "admin" | "pmo" | "self";
+export function useCanEditSettings(requires: SettingsAccess) {
+  const { organisation } = useOrganisation();
+  return requires === "self" || (roleRank[organisation.role] ?? 0) >= (roleRank[requires] ?? 4);
+}
+
+export function SettingsCard({ title, description, children, actions, requires = "admin" }: { title: string; description?: string; children: ReactNode; actions?: ReactNode; requires?: SettingsAccess }) {
+  const canEdit = useCanEditSettings(requires);
   return <section className="rounded-lg border border-border/70 bg-card p-5 shadow-sm">
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div><h2 className="font-display text-lg font-semibold">{title}</h2>{description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}</div>
-      {actions}
+      {canEdit && actions}
     </div>
-    <div className="mt-5">{children}</div>
+    {!canEdit && <p className="mt-3 rounded-md border bg-muted/50 px-3 py-2 text-xs text-muted-foreground">Only {requires === "pmo" ? "PMO members and admins" : "organisation admins"} can change these settings.</p>}
+    {/* A disabled fieldset disables every control inside it, so read-only users can't make edits that would be refused. */}
+    <fieldset disabled={!canEdit} className="mt-5 min-w-0 disabled:opacity-80">{children}</fieldset>
   </section>;
 }
 

@@ -9,12 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { currencies, dateFormats, dayNames, locales, monthNames, notificationEvents, timeZones } from "@/data/settings-data";
 import type { AppSettings, PermissionKey, TermKey, UserRole } from "@/data/settings-types";
 import type { BenefitCategory, ProjectTier } from "@/data/types";
-import { formatCompactCurrency, formatCurrency, formatDate, formatFinancialYear } from "@/lib/format";
-import { getLifecyclePhases, getTierDefinitions } from "@/services/pmo";
+import { formatCompactCurrency, formatCurrency, formatDate, formatFinancialYear, fromIsoDate } from "@/lib/format";
+import { todayIso } from "@/lib/today";
 import { resetSettings, updateSettings, useSettings } from "@/services/settings";
 import { Field, ListEditor, NumberField, SelectField, SettingsCard, TextField } from "@/components/settings/settings-shell";
 import { cn } from "@/lib/utils";
 import { IntegrationsWorkspace } from "@/components/integrations/integrations-workspace";
+import { setPendingLogo } from "@/components/auth/settings-sync";
 
 const sample = 1_248_500;
 const patch = <K extends keyof AppSettings>(key: K, value: Partial<AppSettings[K]>) => updateSettings({ [key]: value } as Partial<AppSettings>);
@@ -45,6 +46,7 @@ export function OrganisationSettings() {
                 const file = event.target.files?.[0];
                 if (!file) return;
                 const reader = new FileReader();
+                setPendingLogo(file);
                 reader.onload = () => patch("organisation", { logoDataUrl: String(reader.result ?? "") });
                 reader.readAsDataURL(file);
               }} />
@@ -97,18 +99,18 @@ export function RegionalSettings() {
             </tr>)}
           </tbody>
         </table>
-        <Button size="sm" variant="outline" className="mt-3" onClick={() => set({ exchangeRates: [...regional.exchangeRates, { id: `fx-${Date.now()}`, currency: "EUR", rate: 1, effectiveDate: "01/08/2026" }] })}><Plus />Add rate</Button>
+        <Button size="sm" variant="outline" className="mt-3" onClick={() => set({ exchangeRates: [...regional.exchangeRates, { id: `fx-${Date.now()}`, currency: "EUR", rate: 1, effectiveDate: fromIsoDate(todayIso()) }] })}><Plus />Add rate</Button>
       </div> : <p className="text-sm text-muted-foreground">Off. Every project is held in {regional.baseCurrency} and no conversion is applied.</p>}
     </SettingsCard>
 
     <SettingsCard title="Dates, locale and financial year" description="Date display, week start and the financial year used by every FY label and chart.">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <SelectField label="Date format" value={regional.dateFormat} onChange={value => set({ dateFormat: value })} options={dateFormats.map(item => ({ value: item, label: `${item} — ${formatDate("21/09/2026", { ...settings, regional: { ...regional, dateFormat: item } })}` }))} />
+        <SelectField label="Date format" value={regional.dateFormat} onChange={value => set({ dateFormat: value })} options={dateFormats.map(item => ({ value: item, label: `${item} — ${formatDate(todayIso(), { ...settings, regional: { ...regional, dateFormat: item } })}` }))} />
         <SelectField label="Locale" value={regional.locale} onChange={value => set({ locale: value })} options={locales.map(item => ({ value: item, label: item }))} />
         <SelectField label="Time zone" value={regional.timeZone} onChange={value => set({ timeZone: value })} options={timeZones.map(item => ({ value: item, label: item }))} />
         <SelectField label="First day of week" value={String(regional.firstDayOfWeek)} onChange={value => set({ firstDayOfWeek: Number(value) })} options={dayNames.map((name, index) => ({ value: String(index), label: name }))} />
         <SelectField label="Financial year starts" value={String(regional.financialYearStartMonth)} onChange={value => set({ financialYearStartMonth: Number(value) })} options={monthNames.map((name, index) => ({ value: String(index + 1), label: name }))}
-          hint={`Today sits in ${formatFinancialYear("21/09/2026", settings)}.`} />
+          hint={`Today sits in ${formatFinancialYear(todayIso(), settings)}.`} />
       </div>
     </SettingsCard>
   </>;
@@ -134,7 +136,7 @@ export function WorkingTimeSettings() {
         })}</div>
       </div>
     </SettingsCard>
-    <SettingsCard title="Public holiday calendars" description="Holidays are excluded from capacity and from working-day calculations."
+    <SettingsCard requires="pmo" title="Public holiday calendars" description="Holidays are excluded from capacity and from working-day calculations."
       actions={<Button size="sm" variant="outline" onClick={() => set({ holidayCalendars: [...working.holidayCalendars, { id: `cal-${Date.now()}`, name: "New calendar", dates: [] }] })}><Plus />Add calendar</Button>}>
       <div className="space-y-4">
         {working.holidayCalendars.map(calendar => <div key={calendar.id} className="rounded-md border p-4">
@@ -180,8 +182,8 @@ export function LifecycleSettings() {
   const settings = useSettings();
   const health = settings.health;
   const set = (value: Partial<AppSettings["health"]>) => patch("health", value);
-  const phases = settings.lifecycle?.phases?.length ? settings.lifecycle.phases : getLifecyclePhases();
-  const tiers = getTierDefinitions();
+  const phases = settings.lifecycle.phases;
+  const tiers = settings.lifecycle.tiers.length ? settings.lifecycle.tiers : defaultTierDefinitions;
   const [activeId, setActiveId] = useState(phases[0]?.id ?? "");
   const active = phases.find(phase => phase.id === activeId) ?? phases[0];
   const allTiers: ProjectTier[] = ["Small", "Medium", "Large"];
@@ -204,7 +206,7 @@ export function LifecycleSettings() {
   };
   const removePhase = (id: string) => {
     if (phases.length <= 1) return;
-    if (!window.confirm("Remove this phase and its gate criteria? Projects currently in this phase will show as the first phase.")) return;
+    if (!window.confirm("Remove this phase and its gate criteria? A phase that projects are still in can't be removed; move them first.")) return;
     const next = phases.filter(phase => phase.id !== id);
     save(next);
     setActiveId(next[0]?.id ?? "");
@@ -213,7 +215,7 @@ export function LifecycleSettings() {
   const removeCriterion = (criterionId: string) => active && updatePhase(active.id, { criteria: active.criteria.filter(item => item.id !== criterionId) });
   const toggleTier = (criterionId: string, tier: ProjectTier, current: ProjectTier[]) => updateCriterion(criterionId, { tiers: current.includes(tier) ? current.filter(item => item !== tier) : allTiers.filter(item => item === tier || current.includes(item)) });
   return <>
-    <SettingsCard title="Lifecycle phases and gates" description="Add, rename, reorder or remove phases, and edit each phase's exit gate criteria. Criteria marked as automatic are evaluated from live data on the project page." actions={<Button size="sm" variant="outline" onClick={() => save(getDefaultPhases())}><RotateCcw className="size-4" />Restore to Default Lifecycle</Button>}>
+    <SettingsCard requires="pmo" title="Lifecycle phases and gates" description="Add, rename, reorder or remove phases, and edit each phase's exit gate criteria. Criteria marked as automatic are evaluated from live data on the project page." actions={<Button size="sm" variant="outline" onClick={() => save(getDefaultPhases())}><RotateCcw className="size-4" />Restore to Default Lifecycle</Button>}>
       <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
         <div className="space-y-2">
           <ul className="space-y-2">{phases.map((phase, index) => <li key={phase.id} className={cn("flex items-stretch rounded-md border", phase.id === active?.id ? "border-primary bg-primary/5" : "hover:bg-accent/30")}>
@@ -230,7 +232,7 @@ export function LifecycleSettings() {
         </div>
         {active && <div className="space-y-4 rounded-md border p-4">
           <div className="grid gap-4 sm:grid-cols-2">
-            <TextField label="Phase name" value={active.name} onChange={value => updatePhase(active.id, { name: value })} hint="Renaming a phase used by existing projects will move them to the first phase." />
+            <TextField label="Phase name" value={active.name} onChange={value => updatePhase(active.id, { name: value })} hint="Projects keep their phase when it is renamed." />
             <TextField label="Short name" value={active.shortName} onChange={value => updatePhase(active.id, { shortName: value })} />
             <TextField label="Exit gate name" value={active.gateName} onChange={value => updatePhase(active.id, { gateName: value })} wide />
             <Field label="Description" wide><Textarea value={active.description} onChange={event => updatePhase(active.id, { description: event.target.value })} rows={2} /></Field>
@@ -337,11 +339,11 @@ export function RiskSettings() {
       <div className="mt-4 max-w-xs"><NumberField label="Risk appetite threshold" value={risk.appetiteThreshold} onChange={value => set({ appetiteThreshold: value })} hint="Risks scoring at or above this are reported to the board." /></div>
     </SettingsCard>
 
-    <SettingsCard title="RAIDD option lists" description="The controlled values offered on issues, decisions, dependencies and changes.">
+    <SettingsCard requires="pmo" title="RAIDD option lists" description="The controlled values offered on issues, decisions, dependencies and changes.">
       <div className="grid gap-6 sm:grid-cols-2">
-        <ListEditor label="Issue severity" values={lists.issueSeverities} onChange={values => patch("lists", { issueSeverities: values })} />
+        <FixedList label="Issue severity" values={lists.issueSeverities} />
         <ListEditor label="Decision forums" values={lists.decisionForums} onChange={values => patch("lists", { decisionForums: values })} />
-        <ListEditor label="Dependency types" values={lists.dependencyTypes} onChange={values => patch("lists", { dependencyTypes: values })} />
+        <FixedList label="Dependency types" values={lists.dependencyTypes} />
         <ListEditor label="Change types" values={lists.changeTypes} onChange={values => patch("lists", { changeTypes: values })} />
       </div>
     </SettingsCard>
@@ -353,10 +355,10 @@ export function BenefitSettingsSection() {
   const benefits = settings.benefits;
   const set = (value: Partial<AppSettings["benefits"]>) => patch("benefits", value);
   return <>
-    <SettingsCard title="Benefit categories and classifications" description="The controlled lists offered when a benefit profile is created.">
+    <SettingsCard requires="pmo" title="Benefit categories and classifications" description="The controlled lists offered when a benefit profile is created.">
       <div className="grid gap-6 sm:grid-cols-2">
         <ListEditor label="Categories" values={benefits.categories} onChange={values => set({ categories: values as BenefitCategory[] })} />
-        <ListEditor label="Classifications" values={benefits.classifications} onChange={values => set({ classifications: values as AppSettings["benefits"]["classifications"] })} />
+        <FixedList label="Classifications" values={benefits.classifications} />
       </div>
     </SettingsCard>
     <SettingsCard title="Optimism bias" description="Green Book style uplifts applied to raw benefit estimates in business cases and request appraisal. Both raw and adjusted figures are always shown.">
@@ -383,7 +385,7 @@ export function BenefitSettingsSection() {
 export function ListsSettings() {
   const settings = useSettings();
   const lists = settings.lists;
-  return <SettingsCard title="Lists & categories" description="Shared controlled lists used across lessons, projects and collections.">
+  return <SettingsCard requires="pmo" title="Lists & categories" description="Shared controlled lists used across lessons, projects and collections.">
     <div className="grid gap-6 sm:grid-cols-2">
       <ListEditor label="Lessons categories" values={lists.lessonCategories} onChange={values => patch("lists", { lessonCategories: values })} />
       <ListEditor label="Project types" values={lists.projectTypes} onChange={values => patch("lists", { projectTypes: values })} />
@@ -408,25 +410,20 @@ const homeOptions = [
   { value: "/settings/organisation", label: "Settings › Organisation" },
 ];
 
+const appRoles: UserRole[] = ["Viewer", "Contributor", "Manager", "PMO", "Admin"];
+
 export function UserSettings() {
   const settings = useSettings();
   return <>
-    <SettingsCard title="Signed in as" description="Switch the acting user to see the workspace through another role's default home page and permissions.">
-      <div className="max-w-md"><SelectField label="Current user" value={settings.currentUserId} onChange={value => updateSettings({ currentUserId: value })}
-        options={settings.users.map(user => ({ value: user.id, label: `${user.name} — ${user.role}` }))} /></div>
-    </SettingsCard>
-
-    <SettingsCard title="Users" description="People with access to the workspace."
-      actions={<span className="text-xs text-muted-foreground">{settings.users.filter(user => user.active).length} active of {settings.subscription.seatsTotal} seats</span>}>
+    <SettingsCard title="Members" description="People with access to this organisation and their organisation role. Workspace roles can be higher for individual workspaces."
+      actions={<span className="text-xs text-muted-foreground">{settings.users.length} members</span>}>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="bg-table-head text-xs text-muted-foreground"><tr><th className="h-10 px-3 font-semibold">Name</th><th className="px-3 font-semibold">Email</th><th className="px-3 font-semibold">Role</th><th className="px-3 font-semibold">Team</th><th className="px-3 font-semibold">Active</th></tr></thead>
+        <table className="w-full min-w-[560px] text-left text-sm">
+          <thead className="bg-table-head text-xs text-muted-foreground"><tr><th className="h-10 px-3 font-semibold">Name</th><th className="px-3 font-semibold">Email</th><th className="px-3 font-semibold">Organisation role</th></tr></thead>
           <tbody>{settings.users.map(user => <tr key={user.id} className="border-t">
-            <td className="px-3 py-2.5 font-medium">{user.name}</td>
+            <td className="px-3 py-2.5 font-medium">{user.name}{user.id === settings.currentUserId && <span className="ml-2 text-xs text-muted-foreground">(you)</span>}</td>
             <td className="px-3 py-2.5 text-muted-foreground">{user.email}</td>
-            <td className="px-3 py-2"><select value={user.role} onChange={event => updateSettings({ users: settings.users.map(item => item.id === user.id ? { ...item, role: event.target.value as UserRole } : item) })} className="h-8 rounded-md border border-input bg-background px-2 text-sm">{settings.roles.map(role => <option key={role.role}>{role.role}</option>)}</select></td>
-            <td className="px-3 py-2.5 text-muted-foreground">{user.team}</td>
-            <td className="px-3 py-2"><Switch checked={user.active} onCheckedChange={value => updateSettings({ users: settings.users.map(item => item.id === user.id ? { ...item, active: value } : item) })} aria-label={`${user.name} active`} /></td>
+            <td className="px-3 py-2"><select aria-label={`${user.name} role`} value={user.role} onChange={event => updateSettings({ users: settings.users.map(item => item.id === user.id ? { ...item, role: event.target.value as UserRole } : item) })} className="h-8 rounded-md border border-input bg-background px-2 text-sm">{appRoles.map(role => <option key={role}>{role}</option>)}</select></td>
           </tr>)}</tbody>
         </table>
       </div>
@@ -439,21 +436,27 @@ export function UserSettings() {
       </div>)}</div>
     </SettingsCard>
 
-    <SettingsCard title="Permissions matrix" description="What each role can do.">
+    <SettingsCard requires="self" title="Permissions matrix" description="What each role can do. The database enforces these for every request, so they are fixed per role.">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead className="bg-table-head text-xs text-muted-foreground"><tr><th className="h-10 px-3 font-semibold">Role</th>{(Object.keys(permissionLabels) as PermissionKey[]).map(key => <th key={key} className="px-2 text-center font-semibold">{permissionLabels[key]}</th>)}</tr></thead>
           <tbody>{settings.roles.map(role => <tr key={role.role} className="border-t">
             <td className="px-3 py-2.5 font-medium">{role.role}</td>
             {(Object.keys(permissionLabels) as PermissionKey[]).map(key => <td key={key} className="px-2 text-center">
-              <input type="checkbox" aria-label={`${role.role} can ${permissionLabels[key]}`} checked={role.permissions[key]}
-                onChange={() => updateSettings({ roles: settings.roles.map(item => item.role === role.role ? { ...item, permissions: { ...item.permissions, [key]: !item.permissions[key] } } : item) })} />
+              {role.permissions[key] ? <CheckCircle2 aria-label={`${role.role} can ${permissionLabels[key]}`} className="mx-auto size-4 text-health-good-foreground" /> : <span aria-label={`${role.role} cannot ${permissionLabels[key]}`} className="text-muted-foreground">—</span>}
             </td>)}
           </tr>)}</tbody>
         </table>
       </div>
     </SettingsCard>
   </>;
+}
+
+/** A list fixed by the database schema (an enum), shown for reference. */
+function FixedList({ label, values }: { label: string; values: string[] }) {
+  return <div><p className="text-xs font-semibold text-muted-foreground">{label}</p>
+    <div className="mt-2 flex flex-wrap gap-1.5">{values.map(value => <span key={value} className="rounded-full border bg-muted/50 px-2.5 py-1 text-xs">{value}</span>)}</div>
+    <p className="mt-2 text-[11px] text-muted-foreground">Fixed: reports and health rules depend on these values.</p></div>;
 }
 
 export function NotificationSettings() {
@@ -498,7 +501,7 @@ export function TemplateSettings() {
     set({ committeePack: { ...templates.committeePack, sectionOrder: order } });
   };
   return <>
-    <SettingsCard title="Project templates" description="Starting points offered when a new project is created.">
+    <SettingsCard requires="pmo" title="Project templates" description="Starting points offered when a new project is created.">
       <div className="grid gap-4 md:grid-cols-3">{templates.projectTemplates.map(template => <div key={template.id} className="rounded-md border p-4">
         <div className="flex items-center justify-between"><strong className="text-sm">{template.name}</strong><span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">{template.tier}</span></div>
         <p className="mt-2 text-xs text-muted-foreground">{template.description}</p>
@@ -544,12 +547,12 @@ export function DataSettings() {
     <SettingsCard title="Retention" description="How long closed records are kept before archiving.">
       <div className="max-w-xs"><NumberField label="Retention period (months)" value={data.retentionMonths} onChange={value => patch("data", { retentionMonths: Math.max(12, value) })} min={12} hint={`${Math.round(data.retentionMonths / 12)} years`} /></div>
     </SettingsCard>
-    <SettingsCard title="Audit log" description="Recent configuration and governance activity.">
+    <SettingsCard requires="self" title="Audit log" description="Recent changes across the organisation. Visible to PMO members and admins.">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[620px] text-left text-sm">
           <thead className="bg-table-head text-xs text-muted-foreground"><tr><th className="h-10 px-3 font-semibold">When</th><th className="px-3 font-semibold">Who</th><th className="px-3 font-semibold">Action</th><th className="px-3 font-semibold">Detail</th></tr></thead>
-          <tbody>{data.auditLog.map(entry => <tr key={entry.id} className="border-t">
-            <td className="whitespace-nowrap px-3 py-2.5 text-muted-foreground">{entry.timestamp}</td>
+          <tbody>{!data.auditLog.length && <tr><td colSpan={4} className="px-3 py-6 text-center text-sm text-muted-foreground">No audit entries you can see.</td></tr>}{data.auditLog.map(entry => <tr key={entry.id} className="border-t">
+            <td className="whitespace-nowrap px-3 py-2.5 text-muted-foreground">{formatDate(entry.timestamp, settings)} {entry.timestamp.slice(11, 16)}</td>
             <td className="px-3 py-2.5">{entry.actor}</td>
             <td className="px-3 py-2.5 font-medium">{entry.action}</td>
             <td className="px-3 py-2.5 text-muted-foreground">{entry.detail}</td>
@@ -563,15 +566,15 @@ export function DataSettings() {
 export function SubscriptionSettings() {
   const settings = useSettings();
   const subscription = settings.subscription;
+  if (!subscription.plan) return <SettingsCard requires="self" title="Subscription" description="Plan, seat usage and renewal."><p className="text-sm text-muted-foreground">Only organisation admins can see the subscription.</p></SettingsCard>;
   const usage = Math.round((subscription.seatsUsed / Math.max(1, subscription.seatsTotal)) * 100);
-  return <SettingsCard title="Subscription" description="Plan, seat usage and renewal.">
+  return <SettingsCard requires="self" title="Subscription" description="Plan, seat usage and renewal. Contact your account manager to change the plan or seats.">
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <div className="rounded-md border p-4"><p className="text-xs text-muted-foreground">Plan</p><p className="mt-1.5 font-display text-lg font-semibold">{subscription.plan}</p></div>
       <div className="rounded-md border p-4"><p className="text-xs text-muted-foreground">Seats used</p><p className="mt-1.5 font-display text-lg font-semibold">{subscription.seatsUsed} of {subscription.seatsTotal}</p>
-        <div className="mt-2 h-2 rounded-full bg-muted"><div className={cn("h-full rounded-full", usage > 90 ? "bg-health-bad" : usage > 75 ? "bg-health-warn" : "bg-primary")} style={{ width: `${usage}%` }} /></div></div>
-      <div className="rounded-md border p-4"><p className="text-xs text-muted-foreground">Renewal date</p><p className="mt-1.5 font-display text-lg font-semibold">{formatDate(subscription.renewalDate, settings)}</p></div>
-      <div className="rounded-md border p-4"><p className="text-xs text-muted-foreground">Billing contact</p><p className="mt-1.5 text-sm font-medium">{subscription.billingContact}</p></div>
+        <div className="mt-2 h-2 rounded-full bg-muted"><div className={cn("h-full rounded-full", usage > 90 ? "bg-health-bad" : usage > 75 ? "bg-health-warn" : "bg-primary")} style={{ width: `${Math.min(100, usage)}%` }} /></div></div>
+      <div className="rounded-md border p-4"><p className="text-xs text-muted-foreground">Renewal date</p><p className="mt-1.5 font-display text-lg font-semibold">{subscription.renewalDate ? formatDate(subscription.renewalDate, settings) : "—"}</p></div>
+      <div className="rounded-md border p-4"><p className="text-xs text-muted-foreground">Billing contact</p><p className="mt-1.5 text-sm font-medium">{subscription.billingContact || "—"}</p></div>
     </div>
-    <div className="mt-4 flex flex-wrap gap-2"><Button variant="outline">Add seats</Button><Button variant="outline">Download invoices</Button><Button variant="outline">Change plan</Button></div>
   </SettingsCard>;
 }

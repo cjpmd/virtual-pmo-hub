@@ -1,5 +1,5 @@
 import { defaultLifecyclePhases, defaultTierDefinitions } from "./lifecycle";
-import type { AppSettings, CurrencyDefinition, TermKey } from "./settings-types";
+import type { AppSettings, CurrencyDefinition, RoleDefinition, TermKey } from "./settings-types";
 
 export const currencies: CurrencyDefinition[] = [
   { code: "GBP", name: "Pound sterling", symbol: "£" },
@@ -53,6 +53,35 @@ export const notificationEvents = [
   "Decision needed by date approaching", "Decision recorded", "Measurement overdue", "Measurement awaiting validation",
   "Dependency off track", "Dependency awaiting my acceptance", "Risk escalated", "Assumption invalidated",
   "Benefit behind profile", "Lessons review outstanding",
+];
+
+/**
+ * The prototype's people with sign-in accounts. Only the seed generator uses this: it gives
+ * the demo organisation's resources their email addresses. Real organisations' users come
+ * from organisation_members.
+ */
+export const demoUsers: Array<{ id: string; name: string; email: string; role: string; team: string; active: boolean }> = [
+    { id: "cm", name: "Chris McDonald", email: "chris.mcdonald@university.ac.uk", role: "PMO", team: "PMO", active: true },
+    { id: "ap", name: "Amelia Price", email: "amelia.price@university.ac.uk", role: "Programme Manager", team: "PMO", active: true },
+    { id: "fw", name: "Freya Walsh", email: "freya.walsh@university.ac.uk", role: "Project Manager", team: "PMO", active: true },
+    { id: "gc", name: "George Clarke", email: "george.clarke@university.ac.uk", role: "Project Manager", team: "PMO", active: true },
+    { id: "nr", name: "Nadia Rahman", email: "nadia.rahman@university.ac.uk", role: "Project Officer", team: "PMO", active: true },
+    { id: "mh", name: "Maya Harrison", email: "maya.harrison@university.ac.uk", role: "Team Member", team: "Applications", active: true },
+    { id: "dm", name: "Daniel Mercer", email: "daniel.mercer@university.ac.uk", role: "Executive Viewer", team: "Executive", active: true },
+    { id: "ml", name: "Martin Lowe", email: "martin.lowe@university.ac.uk", role: "Executive Viewer", team: "Finance", active: true },
+    { id: "er", name: "Elliot Reed", email: "elliot.reed@university.ac.uk", role: "PMO", team: "PMO", active: true },
+    { id: "sysadmin", name: "Sofia Marsh", email: "sofia.marsh@university.ac.uk", role: "Admin", team: "PMO", active: false },
+  ];
+
+const allPermissions = { viewPortfolio: true, editProjects: true, approveGates: true, manageBenefits: true, manageSettings: true, issueTasks: true, validateMeasurements: true, recordDecisions: true };
+const noPermissions = { viewPortfolio: false, editProjects: false, approveGates: false, manageBenefits: false, manageSettings: false, issueTasks: false, validateMeasurements: false, recordDecisions: false };
+/** The fixed role ladder enforced by RLS. Only the default home page is configurable. */
+export const defaultRoles: RoleDefinition[] = [
+  { role: "Admin", description: "Everything a PMO member can do, plus organisation settings and user management.", defaultHome: "/settings/organisation", permissions: allPermissions },
+  { role: "PMO", description: "Portfolio assurance across every workspace: portfolios, collections, roadmaps, lists and lifecycle.", defaultHome: "/portfolio", permissions: { ...allPermissions, manageSettings: false } },
+  { role: "Manager", description: "Runs programmes and projects in a workspace, including deleting records.", defaultHome: "/portfolio", permissions: { ...allPermissions, manageSettings: false } },
+  { role: "Contributor", description: "Edits projects, RAID, milestones, benefits and tasks in a workspace. Cannot delete.", defaultHome: "/home/my-work", permissions: { ...noPermissions, viewPortfolio: true, editProjects: true, issueTasks: true, recordDecisions: true, manageBenefits: true } },
+  { role: "Viewer", description: "Read-only access to a workspace.", defaultHome: "/insights/dashboards", permissions: { ...noPermissions, viewPortfolio: true } },
 ];
 
 export const defaultSettings: AppSettings = {
@@ -139,27 +168,9 @@ export const defaultSettings: AppSettings = {
     dependencyTypes: ["Sequencing", "Alignment", "Information", "Resource", "External"],
     changeTypes: ["Scope", "Schedule", "Cost"],
   },
-  users: [
-    { id: "cm", name: "Chris McDonald", email: "chris.mcdonald@university.ac.uk", role: "PMO", team: "PMO", active: true },
-    { id: "ap", name: "Amelia Price", email: "amelia.price@university.ac.uk", role: "Programme Manager", team: "PMO", active: true },
-    { id: "fw", name: "Freya Walsh", email: "freya.walsh@university.ac.uk", role: "Project Manager", team: "PMO", active: true },
-    { id: "gc", name: "George Clarke", email: "george.clarke@university.ac.uk", role: "Project Manager", team: "PMO", active: true },
-    { id: "nr", name: "Nadia Rahman", email: "nadia.rahman@university.ac.uk", role: "Project Officer", team: "PMO", active: true },
-    { id: "mh", name: "Maya Harrison", email: "maya.harrison@university.ac.uk", role: "Team Member", team: "Applications", active: true },
-    { id: "dm", name: "Daniel Mercer", email: "daniel.mercer@university.ac.uk", role: "Executive Viewer", team: "Executive", active: true },
-    { id: "ml", name: "Martin Lowe", email: "martin.lowe@university.ac.uk", role: "Executive Viewer", team: "Finance", active: true },
-    { id: "er", name: "Elliot Reed", email: "elliot.reed@university.ac.uk", role: "PMO", team: "PMO", active: true },
-    { id: "sysadmin", name: "Sofia Marsh", email: "sofia.marsh@university.ac.uk", role: "Admin", team: "PMO", active: false },
-  ],
-  roles: [
-    { role: "Admin", description: "Full access including settings and user management.", defaultHome: "/settings/organisation", permissions: { viewPortfolio: true, editProjects: true, approveGates: true, manageBenefits: true, manageSettings: true, issueTasks: true, validateMeasurements: true, recordDecisions: true } },
-    { role: "PMO", description: "Portfolio assurance, benefits validation and governance.", defaultHome: "/portfolio", permissions: { viewPortfolio: true, editProjects: true, approveGates: true, manageBenefits: true, manageSettings: false, issueTasks: true, validateMeasurements: true, recordDecisions: true } },
-    { role: "Programme Manager", description: "Owns a programme and its projects.", defaultHome: "/portfolio", permissions: { viewPortfolio: true, editProjects: true, approveGates: true, manageBenefits: true, manageSettings: false, issueTasks: true, validateMeasurements: false, recordDecisions: true } },
-    { role: "Project Manager", description: "Delivers projects and maintains the plan.", defaultHome: "/home/my-work", permissions: { viewPortfolio: true, editProjects: true, approveGates: false, manageBenefits: false, manageSettings: false, issueTasks: true, validateMeasurements: false, recordDecisions: false } },
-    { role: "Project Officer", description: "Supports project administration and reporting.", defaultHome: "/home/my-work", permissions: { viewPortfolio: true, editProjects: true, approveGates: false, manageBenefits: false, manageSettings: false, issueTasks: true, validateMeasurements: false, recordDecisions: false } },
-    { role: "Team Member", description: "Works on assigned tasks.", defaultHome: "/home/my-work", permissions: { viewPortfolio: false, editProjects: false, approveGates: false, manageBenefits: false, manageSettings: false, issueTasks: false, validateMeasurements: false, recordDecisions: false } },
-    { role: "Executive Viewer", description: "Read-only portfolio and value insight.", defaultHome: "/insights/dashboards", permissions: { viewPortfolio: true, editProjects: false, approveGates: false, manageBenefits: false, manageSettings: false, issueTasks: false, validateMeasurements: false, recordDecisions: false } },
-  ],
+  // Filled from organisation_members when the organisation loads.
+  users: [],
+  roles: defaultRoles,
   notifications: {
     channels: { inApp: true, email: true, teams: false },
     digest: "Daily",
@@ -196,5 +207,5 @@ export const defaultSettings: AppSettings = {
     billingContact: "finance-systems@university.ac.uk",
   },
   lifecycle: { phases: defaultLifecyclePhases, tiers: defaultTierDefinitions },
-  currentUserId: "cm",
+  currentUserId: "",
 };
