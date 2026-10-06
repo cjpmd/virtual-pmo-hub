@@ -7,6 +7,12 @@
 //                row at all means it was removed or is no longer visible ("not_found").
 //   deleteRows – delete by id; an empty result is "forbidden" (RLS filtered it)
 //
+// Own writes: every write remembers the updated_at it got back, per row. An update sends the
+// newer of that and the caller's lastSeen, so a screen holding a copy loaded before its own
+// previous save (a refetch still in flight, a debounced form, a cached query) doesn't trip
+// the concurrency check on itself. Someone else's later save is still caught: theirs is newer
+// than both.
+//
 // Services build the column patch; this file owns what happens on the wire, so every
 // service gets the same concurrency and error behaviour.
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +38,7 @@ type LooseBuilder = {
 type LooseResult = {
   data: unknown;
   error: import("@supabase/supabase-js").PostgrestError | null;
+  status?: number;
 };
 type LooseFilter = PromiseLike<LooseResult> & {
   eq: (column: string, value: unknown) => LooseFilter;
@@ -85,8 +92,17 @@ const returning = (name: TableName) =>
 
 const toWritten = (name: TableName, row: unknown): Written => {
   const value = row as Record<string, string | null | undefined>;
-  return { id: value[keyOf(name)] ?? "", updatedAt: value["updated_at"] ?? null };
+  const written = { id: value[keyOf(name)] ?? "", updatedAt: value["updated_at"] ?? null };
+  if (written.id && written.updatedAt) ownWrites.set(`${name}:${written.id}`, written.updatedAt);
+  return written;
 };
+
+/** updated_at returned by this session's own writes, by "table:id". */
+const ownWrites = new Map<string, string>();
+
+/** The updated_at to send: the caller's copy, or our own later write to the same row. */
+export const versionToSend = (name: TableName, id: string, lastSeen: string | null | undefined) =>
+  lastSeen ? latest(lastSeen, ownWrites.get(`${name}:${id}`)) : lastSeen;
 
 export async function insertRow<T extends TableName>(
   name: T,
@@ -125,11 +141,12 @@ export async function updateRow<T extends TableName>(
   fields: Update<T>,
   options: { context: string; lastSeen?: string | null | undefined },
 ): Promise<Written> {
-  const { context, lastSeen } = options;
+  const { context } = options;
+  const lastSeen = versionToSend(name, id, options.lastSeen);
   let query = table(name).update(fields).eq(keyOf(name), id);
   if (lastSeen) query = query.eq("updated_at", lastSeen);
   const result = await query.select(returning(name));
-  if (result.error) throw fromPostgrest(result.error, context);
+  if (result.error) throw fromPostgrest(result.error, context, result.status);
   const rows = (result.data ?? []) as unknown[];
   if (rows.length) return toWritten(name, rows[0]);
   throw await explainEmptyWrite(name, id, lastSeen, context);
@@ -159,26 +176,29 @@ async function explainEmptyWrite(
   );
 }
 
-/** updated_at may come back in different textual forms (T vs space, +00 vs +00:00). */
+/**
+ * updated_at as microseconds since the epoch. It may come back in different textual forms
+ * (T or space, +00 or +00:00), and Date alone drops the microseconds Postgres keeps.
+ */
+const micros = (value: string) =>
+  Date.parse(value.replace(" ", "T").replace(/\+00$/, "+00:00")) * 1000 +
+  Number((/\.\d{3}(\d{0,3})/.exec(value)?.[1] ?? "").padEnd(3, "0"));
+
 export function sameInstant(a: string, b: string) {
-  const parse = (value: string) =>
-    Date.parse(value.replace(" ", "T").replace(/\+00$/, "+00:00")) +
-    // keep microseconds, which Date drops
-    Number((/\.\d{3}(\d{0,3})/.exec(value)?.[1] ?? "").padEnd(3, "0")) / 1000;
-  return parse(a) === parse(b);
+  return micros(a) === micros(b);
 }
 
 /** Newer of two updated_at values (either may be missing). */
 export function latest(a: string | null | undefined, b: string | null | undefined) {
   if (!a) return b ?? null;
   if (!b) return a;
-  const value = (text: string) => Date.parse(text.replace(" ", "T").replace(/\+00$/, "+00:00"));
-  return value(b) > value(a) || (value(b) === value(a) && b.length > a.length) ? b : a;
+  return micros(b) > micros(a) ? b : a;
 }
 
 export async function deleteRows(name: TableName, ids: string[], context: string) {
   if (!ids.length) return;
   unwrapWrite(await table(name).delete().in(keyOf(name), ids).select(keyOf(name)), context);
+  for (const id of ids) ownWrites.delete(`${name}:${id}`);
 }
 
 /** Delete link rows matching a filter (e.g. benefit_projects for one benefit). */
@@ -190,5 +210,5 @@ export async function deleteWhere(
   let query = table(name).delete();
   for (const [column, value] of Object.entries(filters)) query = query.eq(column, value);
   const result = await query.select(Object.keys(filters)[0] ?? "*");
-  if (result.error) throw fromPostgrest(result.error, context);
+  if (result.error) throw fromPostgrest(result.error, context, result.status);
 }

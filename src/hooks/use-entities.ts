@@ -16,18 +16,10 @@ import {
   type ProgrammeInput,
   type ProjectInput,
 } from "@/services/entities";
-import { latest, type Written } from "@/services/write";
 import { invalidateRollups } from "./use-project-records";
 
-// The updated_at each of this tab's own writes returned. Lists refresh in the background, so a
-// second action straight after a save would otherwise send the older updated_at and trip the
-// optimistic-concurrency check on our own change.
-const writtenAt = new Map<string, string | null>();
-const seen = (id: string, lastSeen: string | null) => latest(lastSeen, writtenAt.get(id));
-const remember = (id: string) => (written: Written) => {
-  writtenAt.set(id, written.updatedAt);
-  return written;
-};
+// Lists refresh in the background after each write; a second action straight after a save
+// still sends the right updated_at, because the shared write helper remembers its own writes.
 
 export function useEntityMutations() {
   const orgId = useOrgId();
@@ -40,17 +32,17 @@ export function useEntityMutations() {
   return {
     close: useMutation({
       mutationFn: (v: { kind: Kind; id: string; reason: string; lastSeen: string | null }) =>
-        closeEntity(v.kind, v.id, v.reason, seen(v.id, v.lastSeen)).then(remember(v.id)),
+        closeEntity(v.kind, v.id, v.reason, v.lastSeen),
       onSettled,
     }),
     reopen: useMutation({
       mutationFn: (v: { kind: Kind; id: string; lastSeen: string | null }) =>
-        reopenEntity(v.kind, v.id, seen(v.id, v.lastSeen)).then(remember(v.id)),
+        reopenEntity(v.kind, v.id, v.lastSeen),
       onSettled,
     }),
     archive: useMutation({
       mutationFn: (v: { kind: Kind; id: string; lastSeen: string | null }) =>
-        archiveEntity(v.kind, v.id, seen(v.id, v.lastSeen)).then(remember(v.id)),
+        archiveEntity(v.kind, v.id, v.lastSeen),
       onSettled,
     }),
     createPortfolio: useMutation({
@@ -60,19 +52,19 @@ export function useEntityMutations() {
     }),
     updatePortfolio: useMutation({
       mutationFn: (v: { id: string; input: PortfolioInput; lastSeen: string | null }) =>
-        updatePortfolio(v.id, v.input, seen(v.id, v.lastSeen)).then(remember(v.id)),
+        updatePortfolio(v.id, v.input, v.lastSeen),
       onSettled,
     }),
     createProgramme: useMutation({ mutationFn: createProgramme, onSettled }),
     updateProgramme: useMutation({
       mutationFn: (v: { id: string; input: ProgrammeInput; lastSeen: string | null }) =>
-        updateProgramme(v.id, v.input, seen(v.id, v.lastSeen)).then(remember(v.id)),
+        updateProgramme(v.id, v.input, v.lastSeen),
       onSettled,
     }),
     createProject: useMutation({ mutationFn: createProject, onSettled }),
     updateProject: useMutation({
       mutationFn: (v: { id: string; input: ProjectInput; lastSeen: string | null }) =>
-        updateProject(v.id, v.input, seen(v.id, v.lastSeen)).then(remember(v.id)),
+        updateProject(v.id, v.input, v.lastSeen),
       onSettled,
     }),
   };
