@@ -17,6 +17,9 @@ import { DeliveryStatusIcon } from "@/components/board-workspace";
 import { DecisionPanel } from "@/components/decision-panel";
 import { DeliveryWorkspace, ForecastPanel } from "@/components/delivery-workspace";
 import { DependencyTab } from "@/components/dependency-tab";
+import { ChangeBaselineAction } from "@/components/change-baseline";
+import { toBaselineChange } from "@/services/financials";
+import { ProjectFinancials } from "@/components/project-financials";
 import { ProjectEditButton, StateBadge } from "@/components/entity-management";
 import { DeclaredVsEvidenced } from "@/components/evidence-ui";
 import { FavouriteButton } from "@/components/favourite-button";
@@ -597,28 +600,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
 
       {tab === "milestones" && <ProjectMilestones projectId={project.id} />}
       {tab === "raid" && <ProjectRaid projectId={project.id} />}
-      {tab === "financials" && (
-        <div className="grid gap-4 md:grid-cols-3">
-          <KpiCard
-            label="Budget"
-            value={format.compact(project.budget)}
-            detail="Approved baseline"
-            icon="budget"
-          />
-          <KpiCard
-            label="Actual"
-            value={format.compact(project.actual)}
-            detail="Spend to date"
-            icon="budget"
-          />
-          <KpiCard
-            label="Forecast"
-            value={format.compact(project.forecast)}
-            detail={`${format.compact(project.forecast - project.budget)} variance`}
-            icon="forecast"
-          />
-        </div>
-      )}
+      {tab === "financials" && <ProjectFinancials project={project} />}
 
       {/* Not yet on Supabase (Stage 4c): these tabs read the demo project's prototype record. */}
       {
@@ -703,10 +685,14 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
                     <div>
                       <p className="text-sm font-medium">{change.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        {change.type} · {change.scheduleImpactDays} days
+                        {change.ref} · {change.type} · {format.currency(change.costImpact)} ·{" "}
+                        {change.scheduleImpactDays} days
                       </p>
                     </div>
-                    <span className="text-sm">{change.status}</span>
+                    <div className="flex items-center gap-3">
+                      <ChangeBaselineAction change={toBaselineChange(change)} />
+                      <span className="text-sm">{change.status}</span>
+                    </div>
                   </div>
                 ))}
                 {!changes.length && (

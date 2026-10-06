@@ -428,6 +428,8 @@ export const defaultSettings: AppSettings = {
     ],
     dependencyTypes: ["Sequencing", "Alignment", "Information", "Resource", "External"],
     changeTypes: ["Scope", "Schedule", "Cost"],
+    costCategories: ["Staff", "Contractors", "Licences", "Hardware", "Other"],
+    fundingSources: [],
   },
   // Filled from organisation_members when the organisation loads.
   users: [],

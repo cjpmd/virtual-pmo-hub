@@ -19,6 +19,7 @@ import { PageHeader } from "@/components/pmo-ui";
 import { HealthPill } from "@/components/health-pill";
 import { PageSkeleton, QueryState } from "@/components/query-state";
 import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
+import { RollupFinancials } from "@/components/rollup-financials";
 import { usePortfolioOverview } from "@/hooks/use-hierarchy";
 import { useFormat } from "@/lib/format";
 import { todayIso } from "@/lib/today";
@@ -267,6 +268,11 @@ function PortfolioBody({ data, switcher }: { data: PortfolioOverview; switcher: 
           trendColour={scoreColour(headlines.rag.percentOnTrack)}
         />
       </MetricRow>
+
+      <section className="space-y-3">
+        <h2 className="font-display text-lg font-semibold">Financial summary</h2>
+        <RollupFinancials scope={{ portfolioId: portfolio.id }} breakdown={false} />
+      </section>
 
       <div className="grid gap-4 xl:grid-cols-12">
         <ChartCard

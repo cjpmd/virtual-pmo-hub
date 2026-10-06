@@ -17,12 +17,16 @@ export const qk = {
     health: (orgId: string) => ["org", orgId, "portfolios", "health"] as const,
     overview: (orgId: string, portfolioId: string) =>
       ["org", orgId, "portfolios", "overview", portfolioId] as const,
+    financials: (orgId: string, portfolioId: string) =>
+      ["org", orgId, "portfolios", "financials", portfolioId] as const,
   },
   programmes: {
     all: (orgId: string) => ["org", orgId, "programmes"] as const,
     list: (orgId: string) => ["org", orgId, "programmes", "list"] as const,
     detail: (orgId: string, programmeId: string) =>
       ["org", orgId, "programmes", "detail", programmeId] as const,
+    financials: (orgId: string, programmeId: string) =>
+      ["org", orgId, "programmes", "financials", programmeId] as const,
   },
   projects: {
     all: (orgId: string) => ["org", orgId, "projects"] as const,
@@ -43,6 +47,13 @@ export const qk = {
     allTasks: (orgId: string) => ["org", orgId, "projects", "all-tasks"] as const,
     tasks: (orgId: string, projectId: string) =>
       ["org", orgId, "projects", projectId, "tasks"] as const,
+    financials: (orgId: string, projectId: string) =>
+      ["org", orgId, "projects", projectId, "financials"] as const,
+    /** Project-level financials for a programme or portfolio breakdown. */
+    financialsList: (orgId: string, scope: string) =>
+      ["org", orgId, "projects", "financials-list", scope] as const,
+    /** Change requests already turned into a baseline. */
+    baselinedChanges: (orgId: string) => ["org", orgId, "projects", "baselined-changes"] as const,
     canEdit: (orgId: string, projectId: string) =>
       ["org", orgId, "projects", projectId, "can-edit"] as const,
   },
@@ -64,6 +75,8 @@ export const qk = {
     list: (orgId: string) => ["org", orgId, "resources", "list"] as const,
     mine: (orgId: string, userId: string) => ["org", orgId, "resources", "mine", userId] as const,
   },
+  /** Month-end close; under projects, because closing moves every project's cut-off. */
+  financialPeriods: (orgId: string) => ["org", orgId, "projects", "financial-periods"] as const,
   lookups: (orgId: string, listKey: string) => ["org", orgId, "lookups", listKey] as const,
   settings: (orgId: string) => ["org", orgId, "settings"] as const,
   integrations: (orgId: string) => ["org", orgId, "integrations"] as const,

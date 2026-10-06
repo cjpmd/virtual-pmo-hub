@@ -1318,7 +1318,7 @@ export function ListsSettings() {
     <SettingsCard
       requires="pmo"
       title="Lists & categories"
-      description="Shared controlled lists used across lessons, projects and collections."
+      description="Shared controlled lists used across lessons, projects, collections and financials. Removing a cost category hides it from new lines; existing lines keep it."
     >
       <div className="grid gap-6 sm:grid-cols-2">
         <ListEditor
@@ -1345,6 +1345,16 @@ export function ListsSettings() {
           label="Tags"
           values={lists.tags}
           onChange={(values) => patch("lists", { tags: values })}
+        />
+        <ListEditor
+          label="Cost categories"
+          values={lists.costCategories}
+          onChange={(values) => patch("lists", { costCategories: values })}
+        />
+        <ListEditor
+          label="Funding sources"
+          values={lists.fundingSources}
+          onChange={(values) => patch("lists", { fundingSources: values })}
         />
       </div>
     </SettingsCard>
