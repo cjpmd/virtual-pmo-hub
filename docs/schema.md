@@ -165,7 +165,7 @@ On sign-up into an organisation, `link_profile_to_resource()` matches `resources
 ### 4.1 `organisations.settings` jsonb (display and behaviour preferences)
 These keys keep the current `AppSettings` shape, so `settings.ts` keeps its API: `regional` (baseCurrency, symbolPosition, separators, decimalPlaces, compactFormatting, multiCurrency, locale, dateFormat, timeZone, firstDayOfWeek, financialYearStartMonth), `workingTime` (hoursPerWeek, workingDays, hoursPerDay, defaultBauPercentage), `terminology.terms`, `health` (the 9 thresholds, **read by the SQL roll-ups**), `risk` (matrixSize, labels, bands, appetiteThreshold), `benefits` (optimismBias keyed by category `value`, defaultMeasurementFrequency, appraisalYears), `tiers` (descriptions and guidelines per `project_tier`), `notifications` (org defaults), `templates` (statusReportSections, committeePack), `data.retentionMonths`.
 
-A `jsonb` check constraint validates the presence and type of the `health` keys, because SQL reads them.
+A `jsonb` check constraint (`valid_org_settings`) validates the presence and type of the `health` keys, because SQL reads them, and of `benefits.optimismBias` (one entry per category, unique ignoring case, percentage 0–80; `valid_optimism_bias`). PMO members may change the optimism bias; everything else on the row is admin-only (see §9).
 
 ### 4.2 Tables
 | Table | Columns | Why a table |
@@ -465,7 +465,7 @@ Policies call these as `(select public.has_workspace_role(workspace_id, 'contrib
 ### 9.3 Policy matrix
 | Tables | select | insert / update | delete |
 |---|---|---|---|
-| `organisations` | `is_org_member(id)` | update: `has_org_role(id,'admin')`. Insert only through the `create_organisation()` RPC | service role |
+| `organisations` | `is_org_member(id)` | update: `has_org_role(id,'pmo')`, narrowed by the `organisations_role_scope` trigger: below admin, only `settings.benefits.optimismBias` may change. Insert only through the `create_organisation()` RPC | service role |
 | `organisation_subscriptions` | `has_org_role(…,'admin')` | service role | service role |
 | `organisation_members` | `is_org_member` | `has_org_role(…,'admin')` | admin (last-admin guard) |
 | `workspaces` | `is_workspace_member(id)` | `has_org_role(organisation_id,'admin')` | admin |
@@ -552,6 +552,7 @@ Unique index on `(coalesce(portfolio_id, programme_id, project_id), snapshot_dat
 - `project_plan_links`: project_id PK, plan_id, kind, last_sync_at, mode, health.
 - `sync_outbox`, `sync_conflicts`, `sync_log`: as in `data/integrations.ts`, plus tenant columns. `sync_log.project_id` is nullable.
 - The sign-up "Workspace" (orgName, domain, region, currency, fyStartMonth, lifecycle) becomes the `create_organisation(name, domain, region, currency, fy_start_month)` RPC. It inserts the organisation, a first workspace, the caller as `admin` in both, the caller's resource, and default lookups and lifecycle copied from a template.
+- `committee_packs`: id, organisation_id, workspace_id, collection_id null → collections (a collection with packs can't be deleted), title, meeting_date, content jsonb (sections, collection and project facts as issued), issued_at, issued_by → profiles, audit columns. A pack is a draft until `issued_at` is set; the `committee_pack_lock` trigger then stamps `issued_at = now()` and `issued_by = auth.uid()` and refuses every later update. Never deleted: no delete grant, and a trigger refuses deletes even for the service role. RLS: select for workspace members; insert and update (drafts only) for workspace PMO. Audited.
 - `audit_log`: id, organisation_id, workspace_id null, actor_id → profiles, action text, entity_table text, entity_id uuid, detail jsonb, created_at. Written by a generic `audit_row_change()` trigger on the hierarchy and register tables. **No FK on entity_id, by design.** Pruned by `pg_cron` per `settings.data.retentionMonths`.
 
 ---
@@ -673,6 +674,8 @@ As built. The order differs from the original plan: `delivery` (milestones) come
 | 20261005213047 | `permissions_can_delete` | Stage 4c: `project_permissions` returns `can_delete` alongside `can_edit`; `my_workspace_roles()` for the header role and button visibility. The 4b function is renamed `project_permissions_4b` and revoked (drop it by hand: the connector can't run `drop function` without a prompt) |
 | 20261005224326 | `roadmap_red_is_red` | Stage 4c: a red project is always "High risk" on the roadmap |
 | 20261005225559 | `roadmap_items_single_pass` | Stage 4c: `v_roadmap_items` computes project health and task stats once (materialised CTEs) instead of once per row |
+| 20261006084142 | `optimism_bias_settings` | Optimism bias required and validated in `organisations.settings`; defaults backfilled; PMO may update it (and only it) |
+| 20261006084203 | `committee_packs` | Issued committee packs: immutable once issued, never deleted, readable by workspace members |
 
 **Seed.** `scripts/generate-seed.ts` imports the current mock modules and writes `supabase/seed.sql`:
 - one demo organisation ("Demo University", `is_demo = true`) with one workspace

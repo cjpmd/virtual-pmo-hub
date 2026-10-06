@@ -27,6 +27,7 @@ projects list, project detail); Stage 4c applied it to every screen.
 | `benefits.ts`, `benefits-value.ts`, `benefits-map.ts` | benefits domain (load + pure calculations) |
 | `decisions.ts` | decisions, assumptions, change requests |
 | `dependencies.ts`, `roadmaps.ts`, `requests.ts`, `collections.ts` | as named; collections also load committee-pack facts |
+| `committee-packs.ts` | issued packs (`committee_packs`): list, issue. Issued packs are immutable |
 | `lessons.ts`, `gates.ts` | lessons, improvement actions, phase reviews; stage-gate checklist and lifecycle helpers |
 | `work-items.ts`, `issued-tasks.ts`, `status-reports.ts` | project tasks (diff-based save), portfolio and personal task views; issued work (offers); status reports |
 | `resources.ts`, `assurance.ts` | capacity planning; declared versus evidenced RAG |
@@ -77,7 +78,6 @@ projects list, project detail); Stage 4c applied it to every screen.
 |---|---|
 | Sprints, backlog, delivery settings, justifications (`sprints.ts`) | Not migrated until the sprints phase (schema §6). Keyed by project code, generated from the Supabase project; closures default to the organisation's holiday calendars. |
 | Selected portfolio, recent items, notification read state, saved board views | Per-viewer conveniences. |
-| Committee pack snapshots | Session only until document storage exists. |
 
 ## Prototype data still in the repo
 

@@ -1,4 +1,4 @@
-import { formatCompactCurrency, formatDate, fromIsoDate } from "@/lib/format";
+import { formatCompactCurrency, formatDate, fromIsoDate, toIsoDate } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, CalendarDays, Check, ChevronLeft, Download, FileDown, FileText, Presentation, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,13 @@ import { useBenefits } from "@/hooks/use-benefits";
 import { madeSince } from "@/services/decisions";
 import { useGovernance } from "@/hooks/use-governance";
 import { usePackProjects } from "@/hooks/use-collections";
+import { useIssueCommitteePack } from "@/hooks/use-committee-packs";
+import { useWorkspaceRole } from "@/hooks/use-permissions";
+import { errorMessage } from "@/services/service-error";
 import { addDaysIso, todayIso } from "@/lib/today";
 import { getSettings } from "@/services/settings";
 import { cn } from "@/lib/utils";
 
-type Snapshot={id:string;meetingDate:string;generatedAt:string;pageCount:number};
 type PackPage={id:string;label:string;type:"cover"|"summary"|"milestones"|"exceptions"|"benefits"|"decisions"|"project";project?:Project};
 const money = formatCompactCurrency;
 
@@ -102,7 +104,7 @@ function HighlightPage({collection,project,pageNumber,total}:{collection:Collect
 function Metric({label,value,tone}:{label:string;value:string;tone?:"good"|"warn"|"bad"}){return <div className={cn("rounded-md border border-border bg-muted/35 p-4",tone==="good"&&"border-health-good/30",tone==="warn"&&"border-health-warn/35",tone==="bad"&&"border-health-bad/30")}><p className="text-xs text-muted-foreground">{label}</p><p className="mt-2 font-display text-xl font-semibold">{value}</p></div>}
 function HealthFact({label,health}:{label:string;health:Health}){return <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2"><span className="text-xs text-muted-foreground">{label}</span><HealthPill health={health}/></div>}
 
-export function CommitteePack({collection,projects,onClose,onSave}:{collection:Collection;projects:Project[];onClose:()=>void;onSave:(snapshot:Snapshot)=>void}){
+export function CommitteePack({collection,projects,onClose,onIssued}:{collection:Collection;projects:Project[];onClose:()=>void;onIssued:()=>void}){
   const [pageIndex,setPageIndex]=useState(0),[meetingDate,setMeetingDate]=useState(()=>fromIsoDate(todayIso()));
   const [generatedAt]=useState(()=>`${fromIsoDate(todayIso())} at ${new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}`);
   const settings=getSettings();
@@ -120,10 +122,17 @@ export function CommitteePack({collection,projects,onClose,onSave}:{collection:C
     return [...ordered,...highlights];
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[projects,settings.templates.committeePack.sectionOrder]);
+  // Issuing stores the pack as built; it can't be changed afterwards, so it takes a confirm. PMO only.
+  const role=useWorkspaceRole(collection.workspaceId),canIssue=role==="pmo"||role==="admin";
+  const issue=useIssueCommitteePack(),[confirming,setConfirming]=useState(false);
+  const meetingIso=toIsoDate(meetingDate);
+  const issuePack=()=>{if(!meetingIso)return;issue.mutate({collectionId:collection.id,title:`${collection.name} pack`,meetingDate:meetingIso,content:{collection:{id:collection.id,name:collection.name},sections:pages.map(item=>item.label),pageCount:pages.length,coverText:settings.templates.committeePack.coverText,projects}},{onSuccess:onIssued})};
   const page=pages[pageIndex]; if(!page)return null;
-  const save=()=>onSave({id:`pack-${Date.now()}`,meetingDate,generatedAt,pageCount:pages.length});
   return <div className="fixed inset-0 z-[100] flex flex-col bg-background" role="dialog" aria-modal="true" aria-label="Committee pack preview">
-    <header className="flex min-h-16 flex-wrap items-center gap-2 border-b border-border px-3 py-2 sm:px-5"><Button variant="ghost" size="icon" onClick={onClose} aria-label="Close pack preview"><X className="size-4"/></Button><div className="mr-auto"><p className="font-semibold">{collection.name} pack</p><p className="text-xs text-muted-foreground">Preview · {pages.length} pages</p></div><Button variant="outline" size="sm" onClick={()=>{}}><Presentation className="size-4"/><span className="hidden sm:inline">Export to PowerPoint</span></Button><Button variant="outline" size="sm" onClick={()=>{}}><FileDown className="size-4"/><span className="hidden sm:inline">Export to PDF</span></Button><Button size="sm" onClick={save}><Save className="size-4"/>Save snapshot</Button></header>
+    <header className="flex min-h-16 flex-wrap items-center gap-2 border-b border-border px-3 py-2 sm:px-5"><Button variant="ghost" size="icon" onClick={onClose} aria-label="Close pack preview"><X className="size-4"/></Button><div className="mr-auto"><p className="font-semibold">{collection.name} pack</p><p className="text-xs text-muted-foreground">Preview · {pages.length} pages</p></div><Button variant="outline" size="sm" onClick={()=>{}}><Presentation className="size-4"/><span className="hidden sm:inline">Export to PowerPoint</span></Button><Button variant="outline" size="sm" onClick={()=>{}}><FileDown className="size-4"/><span className="hidden sm:inline">Export to PDF</span></Button>{canIssue&&(confirming
+      ?<><span className="text-xs text-muted-foreground">Issued packs can't be changed.</span><Button size="sm" variant="ghost" onClick={()=>setConfirming(false)} disabled={issue.isPending}>Cancel</Button><Button size="sm" onClick={issuePack} disabled={!meetingIso||issue.isPending}><Save className="size-4"/>{issue.isPending?"Issuing…":"Confirm and issue"}</Button></>
+      :<Button size="sm" onClick={()=>{issue.reset();setConfirming(true)}} disabled={!meetingIso} title={meetingIso?undefined:"Enter the meeting date as DD/MM/YYYY"}><Save className="size-4"/>Issue pack</Button>)}</header>
+    {issue.isError&&<p role="alert" className="border-b border-health-bad/40 bg-health-bad/10 px-5 py-2 text-sm">{errorMessage(issue.error)}</p>}
     <div className="flex min-h-0 flex-1"><aside className="hidden w-64 shrink-0 overflow-y-auto border-r border-border bg-muted/30 p-3 lg:block"><p className="mb-3 px-2 text-xs font-semibold uppercase text-muted-foreground">Pages</p><div className="space-y-1">{pages.map((item,index)=><Button key={item.id} variant="ghost" onClick={()=>setPageIndex(index)} className={cn("h-auto w-full justify-start gap-3 px-2 py-2 text-left",index===pageIndex&&"bg-accent text-accent-foreground")}><span className="grid size-7 shrink-0 place-items-center rounded border border-border bg-card text-xs">{index+1}</span><span className="line-clamp-2 text-xs">{item.label}</span></Button>)}</div></aside>
       <main className="min-w-0 flex-1 overflow-auto bg-muted/40 p-3 sm:p-6"><div className="mx-auto max-w-6xl"><div className="mb-3 flex items-center gap-2 lg:hidden"><span className="text-xs text-muted-foreground">Page {pageIndex+1} of {pages.length}</span><select value={pageIndex} onChange={event=>setPageIndex(Number(event.target.value))} className="h-8 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-xs">{pages.map((item,index)=><option key={item.id} value={index}>{item.label}</option>)}</select></div><div className="overflow-hidden rounded-md border border-border bg-card shadow-lg">{page.type==="cover"?<CoverPage collection={collection} meetingDate={meetingDate} generatedAt={generatedAt}/>:page.type==="summary"?<SummaryPage collection={collection} projects={projects} pageNumber={pageIndex+1} total={pages.length}/>:page.type==="milestones"?<MilestonesPage collection={collection} projects={projects} pageNumber={pageIndex+1} total={pages.length}/>:page.type==="exceptions"?<ExceptionsPage collection={collection} projects={projects} pageNumber={pageIndex+1} total={pages.length}/>:page.type==="benefits"?<BenefitsPage collection={collection} projects={projects} pageNumber={pageIndex+1} total={pages.length}/>:page.type==="decisions"?<DecisionsPage collection={collection} projects={projects} pageNumber={pageIndex+1} total={pages.length}/>:page.project?<HighlightPage collection={collection} project={page.project} pageNumber={pageIndex+1} total={pages.length}/>:null}</div></div></main>
     </div>
@@ -131,11 +140,10 @@ export function CommitteePack({collection,projects,onClose,onSave}:{collection:C
   </div>;
 }
 
-export type {Snapshot as CommitteePackSnapshot};
 /** Loads the collection's project facts from Supabase, then shows the pack. */
-export function CollectionCommitteePack({collection,onClose,onSave}:{collection:Collection;onClose:()=>void;onSave:(snapshot:Snapshot)=>void}){
+export function CollectionCommitteePack({collection,onClose,onIssued}:{collection:Collection;onClose:()=>void;onIssued:()=>void}){
   const query=usePackProjects(collection.projectIds);
   if(query.isError)return <div className="fixed inset-0 z-50 grid place-items-center bg-overlay p-6"><div className="max-w-md rounded-lg border bg-background p-6 text-sm shadow-xl"><p className="font-semibold">The pack could not be built.</p><p className="mt-1 text-muted-foreground">{query.error.message}</p><Button className="mt-4" variant="outline" onClick={onClose}>Close</Button></div></div>;
   if(!query.data)return <div className="fixed inset-0 z-50 grid place-items-center bg-overlay"><p className="rounded-md bg-background px-4 py-3 text-sm shadow">Building the pack…</p></div>;
-  return <CommitteePack collection={collection} projects={query.data} onClose={onClose} onSave={onSave}/>;
+  return <CommitteePack collection={collection} projects={query.data} onClose={onClose} onIssued={onIssued}/>;
 }

@@ -13,6 +13,7 @@ export type CollectionType = "Governance" | "Priority set" | "Funding stream";
 
 export interface CollectionView {
   id: string;
+  workspaceId: string;
   name: string;
   type: CollectionType;
   potAmount: number | null;
@@ -28,7 +29,9 @@ export async function listCollections(orgId: string): Promise<CollectionView[]> 
   const [collections, types] = await Promise.all([
     supabase
       .from("collections")
-      .select("id, name, type_id, pot_amount, collection_projects(project_id, award_amount)")
+      .select(
+        "id, workspace_id, name, type_id, pot_amount, collection_projects(project_id, award_amount)",
+      )
       .eq("organisation_id", orgId)
       .order("name"),
     supabase
@@ -42,6 +45,7 @@ export async function listCollections(orgId: string): Promise<CollectionView[]> 
   );
   return unwrap(collections, "Loading collections").map((row) => ({
     id: row.id,
+    workspaceId: row.workspace_id,
     name: row.name,
     type: asType(label.get(row.type_id)),
     potAmount: row.pot_amount == null ? null : Number(row.pot_amount),

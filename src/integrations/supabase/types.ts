@@ -1466,6 +1466,80 @@ export type Database = {
           },
         ];
       };
+      committee_packs: {
+        Row: {
+          collection_id: string | null;
+          content: Json;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          issued_at: string | null;
+          issued_by: string | null;
+          meeting_date: string;
+          organisation_id: string;
+          title: string;
+          updated_at: string;
+          workspace_id: string;
+        };
+        Insert: {
+          collection_id?: string | null;
+          content?: Json;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          issued_at?: string | null;
+          issued_by?: string | null;
+          meeting_date: string;
+          organisation_id: string;
+          title: string;
+          updated_at?: string;
+          workspace_id: string;
+        };
+        Update: {
+          collection_id?: string | null;
+          content?: Json;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          issued_at?: string | null;
+          issued_by?: string | null;
+          meeting_date?: string;
+          organisation_id?: string;
+          title?: string;
+          updated_at?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "committee_packs_collection_id_workspace_id_fkey";
+            columns: ["collection_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "collections";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "committee_packs_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "committee_packs_issued_by_fkey";
+            columns: ["issued_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "committee_packs_workspace_id_organisation_id_fkey";
+            columns: ["workspace_id", "organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id", "organisation_id"];
+          },
+        ];
+      };
       decision_actions: {
         Row: {
           created_at: string;
@@ -8530,6 +8604,14 @@ export type Database = {
         Args: { p_project: string };
         Returns: {
           can_delete: boolean;
+          can_edit: boolean;
+          can_manage_project: boolean;
+        }[];
+      };
+      project_permissions_4b: {
+        Args: { p_project: string };
+        Returns: {
+          can_delete_records: boolean;
           can_edit: boolean;
           can_manage_project: boolean;
         }[];

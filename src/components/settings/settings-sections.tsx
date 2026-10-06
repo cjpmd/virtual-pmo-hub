@@ -361,7 +361,7 @@ export function BenefitSettingsSection() {
         <FixedList label="Classifications" values={benefits.classifications} />
       </div>
     </SettingsCard>
-    <SettingsCard title="Optimism bias" description="Green Book style uplifts applied to raw benefit estimates in business cases and request appraisal. Both raw and adjusted figures are always shown.">
+    <SettingsCard title="Optimism bias" requires="pmo" description="Green Book style uplifts applied to raw benefit estimates in business cases and request appraisal. Both raw and adjusted figures are always shown.">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[460px] text-left text-sm">
           <thead className="bg-table-head text-xs text-muted-foreground"><tr><th className="h-10 px-3 font-semibold">Category</th><th className="w-40 px-3 font-semibold">Bias</th><th className="px-3 font-semibold">{formatCompactCurrency(100_000, settings)} raw becomes</th></tr></thead>

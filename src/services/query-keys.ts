@@ -53,6 +53,7 @@ export const qk = {
   dependencies: (orgId: string) => ["org", orgId, "projects", "dependencies"] as const,
   roadmaps: (orgId: string) => ["org", orgId, "projects", "roadmaps"] as const,
   governance: (orgId: string) => ["org", orgId, "governance"] as const,
+  committeePacks: (orgId: string) => ["org", orgId, "committee-packs"] as const,
   lessons: (orgId: string) => ["org", orgId, "lessons"] as const,
   issuedTasks: (orgId: string) => ["org", orgId, "projects", "issued-tasks"] as const,
   orgRaid: (orgId: string) => ["org", orgId, "projects", "org-raid"] as const,
