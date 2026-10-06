@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { LoaderCircle, LogOut } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
@@ -97,7 +97,8 @@ function NoOrganisation({ email }: { email: string }) {
     <CentredCard title="You're not in an organisation yet">
       <p className="text-sm text-muted-foreground">
         You're signed in as <strong className="text-foreground">{email}</strong>, but no
-        organisation has added you. Ask an organisation admin to invite this address.
+        organisation has added you. Ask an organisation admin to invite this address, or create a
+        new organisation for your team.
       </p>
       <p className="mt-3 text-sm text-muted-foreground">
         If you've been given access to the demo organisation, you can join it now.
@@ -111,7 +112,10 @@ function NoOrganisation({ email }: { email: string }) {
         </p>
       )}
       <div className="mt-5 flex flex-wrap gap-2">
-        <Button onClick={() => join.mutate()} disabled={join.isPending}>
+        <Button asChild>
+          <Link to="/signup/setup">Create an organisation</Link>
+        </Button>
+        <Button variant="outline" onClick={() => join.mutate()} disabled={join.isPending}>
           {join.isPending && <LoaderCircle className="animate-spin" />}Join the demo organisation
         </Button>
         <SignOutButton />

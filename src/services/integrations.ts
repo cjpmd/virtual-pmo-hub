@@ -1,65 +1,215 @@
-// Swappable integration service. Today it keeps mock state in the browser;
-// later each function can call real server functions without screen changes.
-import { useSyncExternalStore } from "react";
-import { conflictSeed, discoveredPlanSeeds, logSeed, outboxSeed, type DiscoveredPlan, type MsConnection, type OutboxItem, type PlanLink, type SyncConflict, type SyncLogEntry } from "@/data/integrations";
-import { getProjects } from "@/services/pmo";
+// Microsoft 365 / Planner integration state, on Supabase: the organisation's connection
+// (ms_connections, one row per organisation), plan links, the outbox of changes waiting to
+// go to Planner, conflicts and the sync log.
+//
+// There is no live Microsoft connection yet (no Entra app registration or sync backend), so
+// nothing here pretends to talk to Microsoft. What the screens can do for real is record an
+// admin-consent request, unlink a plan, resolve a recorded conflict and re-queue a failed
+// change; the sync backend will fill the rest of these tables when it exists.
+import type { Database } from "@/integrations/supabase/types";
+import type {
+  ConnectionStatus,
+  OutboxItem,
+  PlanLink,
+  SyncConflict,
+  SyncLogEntry,
+} from "@/data/integrations";
+import { supabase } from "@/integrations/supabase/client";
+import { listPeople } from "./hierarchy";
+import type { NewRow } from "./db";
+import { unwrap, unwrapMaybe } from "./service-error";
+import { deleteRows, insertRow, updateRow } from "./write";
 
-export interface Workspace { orgName: string; domain: string; region: "UK" | "EU"; currency: string; fyStartMonth: string; lifecycle: string; createdBy: string }
-interface State { connection: MsConnection; links: PlanLink[]; outbox: OutboxItem[]; conflicts: SyncConflict[]; log: SyncLogEntry[]; workspace?: Workspace; syncing: string[] }
+type Enums = Database["public"]["Enums"];
 
-const KEY = "virtual-pmo-integrations";
-const find = (text: string) => getProjects().find(p => p.name.toLowerCase().includes(text.toLowerCase()));
+const statusLabel: Record<Enums["ms_connection_status"], ConnectionStatus> = {
+  not_connected: "Not connected",
+  pending_approval: "Pending approval",
+  connected: "Connected",
+  needs_reconnect: "Needs reconnect",
+};
+const modeLabel: Record<Enums["sync_mode"], PlanLink["mode"]> = {
+  polling: "Polling (5 min)",
+  live_updates: "Live updates",
+  change_tracking: "Change tracking",
+};
+const healthLabel: Record<Enums["sync_health"], PlanLink["health"]> = {
+  healthy: "Healthy",
+  warning: "Warning",
+  failing: "Failing",
+};
+const outboxLabel: Record<Enums["outbox_status"], OutboxItem["status"]> = {
+  queued: "Queued",
+  sending: "Sending",
+  retrying: "Retrying",
+  failed: "Failed",
+};
+const logLabel: Record<Enums["sync_log_kind"], SyncLogEntry["kind"]> = {
+  read: "Read",
+  write: "Write",
+  throttled: "Throttled",
+  failed: "Failed",
+  deleted: "Deleted",
+  directory: "Directory",
+};
+const stamp = (iso: string | null | undefined) => {
+  if (!iso) return "";
+  const date = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
 
-function seed(): State {
-  const ebbot = find("Ebbot"); const planner = getProjects().filter(p => p.taskSource !== "Native").slice(0, 5);
-  const linked = [ebbot, ...planner].filter((p, i, all): p is NonNullable<typeof p> => !!p && all.findIndex(x => x?.id === p.id) === i).slice(0, 5);
-  const pid = (i: number) => linked[i % Math.max(1, linked.length)]?.id ?? "";
+export interface ConnectionView {
+  exists: boolean;
+  status: ConnectionStatus;
+  tenantName: string | null;
+  tenantDomain: string | null;
+  connectedBy: string | null;
+  connectedOn: string | null;
+  environments: string[];
+  adminRequestSentTo: string | null;
+  directorySyncedAt: string | null;
+  directoryPeople: number;
+}
+
+export interface IntegrationsData {
+  connection: ConnectionView;
+  links: PlanLink[];
+  outbox: (OutboxItem & { updatedAt: string })[];
+  conflicts: (SyncConflict & { updatedAt: string })[];
+  log: SyncLogEntry[];
+  projects: { id: string; code: string; name: string }[];
+}
+
+export async function loadIntegrations(orgId: string): Promise<IntegrationsData> {
+  const [connection, links, outbox, conflicts, log, projects, people] = await Promise.all([
+    supabase
+      .from("ms_connections")
+      .select(
+        "status, tenant_name, tenant_domain, connected_by_id, connected_on, environments, admin_request_sent_to, directory_synced_at, directory_people",
+      )
+      .eq("organisation_id", orgId)
+      .maybeSingle(),
+    supabase
+      .from("project_plan_links")
+      .select("project_id, plan_id, kind, last_sync_at, mode, health")
+      .eq("organisation_id", orgId),
+    supabase
+      .from("sync_outbox")
+      .select(
+        "id, project_id, change, queued_by_id, queued_at, status, attempts, last_error, updated_at",
+      )
+      .eq("organisation_id", orgId)
+      .order("queued_at", { ascending: false }),
+    supabase
+      .from("sync_conflicts")
+      .select(
+        "id, project_id, task, field, planner_value, our_value, changed_in_planner_by, occurred_at, resolution, updated_at",
+      )
+      .eq("organisation_id", orgId)
+      .order("occurred_at", { ascending: false }),
+    supabase
+      .from("sync_log")
+      .select("id, project_id, kind, message, occurred_at")
+      .eq("organisation_id", orgId)
+      .order("occurred_at", { ascending: false })
+      .limit(100),
+    supabase.from("projects").select("id, code, name").eq("organisation_id", orgId).order("name"),
+    listPeople(orgId),
+  ]);
+  const names = new Map(people.map((person) => [person.id, person.name]));
+  const row = unwrapMaybe(connection, "Loading the Microsoft 365 connection");
   return {
-    connection: { tenantName: "University of Dundee", tenantDomain: "dundee.ac.uk", status: "Connected", connectedBy: "Chris McDonald", connectedOn: "02/09/2026", environments: ["dundee.crm11.dynamics.com"], directorySyncedAt: "25/09/2026 02:00", directoryPeople: 412 },
-    links: linked.map((p, i) => ({ projectId: p.id, planId: `plan-${p.id}`, kind: p.taskSource === "Planner (Basic)" ? "Basic" : "Premium", lastSync: i === 2 ? "25/09/2026 11:06" : "25/09/2026 13:45", mode: p.taskSource === "Planner (Basic)" ? "Polling (5 min)" : i === 0 ? "Live updates" : "Change tracking", health: i === 2 ? "Failing" : i === 1 ? "Warning" : "Healthy" })),
-    outbox: outboxSeed.map((o, i) => ({ ...o, projectId: pid(i) })),
-    conflicts: conflictSeed.map((c, i) => ({ ...c, projectId: pid(i) })),
-    log: logSeed.map((l, i) => ({ ...l, projectId: l.kind === "Directory" ? undefined : pid(i) })),
-    syncing: [],
+    connection: {
+      exists: Boolean(row),
+      status: row ? statusLabel[row.status] : "Not connected",
+      tenantName: row?.tenant_name ?? null,
+      tenantDomain: row?.tenant_domain ?? null,
+      connectedBy: (row?.connected_by_id && names.get(row.connected_by_id)) || null,
+      connectedOn: row?.connected_on ?? null,
+      environments: row?.environments ?? [],
+      adminRequestSentTo: row?.admin_request_sent_to ?? null,
+      directorySyncedAt: row?.directory_synced_at ? stamp(row.directory_synced_at) : null,
+      directoryPeople: row?.directory_people ?? 0,
+    },
+    links: unwrap(links, "Loading linked plans").map((link) => ({
+      projectId: link.project_id,
+      planId: link.plan_id,
+      kind: link.kind === "basic" ? "Basic" : "Premium",
+      lastSync: stamp(link.last_sync_at) || "Never",
+      mode: modeLabel[link.mode],
+      health: healthLabel[link.health],
+    })),
+    outbox: unwrap(outbox, "Loading pending changes").map((item) => ({
+      id: item.id,
+      projectId: item.project_id,
+      change: item.change,
+      by: (item.queued_by_id && names.get(item.queued_by_id)) || "Unknown",
+      queuedAt: stamp(item.queued_at),
+      status: outboxLabel[item.status],
+      attempts: item.attempts,
+      ...(item.last_error && { lastError: item.last_error }),
+      updatedAt: item.updated_at,
+    })),
+    conflicts: unwrap(conflicts, "Loading conflicts").map((item) => ({
+      id: item.id,
+      projectId: item.project_id,
+      task: item.task,
+      field: item.field,
+      plannerValue: item.planner_value ?? "",
+      ourValue: item.our_value ?? "",
+      changedInPlannerBy: item.changed_in_planner_by ?? "someone",
+      at: stamp(item.occurred_at),
+      ...(item.resolution && {
+        resolved:
+          item.resolution === "kept_planner" ? ("Kept Planner" as const) : ("Reapplied" as const),
+      }),
+      updatedAt: item.updated_at,
+    })),
+    log: unwrap(log, "Loading the sync log").map((entry) => ({
+      id: entry.id,
+      at: stamp(entry.occurred_at),
+      ...(entry.project_id && { projectId: entry.project_id }),
+      kind: logLabel[entry.kind],
+      message: entry.message,
+    })),
+    projects: unwrap(projects, "Loading projects"),
   };
 }
 
-let state: State = seed();
-let loaded = false;
-const listeners = new Set<() => void>();
-const server = seed();
-function load() { loaded = true; try { const raw = localStorage.getItem(KEY); if (raw) state = { ...state, ...JSON.parse(raw), syncing: [] }; } catch { /* ignore */ } }
-function set(next: Partial<State>) { state = { ...state, ...next }; try { localStorage.setItem(KEY, JSON.stringify({ ...state, syncing: [] })); } catch { /* ignore */ } listeners.forEach(l => l()); }
-const get = () => { if (!loaded && typeof window !== "undefined") load(); return state; };
-export function useIntegrations() { return useSyncExternalStore(cb => { listeners.add(cb); return () => { listeners.delete(cb); }; }, get, () => server); }
-const now = () => { const d = new Date(); const p = (n: number) => String(n).padStart(2, "0"); return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`; };
-const addLog = (entry: Omit<SyncLogEntry, "id" | "at">) => [{ ...entry, id: crypto.randomUUID(), at: now() }, ...get().log];
+/** Record that a Microsoft 365 admin has been asked to approve access (admins and PMO). */
+export async function requestAdminConsent(orgId: string, exists: boolean, adminEmail: string) {
+  const fields = { status: "pending_approval" as const, admin_request_sent_to: adminEmail.trim() };
+  if (exists)
+    return updateRow("ms_connections", orgId, fields, { context: "Recording the consent request" });
+  // ms_connections is keyed by organisation and has no tenant trigger, so the id is sent.
+  const row = { organisation_id: orgId, ...fields } as unknown as NewRow<"ms_connections">;
+  return insertRow("ms_connections", row, "Recording the consent request");
+}
 
-export const getConnection = () => get().connection;
-export function startConsent() { set({ connection: { ...get().connection, status: "Connected", connectedBy: "Chris McDonald", connectedOn: now().slice(0, 10), adminRequestSentTo: undefined }, log: addLog({ kind: "Directory", message: "Admin consent granted for Virtual PMO" }) }); }
-export function requestAdminConsent(adminEmail: string) { set({ connection: { ...get().connection, status: "Pending approval", adminRequestSentTo: adminEmail } }); }
-export function disconnect() { set({ connection: { ...get().connection, status: "Needs reconnect" } }); }
+export async function unlinkPlan(projectId: string) {
+  return deleteRows("project_plan_links", [projectId], "Unlinking the plan");
+}
 
-export function discoverPlans(): DiscoveredPlan[] {
-  return discoveredPlanSeeds.map(plan => {
-    const word = plan.name.split(/[ (]/)[0];
-    const match = plan.name.includes("social") ? undefined : find(plan.name) ?? find(word ?? plan.name);
-    return { ...plan, suggestedProjectId: match?.id, matchReason: match ? (plan.kind === "Premium" ? "Same project ID in Dataverse" : "Similar name") : undefined };
-  });
+export async function resolveConflict(
+  id: string,
+  resolution: "Kept Planner" | "Reapplied",
+  lastSeen: string,
+) {
+  return updateRow(
+    "sync_conflicts",
+    id,
+    { resolution: resolution === "Kept Planner" ? "kept_planner" : "reapplied" },
+    { context: "Resolving the conflict", lastSeen },
+  );
 }
-export function linkPlan(projectId: string, plan: DiscoveredPlan) {
-  const links = get().links.filter(l => l.projectId !== projectId && l.planId !== plan.id);
-  set({ links: [...links, { projectId, planId: plan.id, kind: plan.kind, lastSync: now(), mode: plan.kind === "Basic" ? "Polling (5 min)" : "Change tracking", health: "Healthy" }], log: addLog({ projectId, kind: "Read", message: `Linked to “${plan.name}” and read ${plan.tasks} tasks` }) });
+
+/** Put a failed change back in the queue for the sync service to send. */
+export async function retryOutbox(item: { id: string; attempts: number; updatedAt: string }) {
+  return updateRow(
+    "sync_outbox",
+    item.id,
+    { status: "queued", last_error: null },
+    { context: "Re-queuing the change", lastSeen: item.updatedAt },
+  );
 }
-export function unlinkPlan(projectId: string) { set({ links: get().links.filter(l => l.projectId !== projectId) }); }
-export function syncNow(projectId: string) {
-  set({ syncing: [...get().syncing, projectId] });
-  setTimeout(() => set({ syncing: get().syncing.filter(id => id !== projectId), links: get().links.map(l => l.projectId === projectId ? { ...l, lastSync: now(), health: "Healthy" } : l), log: addLog({ projectId, kind: "Read", message: "Manual sync complete" }) }), 1500);
-}
-export const listOutbox = () => get().outbox;
-export function retryOutbox(id: string) { set({ outbox: get().outbox.map(o => o.id === id ? { ...o, status: "Sending", attempts: o.attempts + 1, lastError: undefined } : o) }); setTimeout(() => set({ outbox: get().outbox.filter(o => o.id !== id), log: addLog({ kind: "Write", message: "Queued change sent to Planner" }) }), 1500); }
-export const listConflicts = () => get().conflicts;
-export function resolveConflict(id: string, resolution: "Kept Planner" | "Reapplied") { set({ conflicts: get().conflicts.map(c => c.id === id ? { ...c, resolved: resolution } : c) }); }
-export const listSyncLog = () => get().log;
-export function saveWorkspace(workspace: Workspace) { set({ workspace, connection: { ...get().connection, tenantName: workspace.orgName, tenantDomain: workspace.domain, status: "Not connected" } }); }
-export function resetIntegrations() { state = seed(); set({}); }

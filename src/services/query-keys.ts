@@ -65,6 +65,7 @@ export const qk = {
   },
   lookups: (orgId: string, listKey: string) => ["org", orgId, "lookups", listKey] as const,
   settings: (orgId: string) => ["org", orgId, "settings"] as const,
+  integrations: (orgId: string) => ["org", orgId, "integrations"] as const,
   workspaceRoles: (orgId: string) => ["org", orgId, "workspace-roles"] as const,
   phases: (orgId: string) => ["org", orgId, "phases"] as const,
 } as const;

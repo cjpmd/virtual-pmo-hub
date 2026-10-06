@@ -1,7 +1,14 @@
 // Authentication and organisation membership. Email magic link only for now.
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { ServiceError, fromAuth, unwrap, unwrapMaybe, unwrapWrite } from "./service-error";
+import {
+  ServiceError,
+  fromPostgrest,
+  fromAuth,
+  unwrap,
+  unwrapMaybe,
+  unwrapWrite,
+} from "./service-error";
 
 export interface Profile {
   id: string;
@@ -110,6 +117,28 @@ export async function joinDemoOrganisation(): Promise<string> {
       cause: error,
     });
   }
+  return data;
+}
+
+export interface NewOrganisation {
+  name: string;
+  region: "uk" | "eu";
+  currency: "GBP" | "EUR";
+  financialYearStartMonth: number;
+}
+
+/**
+ * Creates an organisation with the signed-in user as its admin, a first workspace and the
+ * default lifecycle, lists and settings (create_organisation). Returns the organisation id.
+ */
+export async function createOrganisation(input: NewOrganisation): Promise<string> {
+  const { data, error } = await supabase.rpc("create_organisation", {
+    p_name: input.name.trim(),
+    p_region: input.region,
+    p_currency: input.currency,
+    p_fy_start_month: input.financialYearStartMonth,
+  });
+  if (error) throw fromPostgrest(error, "Creating your organisation");
   return data;
 }
 
