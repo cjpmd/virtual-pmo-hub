@@ -35,7 +35,6 @@ import { Breadcrumbs } from "@/components/section-nav";
 import { StatusWorkspace } from "@/components/status-workspace";
 import { TaskWorkspace } from "@/components/task-workspace";
 import { Button } from "@/components/ui/button";
-import type { Project } from "@/data/types";
 import {
   useMilestones,
   usePeople,
@@ -43,6 +42,7 @@ import {
   usePortfolios,
   useProject,
   useRaid,
+  useProjectPermissions,
 } from "@/hooks/use-hierarchy";
 import { useFormat } from "@/lib/format";
 import { daysFromToday, todayIso } from "@/lib/today";
@@ -53,17 +53,10 @@ import { useStatusReports } from "@/hooks/use-status-reports";
 import { scopedTo, type ResolvedDecision } from "@/services/decisions";
 import { useGovernance } from "@/hooks/use-governance";
 import type { ProjectDetail } from "@/services/hierarchy";
-import { toMockProjectId, toProjectCode } from "@/services/legacy-bridge";
 import { getProjectLessons, hasPhaseLessonsReview } from "@/services/lessons";
 import { useLessons } from "@/hooks/use-lessons";
 import { toTaskSource } from "@/services/work-items";
-import {
-  getPhaseForStage,
-  getProject,
-  getProjectBenefits,
-  getProjectTeam,
-  getTierDefinitions,
-} from "@/services/pmo";
+import { getTierDefinitions } from "@/services/gates";
 import { useDeliveryVersion } from "@/services/sprints";
 import { term, useSettings } from "@/services/settings";
 
@@ -103,8 +96,7 @@ const taskSourceLabel: Record<string, string> = {
 
 function ProjectPage() {
   const { projectCode } = Route.useParams();
-  // Old prototype ids (e.g. "ebbot-chatbot") still resolve to the project's code.
-  const project = useProject(toProjectCode(projectCode));
+  const project = useProject(projectCode);
   return (
     <QueryState
       query={project}
@@ -140,14 +132,6 @@ function Section({
 }
 
 /** Placeholder for tabs that still need the prototype record (demo organisation only until 4c). */
-function NotYetMigrated() {
-  return (
-    <p className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-      This tab moves to the database in the next stage. It currently shows data only for the demo
-      organisation.
-    </p>
-  );
-}
 
 function ProjectBody({ project }: { project: ProjectDetail }) {
   const settings = useSettings();
@@ -180,8 +164,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
     .slice(0, 5);
 
   // ---- Still prototype data (Stage 4c), keyed by the demo project's old id ----
-  const mockId = toMockProjectId(project.code);
-  const legacy: Project | undefined = getProject(mockId);
+  const permissions = useProjectPermissions(project.id);
   const governance = useGovernance();
   const decisions = useMemo(
     () => scopedTo(governance.data?.decisions ?? [], { projectId: project.id }),
@@ -189,7 +172,8 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
   );
   const openDecision = decisions.find((item) => item.id === openDecisionId);
   const changes = useMemo(
-    () => (governance.data?.changes ?? []).filter((change) => change.scope.projectId === project.id),
+    () =>
+      (governance.data?.changes ?? []).filter((change) => change.scope.projectId === project.id),
     [governance.data, project.id],
   );
   const lessonsData = useLessons();
@@ -297,7 +281,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
               <ListPlus />
               Issue task
             </Button>
-            {legacy && (
+            {permissions.canEdit && (
               <Button size="sm" variant="outline" onClick={() => setHandover(true)}>
                 <PackageCheck />
                 {project.state === "Closed" ? "Benefits handover" : "Close project"}
@@ -556,9 +540,9 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
                 )}
               </div>
             </Section>
-            {legacy && (
+            {
               <GateChecklist
-                project={legacy}
+                project={project}
                 lessonsReviewed={lessonsReviewed}
                 phaseReviewHeld={phaseReviewHeld}
                 manualTicks={manualTicks}
@@ -568,7 +552,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
                   )
                 }
               />
-            )}
+            }
             <Section
               title="Upcoming milestones"
               actions={
@@ -632,7 +616,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
       )}
 
       {/* Not yet on Supabase (Stage 4c): these tabs read the demo project's prototype record. */}
-      {(
+      {
         <>
           {tab === "status" && (
             <StatusWorkspace
@@ -699,7 +683,9 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
               )}
             </div>
           )}
-          {tab === "assumptions" && <AssumptionsWorkspace scope={{ projectId: project.id }} compact />}
+          {tab === "assumptions" && (
+            <AssumptionsWorkspace scope={{ projectId: project.id }} compact />
+          )}
           {tab === "lessons" && <LessonsTab project={project} />}
           {tab === "changes" && (
             <Section title="Change requests">
@@ -763,7 +749,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
             />
           )}
         </>
-      )}
+      }
       {openDecision && (
         <DecisionPanel
           decision={openDecision}

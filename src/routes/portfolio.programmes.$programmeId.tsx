@@ -8,7 +8,7 @@ import { DependencyTab } from "@/components/dependency-tab";
 import { StateBadge } from "@/components/entity-management";
 import { FavouriteButton } from "@/components/favourite-button";
 import { HealthPill } from "@/components/health-pill";
-import { MilestoneSummary } from "@/components/milestone-summary";
+import { MilestoneSummary, type SummaryMilestone } from "@/components/milestone-summary";
 import { EntityHeader, Fact, KpiCard } from "@/components/pmo-ui";
 import { ProgrammeDecisions } from "@/components/programme-decisions";
 import { QueryState } from "@/components/query-state";
@@ -26,8 +26,6 @@ import { useFormat } from "@/lib/format";
 import { projectSummariesToRows } from "@/lib/project-rows";
 import { daysFromToday, todayIso } from "@/lib/today";
 import type { ProgrammeSummary, ProjectSummary } from "@/services/hierarchy";
-import { toMockProgrammeId, toProgrammeId } from "@/services/legacy-bridge";
-import { getProgrammeBenefits, type PortfolioMilestone } from "@/services/pmo";
 import { term, useSettings } from "@/services/settings";
 
 export const Route = createFileRoute("/portfolio/programmes/$programmeId")({
@@ -55,7 +53,7 @@ const tabs = [
 function ProgrammePage() {
   const { programmeId: param } = Route.useParams();
   // Links from screens not yet on Supabase may still carry the prototype id.
-  const programme = useProgramme(toProgrammeId(param));
+  const programme = useProgramme(param);
   return (
     <QueryState
       query={programme}
@@ -96,29 +94,19 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
   );
   const portfolio = portfolios.data?.find((item) => item.id === programme.portfolioId);
   const metrics = useMemo(() => programmeMetrics(projects), [projects]);
-  const mockId = toMockProgrammeId(programme.id);
-
-  const summaryItems = useMemo<PortfolioMilestone[]>(() => {
+  const summaryItems = useMemo<SummaryMilestone[]>(() => {
     const byId = new Map(projects.map((project) => [project.id, project]));
-    const names = new Map((people.data ?? []).map((person) => [person.id, person.name]));
     return (milestones.data ?? []).map((item) => ({
       id: item.id,
       title: item.title,
       type: item.type,
-      owner: (item.ownerId && names.get(item.ownerId)) || "Unassigned",
-      baselineDate: item.baselineDate,
-      forecastDate: item.forecastDate,
-      ...(item.actualDate ? { actualDate: item.actualDate } : {}),
       status: item.status,
-      reportToCommittee: item.reportToCommittee,
-      forecastHistory: [],
-      projectId: byId.get(item.projectId)?.code ?? "",
-      projectName: byId.get(item.projectId)?.name ?? "",
-      programmeId: programme.id,
-      programmeName: programme.name,
+      forecastDate: item.forecastDate,
       slipDays: item.slipDays,
+      projectCode: byId.get(item.projectId)?.code ?? "",
+      projectName: byId.get(item.projectId)?.name ?? "",
     }));
-  }, [milestones.data, projects, people.data, programme.id, programme.name]);
+  }, [milestones.data, projects]);
   const overdue = summaryItems.filter((item) => item.status === "Overdue").length;
   const late = summaryItems.filter((item) => item.status === "Late").length;
   const slipped = summaryItems.filter(
@@ -321,8 +309,10 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
       {/* Not yet on Supabase (Stage 4c): these tabs still read the prototype data for this programme. */}
       {tab === "benefits" && <ProgrammeBenefits programmeId={programme.id} />}
       {tab === "dependencies" && <DependencyTab programmeId={programme.id} />}
-      {tab === "decisions" && <ProgrammeDecisions programmeId={mockId} />}
-      {tab === "assumptions" && <AssumptionsWorkspace scope={{ programmeId: mockId }} compact />}
+      {tab === "decisions" && <ProgrammeDecisions programmeId={programme.id} />}
+      {tab === "assumptions" && (
+        <AssumptionsWorkspace scope={{ programmeId: programme.id }} compact />
+      )}
 
       {tab === "financials" && (
         <div className="grid gap-4 md:grid-cols-3">
