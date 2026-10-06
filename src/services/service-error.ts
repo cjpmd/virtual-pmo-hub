@@ -10,6 +10,7 @@ export type ServiceErrorKind =
   | "conflict" // unique constraint, e.g. a project code already in use
   | "invalid" // check constraint, foreign key or a rule enforced by a trigger
   | "network" // the request did not reach the server
+  | "timeout" // the database gave up (statement timeout) or the gateway did
   | "unknown";
 
 export class ServiceError extends Error {
@@ -37,15 +38,22 @@ const messages: Record<ServiceErrorKind, string> = {
   conflict: "That value is already in use.",
   invalid: "That change isn't valid.",
   network: "We couldn't reach the server. Check your connection and try again.",
+  timeout: "This is taking too long — please try again.",
   unknown: "Something went wrong. Please try again.",
 };
 
 /** Maps a PostgREST error (from supabase-js) to a ServiceError with a readable message. */
-export function fromPostgrest(error: PostgrestError, context?: string): ServiceError {
+export function fromPostgrest(
+  error: PostgrestError,
+  context?: string,
+  status?: number,
+): ServiceError {
   const code = error.code;
   let kind: ServiceErrorKind = "unknown";
   let message = messages.unknown;
-  if (code === "42501" || code === "PGRST301") kind = "forbidden";
+  if (code === "57014" || /statement timeout|canceling statement/i.test(error.message ?? ""))
+    kind = "timeout";
+  else if (code === "42501" || code === "PGRST301") kind = "forbidden";
   else if (code === "PGRST116") kind = "not_found";
   else if (code === "23505") kind = "conflict";
   else if (code === "23503" || code === "23514" || code === "23502" || code === "22P02")
@@ -53,6 +61,8 @@ export function fromPostgrest(error: PostgrestError, context?: string): ServiceE
   else if (code === "P0001")
     kind = "invalid"; // raise exception in a trigger: its text is meant for people
   else if (!code && /fetch|network/i.test(error.message)) kind = "network";
+  // PostgREST answers a statement timeout with HTTP 500; a gateway timeout is 504.
+  else if (status === 500 || status === 504) kind = "timeout";
   message = kind === "invalid" && code === "P0001" ? error.message : messages[kind];
   if (kind === "conflict" && error.details) message = `${messages.conflict} ${error.details}`;
   return new ServiceError(kind, context ? `${context}: ${message}` : message, {
@@ -88,10 +98,10 @@ export function fromAuth(error: AuthError): ServiceError {
 
 /** Returns `data` or throws a ServiceError. Use for every supabase-js call in a service. */
 export function unwrap<T>(
-  result: { data: T; error: PostgrestError | null },
+  result: { data: T; error: PostgrestError | null; status?: number },
   context?: string,
 ): NonNullable<T> {
-  if (result.error) throw fromPostgrest(result.error, context);
+  if (result.error) throw fromPostgrest(result.error, context, result.status);
   if (result.data === null || result.data === undefined)
     throw new ServiceError("not_found", messages.not_found);
   return result.data as NonNullable<T>;
@@ -99,10 +109,10 @@ export function unwrap<T>(
 
 /** Like unwrap, but a missing row is a valid answer (`maybeSingle()`). */
 export function unwrapMaybe<T>(
-  result: { data: T; error: PostgrestError | null },
+  result: { data: T; error: PostgrestError | null; status?: number },
   context?: string,
 ): T | null {
-  if (result.error) throw fromPostgrest(result.error, context);
+  if (result.error) throw fromPostgrest(result.error, context, result.status);
   return result.data ?? null;
 }
 
@@ -111,10 +121,10 @@ export function unwrapMaybe<T>(
  * and no rows. Writes select the row back, so an empty result means "not allowed or not there".
  */
 export function unwrapWrite<T>(
-  result: { data: T; error: PostgrestError | null },
+  result: { data: T; error: PostgrestError | null; status?: number },
   context?: string,
 ): NonNullable<T> {
-  if (result.error) throw fromPostgrest(result.error, context);
+  if (result.error) throw fromPostgrest(result.error, context, result.status);
   if (
     result.data === null ||
     result.data === undefined ||

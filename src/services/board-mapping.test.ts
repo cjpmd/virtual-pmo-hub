@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { PostgrestError } from "@supabase/supabase-js";
 
 vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 // The board mappers live next to their components; the Supabase client must not load in tests.
@@ -113,5 +114,22 @@ describe("fromAuth", () => {
     expect(result.message).toBe(
       "We couldn't reach the server. Check your connection and try again.",
     );
+  });
+});
+
+describe("timeouts", () => {
+  const err = (code: string, message = "") =>
+    ({ code, message, details: "", hint: "", name: "PostgrestError" }) as PostgrestError;
+  it("maps a statement timeout to a try-again message", () => {
+    const error = fromPostgrest(err("57014", "canceling statement due to statement timeout"));
+    expect(error.kind).toBe("timeout");
+    expect(error.message).toBe("This is taking too long — please try again.");
+  });
+  it("treats an HTTP 500 or 504 without a known code as a timeout", () => {
+    expect(fromPostgrest(err(""), "Loading projects", 500).message).toBe(
+      "Loading projects: This is taking too long — please try again.",
+    );
+    expect(fromPostgrest(err(""), undefined, 504).kind).toBe("timeout");
+    expect(fromPostgrest(err("42501"), undefined, 500).kind).toBe("forbidden");
   });
 });

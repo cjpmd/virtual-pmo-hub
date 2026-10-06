@@ -16,7 +16,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useRouter } from "@tanstack/react-router";
 import type { BoardRecordChange, BoardRow } from "@/components/board-workspace";
-import { latest } from "@/services/write";
 
 export interface BoardRecordHandlers<Input> {
   /** Board column key → service field. Return undefined for a value that isn't valid yet. */
@@ -44,7 +43,6 @@ export function useBoardRecordSync<Input extends object>(
     new Map<string, { patch: Partial<BoardRow>; timer: ReturnType<typeof setTimeout> }>(),
   );
   const inFlight = useRef(new Map<string, Promise<unknown>>());
-  const writtenAt = useRef(new Map<string, string | null>());
 
   const flush = useCallback((id: string) => {
     const entry = pending.current.get(id);
@@ -58,15 +56,11 @@ export function useBoardRecordSync<Input extends object>(
     const previous = inFlight.current.get(id) ?? Promise.resolve();
     const write = previous
       .catch(() => undefined)
-      .then(async () => {
-        const lastSeen = latest(current.current.lastSeen(id), writtenAt.current.get(id));
-        const result = await current.current.update(id, input, lastSeen);
-        if (result) writtenAt.current.set(id, result.updatedAt);
-      })
+      // The write helper sends the newer of this and its own last write to the row, so a
+      // second edit before the board refetches doesn't conflict with the first.
+      .then(() => current.current.update(id, input, current.current.lastSeen(id) ?? null))
       .catch(() => {
-        // The mutation reports the failure (toast) and refetches; forget our version so the
-        // next edit uses what the server now says.
-        writtenAt.current.delete(id);
+        // The mutation reports the failure (toast) and refetches.
       })
       .finally(() => {
         if (inFlight.current.get(id) === write) inFlight.current.delete(id);

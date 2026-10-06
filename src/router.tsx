@@ -4,7 +4,10 @@ import { toast } from "sonner";
 import { routeTree } from "./routeTree.gen";
 import { errorMessage, isServiceError } from "./services/service-error";
 
-/** Only failures that might succeed on a second try are retried. */
+/**
+ * Only failures that might succeed on a second try are retried. A timeout is not: it would
+ * most likely time out again, adding load, so the screen shows "try again" straight away.
+ */
 const shouldRetry = (failureCount: number, error: unknown) =>
   failureCount < 2 &&
   (!isServiceError(error) || error.kind === "network" || error.kind === "unknown");

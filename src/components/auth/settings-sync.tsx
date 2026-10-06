@@ -78,11 +78,15 @@ export function SettingsSync({ children }: { children: ReactNode }) {
         .catch(() => undefined)
         .then(() => saveOrgSettings({ orgId, data, logoFile, ids: current.ids }, previous, next))
         .then(
-          () => queryClient.invalidateQueries({ queryKey: qk.org(orgId) }),
-          async (error: unknown) => {
+          // Not awaited: the next save must not wait for every organisation query to refetch.
+          // (Its updated_at stays right regardless: the write helper remembers its own writes.)
+          () => {
+            void queryClient.invalidateQueries({ queryKey: qk.org(orgId) });
+          },
+          (error: unknown) => {
             toast.error(errorMessage(error));
             current.busy = false;
-            await queryClient.invalidateQueries({ queryKey: qk.org(orgId) });
+            void queryClient.invalidateQueries({ queryKey: qk.org(orgId) });
           },
         )
         .finally(() => {

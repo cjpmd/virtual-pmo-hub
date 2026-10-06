@@ -43,7 +43,7 @@ begin
   select count(*) into n from public.risks where project_id = project;
   if n > 0 then results := array_append(results, 'viewer reads risks: ok'); else failures := failures + 1; results := array_append(results, 'viewer reads risks: FAIL'); end if;
   select * into perms from public.project_permissions(project);
-  results := array_append(results, format('viewer permissions: %s/%s/%s', perms.can_edit, perms.can_delete_records, perms.can_manage_project));
+  results := array_append(results, format('viewer permissions: %s/%s/%s', perms.can_edit, perms.can_delete, perms.can_manage_project));
   if perms.can_edit then failures := failures + 1; end if;
   with u as (update public.risks set title = title || ' (viewer)' where id = a_risk returning id) select count(*) into n from u;
   if n = 0 then results := array_append(results, 'viewer update filtered by RLS (0 rows -> forbidden in UI): ok'); else failures := failures + 1; results := array_append(results, 'viewer update: FAIL'); end if;
@@ -60,8 +60,8 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub', contributor, 'role', 'authenticated')::text, true);
   set local role authenticated;
   select * into perms from public.project_permissions(project);
-  results := array_append(results, format('contributor permissions: %s/%s/%s', perms.can_edit, perms.can_delete_records, perms.can_manage_project));
-  if not perms.can_edit or perms.can_delete_records then failures := failures + 1; end if;
+  results := array_append(results, format('contributor permissions: %s/%s/%s', perms.can_edit, perms.can_delete, perms.can_manage_project));
+  if not perms.can_edit or perms.can_delete then failures := failures + 1; end if;
   with u as (update public.risks set impact = least(impact + 1, 5), status = 'open' where id = a_risk returning id) select count(*) into n from u;
   if n = 1 then results := array_append(results, 'contributor update: ok'); else failures := failures + 1; results := array_append(results, 'contributor update: FAIL'); end if;
   -- organisation_id is spoofed on purpose: the tenant guard must overwrite it.
@@ -78,14 +78,22 @@ begin
   where h.milestone_id = a_milestone and h.reporting_date = private.org_today(m.organisation_id) and h.forecast_date = m.forecast_date;
   if n = 1 and history_before = 1 then results := array_append(results, 'contributor milestone forecast update: ok (recorded in forecast history)');
   else failures := failures + 1; results := array_append(results, format('contributor milestone update: FAIL (%s, %s)', n, history_before)); end if;
+  -- An archived project is read-only, even for its contributors (can_edit_project).
   reset role;
+  update public.projects set archived_at = now() where id = project;
+  set local role authenticated;
+  with u as (update public.risks set impact = impact where id = a_risk returning id) select count(*) into n from u;
+  if n = 0 then results := array_append(results, 'contributor update on archived project filtered by RLS: ok');
+  else failures := failures + 1; results := array_append(results, 'contributor update on archived project: FAIL'); end if;
+  reset role;
+  update public.projects set archived_at = null where id = project;
 
   -- ---- Manager: may delete register rows ----
   perform set_config('request.jwt.claim.sub', manager::text, true);
   perform set_config('request.jwt.claims', json_build_object('sub', manager, 'role', 'authenticated')::text, true);
   set local role authenticated;
   select * into perms from public.project_permissions(project);
-  results := array_append(results, format('manager permissions: %s/%s/%s', perms.can_edit, perms.can_delete_records, perms.can_manage_project));
+  results := array_append(results, format('manager permissions: %s/%s/%s', perms.can_edit, perms.can_delete, perms.can_manage_project));
   with d as (delete from public.risks where id = new_risk returning id) select count(*) into n from d;
   if n = 1 then results := array_append(results, 'manager delete: ok'); else failures := failures + 1; results := array_append(results, 'manager delete: FAIL'); end if;
   reset role;
