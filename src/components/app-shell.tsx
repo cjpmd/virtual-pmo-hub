@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { SectionTabs } from "@/components/section-nav";
 import { useProgrammes, useProjects } from "@/hooks/use-hierarchy";
 import { useFavourites } from "@/hooks/use-favourites";
+import { useNotifications } from "@/hooks/use-notifications";
 import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
 import { useWorkspaceRole } from "@/hooks/use-permissions";
 import { appRoleLabel } from "@/services/org-settings";
@@ -26,14 +27,6 @@ const COLLAPSE_KEY = "virtual-pmo-sidebar-collapsed";
 const RECENT_KEY = "virtual-pmo-recent-v2"; // v2: project codes and programme ids
 interface RecentEntry { id: string; label: string; type: "Project" | "Programme"; to: string }
 
-const seedNotifications = [
-  { id: "n1", text: "Maya Harrison mentioned you on Ebbot", kind: "Mention", read: false },
-  { id: "n2", text: "3 Ebbot tasks are overdue", kind: "Overdue alert", read: false },
-  { id: "n3", text: "Status report due Friday", kind: "Reminder", read: false },
-  { id: "n-ben", text: "Benefit measurement due: record this quarter's actuals for BEN-003", kind: "Benefit reminder", read: false },
-  { id: "n-div", text: "Divergence alert: declared RAG is better than the evidence on a project", kind: "Assurance", read: false },
-  { id: "n4", text: "Digital assessment pilot awaits approval", kind: "Approval request", read: true },
-];
 
 function readRecent(): RecentEntry[] {
   try { return JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]") as RecentEntry[] } catch { return [] }
@@ -44,7 +37,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dark, setDark] = useState(false);
-  const [notifications, setNotifications] = useState(seedNotifications);
+  const { feed: notifications, read: readNotifications, markRead, unread } = useNotifications();
   const [inbox, setInbox] = useState(false);
   const [palette, setPalette] = useState(false);
   const [query, setQuery] = useState("");
@@ -233,12 +226,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
           <div className="relative">
-            <Button variant="ghost" size="icon" onClick={() => setInbox(!inbox)} aria-label="Notifications"><Bell />{notifications.some(item => !item.read) && <span className="absolute right-1 top-1 size-2 rounded-full bg-health-bad" />}</Button>
+            <Button variant="ghost" size="icon" onClick={() => setInbox(!inbox)} aria-label="Notifications"><Bell />{unread > 0 && <span className="absolute right-1 top-1 size-2 rounded-full bg-health-bad" />}</Button>
             {inbox && <div className="absolute right-0 top-12 w-[340px] rounded-md border bg-popover p-3 shadow-xl">
-              <div className="flex items-center justify-between"><strong>Notifications</strong><Button variant="ghost" size="sm" onClick={() => setNotifications(items => items.map(item => ({ ...item, read: true })))}><CheckCheck />Mark all read</Button></div>
-              <div className="mt-2 divide-y">{notifications.map(item => <button key={item.id} onClick={() => setNotifications(items => items.map(entry => entry.id === item.id ? { ...entry, read: true } : entry))} className={cn("block w-full py-3 text-left", !item.read && "font-semibold")}>
+              <div className="flex items-center justify-between"><strong>Notifications</strong><Button variant="ghost" size="sm" onClick={() => markRead(notifications.map(item => item.id))}><CheckCheck />Mark all read</Button></div>
+              <div className="mt-2 divide-y">{notifications.slice(0, 6).map(item => <button key={item.id} onClick={() => markRead([item.id])} className={cn("block w-full py-3 text-left", !readNotifications.includes(item.id) && "font-semibold")}>
                 <span className="text-[10px] uppercase text-primary">{item.kind}</span><p className="mt-1 text-sm">{item.text}</p>
-              </button>)}</div>
+              </button>)}{!notifications.length && <p className="py-4 text-sm text-muted-foreground">Nothing needs your attention.</p>}</div>
               <Link to="/home/notifications" onClick={() => setInbox(false)} className="mt-2 block text-xs font-semibold text-primary hover:underline">Open the notification centre →</Link>
             </div>}
           </div>

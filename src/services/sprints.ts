@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { todayIso } from "@/lib/today";
+import { getSettings } from "./settings";
 import { addDays, daysBetween, getProjectForecast, type ForecastInput, type ForecastOverrides, type ForecastResult, type VelocityBasis } from "./forecast";
 
 /** Browser-local sprint & work-item store. One work item list per project feeds the backlog,
@@ -41,11 +42,13 @@ const defaultStatuses: ProjectStatus[] = [
   { id: "in-progress", name: "In Progress", category: "wip", sortOrder: 2 }, { id: "in-review", name: "In Review", category: "wip", sortOrder: 3 },
   { id: "blocked", name: "Blocked", category: "wip", sortOrder: 4 }, { id: "done", name: "Done", category: "done", sortOrder: 5 },
 ];
-const defaultNonWorking: NonWorkingPeriod[] = [
-  { id: "nw-xmas", name: "Christmas closure", start: "2026-12-24", end: "2027-01-01" },
-  { id: "nw-easter", name: "Easter closure", start: "2027-03-26", end: "2027-03-29" },
-  { id: "nw-may", name: "May bank holiday", start: "2027-05-03", end: "2027-05-03" },
-];
+/** Until someone edits the list, closures are the organisation's holiday calendars (Settings). */
+const fromHolidayCalendars = (): NonWorkingPeriod[] =>
+  getSettings().workingTime.holidayCalendars.flatMap(calendar =>
+    calendar.dates.map((day, index) => {
+      const iso = day.date.split("/").reverse().join("-");
+      return { id: `hol-${calendar.id}-${index}`, name: day.name, start: iso, end: iso };
+    }));
 
 // ---------- deterministic generator ----------
 function hash(text: string) { let h = 2166136261; for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -141,7 +144,7 @@ function generate(project: DeliveryProject): ProjectDelivery {
 const KEY = "virtual-pmo-delivery-v2";
 const cache = new Map<string, ProjectDelivery>();
 let saved: { projects: Record<string, ProjectDelivery>; nonWorking?: NonWorkingPeriod[] } = { projects: {} };
-let nonWorking: NonWorkingPeriod[] = defaultNonWorking;
+let nonWorking: NonWorkingPeriod[] | null = null;
 let loaded = false, version = 0;
 const listeners = new Set<() => void>();
 
@@ -153,7 +156,7 @@ function load() {
 }
 function commit(projectId?: string) {
   if (projectId) saved.projects[projectId] = cache.get(projectId)!;
-  saved.nonWorking = nonWorking;
+  if (nonWorking) saved.nonWorking = nonWorking;
   try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch { /* ignore */ }
   version += 1; listeners.forEach(l => l());
 }
@@ -166,7 +169,7 @@ export function getDelivery(projectId: string): ProjectDelivery {
   if (!data) { const project = registry.get(projectId); if (!project) throw new Error(`Unknown project ${projectId}`); data = generate(project); cache.set(projectId, data); }
   return data;
 }
-export const getNonWorkingPeriods = () => { load(); return nonWorking; };
+export const getNonWorkingPeriods = () => { load(); return nonWorking ?? fromHolidayCalendars(); };
 export function saveNonWorkingPeriods(list: NonWorkingPeriod[]) { nonWorking = list; commit(); }
 
 // ---------- derived helpers ----------

@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { currencies, dateFormats, dayNames, locales, monthNames, notificationEvents, timeZones } from "@/data/settings-data";
 import type { AppSettings, PermissionKey, TermKey, UserRole } from "@/data/settings-types";
 import type { BenefitCategory, ProjectTier } from "@/data/types";
-import { formatCompactCurrency, formatCurrency, formatDate, formatFinancialYear } from "@/lib/format";
+import { formatCompactCurrency, formatCurrency, formatDate, formatFinancialYear, fromIsoDate } from "@/lib/format";
+import { todayIso } from "@/lib/today";
 import { resetSettings, updateSettings, useSettings } from "@/services/settings";
 import { Field, ListEditor, NumberField, SelectField, SettingsCard, TextField } from "@/components/settings/settings-shell";
 import { cn } from "@/lib/utils";
@@ -98,18 +99,18 @@ export function RegionalSettings() {
             </tr>)}
           </tbody>
         </table>
-        <Button size="sm" variant="outline" className="mt-3" onClick={() => set({ exchangeRates: [...regional.exchangeRates, { id: `fx-${Date.now()}`, currency: "EUR", rate: 1, effectiveDate: "01/08/2026" }] })}><Plus />Add rate</Button>
+        <Button size="sm" variant="outline" className="mt-3" onClick={() => set({ exchangeRates: [...regional.exchangeRates, { id: `fx-${Date.now()}`, currency: "EUR", rate: 1, effectiveDate: fromIsoDate(todayIso()) }] })}><Plus />Add rate</Button>
       </div> : <p className="text-sm text-muted-foreground">Off. Every project is held in {regional.baseCurrency} and no conversion is applied.</p>}
     </SettingsCard>
 
     <SettingsCard title="Dates, locale and financial year" description="Date display, week start and the financial year used by every FY label and chart.">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <SelectField label="Date format" value={regional.dateFormat} onChange={value => set({ dateFormat: value })} options={dateFormats.map(item => ({ value: item, label: `${item} — ${formatDate("21/09/2026", { ...settings, regional: { ...regional, dateFormat: item } })}` }))} />
+        <SelectField label="Date format" value={regional.dateFormat} onChange={value => set({ dateFormat: value })} options={dateFormats.map(item => ({ value: item, label: `${item} — ${formatDate(todayIso(), { ...settings, regional: { ...regional, dateFormat: item } })}` }))} />
         <SelectField label="Locale" value={regional.locale} onChange={value => set({ locale: value })} options={locales.map(item => ({ value: item, label: item }))} />
         <SelectField label="Time zone" value={regional.timeZone} onChange={value => set({ timeZone: value })} options={timeZones.map(item => ({ value: item, label: item }))} />
         <SelectField label="First day of week" value={String(regional.firstDayOfWeek)} onChange={value => set({ firstDayOfWeek: Number(value) })} options={dayNames.map((name, index) => ({ value: String(index), label: name }))} />
         <SelectField label="Financial year starts" value={String(regional.financialYearStartMonth)} onChange={value => set({ financialYearStartMonth: Number(value) })} options={monthNames.map((name, index) => ({ value: String(index + 1), label: name }))}
-          hint={`Today sits in ${formatFinancialYear("21/09/2026", settings)}.`} />
+          hint={`Today sits in ${formatFinancialYear(todayIso(), settings)}.`} />
       </div>
     </SettingsCard>
   </>;
