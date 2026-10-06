@@ -1,10 +1,165 @@
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { KpiCard } from "@/components/pmo-ui";
 import { ChartCard } from "@/components/charts/chart-card";
 import { QueryState } from "@/components/query-state";
 import { useResourceData } from "@/hooks/use-resources";
-import { resolveAssignments, resourceDashboard, teamUtilisation, type ResourceData } from "@/services/resources";
+import {
+  resolveAssignments,
+  resourceDashboard,
+  teamUtilisation,
+  type ResourceData,
+} from "@/services/resources";
 
-export function ResourceDashboard(){const query=useResourceData();return <QueryState query={query}>{data=><Dashboard data={data}/>}</QueryState>}
-function Dashboard({data}:{data:ResourceData}){const dashboard=resourceDashboard(data),assignments=resolveAssignments(data),teams=teamUtilisation(data);const people=[...dashboard.people].sort((a,b)=>b.utilisation-a.utilisation).slice(0,10).map(item=>({name:item.person.name.split(" ")[0],allocated:Math.round(item.allocated/26),capacity:Math.round(item.capacity/26)}));const effort=[...dashboard.people].sort((a,b)=>b.effortRemaining-a.effortRemaining).slice(0,10).map(item=>({name:item.person.name.split(" ")[0],completed:item.effortCompleted,remaining:item.effortRemaining}));const projects=Array.from(new Set(assignments.map(item=>item.projectName))).map(name=>({name:name.length>22?`${name.slice(0,20)}…`:name,resources:new Set(assignments.filter(item=>item.projectName===name).map(item=>item.resourceId)).size})).sort((a,b)=>b.resources-a.resources).slice(0,10);return <div className="space-y-6"><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6"><KpiCard label="People" value={String(dashboard.people.length)} detail="Available named resources" icon="projects"/><KpiCard label="Total capacity" value={`${Math.round(dashboard.totalCapacity).toLocaleString("en-GB")}h`} detail="Next 26 weeks" icon="forecast"/><KpiCard label="Allocated" value={`${Math.round(dashboard.allocated).toLocaleString("en-GB")}h`} detail="Soft and hard bookings" icon="budget"/><KpiCard label="Utilisation" value={`${dashboard.utilisation}%`} detail="Of available capacity" icon="health"/><KpiCard label="Over-allocated" value={String(dashboard.overAllocated)} detail="People above 100%" icon="health"/><KpiCard label="Unstaffed roles" value={String(dashboard.unstaffed)} detail="Generic demand to fill" icon="projects"/></div><div className="grid gap-5 xl:grid-cols-2"><Chart title="Utilisation by team" description="Allocated hours as a percentage of available capacity"><BarChart data={teams}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="team" tick={{fontSize:10}}/><YAxis unit="%"/><Tooltip/><Bar dataKey="utilisation" fill="var(--chart-2)" radius={[4,4,0,0]}/></BarChart></Chart><Chart title="Top 10 most allocated people" description="Average weekly allocation against capacity"><BarChart data={people}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="name" tick={{fontSize:10}}/><YAxis/><Tooltip/><Legend/><Bar dataKey="allocated" fill="var(--chart-1)"/><Bar dataKey="capacity" fill="var(--chart-3)"/></BarChart></Chart><Chart title="Effort completed vs remaining by resource" description="Estimated assignment hours"><BarChart data={effort}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="name" tick={{fontSize:10}}/><YAxis/><Tooltip/><Legend/><Bar dataKey="completed" stackId="effort" fill="var(--health-good)"/><Bar dataKey="remaining" stackId="effort" fill="var(--chart-3)"/></BarChart></Chart><Chart title="Resources by project" description="Named and generic resources"><BarChart data={projects} layout="vertical"><CartesianGrid strokeDasharray="3 3"/><XAxis type="number" allowDecimals={false}/><YAxis dataKey="name" type="category" width={150} tick={{fontSize:10}}/><Tooltip/><Bar dataKey="resources" fill="var(--chart-4)" radius={[0,4,4,0]}/></BarChart></Chart></div></div>}
-function Chart({title,description,children}:{title:string;description:string;children:React.ReactElement}){return <ChartCard title={title} subtitle={description} info={description}><div className="h-72"><ResponsiveContainer>{children}</ResponsiveContainer></div></ChartCard>}
+export function ResourceDashboard() {
+  const query = useResourceData();
+  return <QueryState query={query}>{(data) => <Dashboard data={data} />}</QueryState>;
+}
+function Dashboard({ data }: { data: ResourceData }) {
+  const dashboard = resourceDashboard(data),
+    assignments = resolveAssignments(data),
+    teams = teamUtilisation(data);
+  const people = [...dashboard.people]
+    .sort((a, b) => b.utilisation - a.utilisation)
+    .slice(0, 10)
+    .map((item) => ({
+      name: item.person.name.split(" ")[0],
+      allocated: Math.round(item.allocated / 26),
+      capacity: Math.round(item.capacity / 26),
+    }));
+  const effort = [...dashboard.people]
+    .sort((a, b) => b.effortRemaining - a.effortRemaining)
+    .slice(0, 10)
+    .map((item) => ({
+      name: item.person.name.split(" ")[0],
+      completed: item.effortCompleted,
+      remaining: item.effortRemaining,
+    }));
+  const projects = Array.from(new Set(assignments.map((item) => item.projectName)))
+    .map((name) => ({
+      name: name.length > 22 ? `${name.slice(0, 20)}…` : name,
+      resources: new Set(
+        assignments.filter((item) => item.projectName === name).map((item) => item.resourceId),
+      ).size,
+    }))
+    .sort((a, b) => b.resources - a.resources)
+    .slice(0, 10);
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+        <KpiCard
+          label="People"
+          value={String(dashboard.people.length)}
+          detail="Available named resources"
+          icon="projects"
+        />
+        <KpiCard
+          label="Total capacity"
+          value={`${Math.round(dashboard.totalCapacity).toLocaleString("en-GB")}h`}
+          detail="Next 26 weeks"
+          icon="forecast"
+        />
+        <KpiCard
+          label="Allocated"
+          value={`${Math.round(dashboard.allocated).toLocaleString("en-GB")}h`}
+          detail="Soft and hard bookings"
+          icon="budget"
+        />
+        <KpiCard
+          label="Utilisation"
+          value={`${dashboard.utilisation}%`}
+          detail="Of available capacity"
+          icon="health"
+        />
+        <KpiCard
+          label="Over-allocated"
+          value={String(dashboard.overAllocated)}
+          detail="People above 100%"
+          icon="health"
+        />
+        <KpiCard
+          label="Unstaffed roles"
+          value={String(dashboard.unstaffed)}
+          detail="Generic demand to fill"
+          icon="projects"
+        />
+      </div>
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Chart
+          title="Utilisation by team"
+          description="Allocated hours as a percentage of available capacity"
+        >
+          <BarChart data={teams}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="team" tick={{ fontSize: 10 }} />
+            <YAxis unit="%" />
+            <Tooltip />
+            <Bar dataKey="utilisation" fill="var(--chart-2)" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </Chart>
+        <Chart
+          title="Top 10 most allocated people"
+          description="Average weekly allocation against capacity"
+        >
+          <BarChart data={people}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="allocated" fill="var(--chart-1)" />
+            <Bar dataKey="capacity" fill="var(--chart-3)" />
+          </BarChart>
+        </Chart>
+        <Chart
+          title="Effort completed vs remaining by resource"
+          description="Estimated assignment hours"
+        >
+          <BarChart data={effort}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="completed" stackId="effort" fill="var(--health-good)" />
+            <Bar dataKey="remaining" stackId="effort" fill="var(--chart-3)" />
+          </BarChart>
+        </Chart>
+        <Chart title="Resources by project" description="Named and generic resources">
+          <BarChart data={projects} layout="vertical">
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis type="number" allowDecimals={false} />
+            <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 10 }} />
+            <Tooltip />
+            <Bar dataKey="resources" fill="var(--chart-4)" radius={[0, 4, 4, 0]} />
+          </BarChart>
+        </Chart>
+      </div>
+    </div>
+  );
+}
+function Chart({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactElement;
+}) {
+  return (
+    <ChartCard title={title} subtitle={description} info={description}>
+      <div className="h-72">
+        <ResponsiveContainer>{children}</ResponsiveContainer>
+      </div>
+    </ChartCard>
+  );
+}

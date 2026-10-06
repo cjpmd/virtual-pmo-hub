@@ -1,2 +1,20 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router";
-export const Route=createFileRoute("/portfolio/projects")({head:()=>({meta:[{title:"Projects Workspace — Virtual PMO"},{name:"description",content:"Navigate portfolio projects and detailed project delivery workspaces."},{property:"og:title",content:"Projects Workspace — Virtual PMO"},{property:"og:description",content:"Navigate portfolio projects and detailed project delivery workspaces."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary_large_image"}]}),component:()=> <Outlet/>});
+export const Route = createFileRoute("/portfolio/projects")({
+  head: () => ({
+    meta: [
+      { title: "Projects Workspace — Virtual PMO" },
+      {
+        name: "description",
+        content: "Navigate portfolio projects and detailed project delivery workspaces.",
+      },
+      { property: "og:title", content: "Projects Workspace — Virtual PMO" },
+      {
+        property: "og:description",
+        content: "Navigate portfolio projects and detailed project delivery workspaces.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: () => <Outlet />,
+});

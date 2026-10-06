@@ -5,4 +5,68 @@ import type { BenefitView } from "@/services/benefits";
 import { HealthPill } from "@/components/health-pill";
 import { KpiCard } from "@/components/pmo-ui";
 import { getBenefitMetrics, getBenefitWarnings } from "@/services/benefits-value";
-export function BenefitSummary({items}:{items:BenefitView[]}){const metrics=getBenefitMetrics(items),warnings=getBenefitWarnings(items);return <div className="space-y-5">{warnings.length>0&&<div className="flex gap-3 rounded-md border border-health-warn/40 bg-health-warn/10 p-4"><TriangleAlert className="size-5 shrink-0 text-health-warn-foreground"/><div><p className="text-sm font-semibold">Benefits assurance check</p>{warnings.map(item=><p key={item} className="mt-1 text-xs text-muted-foreground">{item}</p>)}</div></div>}<div className="grid gap-3 sm:grid-cols-3"><KpiCard label="Linked benefits" value={String(metrics.count)} detail={`${metrics.atRisk} require attention`} icon="projects"/><KpiCard label="Planned value" value={formatCompactCurrency(metrics.planned)} detail="Positive benefits" icon="budget"/><KpiCard label="Realised" value={`${metrics.percent}%`} detail={`${formatCompactCurrency(metrics.realised)} evidenced`} icon="health"/></div><div className="overflow-hidden rounded-lg border border-border/70 bg-card"><div className="divide-y">{items.map(item=><Link key={item.id} to="/benefits/$benefitId" params={{benefitId:item.id}} className="grid gap-3 p-4 hover:bg-accent/30 sm:grid-cols-[1fr_auto_auto]"><div><p className="text-sm font-semibold">{item.type==="Disbenefit"&&<span className="mr-2 text-health-bad">●</span>}{item.reference} · {item.title}</p><p className="mt-1 text-xs text-muted-foreground">{item.owner||"Owner not assigned"} · {item.classification}</p></div><span className="text-sm font-semibold">{item.realisation.percent}% realised</span><HealthPill health={item.realisation.health}/></Link>)}</div></div></div>}
+export function BenefitSummary({ items }: { items: BenefitView[] }) {
+  const metrics = getBenefitMetrics(items),
+    warnings = getBenefitWarnings(items);
+  return (
+    <div className="space-y-5">
+      {warnings.length > 0 && (
+        <div className="flex gap-3 rounded-md border border-health-warn/40 bg-health-warn/10 p-4">
+          <TriangleAlert className="size-5 shrink-0 text-health-warn-foreground" />
+          <div>
+            <p className="text-sm font-semibold">Benefits assurance check</p>
+            {warnings.map((item) => (
+              <p key={item} className="mt-1 text-xs text-muted-foreground">
+                {item}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+      <div className="grid gap-3 sm:grid-cols-3">
+        <KpiCard
+          label="Linked benefits"
+          value={String(metrics.count)}
+          detail={`${metrics.atRisk} require attention`}
+          icon="projects"
+        />
+        <KpiCard
+          label="Planned value"
+          value={formatCompactCurrency(metrics.planned)}
+          detail="Positive benefits"
+          icon="budget"
+        />
+        <KpiCard
+          label="Realised"
+          value={`${metrics.percent}%`}
+          detail={`${formatCompactCurrency(metrics.realised)} evidenced`}
+          icon="health"
+        />
+      </div>
+      <div className="overflow-hidden rounded-lg border border-border/70 bg-card">
+        <div className="divide-y">
+          {items.map((item) => (
+            <Link
+              key={item.id}
+              to="/benefits/$benefitId"
+              params={{ benefitId: item.id }}
+              className="grid gap-3 p-4 hover:bg-accent/30 sm:grid-cols-[1fr_auto_auto]"
+            >
+              <div>
+                <p className="text-sm font-semibold">
+                  {item.type === "Disbenefit" && <span className="mr-2 text-health-bad">●</span>}
+                  {item.reference} · {item.title}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {item.owner || "Owner not assigned"} · {item.classification}
+                </p>
+              </div>
+              <span className="text-sm font-semibold">{item.realisation.percent}% realised</span>
+              <HealthPill health={item.realisation.health} />
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

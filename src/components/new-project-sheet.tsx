@@ -4,7 +4,14 @@ import { Check, ChevronLeft, ChevronRight, ListChecks, Plus } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import type { ProjectTier, TaskSource } from "@/data/types";
 import { useCollections } from "@/hooks/use-collections";
@@ -16,29 +23,420 @@ import { getTierDefinitions } from "@/services/gates";
 import { RelevantLessons } from "@/components/relevant-lessons";
 import { cn } from "@/lib/utils";
 
-interface NewProjectSheetProps {open:boolean;onOpenChange:(open:boolean)=>void;onCreated:(code:string)=>void}
-const steps=["Basics","Business case","Dates & budget","Task source","Collections","Review"];
-
-export function NewProjectSheet({open,onOpenChange,onCreated}:NewProjectSheetProps){
- const {portfolio}=useCurrentPortfolio();
- const programmes=(useProgrammes().data??[]).filter(item=>item.portfolioId===portfolio?.id&&item.state==="Active"),people=usePeople().data??[],collections=useCollections().data??[],phases=usePhases().data??[];
- const mutations=useEntityMutations();
- const tiers=getTierDefinitions();
- const [tier,setTier]=useState<ProjectTier>("Medium");
- const [step,setStep]=useState(0),[name,setName]=useState(""),[programmeChoice,setProgrammeId]=useState<string|null>(null),[managerId,setManager]=useState(""),[sponsorId,setSponsor]=useState(""),[businessCase,setBusinessCase]=useState(""),[start,setStart]=useState(()=>addDaysIso(14)),[finish,setFinish]=useState(()=>addDaysIso(180)),[budget,setBudget]=useState("0"),[sourceMode,setSourceMode]=useState<"native"|"planner">("native"),[plannerTier,setPlannerTier]=useState<"Basic"|"Premium">("Basic"),[collectionIds,setCollectionIds]=useState<string[]>([]),[error,setError]=useState("");
- const programmeId=programmeChoice??programmes[0]?.id??"";
- const taskSource:TaskSource=sourceMode==="native"?"Native":plannerTier==="Premium"?"Planner (Premium)":"Planner (Basic)";
- const canContinue=useMemo(()=>step!==0||Boolean(name.trim()&&portfolio),[step,name,portfolio]);
- const next=()=>{if(!canContinue){setError("Complete all required fields before continuing.");return}setError("");setStep(current=>Math.min(steps.length-1,current+1))};
- const submit=()=>{if(!portfolio)return;mutations.createProject.mutate({name,portfolioId:portfolio.id,programmeId:programmeId||null,phaseId:phases[0]?.id??null,tier,managerId:managerId||null,sponsorId:sponsorId||null,startDate:start||null,finishDate:finish||null,budget:Number(budget)||0,businessCase,taskSource:sourceMode==="native"?"native":plannerTier==="Premium"?"planner_premium":"planner_basic",collectionIds},{onSuccess:created=>{onOpenChange(false);setStep(0);onCreated(created.code)},onError:e=>setError(e.message)})};
- return <Sheet open={open} onOpenChange={onOpenChange}><SheetContent className="w-full overflow-y-auto sm:max-w-2xl"><SheetHeader><SheetTitle>New project</SheetTitle><SheetDescription>Create a portfolio project in six short steps.</SheetDescription></SheetHeader><div className="my-6 grid grid-cols-6 gap-2">{steps.map((label,index)=><div key={label} className="min-w-0"><div className={cn("mb-2 h-1.5 rounded-full",index<=step?"bg-primary":"bg-muted")}/><p className={cn("truncate text-[11px]",index===step?"font-semibold text-foreground":"text-muted-foreground")}>{label}</p></div>)}</div><div className="min-h-[410px]">
- {step===0&&<div className="grid gap-5 sm:grid-cols-2"><Field label="Project name" required><Input value={name} onChange={event=>setName(event.target.value)} placeholder="e.g. Research data platform" autoFocus/></Field><Field label="Programme"><select value={programmeId} onChange={event=>setProgrammeId(event.target.value)} className="h-9 w-full rounded-md border bg-background px-3 text-sm"><option value="">No programme ({portfolio?.name??"portfolio"} only)</option>{programmes.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></Field><Field label="Project manager"><select value={managerId} onChange={event=>setManager(event.target.value)} className="h-9 w-full rounded-md border bg-background px-3 text-sm"><option value="">Unassigned</option>{people.map(item=><option key={item.id} value={item.id}>{item.name}{item.jobTitle?` · ${item.jobTitle}`:""}</option>)}</select></Field><Field label="Sponsor"><select value={sponsorId} onChange={event=>setSponsor(event.target.value)} className="h-9 w-full rounded-md border bg-background px-3 text-sm"><option value="">Unassigned</option>{people.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></Field><div className="sm:col-span-2 space-y-2"><Label>Project tier</Label><div className="grid gap-2 sm:grid-cols-3">{tiers.map(item=><button key={item.tier} type="button" onClick={()=>setTier(item.tier)} className={cn("rounded-md border p-3 text-left transition-colors",tier===item.tier?"border-primary bg-primary/5":"hover:bg-accent/30")}><strong className="text-sm">{item.tier}</strong><span className="mt-1 block text-[11px] text-muted-foreground">{item.guideline}</span><span className="mt-1 block text-[11px] text-muted-foreground">{item.description}</span></button>)}</div></div></div>}
- {step===1&&<div className="space-y-4"><Field label="Business case summary"><Textarea value={businessCase} onChange={event=>setBusinessCase(event.target.value)} placeholder="Describe the problem, proposed change and expected value…" className="min-h-40"/></Field><RelevantLessons phaseIndex={1} categories={["Requirements","Governance","Stakeholder Management","Procurement"]} compact/></div>}
- {step===2&&<div className="grid gap-5 sm:grid-cols-2"><Field label="Start date"><Input type="date" value={start} onChange={event=>setStart(event.target.value)}/></Field><Field label="Finish date"><Input type="date" value={finish} min={start} onChange={event=>setFinish(event.target.value)}/></Field><Field label={`Budget (${currencySymbol()})`}><Input type="number" min="0" step="1000" value={budget} onChange={event=>setBudget(event.target.value)}/></Field><div className="rounded-md border bg-muted/30 p-4"><p className="text-xs text-muted-foreground">Initial forecast</p><p className="mt-1 text-xl font-semibold">{formatCurrency(Number(budget||0))}</p></div></div>}
- {step===3&&<div className="space-y-4"><Choice active={sourceMode==="native"} title="Native tasks" description="Manage tasks directly in Virtual PMO." onClick={()=>setSourceMode("native")}/><Choice active={sourceMode==="planner"} title="Microsoft Planner" description="Tasks will live in a Planner plan once Microsoft 365 is connected. Until then the project uses native tasks." onClick={()=>setSourceMode("planner")}/>{sourceMode==="planner"&&<div className="ml-8 flex gap-2"><Button type="button" variant={plannerTier==="Basic"?"secondary":"outline"} onClick={()=>setPlannerTier("Basic")}>Basic</Button><Button type="button" variant={plannerTier==="Premium"?"secondary":"outline"} onClick={()=>setPlannerTier("Premium")}>Premium</Button></div>}</div>}
- {step===4&&<div className="space-y-3">{!collections.length&&<p className="text-sm text-muted-foreground">No collections yet.</p>}{collections.map(item=><label key={item.id} className="flex cursor-pointer items-start gap-3 rounded-md border p-4 hover:bg-accent/30"><input type="checkbox" className="mt-1" checked={collectionIds.includes(item.id)} onChange={()=>setCollectionIds(current=>current.includes(item.id)?current.filter(id=>id!==item.id):[...current,item.id])}/><span><strong className="text-sm">{item.name}</strong><span className="mt-1 block text-xs text-muted-foreground">{item.type}</span></span></label>)}</div>}
- {step===5&&<div className="divide-y rounded-md border">{[["Project",name],["Programme",programmes.find(item=>item.id===programmeId)?.name??"No programme"],["Project manager",people.find(item=>item.id===managerId)?.name??"Unassigned"],["Tier",tier],["Sponsor",people.find(item=>item.id===sponsorId)?.name??"Unassigned"],["Dates",`${formatDate(start)} – ${formatDate(finish)}`],["Budget",formatCurrency(Number(budget||0))],["Task source",taskSource],["Collections",collections.filter(item=>collectionIds.includes(item.id)).map(item=>item.name).join(", ")||"None"]].map(([label,value])=><div key={label} className="grid grid-cols-[140px_1fr] gap-4 p-3 text-sm"><span className="text-muted-foreground">{label}</span><span className="font-medium">{value}</span></div>)}</div>}
- {error&&<p role="alert" className="mt-4 text-sm font-medium text-destructive">{error}</p>}</div><SheetFooter className="mt-6 border-t pt-4"><Button variant="outline" onClick={()=>step===0?onOpenChange(false):setStep(current=>current-1)}>{step>0&&<ChevronLeft/>}{step===0?"Cancel":"Back"}</Button>{step<steps.length-1?<Button onClick={next}>Next<ChevronRight/></Button>:<Button disabled={mutations.createProject.isPending} onClick={submit}><Plus/>Create project</Button>}</SheetFooter></SheetContent></Sheet>;
+interface NewProjectSheetProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreated: (code: string) => void;
 }
-function Field({label,required,children}:{label:string;required?:boolean;children:ReactNode}){return <div className="space-y-2"><Label>{label}{required&&<span className="text-destructive"> *</span>}</Label>{children}</div>}
-function Choice({active,title,description,onClick}:{active:boolean;title:string;description:string;onClick:()=>void}){return <button type="button" onClick={onClick} className={cn("flex w-full items-start gap-3 rounded-md border p-4 text-left transition-colors",active?"border-primary bg-primary/5":"hover:bg-accent/30")}><span className={cn("mt-0.5 grid size-5 place-items-center rounded-full border",active&&"border-primary bg-primary text-primary-foreground")}>{active&&<Check className="size-3"/>}</span><ListChecks className="size-5 text-primary"/><span><strong className="text-sm">{title}</strong><span className="mt-1 block text-xs text-muted-foreground">{description}</span></span></button>}
+const steps = ["Basics", "Business case", "Dates & budget", "Task source", "Collections", "Review"];
+
+export function NewProjectSheet({ open, onOpenChange, onCreated }: NewProjectSheetProps) {
+  const { portfolio } = useCurrentPortfolio();
+  const programmes = (useProgrammes().data ?? []).filter(
+      (item) => item.portfolioId === portfolio?.id && item.state === "Active",
+    ),
+    people = usePeople().data ?? [],
+    collections = useCollections().data ?? [],
+    phases = usePhases().data ?? [];
+  const mutations = useEntityMutations();
+  const tiers = getTierDefinitions();
+  const [tier, setTier] = useState<ProjectTier>("Medium");
+  const [step, setStep] = useState(0),
+    [name, setName] = useState(""),
+    [programmeChoice, setProgrammeId] = useState<string | null>(null),
+    [managerId, setManager] = useState(""),
+    [sponsorId, setSponsor] = useState(""),
+    [businessCase, setBusinessCase] = useState(""),
+    [start, setStart] = useState(() => addDaysIso(14)),
+    [finish, setFinish] = useState(() => addDaysIso(180)),
+    [budget, setBudget] = useState("0"),
+    [sourceMode, setSourceMode] = useState<"native" | "planner">("native"),
+    [plannerTier, setPlannerTier] = useState<"Basic" | "Premium">("Basic"),
+    [collectionIds, setCollectionIds] = useState<string[]>([]),
+    [error, setError] = useState("");
+  const programmeId = programmeChoice ?? programmes[0]?.id ?? "";
+  const taskSource: TaskSource =
+    sourceMode === "native"
+      ? "Native"
+      : plannerTier === "Premium"
+        ? "Planner (Premium)"
+        : "Planner (Basic)";
+  const canContinue = useMemo(
+    () => step !== 0 || Boolean(name.trim() && portfolio),
+    [step, name, portfolio],
+  );
+  const next = () => {
+    if (!canContinue) {
+      setError("Complete all required fields before continuing.");
+      return;
+    }
+    setError("");
+    setStep((current) => Math.min(steps.length - 1, current + 1));
+  };
+  const submit = () => {
+    if (!portfolio) return;
+    mutations.createProject.mutate(
+      {
+        name,
+        portfolioId: portfolio.id,
+        programmeId: programmeId || null,
+        phaseId: phases[0]?.id ?? null,
+        tier,
+        managerId: managerId || null,
+        sponsorId: sponsorId || null,
+        startDate: start || null,
+        finishDate: finish || null,
+        budget: Number(budget) || 0,
+        businessCase,
+        taskSource:
+          sourceMode === "native"
+            ? "native"
+            : plannerTier === "Premium"
+              ? "planner_premium"
+              : "planner_basic",
+        collectionIds,
+      },
+      {
+        onSuccess: (created) => {
+          onOpenChange(false);
+          setStep(0);
+          onCreated(created.code);
+        },
+        onError: (e) => setError(e.message),
+      },
+    );
+  };
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
+        <SheetHeader>
+          <SheetTitle>New project</SheetTitle>
+          <SheetDescription>Create a portfolio project in six short steps.</SheetDescription>
+        </SheetHeader>
+        <div className="my-6 grid grid-cols-6 gap-2">
+          {steps.map((label, index) => (
+            <div key={label} className="min-w-0">
+              <div
+                className={cn("mb-2 h-1.5 rounded-full", index <= step ? "bg-primary" : "bg-muted")}
+              />
+              <p
+                className={cn(
+                  "truncate text-[11px]",
+                  index === step ? "font-semibold text-foreground" : "text-muted-foreground",
+                )}
+              >
+                {label}
+              </p>
+            </div>
+          ))}
+        </div>
+        <div className="min-h-[410px]">
+          {step === 0 && (
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field label="Project name" required>
+                <Input
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="e.g. Research data platform"
+                  autoFocus
+                />
+              </Field>
+              <Field label="Programme">
+                <select
+                  value={programmeId}
+                  onChange={(event) => setProgrammeId(event.target.value)}
+                  className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                >
+                  <option value="">No programme ({portfolio?.name ?? "portfolio"} only)</option>
+                  {programmes.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Project manager">
+                <select
+                  value={managerId}
+                  onChange={(event) => setManager(event.target.value)}
+                  className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                >
+                  <option value="">Unassigned</option>
+                  {people.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                      {item.jobTitle ? ` · ${item.jobTitle}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Sponsor">
+                <select
+                  value={sponsorId}
+                  onChange={(event) => setSponsor(event.target.value)}
+                  className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                >
+                  <option value="">Unassigned</option>
+                  {people.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <div className="sm:col-span-2 space-y-2">
+                <Label>Project tier</Label>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {tiers.map((item) => (
+                    <button
+                      key={item.tier}
+                      type="button"
+                      onClick={() => setTier(item.tier)}
+                      className={cn(
+                        "rounded-md border p-3 text-left transition-colors",
+                        tier === item.tier ? "border-primary bg-primary/5" : "hover:bg-accent/30",
+                      )}
+                    >
+                      <strong className="text-sm">{item.tier}</strong>
+                      <span className="mt-1 block text-[11px] text-muted-foreground">
+                        {item.guideline}
+                      </span>
+                      <span className="mt-1 block text-[11px] text-muted-foreground">
+                        {item.description}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          {step === 1 && (
+            <div className="space-y-4">
+              <Field label="Business case summary">
+                <Textarea
+                  value={businessCase}
+                  onChange={(event) => setBusinessCase(event.target.value)}
+                  placeholder="Describe the problem, proposed change and expected value…"
+                  className="min-h-40"
+                />
+              </Field>
+              <RelevantLessons
+                phaseIndex={1}
+                categories={["Requirements", "Governance", "Stakeholder Management", "Procurement"]}
+                compact
+              />
+            </div>
+          )}
+          {step === 2 && (
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field label="Start date">
+                <Input
+                  type="date"
+                  value={start}
+                  onChange={(event) => setStart(event.target.value)}
+                />
+              </Field>
+              <Field label="Finish date">
+                <Input
+                  type="date"
+                  value={finish}
+                  min={start}
+                  onChange={(event) => setFinish(event.target.value)}
+                />
+              </Field>
+              <Field label={`Budget (${currencySymbol()})`}>
+                <Input
+                  type="number"
+                  min="0"
+                  step="1000"
+                  value={budget}
+                  onChange={(event) => setBudget(event.target.value)}
+                />
+              </Field>
+              <div className="rounded-md border bg-muted/30 p-4">
+                <p className="text-xs text-muted-foreground">Initial forecast</p>
+                <p className="mt-1 text-xl font-semibold">{formatCurrency(Number(budget || 0))}</p>
+              </div>
+            </div>
+          )}
+          {step === 3 && (
+            <div className="space-y-4">
+              <Choice
+                active={sourceMode === "native"}
+                title="Native tasks"
+                description="Manage tasks directly in Virtual PMO."
+                onClick={() => setSourceMode("native")}
+              />
+              <Choice
+                active={sourceMode === "planner"}
+                title="Microsoft Planner"
+                description="Tasks will live in a Planner plan once Microsoft 365 is connected. Until then the project uses native tasks."
+                onClick={() => setSourceMode("planner")}
+              />
+              {sourceMode === "planner" && (
+                <div className="ml-8 flex gap-2">
+                  <Button
+                    type="button"
+                    variant={plannerTier === "Basic" ? "secondary" : "outline"}
+                    onClick={() => setPlannerTier("Basic")}
+                  >
+                    Basic
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={plannerTier === "Premium" ? "secondary" : "outline"}
+                    onClick={() => setPlannerTier("Premium")}
+                  >
+                    Premium
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+          {step === 4 && (
+            <div className="space-y-3">
+              {!collections.length && (
+                <p className="text-sm text-muted-foreground">No collections yet.</p>
+              )}
+              {collections.map((item) => (
+                <label
+                  key={item.id}
+                  className="flex cursor-pointer items-start gap-3 rounded-md border p-4 hover:bg-accent/30"
+                >
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={collectionIds.includes(item.id)}
+                    onChange={() =>
+                      setCollectionIds((current) =>
+                        current.includes(item.id)
+                          ? current.filter((id) => id !== item.id)
+                          : [...current, item.id],
+                      )
+                    }
+                  />
+                  <span>
+                    <strong className="text-sm">{item.name}</strong>
+                    <span className="mt-1 block text-xs text-muted-foreground">{item.type}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+          {step === 5 && (
+            <div className="divide-y rounded-md border">
+              {[
+                ["Project", name],
+                [
+                  "Programme",
+                  programmes.find((item) => item.id === programmeId)?.name ?? "No programme",
+                ],
+                [
+                  "Project manager",
+                  people.find((item) => item.id === managerId)?.name ?? "Unassigned",
+                ],
+                ["Tier", tier],
+                ["Sponsor", people.find((item) => item.id === sponsorId)?.name ?? "Unassigned"],
+                ["Dates", `${formatDate(start)} – ${formatDate(finish)}`],
+                ["Budget", formatCurrency(Number(budget || 0))],
+                ["Task source", taskSource],
+                [
+                  "Collections",
+                  collections
+                    .filter((item) => collectionIds.includes(item.id))
+                    .map((item) => item.name)
+                    .join(", ") || "None",
+                ],
+              ].map(([label, value]) => (
+                <div key={label} className="grid grid-cols-[140px_1fr] gap-4 p-3 text-sm">
+                  <span className="text-muted-foreground">{label}</span>
+                  <span className="font-medium">{value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {error && (
+            <p role="alert" className="mt-4 text-sm font-medium text-destructive">
+              {error}
+            </p>
+          )}
+        </div>
+        <SheetFooter className="mt-6 border-t pt-4">
+          <Button
+            variant="outline"
+            onClick={() => (step === 0 ? onOpenChange(false) : setStep((current) => current - 1))}
+          >
+            {step > 0 && <ChevronLeft />}
+            {step === 0 ? "Cancel" : "Back"}
+          </Button>
+          {step < steps.length - 1 ? (
+            <Button onClick={next}>
+              Next
+              <ChevronRight />
+            </Button>
+          ) : (
+            <Button disabled={mutations.createProject.isPending} onClick={submit}>
+              <Plus />
+              Create project
+            </Button>
+          )}
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}
+function Field({
+  label,
+  required,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>
+        {label}
+        {required && <span className="text-destructive"> *</span>}
+      </Label>
+      {children}
+    </div>
+  );
+}
+function Choice({
+  active,
+  title,
+  description,
+  onClick,
+}: {
+  active: boolean;
+  title: string;
+  description: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex w-full items-start gap-3 rounded-md border p-4 text-left transition-colors",
+        active ? "border-primary bg-primary/5" : "hover:bg-accent/30",
+      )}
+    >
+      <span
+        className={cn(
+          "mt-0.5 grid size-5 place-items-center rounded-full border",
+          active && "border-primary bg-primary text-primary-foreground",
+        )}
+      >
+        {active && <Check className="size-3" />}
+      </span>
+      <ListChecks className="size-5 text-primary" />
+      <span>
+        <strong className="text-sm">{title}</strong>
+        <span className="mt-1 block text-xs text-muted-foreground">{description}</span>
+      </span>
+    </button>
+  );
+}

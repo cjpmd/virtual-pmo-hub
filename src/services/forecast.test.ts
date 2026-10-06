@@ -3,8 +3,13 @@ import { getProjectForecast, type ForecastInput } from "./forecast";
 
 // "Forecast Demo" worked example from the brief.
 const input: ForecastInput = {
-  baselineStart: new Date(2026, 0, 5), periodLengthDays: 14, baselinePeriods: 12, baselineScope: 480,
-  completed: [22, 24, 26, 30, 38, 46], scopeHistory: [485, 490, 495, 500, 505, 510], ragToleranceDays: 14,
+  baselineStart: new Date(2026, 0, 5),
+  periodLengthDays: 14,
+  baselinePeriods: 12,
+  baselineScope: 480,
+  completed: [22, 24, 26, 30, 38, 46],
+  scopeHistory: [485, 490, 495, 500, 505, 510],
+  ragToleranceDays: 14,
 };
 
 describe("forecast engine — Forecast Demo", () => {
@@ -20,7 +25,8 @@ describe("forecast engine — Forecast Demo", () => {
     expect(f.finishPeriod).toBe(14);
     expect(f.deliveryStatus).toBe("recovering_late");
   });
-  it("v=60: recovery at end of sprint 9", () => expect(getProjectForecast(input, "last", { velocity: 60 }).recoveryPeriod).toBe(9));
+  it("v=60: recovery at end of sprint 9", () =>
+    expect(getProjectForecast(input, "last", { velocity: 60 }).recoveryPeriod).toBe(9));
   it("v=5: not converging", () => {
     const f = getProjectForecast(input, "last", { velocity: 5 });
     expect(f.converging).toBe(false);

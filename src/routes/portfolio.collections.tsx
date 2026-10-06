@@ -1,3 +1,21 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
-export const Route=createFileRoute("/portfolio/collections")({head:()=>({meta:[{title:"Collections Workspace — Virtual PMO"},{name:"description",content:"Browse governance, priority and funding collections across the DTS portfolio."},{property:"og:title",content:"Collections Workspace — Virtual PMO"},{property:"og:description",content:"Browse governance, priority and funding collections across the DTS portfolio."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary_large_image"}]}),component:()=> <Outlet/>});
+export const Route = createFileRoute("/portfolio/collections")({
+  head: () => ({
+    meta: [
+      { title: "Collections Workspace — Virtual PMO" },
+      {
+        name: "description",
+        content: "Browse governance, priority and funding collections across the DTS portfolio.",
+      },
+      { property: "og:title", content: "Collections Workspace — Virtual PMO" },
+      {
+        property: "og:description",
+        content: "Browse governance, priority and funding collections across the DTS portfolio.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: () => <Outlet />,
+});

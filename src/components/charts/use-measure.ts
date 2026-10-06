@@ -10,13 +10,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 export function useMeasuredWidth(fallback = 220) {
   const [width, setWidth] = useState(fallback);
   const observer = useRef<ResizeObserver>(null);
-  const ref = useCallback((node: HTMLElement | null) => {
-    observer.current?.disconnect();
-    if (!node || typeof ResizeObserver === "undefined") return;
-    observer.current = new ResizeObserver(entries => { const next = entries[0]?.contentRect.width; if (next) setWidth(next) });
-    observer.current.observe(node);
-    setWidth(node.getBoundingClientRect().width || fallback);
-  }, [fallback]);
+  const ref = useCallback(
+    (node: HTMLElement | null) => {
+      observer.current?.disconnect();
+      if (!node || typeof ResizeObserver === "undefined") return;
+      observer.current = new ResizeObserver((entries) => {
+        const next = entries[0]?.contentRect.width;
+        if (next) setWidth(next);
+      });
+      observer.current.observe(node);
+      setWidth(node.getBoundingClientRect().width || fallback);
+    },
+    [fallback],
+  );
   useEffect(() => () => observer.current?.disconnect(), []);
   return { ref, width };
 }
