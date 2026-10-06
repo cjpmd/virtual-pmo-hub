@@ -669,6 +669,10 @@ As built. The order differs from the original plan: `delivery` (milestones) come
 | 20261005175833 | `storage` | buckets + storage.objects policies (one per action) |
 | 20261005183516 | `lock_down_rls_auto_enable` | security advisor fix (see below) |
 | 20261005185157 | `advisor_fixes_2` | revoke every `private` function from `public, anon`; `org_today` override only without a user; latest-submission rule in `v_benefit_period_values` |
+| 20261005190346 | `project_permissions_rpc` | Stage 4b: `project_permissions(project)` for the UI (SECURITY INVOKER) |
+| 20261005213047 | `permissions_can_delete` | Stage 4c: `project_permissions` returns `can_delete` alongside `can_edit`; `my_workspace_roles()` for the header role and button visibility. The 4b function is renamed `project_permissions_4b` and revoked (drop it by hand: the connector can't run `drop function` without a prompt) |
+| 20261005224326 | `roadmap_red_is_red` | Stage 4c: a red project is always "High risk" on the roadmap |
+| 20261005225559 | `roadmap_items_single_pass` | Stage 4c: `v_roadmap_items` computes project health and task stats once (materialised CTEs) instead of once per row |
 
 **Seed.** `scripts/generate-seed.ts` imports the current mock modules and writes `supabase/seed.sql`:
 - one demo organisation ("Demo University", `is_demo = true`) with one workspace
