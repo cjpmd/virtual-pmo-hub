@@ -1,296 +1,154 @@
-// The public homepage at /. Signed-out visitors see what Virtual PMO is and how to start;
-// signed-in users are sent straight to their workspace (see routes/index.tsx).
-import { Link } from "@tanstack/react-router";
-import {
-  ArrowRight,
-  BookOpenCheck,
-  CalendarRange,
-  Gauge,
-  Landmark,
-  ListChecks,
-  LockKeyhole,
-  Scale,
-  ShieldCheck,
-  Sparkles,
-  UsersRound,
-} from "lucide-react";
+// The public homepage at / (design G, docs/design/homepage-g.html). Signed-in users are sent
+// straight to their workspace (see routes/index.tsx).
 import type { ReactNode } from "react";
-import { Button } from "@/components/ui/button";
+import { ProductPreview } from "@/components/marketing/product-preview";
+import { SiteCtas, SiteFooter, SiteHeader, SitePage } from "@/components/marketing/site-chrome";
 import { cn } from "@/lib/utils";
 
-const features: { icon: ReactNode; title: string; text: string }[] = [
+const iconProps = {
+  fill: "none",
+  strokeWidth: 2,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  viewBox: "0 0 24 24",
+  "aria-hidden": true,
+};
+
+const assurances: { text: string; icon: ReactNode }[] = [
   {
-    icon: <Gauge className="size-5" />,
-    title: "Health from the evidence",
-    text: "Schedule, finance, effort, issues and benefits are worked out from the data, so a RAG means the same thing on every screen and in every board pack.",
+    text: "Hosted in the UK",
+    icon: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
   },
   {
-    icon: <Sparkles className="size-5" />,
-    title: "Benefits that get measured",
-    text: "Profiles, measures and targets, owners prompted when a measurement is due, PMO validation, and handover to the service that keeps the benefit.",
+    text: "Role-based access to every record",
+    icon: (
+      <>
+        <rect x="4" y="11" width="16" height="10" rx="2" />
+        <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+      </>
+    ),
   },
   {
-    icon: <Landmark className="size-5" />,
-    title: "Governance without the chasing",
-    text: "Decisions with options and rationale, RAIDD logs, change requests, stage gates and a committee pack built from live data.",
-  },
-  {
-    icon: <ListChecks className="size-5" />,
-    title: "Delivery in one place",
-    text: "Tasks, milestones, dependencies and roadmaps across every project, with issued work that people accept, decline or re-date.",
-  },
-  {
-    icon: <UsersRound className="size-5" />,
-    title: "Capacity you can plan with",
-    text: "Bookings against contracted hours, leave and BAU, so over-allocation shows up before it becomes a missed date.",
-  },
-  {
-    icon: <BookOpenCheck className="size-5" />,
-    title: "Lessons that change things",
-    text: "Phase reviews, recurring themes across projects and improvement actions, surfaced when the next similar project starts.",
+    text: "Full audit trail",
+    icon: <path d="M9 5h11M9 12h11M9 19h11M4 5h.01M4 12h.01M4 19h.01" />,
   },
 ];
 
-const steps = [
-  { title: "Sign up with your work email", text: "We send you a link. No passwords." },
+const features: { title: string; text: string; tint: string; stroke: string; icon: ReactNode }[] = [
   {
-    title: "Set up your organisation",
-    text: "Region, currency and when your financial year starts. The lifecycle comes ready to edit.",
+    title: "Health that rolls up",
+    text: "Schedule, finance, effort, issues and benefits combine into one rating, from project to programme to portfolio.",
+    tint: "bg-site-tint-blue",
+    stroke: "stroke-site-accent-strong",
+    icon: (
+      <>
+        <path d="M3 3v18h18" />
+        <path d="M7 15l4-4 3 3 5-6" />
+      </>
+    ),
   },
   {
-    title: "Bring in your portfolio",
-    text: "Add programmes and projects, invite colleagues and give each the right role.",
+    title: "Reports you can trust",
+    text: "Each status report records the declared position next to the evidenced one, so committees see where they differ.",
+    tint: "bg-site-tint-green",
+    stroke: "stroke-site-icon-green",
+    icon: (
+      <>
+        <path d="M9 12l2 2 4-4" />
+        <path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z" />
+      </>
+    ),
+  },
+  {
+    title: "Benefits, measured",
+    text: "Track what each investment promised and measure it through to realisation, long after go-live.",
+    tint: "bg-site-tint-violet",
+    stroke: "stroke-site-icon-violet",
+    icon: (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <circle cx="12" cy="12" r="4" />
+      </>
+    ),
   },
 ];
-
-function Mark() {
-  return (
-    <span className="grid size-8 place-items-center rounded-md bg-primary font-display text-sm font-bold text-primary-foreground">
-      VP
-    </span>
-  );
-}
-
-/** An illustrative portfolio summary for the hero (not live data). */
-function Preview() {
-  const rows = [
-    { name: "Digital student journey", rag: "bg-health-good", label: "On track", width: "72%" },
-    { name: "Research data platform", rag: "bg-health-warn", label: "At risk", width: "48%" },
-    { name: "Network refresh", rag: "bg-health-good", label: "On track", width: "86%" },
-    { name: "Identity and access", rag: "bg-health-bad", label: "Off track", width: "35%" },
-  ];
-  return (
-    <div aria-hidden className="rounded-xl border border-border/70 bg-card p-5 shadow-lg">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-          Portfolio overview
-        </p>
-        <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">
-          Example
-        </span>
-      </div>
-      <div className="mt-4 grid grid-cols-3 gap-3">
-        {[
-          ["Active projects", "24"],
-          ["On track", "67%"],
-          ["Benefits realised", "£1.2m"],
-        ].map(([label, value]) => (
-          <div key={label} className="rounded-lg bg-muted/60 p-3">
-            <p className="text-[10px] text-muted-foreground">{label}</p>
-            <p className="mt-1 font-display text-lg font-semibold">{value}</p>
-          </div>
-        ))}
-      </div>
-      <div className="mt-4 space-y-3">
-        {rows.map((row) => (
-          <div key={row.name} className="grid grid-cols-[1fr_auto] items-center gap-3">
-            <div>
-              <p className="text-xs font-medium">{row.name}</p>
-              <div className="mt-1.5 h-1.5 rounded-full bg-muted">
-                <div className="h-full rounded-full bg-primary/70" style={{ width: row.width }} />
-              </div>
-            </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold">
-              <span className={cn("size-2 rounded-full", row.rag)} />
-              {row.label}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function PublicHome() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
-          <Link to="/" className="flex items-center gap-2.5 font-display font-semibold">
-            <Mark />
-            Virtual PMO
-          </Link>
-          <nav className="ml-6 hidden gap-5 text-sm text-muted-foreground md:flex">
-            <a href="#features" className="hover:text-foreground">
-              What it does
-            </a>
-            <a href="#how" className="hover:text-foreground">
-              Getting started
-            </a>
-            <a href="#trust" className="hover:text-foreground">
-              Security
-            </a>
-          </nav>
-          <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" asChild>
-              <Link to="/signin">Sign in</Link>
-            </Button>
-            <Button asChild>
-              <Link to="/signup">Start free trial</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main>
-        <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:py-24">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-              For university IT and change teams
-            </p>
-            <h1 className="mt-4 font-display text-4xl font-semibold leading-tight sm:text-5xl">
-              Every project, programme and benefit, in one honest view.
-            </h1>
-            <p className="mt-5 max-w-xl text-lg leading-8 text-muted-foreground">
-              Virtual PMO brings portfolio health, governance, delivery and benefits together, with
-              health worked out from the evidence rather than copied between spreadsheets.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Button size="lg" asChild>
-                <Link to="/signup">
-                  Start free trial
-                  <ArrowRight />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link to="/signin">Sign in</Link>
-              </Button>
-            </div>
-            <p className="mt-4 text-sm text-muted-foreground">
-              Sign up with your work email. No card, no passwords.
-            </p>
-          </div>
-          <Preview />
-        </section>
-
-        <section id="features" className="border-t border-border/60 bg-muted/30">
-          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-            <h2 className="font-display text-3xl font-semibold">What it does</h2>
-            <p className="mt-3 max-w-2xl text-muted-foreground">
-              Built around how university PMOs actually work: a six-phase lifecycle, stage gates,
-              committees and a financial year that starts in August.
-            </p>
-            <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {features.map((feature) => (
-                <article
-                  key={feature.title}
-                  className="rounded-lg border border-border/70 bg-card p-6 shadow-sm"
-                >
-                  <span className="grid size-10 place-items-center rounded-md bg-accent text-accent-foreground">
-                    {feature.icon}
-                  </span>
-                  <h3 className="mt-4 font-display text-lg font-semibold">{feature.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{feature.text}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="how" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-          <h2 className="font-display text-3xl font-semibold">Getting started takes minutes</h2>
-          <ol className="mt-10 grid gap-5 md:grid-cols-3">
-            {steps.map((step, index) => (
-              <li
-                key={step.title}
-                className="rounded-lg border border-border/70 bg-card p-6 shadow-sm"
-              >
-                <span className="grid size-8 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                  {index + 1}
-                </span>
-                <h3 className="mt-4 font-semibold">{step.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{step.text}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        <section id="trust" className="border-t border-border/60 bg-muted/30">
-          <div className="mx-auto grid max-w-6xl gap-8 px-4 py-16 sm:px-6 md:grid-cols-3">
-            <div className="flex gap-3">
-              <LockKeyhole className="mt-1 size-5 shrink-0 text-primary" />
-              <div>
-                <h3 className="font-semibold">Your data stays yours</h3>
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  Each organisation is kept separate in the database itself, not just in the
-                  screens.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <ShieldCheck className="mt-1 size-5 shrink-0 text-primary" />
-              <div>
-                <h3 className="font-semibold">Roles that match your PMO</h3>
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  Admin, PMO, manager, contributor and viewer, per workspace. People only see the
-                  buttons they can use.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <Scale className="mt-1 size-5 shrink-0 text-primary" />
-              <div>
-                <h3 className="font-semibold">An audit trail by design</h3>
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  Status reports keep the evidence at the time they were submitted; closed and
-                  archived work is never deleted.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-6xl px-4 py-16 text-center sm:px-6">
-          <CalendarRange className="mx-auto size-8 text-primary" />
-          <h2 className="mt-4 font-display text-3xl font-semibold">
-            Ready for your next board pack?
-          </h2>
-          <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-            Set up your organisation now and invite your project managers when you're ready.
-          </p>
-          <div className="mt-8 flex justify-center gap-3">
-            <Button size="lg" asChild>
-              <Link to="/signup">
-                Start free trial
-                <ArrowRight />
-              </Link>
-            </Button>
-          </div>
-        </section>
-      </main>
-
-      <footer className="border-t border-border/60">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-8 text-sm text-muted-foreground sm:px-6">
-          <span className="flex items-center gap-2 font-display font-semibold text-foreground">
-            <Mark />
-            Virtual PMO
+    <SitePage>
+      <section className="bg-site-ink text-site-on-ink">
+        <SiteHeader />
+        <div className="mx-auto flex max-w-[1240px] flex-col items-center gap-6 px-7 pt-[72px] text-center">
+          <span className="inline-flex items-center gap-2 rounded-full border border-site-ink-pill px-3.5 py-1.5 text-[0.88rem] text-site-on-ink-nav">
+            <span className="size-[7px] rounded-full bg-site-good" />
+            Portfolio management with built-in assurance
           </span>
-          <span>Portfolio management for universities.</span>
-          <Link to="/signin" className="ml-auto hover:text-foreground">
-            Sign in
-          </Link>
+          <h1 className="m-0 max-w-[17ch] text-[clamp(2.6rem,5.6vw,4.6rem)] leading-[1.04] font-semibold tracking-[-0.035em]">
+            Know which projects are really on track.
+          </h1>
+          <p className="m-0 max-w-[40rem] text-[1.18rem] leading-[1.6] text-site-on-ink-muted">
+            Portfolios, programmes and projects in one place, with health calculated from delivery
+            data and every status report checked against the evidence.
+          </p>
+          <SiteCtas className="justify-center pt-1" />
+          <ProductPreview />
         </div>
-      </footer>
-    </div>
+      </section>
+
+      <section id="security" className="scroll-mt-4 border-b border-site-line">
+        <div className="mx-auto flex max-w-[1240px] flex-wrap justify-center gap-x-12 gap-y-4 p-7 text-[0.95rem] font-medium text-site-text-soft">
+          {assurances.map((item) => (
+            <span key={item.text} className="inline-flex items-center gap-2.5">
+              <svg width="18" height="18" className="stroke-site-accent" {...iconProps}>
+                {item.icon}
+              </svg>
+              {item.text}
+            </span>
+          ))}
+        </div>
+      </section>
+
+      <section id="product" className="scroll-mt-4">
+        <div className="mx-auto flex max-w-[1240px] flex-col gap-12 px-7 py-[88px]">
+          <h2 className="m-0 max-w-[20ch] text-[clamp(2rem,3.4vw,2.8rem)] leading-[1.1] font-semibold tracking-[-0.03em]">
+            Everything a PMO needs, without the spreadsheets.
+          </h2>
+          <div className="flex flex-wrap gap-5">
+            {features.map((feature) => (
+              <div
+                key={feature.title}
+                className="flex flex-[1_1_300px] flex-col gap-3.5 rounded-2xl border border-site-line p-7"
+              >
+                <span
+                  className={cn("grid size-[42px] place-items-center rounded-[10px]", feature.tint)}
+                >
+                  <svg width="20" height="20" className={feature.stroke} {...iconProps}>
+                    {feature.icon}
+                  </svg>
+                </span>
+                <h3 className="m-0 text-[1.2rem] font-semibold">{feature.title}</h3>
+                <p className="m-0 leading-[1.6] text-site-text-muted">{feature.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto mb-[72px] max-w-[1240px] px-7">
+        <div className="flex flex-wrap items-center justify-between gap-6 rounded-[20px] bg-site-ink p-12 text-site-on-ink max-sm:p-8">
+          <div className="flex flex-[1_1_420px] flex-col gap-2.5">
+            <h2 className="m-0 text-[2rem] font-semibold tracking-[-0.025em]">
+              Bring your portfolio into focus.
+            </h2>
+            <p className="m-0 text-[1.05rem] text-site-on-ink-muted">
+              Set up your first portfolio in minutes. No spreadsheets to migrate by hand.
+            </p>
+          </div>
+          <SiteCtas />
+        </div>
+      </section>
+
+      <SiteFooter />
+    </SitePage>
   );
 }

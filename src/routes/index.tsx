@@ -1,26 +1,25 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { Splash } from "@/components/auth/auth-gate";
 import { useSession } from "@/components/auth/session-provider";
+import { siteFontLinks } from "@/components/marketing/site-fonts";
 import { PublicHome } from "@/components/public-home";
+
+const title = "Virtual PMO — know which projects are really on track";
+const description =
+  "Portfolios, programmes and projects in one place, with health calculated from delivery data and every status report checked against the evidence.";
 
 /** Public homepage. Signed-in users go straight to their portfolio. */
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Virtual PMO — portfolio management for universities" },
-      {
-        name: "description",
-        content:
-          "Portfolio, programme and project management for university IT and change teams: evidence-based health, benefits, governance, delivery and resources in one place.",
-      },
-      { property: "og:title", content: "Virtual PMO — portfolio management for universities" },
-      {
-        property: "og:description",
-        content: "Every project, programme and benefit, in one honest view.",
-      },
+      { title },
+      { name: "description", content: description },
+      { property: "og:title", content: title },
+      { property: "og:description", content: description },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: siteFontLinks,
   }),
   component: Landing,
 });

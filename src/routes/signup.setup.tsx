@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, redirect, useNavigate } from "@tanstack/react-router";
 import { Check, LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { CentredCard, Splash } from "@/components/auth/auth-gate";
 import { useSession } from "@/components/auth/session-provider";
+import { selfSignup } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createOrganisation, listMemberships, setLastOrganisation } from "@/services/auth";
@@ -12,6 +13,8 @@ import { errorMessage } from "@/services/service-error";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/signup/setup")({
+  // Self-service sign-up is off unless VITE_SELF_SIGNUP is "true" (see lib/features.ts).
+  beforeLoad: () => { if (!selfSignup) throw redirect({ to: "/request-access", replace: true }); },
   head: () => ({ meta: [
     { title: "Set up your organisation — Virtual PMO" },
     { name: "description", content: "Name your organisation and choose your region, currency and financial year." },

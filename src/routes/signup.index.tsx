@@ -1,15 +1,18 @@
 import { useMutation } from "@tanstack/react-query";
-import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, redirect } from "@tanstack/react-router";
 import { AlertTriangle, CheckCircle2, LoaderCircle, Mail } from "lucide-react";
 import { useState } from "react";
 import { CentredCard, Splash } from "@/components/auth/auth-gate";
 import { useSession } from "@/components/auth/session-provider";
+import { selfSignup } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { sendMagicLink } from "@/services/auth";
 import { errorMessage } from "@/services/service-error";
 
 export const Route = createFileRoute("/signup/")({
+  // Self-service sign-up is off unless VITE_SELF_SIGNUP is "true" (see lib/features.ts).
+  beforeLoad: () => { if (!selfSignup) throw redirect({ to: "/request-access", replace: true }); },
   head: () => ({ meta: [
     { title: "Start your free trial — Virtual PMO" },
     { name: "description", content: "Create your Virtual PMO organisation in minutes with your work email." },
