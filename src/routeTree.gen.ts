@@ -104,6 +104,8 @@ import { Route as PortfolioProgrammesIndexRouteImport } from './routes/portfolio
 import { Route as PortfolioProgrammesProgrammeIdRouteImport } from './routes/portfolio.programmes.$programmeId'
 import { Route as PortfolioProjectsIndexRouteImport } from './routes/portfolio.projects.index'
 import { Route as PortfolioProjectsProjectCodeRouteImport } from './routes/portfolio.projects.$projectCode'
+import { Route as PortfolioProjectsProjectCodeBusinessCaseRouteImport } from './routes/portfolio.projects.$projectCode_.business-case'
+import { Route as PortfolioRequestsRequestIdBusinessCaseRouteImport } from './routes/portfolio.requests_.$requestId.business-case'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -588,6 +590,18 @@ const PortfolioProjectsProjectCodeRoute =
     path: '/$projectCode',
     getParentRoute: () => PortfolioProjectsRoute,
   } as any)
+const PortfolioProjectsProjectCodeBusinessCaseRoute =
+  PortfolioProjectsProjectCodeBusinessCaseRouteImport.update({
+    id: '/$projectCode_/business-case',
+    path: '/$projectCode/business-case',
+    getParentRoute: () => PortfolioProjectsRoute,
+  } as any)
+const PortfolioRequestsRequestIdBusinessCaseRoute =
+  PortfolioRequestsRequestIdBusinessCaseRouteImport.update({
+    id: '/requests_/$requestId/business-case',
+    path: '/requests/$requestId/business-case',
+    getParentRoute: () => PortfolioRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -685,6 +699,8 @@ export interface FileRoutesByFullPath {
   '/portfolio/collections/': typeof PortfolioCollectionsIndexRoute
   '/portfolio/programmes/': typeof PortfolioProgrammesIndexRoute
   '/portfolio/projects/': typeof PortfolioProjectsIndexRoute
+  '/portfolio/projects/$projectCode/business-case': typeof PortfolioProjectsProjectCodeBusinessCaseRoute
+  '/portfolio/requests/$requestId/business-case': typeof PortfolioRequestsRequestIdBusinessCaseRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -764,6 +780,8 @@ export interface FileRoutesByTo {
   '/portfolio/collections': typeof PortfolioCollectionsIndexRoute
   '/portfolio/programmes': typeof PortfolioProgrammesIndexRoute
   '/portfolio/projects': typeof PortfolioProjectsIndexRoute
+  '/portfolio/projects/$projectCode/business-case': typeof PortfolioProjectsProjectCodeBusinessCaseRoute
+  '/portfolio/requests/$requestId/business-case': typeof PortfolioRequestsRequestIdBusinessCaseRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -862,6 +880,8 @@ export interface FileRoutesById {
   '/portfolio/collections/': typeof PortfolioCollectionsIndexRoute
   '/portfolio/programmes/': typeof PortfolioProgrammesIndexRoute
   '/portfolio/projects/': typeof PortfolioProjectsIndexRoute
+  '/portfolio/projects/$projectCode_/business-case': typeof PortfolioProjectsProjectCodeBusinessCaseRoute
+  '/portfolio/requests_/$requestId/business-case': typeof PortfolioRequestsRequestIdBusinessCaseRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -961,6 +981,8 @@ export interface FileRouteTypes {
     | '/portfolio/collections/'
     | '/portfolio/programmes/'
     | '/portfolio/projects/'
+    | '/portfolio/projects/$projectCode/business-case'
+    | '/portfolio/requests/$requestId/business-case'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1040,6 +1062,8 @@ export interface FileRouteTypes {
     | '/portfolio/collections'
     | '/portfolio/programmes'
     | '/portfolio/projects'
+    | '/portfolio/projects/$projectCode/business-case'
+    | '/portfolio/requests/$requestId/business-case'
   id:
     | '__root__'
     | '/'
@@ -1137,6 +1161,8 @@ export interface FileRouteTypes {
     | '/portfolio/collections/'
     | '/portfolio/programmes/'
     | '/portfolio/projects/'
+    | '/portfolio/projects/$projectCode_/business-case'
+    | '/portfolio/requests_/$requestId/business-case'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1843,6 +1869,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortfolioProjectsProjectCodeRouteImport
       parentRoute: typeof PortfolioProjectsRoute
     }
+    '/portfolio/projects/$projectCode_/business-case': {
+      id: '/portfolio/projects/$projectCode_/business-case'
+      path: '/$projectCode/business-case'
+      fullPath: '/portfolio/projects/$projectCode/business-case'
+      preLoaderRoute: typeof PortfolioProjectsProjectCodeBusinessCaseRouteImport
+      parentRoute: typeof PortfolioProjectsRoute
+    }
+    '/portfolio/requests_/$requestId/business-case': {
+      id: '/portfolio/requests_/$requestId/business-case'
+      path: '/requests/$requestId/business-case'
+      fullPath: '/portfolio/requests/$requestId/business-case'
+      preLoaderRoute: typeof PortfolioRequestsRequestIdBusinessCaseRouteImport
+      parentRoute: typeof PortfolioRoute
+    }
   }
 }
 
@@ -2049,11 +2089,14 @@ const PortfolioProgrammesRouteWithChildren =
 interface PortfolioProjectsRouteChildren {
   PortfolioProjectsProjectCodeRoute: typeof PortfolioProjectsProjectCodeRoute
   PortfolioProjectsIndexRoute: typeof PortfolioProjectsIndexRoute
+  PortfolioProjectsProjectCodeBusinessCaseRoute: typeof PortfolioProjectsProjectCodeBusinessCaseRoute
 }
 
 const PortfolioProjectsRouteChildren: PortfolioProjectsRouteChildren = {
   PortfolioProjectsProjectCodeRoute: PortfolioProjectsProjectCodeRoute,
   PortfolioProjectsIndexRoute: PortfolioProjectsIndexRoute,
+  PortfolioProjectsProjectCodeBusinessCaseRoute:
+    PortfolioProjectsProjectCodeBusinessCaseRoute,
 }
 
 const PortfolioProjectsRouteWithChildren =
@@ -2066,6 +2109,7 @@ interface PortfolioRouteChildren {
   PortfolioRequestsRoute: typeof PortfolioRequestsRoute
   PortfolioRoadmapRoute: typeof PortfolioRoadmapRoute
   PortfolioIndexRoute: typeof PortfolioIndexRoute
+  PortfolioRequestsRequestIdBusinessCaseRoute: typeof PortfolioRequestsRequestIdBusinessCaseRoute
 }
 
 const PortfolioRouteChildren: PortfolioRouteChildren = {
@@ -2075,6 +2119,8 @@ const PortfolioRouteChildren: PortfolioRouteChildren = {
   PortfolioRequestsRoute: PortfolioRequestsRoute,
   PortfolioRoadmapRoute: PortfolioRoadmapRoute,
   PortfolioIndexRoute: PortfolioIndexRoute,
+  PortfolioRequestsRequestIdBusinessCaseRoute:
+    PortfolioRequestsRequestIdBusinessCaseRoute,
 }
 
 const PortfolioRouteWithChildren = PortfolioRoute._addFileChildren(
