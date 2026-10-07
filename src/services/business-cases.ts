@@ -131,7 +131,7 @@ export async function getBusinessCase(owner: CaseOwner): Promise<BusinessCase | 
          submitted_at, decided_at, updated_at, submitter:profiles!business_case_versions_submitted_by_fkey(display_name),
          business_case_sections(id, key, title, is_required, content, sort_order, updated_at,
            template:business_case_templates(guidance)),
-         business_case_options(id, name, description, whole_life_cost, delivery_cost, benefits_summary,
+         business_case_options!business_case_options_version_id_workspace_id_fkey(id, name, description, whole_life_cost, delivery_cost, benefits_summary,
            risk_summary, is_preferred, sort_order, updated_at),
          business_case_benefits(id, title, classification, category_id, measure, annual_value,
            years_counted, sort_order, updated_at))`,
