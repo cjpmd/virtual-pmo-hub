@@ -36,7 +36,7 @@ $f$;
 
 insert into public.organisations (id, name, short_name, slug, region, is_demo, settings)
 values ('98e086a1-6b01-521a-92e9-21dac759c8f4', 'Demo University', 'DTS', 'demo-university', 'uk', true,
-        private.default_org_settings() || '{"organisation":{"name":"Demo University Digital & Technology Services","shortName":"DTS","brandColour":"#2a4c96","supportContact":"dts-pmo@demo-university.ac.uk"},"regional":{"baseCurrency":"GBP","symbolPosition":"before","decimalPlaces":0,"thousandsSeparator":",","decimalSeparator":".","compactFormatting":true,"multiCurrency":false,"locale":"en-GB","dateFormat":"DD/MM/YYYY","timeZone":"Europe/London","firstDayOfWeek":1,"financialYearStartMonth":8},"workingTime":{"hoursPerWeek":36.25,"workingDays":[1,2,3,4,5],"hoursPerDay":7.25,"defaultBauPercentage":25},"terminology":{"terms":{"portfolio":"Portfolio","programme":"Programme","programmePlural":"Programmes","project":"Project","projectPlural":"Projects","projectManager":"Project Manager","projectOfficer":"Project Officer","programmeManager":"Programme Manager","sponsor":"Sponsor","benefit":"Benefit","benefitPlural":"Benefits","milestone":"Milestone","milestonePlural":"Milestones","collection":"Collection","collectionPlural":"Collections","dependency":"Dependency","dependencyPlural":"Dependencies","risk":"Risk","issue":"Issue","decision":"Decision","assumption":"Assumption","lesson":"Lesson","task":"Task","stage":"Phase"}},"health":{"scheduleSlipPercent":10,"taskOverdueAtRiskPercent":15,"taskOverdueOffTrackPercent":30,"financialAtRiskPercent":0,"financialOffTrackPercent":10,"riskScoreAtRisk":10,"riskScoreOffTrack":15,"benefitBehindProfilePercent":20,"dependencyAtRiskWorkingDays":10},"risk":{"matrixSize":5,"probabilityLabels":["Rare","Unlikely","Possible","Likely","Almost certain"],"impactLabels":["Negligible","Minor","Moderate","Major","Severe"],"bands":[{"id":"band-low","label":"Low","minScore":1,"colour":"#2e7d52"},{"id":"band-elevated","label":"Elevated","minScore":8,"colour":"#b7791f"},{"id":"band-critical","label":"Critical","minScore":15,"colour":"#b3261e"}],"appetiteThreshold":12},"benefits":{"optimismBias":[{"category":"Efficiency","percentage":20},{"category":"Income","percentage":30},{"category":"Student experience","percentage":25},{"category":"Research","percentage":25},{"category":"Risk reduction","percentage":15},{"category":"Compliance","percentage":10},{"category":"Sustainability","percentage":15}],"defaultMeasurementFrequency":"Quarterly","appraisalYears":5},"notifications":{"channels":{"inApp":true,"email":true,"teams":false},"digest":"Daily","events":{"Status report due":true,"Task overdue":true,"Task issued to me":true,"Gate criteria failing":false,"Decision needed by date approaching":true,"Decision recorded":true,"Measurement overdue":true,"Measurement awaiting validation":false,"Dependency off track":true,"Dependency awaiting my acceptance":true,"Risk escalated":true,"Assumption invalidated":false,"Benefit behind profile":true,"Lessons review outstanding":true}},"templates":{"statusReportSections":["Overall health","Accomplished this period","Planned next period","Risks and issues","Decisions required","Benefits position"],"committeePack":{"sectionOrder":["Cover","Portfolio summary","Milestones","Exceptions","Benefits realisation","Decisions","Project highlights"],"coverText":"Portfolio performance, delivery exceptions and project highlight reports.","showLogo":true}},"data":{"retentionMonths":84},"tiers":[{"tier":"Small","description":"Low complexity, single team, minimal change to live services. Light governance: no Phase 2 business case and a short closure note.","guideline":"Under £50k, under 3 months, one team affected"},{"tier":"Medium","description":"Moderate complexity across more than one team, with supplier or data change. Full business case, baselined plan and formal closure report.","guideline":"£50k–£250k, 3–12 months, several teams affected"},{"tier":"Large","description":"High complexity, institution-wide impact or significant spend. Adds independent assurance, rehearsed go-live and portfolio board oversight.","guideline":"Over £250k, over 12 months, university-wide impact"}],"demoAdmins":[]}'::jsonb);
+        private.default_org_settings() || '{"organisation":{"name":"Demo University Digital & Technology Services","shortName":"DTS","brandColour":"#2a4c96","supportContact":"dts-pmo@demo-university.ac.uk"},"regional":{"baseCurrency":"GBP","symbolPosition":"before","decimalPlaces":0,"thousandsSeparator":",","decimalSeparator":".","compactFormatting":true,"multiCurrency":false,"locale":"en-GB","dateFormat":"DD/MM/YYYY","timeZone":"Europe/London","firstDayOfWeek":1,"financialYearStartMonth":8},"workingTime":{"hoursPerWeek":36.25,"workingDays":[1,2,3,4,5],"hoursPerDay":7.25,"defaultBauPercentage":25},"terminology":{"terms":{"portfolio":"Portfolio","programme":"Programme","programmePlural":"Programmes","project":"Project","projectPlural":"Projects","projectManager":"Project Manager","projectOfficer":"Project Officer","programmeManager":"Programme Manager","sponsor":"Sponsor","benefit":"Benefit","benefitPlural":"Benefits","milestone":"Milestone","milestonePlural":"Milestones","collection":"Collection","collectionPlural":"Collections","dependency":"Dependency","dependencyPlural":"Dependencies","risk":"Risk","issue":"Issue","decision":"Decision","assumption":"Assumption","lesson":"Lesson","task":"Task","stage":"Phase"}},"health":{"scheduleSlipPercent":10,"taskOverdueAtRiskPercent":15,"taskOverdueOffTrackPercent":30,"financialAtRiskPercent":0,"financialOffTrackPercent":10,"riskScoreAtRisk":10,"riskScoreOffTrack":15,"benefitBehindProfilePercent":20,"dependencyAtRiskWorkingDays":10,"capabilitySlipAmberDays":30,"acceptanceGraceDays":0,"outcomeBehindTrajectoryAmberPercent":10,"outcomeBehindTrajectoryRedPercent":25},"risk":{"matrixSize":5,"probabilityLabels":["Rare","Unlikely","Possible","Likely","Almost certain"],"impactLabels":["Negligible","Minor","Moderate","Major","Severe"],"bands":[{"id":"band-low","label":"Low","minScore":1,"colour":"#2e7d52"},{"id":"band-elevated","label":"Elevated","minScore":8,"colour":"#b7791f"},{"id":"band-critical","label":"Critical","minScore":15,"colour":"#b3261e"}],"appetiteThreshold":12},"benefits":{"optimismBias":[{"category":"Efficiency","percentage":20},{"category":"Income","percentage":30},{"category":"Student experience","percentage":25},{"category":"Research","percentage":25},{"category":"Risk reduction","percentage":15},{"category":"Compliance","percentage":10},{"category":"Sustainability","percentage":15}],"defaultMeasurementFrequency":"Quarterly","appraisalYears":5},"notifications":{"channels":{"inApp":true,"email":true,"teams":false},"digest":"Daily","events":{"Status report due":true,"Task overdue":true,"Task issued to me":true,"Gate criteria failing":false,"Decision needed by date approaching":true,"Decision recorded":true,"Measurement overdue":true,"Measurement awaiting validation":false,"Dependency off track":true,"Dependency awaiting my acceptance":true,"Risk escalated":true,"Assumption invalidated":false,"Benefit behind profile":true,"Lessons review outstanding":true}},"templates":{"statusReportSections":["Overall health","Accomplished this period","Planned next period","Risks and issues","Decisions required","Benefits position"],"committeePack":{"sectionOrder":["Cover","Portfolio summary","Milestones","Exceptions","Benefits realisation","Decisions","Project highlights"],"coverText":"Portfolio performance, delivery exceptions and project highlight reports.","showLogo":true}},"data":{"retentionMonths":84},"tiers":[{"tier":"Small","description":"Low complexity, single team, minimal change to live services. Light governance: no Phase 2 business case and a short closure note.","guideline":"Under £50k, under 3 months, one team affected"},{"tier":"Medium","description":"Moderate complexity across more than one team, with supplier or data change. Full business case, baselined plan and formal closure report.","guideline":"£50k–£250k, 3–12 months, several teams affected"},{"tier":"Large","description":"High complexity, institution-wide impact or significant spend. Adds independent assurance, rehearsed go-live and portfolio board oversight.","guideline":"Over £250k, over 12 months, university-wide impact"}],"demoAdmins":[]}'::jsonb);
 insert into public.organisation_subscriptions (organisation_id, plan, seats_total) values ('98e086a1-6b01-521a-92e9-21dac759c8f4', 'demo', 50);
 select private.seed_org_defaults('98e086a1-6b01-521a-92e9-21dac759c8f4');
 insert into public.workspaces (id, organisation_id, name, description)
@@ -2828,34 +2828,34 @@ insert into public.decision_dependencies (decision_id, dependency_id) values
   (u('63807100341a'), u('821e0e44b0d4'));
 
 -- ---- Benefits ----
-insert into public.benefits (id, portfolio_id, programme_id, title, description, type, classification, category_id, beneficiaries, owner_id, sro_id, status, confidence, eligibility_confirmed, eligibility_confirmed_by_id, eligibility_confirmed_date, planned_total_value, dependency_notes) values
-  (u('cdbe2614fe5e'), u('ffeb12c2b6d8'), u('0ae203dc50c2'), 'Reduced staff time on account provisioning', 'Outcome expected from Account creation automation, with ownership retained by the receiving service.', 'benefit', 'non_cash_releasing', lk('benefit_category', 'Efficiency'), array['DTS colleagues', 'University services'], u('a1cee910a6d1'), u('44c529d01644'), 'realised', 'low', true, u('eab4a1e27162'), d(-38), 84000, array['Operational adoption', 'Reliable source data']),
-  (u('dbf621c6db08'), u('ffeb12c2b6d8'), u('0ae203dc50c2'), 'Faster access for new students at enrolment', 'Outcome expected from Account creation automation, with ownership retained by the receiving service.', 'benefit', 'qualitative', lk('benefit_category', 'Student experience'), array['Students', 'Service Desk'], u('36e519195168'), u('2ab4697c4e71'), 'realised', 'high', true, u('eab4a1e27162'), d(-38), 108000, array['Service owner capacity']),
-  (u('43becdfbde21'), u('ffeb12c2b6d8'), u('0ae203dc50c2'), 'Reduced service desk contacts', 'Outcome expected from Ebbot (chatbot), with ownership retained by the receiving service.', 'benefit', 'non_cash_releasing', lk('benefit_category', 'Efficiency'), array['DTS colleagues', 'University services'], u('4938bab356ec'), u('4938bab356ec'), 'in_realisation', 'high', true, u('eab4a1e27162'), d(-38), 151200, array['Service owner capacity']),
-  (u('37a5268c772d'), u('ffeb12c2b6d8'), u('0ae203dc50c2'), '24/7 support availability for students', 'Outcome expected from Ebbot (chatbot), with ownership retained by the receiving service.', 'benefit', 'qualitative', lk('benefit_category', 'Student experience'), array['Students', 'Service Desk'], u('b3c221e80091'), u('b3c221e80091'), 'in_realisation', 'medium', true, u('eab4a1e27162'), d(-38), 108000, array['Service owner capacity']),
-  (u('82f3c1216612'), u('ffeb12c2b6d8'), u('0ae203dc50c2'), 'Increased escalation handling for complex queries', 'Outcome expected from Ebbot (chatbot), with ownership retained by the receiving service.', 'disbenefit', 'qualitative', lk('benefit_category', 'Efficiency'), array['DTS colleagues', 'University services'], u('c9ac15caa52b'), u('44c529d01644'), 'in_realisation', 'high', true, u('eab4a1e27162'), d(-38), -27000, array['Operational adoption', 'Reliable source data']),
-  (u('e9f591ba5884'), u('ffeb12c2b6d8'), u('9da2a1c26250'), 'Reduced likelihood of major cyber incident', 'Outcome expected from Reduce Our Cyber Risk, with ownership retained by the receiving service.', 'benefit', 'qualitative', lk('benefit_category', 'Risk reduction'), array['DTS colleagues', 'University services'], u('f0621a298047'), u('2ab4697c4e71'), 'in_realisation', 'low', true, u('eab4a1e27162'), d(-38), 96000, array['Service owner capacity']),
-  (u('520c07a6a98c'), u('ffeb12c2b6d8'), u('9da2a1c26250'), 'Compliance with cyber insurance requirements', 'Outcome expected from Reduce Our Cyber Risk, with ownership retained by the receiving service.', 'benefit', 'qualitative', lk('benefit_category', 'Compliance'), array['DTS colleagues', 'University services'], u('a1cee910a6d1'), u('4938bab356ec'), 'planned', 'medium', true, u('eab4a1e27162'), d(-38), 108000, array['Service owner capacity']),
-  (u('02607d930245'), u('ffeb12c2b6d8'), u('9da2a1c26250'), 'Reduced unplanned downtime', 'Outcome expected from Improve Infrastructure Resilience (VXRail), with ownership retained by the receiving service.', 'benefit', 'non_cash_releasing', lk('benefit_category', 'Risk reduction'), array['DTS colleagues', 'University services'], u('36e519195168'), u('b3c221e80091'), 'planned', 'high', true, u('eab4a1e27162'), d(-38), 48000, array['Service owner capacity']),
-  (u('873e0577ebfb'), u('ffeb12c2b6d8'), u('9da2a1c26250'), 'Lower infrastructure energy consumption', 'Outcome expected from Improve Infrastructure Resilience (VXRail), with ownership retained by the receiving service.', 'benefit', 'societal', lk('benefit_category', 'Sustainability'), array['DTS colleagues', 'University services'], u('4938bab356ec'), u('44c529d01644'), 'planned', 'high', true, u('eab4a1e27162'), d(-38), 108000, array['Operational adoption', 'Reliable source data']),
-  (u('c547c84fcdae'), u('ffeb12c2b6d8'), u('7299a996d3df'), 'Avoided extended support costs', 'Outcome expected from Windows 11 Rollout, with ownership retained by the receiving service.', 'benefit', 'cash_releasing', lk('benefit_category', 'Efficiency'), array['DTS colleagues', 'University services'], u('b3c221e80091'), u('2ab4697c4e71'), 'planned', 'medium', true, u('eab4a1e27162'), d(-38), 90000, array['Service owner capacity']),
-  (u('ae875b231125'), u('ffeb12c2b6d8'), u('7299a996d3df'), 'Improved colleague device experience', 'Outcome expected from Windows 11 Rollout, with ownership retained by the receiving service.', 'benefit', 'qualitative', lk('benefit_category', 'Efficiency'), array['DTS colleagues', 'University services'], u('c9ac15caa52b'), u('4938bab356ec'), 'validated', 'low', true, u('eab4a1e27162'), d(-38), 108000, array['Service owner capacity']),
-  (u('6fed4dcd0f57'), u('ffeb12c2b6d8'), u('7299a996d3df'), 'Faster first-contact resolution', 'Outcome expected from Service Desk Optimisation, with ownership retained by the receiving service.', 'benefit', 'non_cash_releasing', lk('benefit_category', 'Student experience'), array['Students', 'Service Desk'], u('f0621a298047'), u('b3c221e80091'), 'validated', 'high', true, u('eab4a1e27162'), d(-38), 108000, array['Service owner capacity']),
-  (u('9c958d126642'), u('ffeb12c2b6d8'), u('7299a996d3df'), 'Reduced repeat service desk contacts', 'Outcome expected from Service Desk Optimisation, with ownership retained by the receiving service.', 'benefit', 'non_cash_releasing', lk('benefit_category', 'Efficiency'), array['DTS colleagues', 'University services'], u('a1cee910a6d1'), u('44c529d01644'), 'validated', 'medium', true, u('eab4a1e27162'), d(-38), 151200, array['Operational adoption', 'Reliable source data']),
-  (u('331782a88e3c'), u('ffeb12c2b6d8'), u('7299a996d3df'), 'Reduced avoidable cloud spend', 'Outcome expected from Cloud Cost Management, with ownership retained by the receiving service.', 'benefit', 'cash_releasing', lk('benefit_category', 'Efficiency'), array['DTS colleagues', 'University services'], u('36e519195168'), u('2ab4697c4e71'), 'validated', 'high', true, u('eab4a1e27162'), d(-38), 90000, array['Service owner capacity']),
-  (u('79310cdf64f3'), u('ffeb12c2b6d8'), u('7299a996d3df'), 'Improved cloud cost ownership', 'Outcome expected from Cloud Cost Management, with ownership retained by the receiving service.', 'benefit', 'qualitative', lk('benefit_category', 'Efficiency'), array['DTS colleagues', 'University services'], u('4938bab356ec'), u('4938bab356ec'), 'validated', 'high', true, u('eab4a1e27162'), d(-38), 108000, array['Service owner capacity']),
-  (u('597189a0c949'), u('ffeb12c2b6d8'), u('c687f14f1122'), 'Improved digital confidence', 'Outcome expected from Digital Skills Academy, with ownership retained by the receiving service.', 'benefit', 'qualitative', lk('benefit_category', 'Efficiency'), array['DTS colleagues', 'University services'], u('b3c221e80091'), u('b3c221e80091'), 'identified', 'low', true, u('eab4a1e27162'), d(-38), 108000, array['Service owner capacity']),
-  (u('f84ea79e3866'), u('ffeb12c2b6d8'), u('c687f14f1122'), 'Wider access to digital learning', 'Outcome expected from Digital Skills Academy, with ownership retained by the receiving service.', 'benefit', 'societal', lk('benefit_category', 'Student experience'), array['Students', 'Service Desk'], u('c9ac15caa52b'), u('44c529d01644'), 'identified', 'high', false, null, null, 108000, array['Operational adoption', 'Reliable source data']),
-  (u('cda9f2cba083'), u('ffeb12c2b6d8'), u('0ae203dc50c2'), 'Faster research data triage', 'Outcome expected from Research Data Triage AI, with ownership retained by the receiving service.', 'benefit', 'non_cash_releasing', lk('benefit_category', 'Research'), array['Researchers', 'Research Services'], null, u('2ab4697c4e71'), 'identified', 'high', false, null, null, 108000, array['Service owner capacity']),
-  (u('44e4f34da838'), u('ffeb12c2b6d8'), u('0ae203dc50c2'), 'Increased research data quality', 'Outcome expected from Research Data Triage AI, with ownership retained by the receiving service.', 'benefit', 'qualitative', lk('benefit_category', 'Research'), array['Researchers', 'Research Services'], u('a1cee910a6d1'), u('4938bab356ec'), 'identified', 'medium', false, null, null, 108000, array['Service owner capacity']),
-  (u('870a8d917a66'), u('ffeb12c2b6d8'), u('0ae203dc50c2'), 'Additional model assurance workload', 'Outcome expected from Research Data Triage AI, with ownership retained by the receiving service.', 'disbenefit', 'qualitative', lk('benefit_category', 'Compliance'), array['DTS colleagues', 'University services'], u('36e519195168'), u('b3c221e80091'), 'identified', 'high', false, null, null, -27000, array['Service owner capacity']),
-  (u('acc484732f52'), u('ffeb12c2b6d8'), u('7299a996d3df'), 'Temporary disruption during device migration', 'Outcome expected from Windows 11 Rollout, with ownership retained by the receiving service.', 'disbenefit', 'qualitative', lk('benefit_category', 'Student experience'), array['Students', 'Service Desk'], u('4938bab356ec'), u('44c529d01644'), 'identified', 'low', false, null, null, -27000, array['Operational adoption', 'Reliable source data']),
-  (u('d2a251cfc99a'), u('ffeb12c2b6d8'), u('7299a996d3df'), 'Increased applicant conversion', 'Outcome carried into business as usual after Future Students CRM closed.', 'benefit', 'non_cash_releasing', lk('benefit_category', 'Student experience'), array['Students', 'Student Services'], u('44c529d01644'), u('44c529d01644'), 'in_realisation', 'medium', true, u('eab4a1e27162'), d(-191), 420000, array['Service owner capacity']),
-  (u('283d3bf5a6f2'), u('ffeb12c2b6d8'), u('7299a996d3df'), 'Reduced admissions administration', 'Outcome carried into business as usual after Future Students CRM closed.', 'benefit', 'cash_releasing', lk('benefit_category', 'Efficiency'), array['University services'], u('c9ac15caa52b'), u('b3c221e80091'), 'in_realisation', 'medium', true, u('eab4a1e27162'), d(-191), 180000, array['Service owner capacity']),
-  (u('9299df49fa2a'), u('ffeb12c2b6d8'), u('9da2a1c26250'), 'Retired legacy telephony line rental', 'Outcome carried into business as usual after Unified Comms (Phase 2) closed.', 'benefit', 'cash_releasing', lk('benefit_category', 'Efficiency'), array['University services'], u('b3c221e80091'), u('4938bab356ec'), 'realised', 'high', true, u('eab4a1e27162'), d(-191), 96000, array['Service owner capacity']),
-  (u('b87b106b32c7'), u('ffeb12c2b6d8'), u('9da2a1c26250'), 'Improved cross-campus collaboration', 'Outcome carried into business as usual after Unified Comms (Phase 2) closed.', 'benefit', 'qualitative', lk('benefit_category', 'Efficiency'), array['University services'], u('c9ac15caa52b'), u('44c529d01644'), 'in_realisation', 'medium', true, u('eab4a1e27162'), d(-191), 60000, array['Service owner capacity']),
-  (u('922b4768bd2b'), u('ffeb12c2b6d8'), u('c687f14f1122'), 'Improved lone worker safety', 'Outcome carried into business as usual after SafeZone closed.', 'benefit', 'societal', lk('benefit_category', 'Risk reduction'), array['University services'], u('4938bab356ec'), u('b3c221e80091'), 'realised', 'high', true, u('eab4a1e27162'), d(-191), 75000, array['Service owner capacity']),
-  (u('413a72dd90af'), u('ffeb12c2b6d8'), u('c687f14f1122'), 'Faster incident response for students', 'Outcome carried into business as usual after SafeZone closed.', 'benefit', 'qualitative', lk('benefit_category', 'Student experience'), array['Students', 'Student Services'], u('44c529d01644'), u('4938bab356ec'), 'in_realisation', 'low', true, u('eab4a1e27162'), d(-191), 40000, array['Service owner capacity']);
+insert into public.benefits (id, portfolio_id, programme_id, title, description, type, classification, category_id, beneficiaries, owner_id, sro_id, status, confidence, eligibility_confirmed, eligibility_confirmed_by_id, eligibility_confirmed_date, planned_total_value, dependency_notes, realisation_start_date) values
+  (u('cdbe2614fe5e'), u('ffeb12c2b6d8'), u('0ae203dc50c2'), 'Reduced staff time on account provisioning', 'Outcome expected from Account creation automation, with ownership retained by the receiving service.', 'benefit', 'non_cash_releasing', lk('benefit_category', 'Efficiency'), array['DTS colleagues', 'University services'], u('a1cee910a6d1'), u('44c529d01644'), 'realised', 'low', true, u('eab4a1e27162'), d(-38), 84000, array['Operational adoption', 'Reliable source data'], d(-51)),
+  (u('dbf621c6db08'), u('ffeb12c2b6d8'), u('0ae203dc50c2'), 'Faster access for new students at enrolment', 'Outcome expected from Account creation automation, with ownership retained by the receiving service.', 'benefit', 'qualitative', lk('benefit_category', 'Student experience'), array['Students', 'Service Desk'], u('36e519195168'), u('2ab4697c4e71'), 'realised', 'high', true, u('eab4a1e27162'), d(-38), 108000, array['Service owner capacity'], d(-51)),
+  (u('43becdfbde21'), u('ffeb12c2b6d8'), u('0ae203dc50c2'), 'Reduced service desk contacts', 'Outcome expected from Ebbot (chatbot), with ownership retained by the receiving service.', 'benefit', 'non_cash_releasing', lk('benefit_category', 'Efficiency'), array['DTS colleagues', 'University services'], u('4938bab356ec'), u('4938bab356ec'), 'in_realisation', 'high', true, u('eab4a1e27162'), d(-38), 151200, array['Service owner capacity'], d(-51)),
+  (u('37a5268c772d'), u('ffeb12c2b6d8'), u('0ae203dc50c2'), '24/7 support availability for students', 'Outcome expected from Ebbot (chatbot), with ownership retained by the receiving service.', 'benefit', 'qualitative', lk('benefit_category', 'Student experience'), array['Students', 'Service Desk'], u('b3c221e80091'), u('b3c221e80091'), 'in_realisation', 'medium', true, u('eab4a1e27162'), d(-38), 108000, array['Service owner capacity'], d(-51)),
+  (u('82f3c1216612'), u('ffeb12c2b6d8'), u('0ae203dc50c2'), 'Increased escalation handling for complex queries', 'Outcome expected from Ebbot (chatbot), with ownership retained by the receiving service.', 'disbenefit', 'qualitative', lk('benefit_category', 'Efficiency'), array['DTS colleagues', 'University services'], u('c9ac15caa52b'), u('44c529d01644'), 'in_realisation', 'high', true, u('eab4a1e27162'), d(-38), -27000, array['Operational adoption', 'Reliable source data'], d(-51)),
+  (u('e9f591ba5884'), u('ffeb12c2b6d8'), u('9da2a1c26250'), 'Reduced likelihood of major cyber incident', 'Outcome expected from Reduce Our Cyber Risk, with ownership retained by the receiving service.', 'benefit', 'qualitative', lk('benefit_category', 'Risk reduction'), array['DTS colleagues', 'University services'], u('f0621a298047'), u('2ab4697c4e71'), 'in_realisation', 'low', true, u('eab4a1e27162'), d(-38), 96000, array['Service owner capacity'], d(-51)),
+  (u('520c07a6a98c'), u('ffeb12c2b6d8'), u('9da2a1c26250'), 'Compliance with cyber insurance requirements', 'Outcome expected from Reduce Our Cyber Risk, with ownership retained by the receiving service.', 'benefit', 'qualitative', lk('benefit_category', 'Compliance'), array['DTS colleagues', 'University services'], u('a1cee910a6d1'), u('4938bab356ec'), 'planned', 'medium', true, u('eab4a1e27162'), d(-38), 108000, array['Service owner capacity'], d(170)),
+  (u('02607d930245'), u('ffeb12c2b6d8'), u('9da2a1c26250'), 'Reduced unplanned downtime', 'Outcome expected from Improve Infrastructure Resilience (VXRail), with ownership retained by the receiving service.', 'benefit', 'non_cash_releasing', lk('benefit_category', 'Risk reduction'), array['DTS colleagues', 'University services'], u('36e519195168'), u('b3c221e80091'), 'planned', 'high', true, u('eab4a1e27162'), d(-38), 48000, array['Service owner capacity'], d(70)),
+  (u('873e0577ebfb'), u('ffeb12c2b6d8'), u('9da2a1c26250'), 'Lower infrastructure energy consumption', 'Outcome expected from Improve Infrastructure Resilience (VXRail), with ownership retained by the receiving service.', 'benefit', 'societal', lk('benefit_category', 'Sustainability'), array['DTS colleagues', 'University services'], u('4938bab356ec'), u('44c529d01644'), 'planned', 'high', true, u('eab4a1e27162'), d(-38), 108000, array['Operational adoption', 'Reliable source data'], d(70)),
+  (u('c547c84fcdae'), u('ffeb12c2b6d8'), u('7299a996d3df'), 'Avoided extended support costs', 'Outcome expected from Windows 11 Rollout, with ownership retained by the receiving service.', 'benefit', 'cash_releasing', lk('benefit_category', 'Efficiency'), array['DTS colleagues', 'University services'], u('b3c221e80091'), u('2ab4697c4e71'), 'planned', 'medium', true, u('eab4a1e27162'), d(-38), 90000, array['Service owner capacity'], d(120)),
+  (u('ae875b231125'), u('ffeb12c2b6d8'), u('7299a996d3df'), 'Improved colleague device experience', 'Outcome expected from Windows 11 Rollout, with ownership retained by the receiving service.', 'benefit', 'qualitative', lk('benefit_category', 'Efficiency'), array['DTS colleagues', 'University services'], u('c9ac15caa52b'), u('4938bab356ec'), 'validated', 'low', true, u('eab4a1e27162'), d(-38), 108000, array['Service owner capacity'], d(120)),
+  (u('6fed4dcd0f57'), u('ffeb12c2b6d8'), u('7299a996d3df'), 'Faster first-contact resolution', 'Outcome expected from Service Desk Optimisation, with ownership retained by the receiving service.', 'benefit', 'non_cash_releasing', lk('benefit_category', 'Student experience'), array['Students', 'Service Desk'], u('f0621a298047'), u('b3c221e80091'), 'validated', 'high', true, u('eab4a1e27162'), d(-38), 108000, array['Service owner capacity'], d(-30)),
+  (u('9c958d126642'), u('ffeb12c2b6d8'), u('7299a996d3df'), 'Reduced repeat service desk contacts', 'Outcome expected from Service Desk Optimisation, with ownership retained by the receiving service.', 'benefit', 'non_cash_releasing', lk('benefit_category', 'Efficiency'), array['DTS colleagues', 'University services'], u('a1cee910a6d1'), u('44c529d01644'), 'validated', 'medium', true, u('eab4a1e27162'), d(-38), 151200, array['Operational adoption', 'Reliable source data'], d(-30)),
+  (u('331782a88e3c'), u('ffeb12c2b6d8'), u('7299a996d3df'), 'Reduced avoidable cloud spend', 'Outcome expected from Cloud Cost Management, with ownership retained by the receiving service.', 'benefit', 'cash_releasing', lk('benefit_category', 'Efficiency'), array['DTS colleagues', 'University services'], u('36e519195168'), u('2ab4697c4e71'), 'validated', 'high', true, u('eab4a1e27162'), d(-38), 90000, array['Service owner capacity'], d(100)),
+  (u('79310cdf64f3'), u('ffeb12c2b6d8'), u('7299a996d3df'), 'Improved cloud cost ownership', 'Outcome expected from Cloud Cost Management, with ownership retained by the receiving service.', 'benefit', 'qualitative', lk('benefit_category', 'Efficiency'), array['DTS colleagues', 'University services'], u('4938bab356ec'), u('4938bab356ec'), 'validated', 'high', true, u('eab4a1e27162'), d(-38), 108000, array['Service owner capacity'], d(100)),
+  (u('597189a0c949'), u('ffeb12c2b6d8'), u('c687f14f1122'), 'Improved digital confidence', 'Outcome expected from Digital Skills Academy, with ownership retained by the receiving service.', 'benefit', 'qualitative', lk('benefit_category', 'Efficiency'), array['DTS colleagues', 'University services'], u('b3c221e80091'), u('b3c221e80091'), 'identified', 'low', true, u('eab4a1e27162'), d(-38), 108000, array['Service owner capacity'], d(140)),
+  (u('f84ea79e3866'), u('ffeb12c2b6d8'), u('c687f14f1122'), 'Wider access to digital learning', 'Outcome expected from Digital Skills Academy, with ownership retained by the receiving service.', 'benefit', 'societal', lk('benefit_category', 'Student experience'), array['Students', 'Service Desk'], u('c9ac15caa52b'), u('44c529d01644'), 'identified', 'high', false, null, null, 108000, array['Operational adoption', 'Reliable source data'], d(140)),
+  (u('cda9f2cba083'), u('ffeb12c2b6d8'), u('0ae203dc50c2'), 'Faster research data triage', 'Outcome expected from Research Data Triage AI, with ownership retained by the receiving service.', 'benefit', 'non_cash_releasing', lk('benefit_category', 'Research'), array['Researchers', 'Research Services'], null, u('2ab4697c4e71'), 'identified', 'high', false, null, null, 108000, array['Service owner capacity'], d(300)),
+  (u('44e4f34da838'), u('ffeb12c2b6d8'), u('0ae203dc50c2'), 'Increased research data quality', 'Outcome expected from Research Data Triage AI, with ownership retained by the receiving service.', 'benefit', 'qualitative', lk('benefit_category', 'Research'), array['Researchers', 'Research Services'], u('a1cee910a6d1'), u('4938bab356ec'), 'identified', 'medium', false, null, null, 108000, array['Service owner capacity'], d(300)),
+  (u('870a8d917a66'), u('ffeb12c2b6d8'), u('0ae203dc50c2'), 'Additional model assurance workload', 'Outcome expected from Research Data Triage AI, with ownership retained by the receiving service.', 'disbenefit', 'qualitative', lk('benefit_category', 'Compliance'), array['DTS colleagues', 'University services'], u('36e519195168'), u('b3c221e80091'), 'identified', 'high', false, null, null, -27000, array['Service owner capacity'], d(300)),
+  (u('acc484732f52'), u('ffeb12c2b6d8'), u('7299a996d3df'), 'Temporary disruption during device migration', 'Outcome expected from Windows 11 Rollout, with ownership retained by the receiving service.', 'disbenefit', 'qualitative', lk('benefit_category', 'Student experience'), array['Students', 'Service Desk'], u('4938bab356ec'), u('44c529d01644'), 'identified', 'low', false, null, null, -27000, array['Operational adoption', 'Reliable source data'], d(120)),
+  (u('d2a251cfc99a'), u('ffeb12c2b6d8'), u('7299a996d3df'), 'Increased applicant conversion', 'Outcome carried into business as usual after Future Students CRM closed.', 'benefit', 'non_cash_releasing', lk('benefit_category', 'Student experience'), array['Students', 'Student Services'], u('44c529d01644'), u('44c529d01644'), 'in_realisation', 'medium', true, u('eab4a1e27162'), d(-191), 420000, array['Service owner capacity'], d(-51)),
+  (u('283d3bf5a6f2'), u('ffeb12c2b6d8'), u('7299a996d3df'), 'Reduced admissions administration', 'Outcome carried into business as usual after Future Students CRM closed.', 'benefit', 'cash_releasing', lk('benefit_category', 'Efficiency'), array['University services'], u('c9ac15caa52b'), u('b3c221e80091'), 'in_realisation', 'medium', true, u('eab4a1e27162'), d(-191), 180000, array['Service owner capacity'], d(-51)),
+  (u('9299df49fa2a'), u('ffeb12c2b6d8'), u('9da2a1c26250'), 'Retired legacy telephony line rental', 'Outcome carried into business as usual after Unified Comms (Phase 2) closed.', 'benefit', 'cash_releasing', lk('benefit_category', 'Efficiency'), array['University services'], u('b3c221e80091'), u('4938bab356ec'), 'realised', 'high', true, u('eab4a1e27162'), d(-191), 96000, array['Service owner capacity'], d(-51)),
+  (u('b87b106b32c7'), u('ffeb12c2b6d8'), u('9da2a1c26250'), 'Improved cross-campus collaboration', 'Outcome carried into business as usual after Unified Comms (Phase 2) closed.', 'benefit', 'qualitative', lk('benefit_category', 'Efficiency'), array['University services'], u('c9ac15caa52b'), u('44c529d01644'), 'in_realisation', 'medium', true, u('eab4a1e27162'), d(-191), 60000, array['Service owner capacity'], d(-51)),
+  (u('922b4768bd2b'), u('ffeb12c2b6d8'), u('c687f14f1122'), 'Improved lone worker safety', 'Outcome carried into business as usual after SafeZone closed.', 'benefit', 'societal', lk('benefit_category', 'Risk reduction'), array['University services'], u('4938bab356ec'), u('b3c221e80091'), 'realised', 'high', true, u('eab4a1e27162'), d(-191), 75000, array['Service owner capacity'], d(-51)),
+  (u('413a72dd90af'), u('ffeb12c2b6d8'), u('c687f14f1122'), 'Faster incident response for students', 'Outcome carried into business as usual after SafeZone closed.', 'benefit', 'qualitative', lk('benefit_category', 'Student experience'), array['Students', 'Student Services'], u('44c529d01644'), u('4938bab356ec'), 'in_realisation', 'low', true, u('eab4a1e27162'), d(-191), 40000, array['Service owner capacity'], d(-51));
 
 insert into public.benefit_objectives (benefit_id, strategic_objective_id) values
   (u('cdbe2614fe5e'), u('84758a992d77')),
@@ -3119,18 +3119,24 @@ insert into public.benefit_handovers (benefit_id, bau_owner_id, bau_service, fre
   (u('922b4768bd2b'), u('4938bab356ec'), 'DTS Service Management', 'quarterly', d(70), d(-7), u('eab4a1e27162'), d(-77)),
   (u('413a72dd90af'), u('44c529d01644'), 'Student Services', 'quarterly', d(101), d(-7), u('eab4a1e27162'), d(-77));
 
-insert into public.capabilities (id, programme_id, title, description, owner_id) values
-  (u('1aa7e9306aaf'), u('0ae203dc50c2'), 'Automated identity provisioning', 'Joiner, mover and leaver accounts created from the HR and student records feeds without a manual ticket.', u('60da6bab9ad0')),
-  (u('7db3b60a04ae'), u('0ae203dc50c2'), 'Conversational service assistant', 'A supported chatbot channel answering common student and colleague queries.', u('d3806fe3b1be')),
-  (u('77a8d0d2f68b'), u('0ae203dc50c2'), 'Curated service knowledge base', 'Owned, reviewed knowledge articles that the assistant and service desk both draw on.', u('a1cee910a6d1')),
-  (u('1b1db3028a48'), u('0ae203dc50c2'), 'Copilot-enabled productivity toolset', 'Licensed and governed Microsoft Copilot capability with agreed acceptable-use guidance.', u('36e519195168')),
-  (u('172501a71ba4'), u('0ae203dc50c2'), 'Reusable workflow automation patterns', 'A pattern library and shared connectors that teams reuse instead of building one-off flows.', u('161d6b100d82')),
-  (u('9a8aaab2c867'), u('0ae203dc50c2'), 'Automated research data triage models', 'Assured models that classify and route incoming research datasets.', u('0e4ca13be4bf')),
-  (u('1767ed8a4ff3'), u('9da2a1c26250'), 'CIS safeguards implemented across the estate', 'Prioritised CIS controls deployed, evidenced and monitored.', u('2967ce33d27c')),
-  (u('ea42d87ca338'), u('9da2a1c26250'), 'Resilient virtualisation platform', 'A supported hyper-converged platform with automated failover for critical workloads.', u('3260734c20c8')),
-  (u('5790b2320755'), u('9da2a1c26250'), 'Refreshed data centre network', 'Replaced core switching with resilient paths between data centres.', u('82dcda6d2739')),
-  (u('6bf4ca4b3c97'), u('9da2a1c26250'), 'Tested identity recovery service', 'A rehearsed route to restore identity services independently of the production estate.', u('60da6bab9ad0')),
-  (u('a6fd572b994b'), u('9da2a1c26250'), 'Rehearsed business continuity plans', 'Service continuity plans exercised with the owning services at least annually.', u('d92642368f2e'));
+insert into public.capabilities (id, programme_id, title, description, owner_id, status, target_date, forecast_date, delivered_date, accepted_at, accepted_by_id, acceptance_note) values
+  (u('1aa7e9306aaf'), u('0ae203dc50c2'), 'Automated identity provisioning', 'Joiner, mover and leaver accounts created from the HR and student records feeds without a manual ticket.', u('60da6bab9ad0'), 'accepted', d(-60), d(-66), d(-66), d(-58), u('c9ac15caa52b'), 'Staff joiner, mover and leaver feeds live; student feed accepted for enrolment.'),
+  (u('7db3b60a04ae'), u('0ae203dc50c2'), 'Conversational service assistant', 'A supported chatbot channel answering common student and colleague queries.', u('d3806fe3b1be'), 'accepted', d(-80), d(-80), d(-84), d(-78), u('44c529d01644'), 'Pilot accepted by the Student Services lead after four weeks'' live running.'),
+  (u('77a8d0d2f68b'), u('0ae203dc50c2'), 'Curated service knowledge base', 'Owned, reviewed knowledge articles that the assistant and service desk both draw on.', u('a1cee910a6d1'), 'in_progress', d(40), d(48), null, null, null, null),
+  (u('1b1db3028a48'), u('0ae203dc50c2'), 'Copilot-enabled productivity toolset', 'Licensed and governed Microsoft Copilot capability with agreed acceptable-use guidance.', u('36e519195168'), 'in_progress', d(20), d(95), null, null, null, null),
+  (u('172501a71ba4'), u('0ae203dc50c2'), 'Reusable workflow automation patterns', 'A pattern library and shared connectors that teams reuse instead of building one-off flows.', u('161d6b100d82'), 'in_progress', d(150), d(150), null, null, null, null),
+  (u('9a8aaab2c867'), u('0ae203dc50c2'), 'Automated research data triage models', 'Assured models that classify and route incoming research datasets.', u('0e4ca13be4bf'), 'planned', d(130), d(130), null, null, null, null),
+  (u('1767ed8a4ff3'), u('9da2a1c26250'), 'CIS safeguards implemented across the estate', 'Prioritised CIS controls deployed, evidenced and monitored.', u('2967ce33d27c'), 'in_progress', d(160), d(320), null, null, null, null),
+  (u('ea42d87ca338'), u('9da2a1c26250'), 'Resilient virtualisation platform', 'A supported hyper-converged platform with automated failover for critical workloads.', u('3260734c20c8'), 'in_progress', d(60), d(66), null, null, null, null),
+  (u('5790b2320755'), u('9da2a1c26250'), 'Refreshed data centre network', 'Replaced core switching with resilient paths between data centres.', u('82dcda6d2739'), 'in_progress', d(-10), d(75), null, null, null, null),
+  (u('6bf4ca4b3c97'), u('9da2a1c26250'), 'Tested identity recovery service', 'A rehearsed route to restore identity services independently of the production estate.', u('60da6bab9ad0'), 'accepted', d(-35), d(-30), d(-33), d(-30), u('4938bab356ec'), 'Recovery rehearsal met the agreed recovery time; report signed off.'),
+  (u('a6fd572b994b'), u('9da2a1c26250'), 'Rehearsed business continuity plans', 'Service continuity plans exercised with the owning services at least annually.', u('d92642368f2e'), 'delivered', d(-14), d(-9), d(-9), null, null, null),
+  (u('90db26c510db'), u('7299a996d3df'), 'Windows 11 managed device estate', 'University devices on a supported, centrally managed Windows 11 build.', u('0e4ca13be4bf'), 'in_progress', d(100), d(112), null, null, null, null),
+  (u('69c09b5051a7'), u('7299a996d3df'), 'Cloud cost visibility and tagging', 'Every cloud subscription tagged to an owning budget, with monthly cost reports.', u('36e519195168'), 'in_progress', d(45), d(45), null, null, null, null),
+  (u('307fded45678'), u('c687f14f1122'), 'Digital skills learning platform', 'A self-service learning platform with the core digital skills curriculum.', u('161d6b100d82'), 'delivered', d(10), d(-5), d(-5), null, null, null),
+  (u('243a473e70eb'), u('7299a996d3df'), 'Optimised service desk triage', 'Revised categories, routing rules and first-line scripts in TOPdesk.', u('60da6bab9ad0'), 'accepted', d(-75), d(-70), d(-72), d(-70), u('a1cee910a6d1'), 'Service desk manager accepted the new triage model after a two-week trial.') on conflict (id) do update set status = excluded.status, target_date = excluded.target_date,
+    forecast_date = excluded.forecast_date, delivered_date = excluded.delivered_date, accepted_at = excluded.accepted_at,
+    accepted_by_id = excluded.accepted_by_id, acceptance_note = excluded.acceptance_note;
 
 insert into public.capability_projects (capability_id, project_id) values
   (u('1aa7e9306aaf'), u('49c535652319')),
@@ -3145,19 +3151,69 @@ insert into public.capability_projects (capability_id, project_id) values
   (u('ea42d87ca338'), u('4777a3236c8d')),
   (u('5790b2320755'), u('7bf981df49da')),
   (u('6bf4ca4b3c97'), u('92aa5819c4ed')),
-  (u('a6fd572b994b'), u('89bd2206abb0'));
+  (u('a6fd572b994b'), u('89bd2206abb0')),
+  (u('90db26c510db'), u('13f8340e52de')),
+  (u('69c09b5051a7'), u('10343164f104')),
+  (u('307fded45678'), u('48de4b4e50d8')),
+  (u('243a473e70eb'), u('9da5bf399c5c')) on conflict do nothing;
 
-insert into public.outcomes (id, programme_id, title, description, owner_id) values
-  (u('81774cfa9320'), u('0ae203dc50c2'), 'New starters provisioned without manual tickets', 'Managers no longer raise account requests; provisioning happens from the authoritative feed.', u('c9ac15caa52b')),
-  (u('0060e73934b8'), u('0ae203dc50c2'), 'Students have working accounts on day one', 'Enrolment completes with access to email, Wi-Fi and the VLE already in place.', u('44c529d01644')),
-  (u('092adf4d624d'), u('0ae203dc50c2'), 'Routine queries are resolved without contacting the service desk', 'Students and colleagues self-serve the most common requests through the assistant.', u('a1cee910a6d1')),
-  (u('bea1ec86cba2'), u('0ae203dc50c2'), 'Students get help outside staffed hours', 'Support is available overnight and at weekends without extending shift cover.', u('44c529d01644')),
-  (u('b58c43c0b4b4'), u('0ae203dc50c2'), 'Colleagues spend less time on repetitive admin', 'Teams adopt the shared automation patterns in place of manual rekeying.', u('c9ac15caa52b')),
-  (u('89cdd826c42b'), u('0ae203dc50c2'), 'Research data is triaged and quality-checked automatically', 'Incoming datasets are classified, routed and checked before researchers receive them.', u('2ab4697c4e71')),
-  (u('32fc9c6923cc'), u('9da2a1c26250'), 'Attack surface reduced and controls evidenced', 'Control coverage is demonstrable to insurers, auditors and the Digital Committee.', u('4938bab356ec')),
-  (u('1cb331e0a728'), u('9da2a1c26250'), 'Critical services stay available during component failure', 'Single component failures no longer interrupt teaching, research or operations.', u('d92642368f2e')),
-  (u('f2c25fa021eb'), u('9da2a1c26250'), 'The estate runs on fewer, more efficient hosts', 'Consolidation reduces the power and cooling draw of the data centre.', u('f0621a298047')),
-  (u('4ab1889da17d'), u('9da2a1c26250'), 'The university can recover identity services within agreed times', 'A tested recovery route exists for the services everything else depends on.', u('4938bab356ec'));
+insert into public.capability_forecast_history (capability_id, reporting_date, forecast_date) values
+  (u('77a8d0d2f68b'), d(-30), d(40)),
+  (u('1b1db3028a48'), d(-60), d(20)),
+  (u('1b1db3028a48'), d(-30), d(60)),
+  (u('1767ed8a4ff3'), d(-90), d(160)),
+  (u('1767ed8a4ff3'), d(-30), d(250)),
+  (u('5790b2320755'), d(-90), d(-10)),
+  (u('5790b2320755'), d(-40), d(30)),
+  (u('90db26c510db'), d(-60), d(100)) on conflict (capability_id, reporting_date) do nothing;
+
+insert into public.outcomes (id, programme_id, title, description, owner_id, status, target_date, achieved_date) values
+  (u('81774cfa9320'), u('0ae203dc50c2'), 'New starters provisioned without manual tickets', 'Managers no longer raise account requests; provisioning happens from the authoritative feed.', u('c9ac15caa52b'), 'emerging', d(150), null),
+  (u('0060e73934b8'), u('0ae203dc50c2'), 'Students have working accounts on day one', 'Enrolment completes with access to email, Wi-Fi and the VLE already in place.', u('44c529d01644'), 'emerging', d(-14), null),
+  (u('092adf4d624d'), u('0ae203dc50c2'), 'Routine queries are resolved without contacting the service desk', 'Students and colleagues self-serve the most common requests through the assistant.', u('a1cee910a6d1'), 'emerging', d(180), null),
+  (u('bea1ec86cba2'), u('0ae203dc50c2'), 'Students get help outside staffed hours', 'Support is available overnight and at weekends without extending shift cover.', u('44c529d01644'), 'emerging', d(90), null),
+  (u('b58c43c0b4b4'), u('0ae203dc50c2'), 'Colleagues spend less time on repetitive admin', 'Teams adopt the shared automation patterns in place of manual rekeying.', u('c9ac15caa52b'), 'planned', d(270), null),
+  (u('89cdd826c42b'), u('0ae203dc50c2'), 'Research data is triaged and quality-checked automatically', 'Incoming datasets are classified, routed and checked before researchers receive them.', u('2ab4697c4e71'), 'planned', d(300), null),
+  (u('32fc9c6923cc'), u('9da2a1c26250'), 'Attack surface reduced and controls evidenced', 'Control coverage is demonstrable to insurers, auditors and the Digital Committee.', u('4938bab356ec'), 'emerging', d(160), null),
+  (u('1cb331e0a728'), u('9da2a1c26250'), 'Critical services stay available during component failure', 'Single component failures no longer interrupt teaching, research or operations.', u('d92642368f2e'), 'planned', d(240), null),
+  (u('f2c25fa021eb'), u('9da2a1c26250'), 'The estate runs on fewer, more efficient hosts', 'Consolidation reduces the power and cooling draw of the data centre.', u('f0621a298047'), 'planned', d(240), null),
+  (u('4ab1889da17d'), u('9da2a1c26250'), 'The university can recover identity services within agreed times', 'A tested recovery route exists for the services everything else depends on.', u('4938bab356ec'), 'achieved', d(60), d(-21)),
+  (u('bba12ffc85ee'), u('7299a996d3df'), 'Colleagues work on supported, secure devices', 'No university device runs an out-of-support operating system.', u('0e4ca13be4bf'), 'emerging', d(120), null),
+  (u('2d4232b93caf'), u('7299a996d3df'), 'Cloud spend is owned and actively managed', 'Budget holders see and act on their own cloud costs each month.', u('36e519195168'), 'planned', d(100), null),
+  (u('eda671a39a66'), u('c687f14f1122'), 'Colleagues are confident using core digital tools', 'Staff report confidence with the core collaboration and productivity tools.', u('161d6b100d82'), 'planned', d(280), null),
+  (u('9558c63a7ab2'), u('7299a996d3df'), 'Service desk resolves more contacts first time', 'More contacts are resolved at first line without escalation.', u('a1cee910a6d1'), 'emerging', d(120), null) on conflict (id) do update set status = excluded.status, target_date = excluded.target_date,
+    achieved_date = excluded.achieved_date;
+
+insert into public.outcome_indicators (id, outcome_id, name, unit, baseline_value, baseline_date, target_value, target_date, frequency, next_due_date, data_source, sort_order) values
+  (u('e96a29ef9359'), u('81774cfa9320'), 'Staff accounts created automatically', '%', 12, d(-120), 95, d(150), 'monthly', d(5), 'Identity management audit log', 1),
+  (u('6bcc5fa28743'), u('0060e73934b8'), 'Enrolling students with active accounts on day one', '%', 71, d(-380), 98, d(-14), 'quarterly', null, 'Enrolment and account activation reports', 1),
+  (u('f2e5ff738ac9'), u('092adf4d624d'), 'Queries fully resolved by the assistant', '%', 0, d(-90), 35, d(180), 'monthly', d(5), 'Ebbot conversation analytics', 1),
+  (u('774ebfeeeb97'), u('092adf4d624d'), 'Service desk contacts per 1,000 users a month', 'contacts', 182, d(-90), 140, d(180), 'monthly', d(5), 'TOPdesk contact volumes', 2),
+  (u('ee0bf56def0f'), u('bea1ec86cba2'), 'Out-of-hours queries answered within 5 minutes', '%', 0, d(-90), 80, d(90), 'monthly', d(5), 'Ebbot conversation analytics', 1),
+  (u('5ca8ab81857d'), u('b58c43c0b4b4'), 'Hours of manual rekeying removed a month', 'hours', 0, d(-30), 600, d(270), 'quarterly', d(90), 'Automation run logs and team time surveys', 1),
+  (u('4b6dd4b4c0ce'), u('89cdd826c42b'), 'Datasets triaged automatically', '%', 0, d(-30), 70, d(300), 'quarterly', d(150), 'Research data service intake log', 1),
+  (u('0e8db3077e45'), u('32fc9c6923cc'), 'CIS IG1 safeguards evidenced', '%', 38, d(-200), 90, d(160), 'monthly', d(5), 'Security controls register', 1),
+  (u('323df1ee49af'), u('32fc9c6923cc'), 'Critical vulnerabilities open more than 14 days', 'count', 46, d(-200), 5, d(160), 'monthly', d(5), 'Vulnerability scanner', 2),
+  (u('0691f8267b8f'), u('1cb331e0a728'), 'Critical-service availability', '%', 99.2, d(-30), 99.9, d(240), 'quarterly', d(60), 'Service monitoring', 1),
+  (u('c5916db95464'), u('f2c25fa021eb'), 'Data centre IT power draw', 'kW', 182, d(-30), 140, d(240), 'quarterly', d(90), 'Data centre power monitoring', 1),
+  (u('414da65c1328'), u('4ab1889da17d'), 'Identity service recovery time in rehearsal', 'hours', 72, d(-150), 8, d(60), 'quarterly', d(70), 'Recovery rehearsal report', 1),
+  (u('9743fc931761'), u('bba12ffc85ee'), 'Devices on a supported Windows version', '%', 41, d(-200), 100, d(120), 'monthly', d(5), 'Intune device compliance report', 1),
+  (u('87929824f9ed'), u('2d4232b93caf'), 'Cloud spend tagged to an owning budget', '%', 35, d(-30), 95, d(100), 'monthly', d(30), 'Cloud billing export', 1),
+  (u('5204a8122bf6'), u('eda671a39a66'), 'Staff confident with core tools (pulse survey)', '%', 54, d(-60), 75, d(280), 'quarterly', d(60), 'Staff pulse survey', 1),
+  (u('0b7bb39c15c2'), u('9558c63a7ab2'), 'First-contact resolution', '%', 61, d(-150), 75, d(120), 'monthly', d(5), 'TOPdesk resolution report', 1) on conflict (id) do nothing;
+
+insert into public.outcome_indicator_measurements (id, indicator_id, measured_on, actual_value, evidence, submitted_by_id, submitted_date, validated_by_id, validated_date, query_note, status) values
+  (u('ef61a29b96e2'), u('e96a29ef9359'), d(-56), 48, 'Identity management audit log', u('60da6bab9ad0'), d(-53), u('c9ac15caa52b'), d(-50), null, 'validated'),
+  (u('58a61766180f'), u('e96a29ef9359'), d(-26), 61, 'Identity management audit log', u('60da6bab9ad0'), d(-23), u('c9ac15caa52b'), d(-20), null, 'validated'),
+  (u('24091d86be7c'), u('6bcc5fa28743'), d(-14), 93, 'Enrolment and account activation reports', u('60da6bab9ad0'), d(-11), u('c9ac15caa52b'), d(-8), null, 'validated'),
+  (u('c245b2b03952'), u('f2e5ff738ac9'), d(-26), 14, 'Ebbot conversation analytics', u('d3806fe3b1be'), d(-23), u('c9ac15caa52b'), d(-20), null, 'validated'),
+  (u('a2854d2c9003'), u('774ebfeeeb97'), d(-26), 176, 'TOPdesk contact volumes', u('d3806fe3b1be'), d(-23), null, null, null, 'submitted'),
+  (u('d93b965a7787'), u('ee0bf56def0f'), d(-26), 22, 'Ebbot conversation analytics', u('d3806fe3b1be'), d(-23), null, d(-20), 'Includes staffed-hours conversations; resubmit with out-of-hours only.', 'queried'),
+  (u('295ff8d78c15'), u('0e8db3077e45'), d(-26), 51, 'Security controls register', u('2967ce33d27c'), d(-23), u('c9ac15caa52b'), d(-20), null, 'validated'),
+  (u('a6255455fe83'), u('323df1ee49af'), d(-26), 31, 'Vulnerability scanner', u('2967ce33d27c'), d(-23), u('c9ac15caa52b'), d(-20), null, 'validated'),
+  (u('f32c0f24c9a4'), u('414da65c1328'), d(-21), 7.5, 'Recovery rehearsal report', u('82dcda6d2739'), d(-18), u('c9ac15caa52b'), d(-15), null, 'validated'),
+  (u('b99ba837c8ff'), u('9743fc931761'), d(-26), 68, 'Intune device compliance report', u('0e4ca13be4bf'), d(-23), u('c9ac15caa52b'), d(-20), null, 'validated'),
+  (u('998159b2fab1'), u('0b7bb39c15c2'), d(-26), 63, 'TOPdesk resolution report', u('a1cee910a6d1'), d(-23), u('c9ac15caa52b'), d(-20), null, 'validated') on conflict (id) do nothing;
 
 insert into public.outcome_capabilities (outcome_id, capability_id) values
   (u('81774cfa9320'), u('1aa7e9306aaf')),
@@ -3173,7 +3229,12 @@ insert into public.outcome_capabilities (outcome_id, capability_id) values
   (u('1cb331e0a728'), u('5790b2320755')),
   (u('f2c25fa021eb'), u('ea42d87ca338')),
   (u('4ab1889da17d'), u('6bf4ca4b3c97')),
-  (u('4ab1889da17d'), u('a6fd572b994b'));
+  (u('4ab1889da17d'), u('a6fd572b994b')),
+  (u('bba12ffc85ee'), u('90db26c510db')),
+  (u('2d4232b93caf'), u('69c09b5051a7')),
+  (u('eda671a39a66'), u('307fded45678')),
+  (u('9558c63a7ab2'), u('243a473e70eb')),
+  (u('9558c63a7ab2'), u('77a8d0d2f68b')) on conflict do nothing;
 
 insert into public.outcome_benefits (outcome_id, benefit_id) values
   (u('81774cfa9320'), u('cdbe2614fe5e')),
@@ -3187,7 +3248,49 @@ insert into public.outcome_benefits (outcome_id, benefit_id) values
   (u('32fc9c6923cc'), u('e9f591ba5884')),
   (u('32fc9c6923cc'), u('520c07a6a98c')),
   (u('1cb331e0a728'), u('02607d930245')),
-  (u('f2c25fa021eb'), u('873e0577ebfb'));
+  (u('f2c25fa021eb'), u('873e0577ebfb')),
+  (u('bba12ffc85ee'), u('c547c84fcdae')),
+  (u('bba12ffc85ee'), u('ae875b231125')),
+  (u('bba12ffc85ee'), u('acc484732f52')),
+  (u('2d4232b93caf'), u('331782a88e3c')),
+  (u('2d4232b93caf'), u('79310cdf64f3')),
+  (u('eda671a39a66'), u('597189a0c949')),
+  (u('eda671a39a66'), u('f84ea79e3866')),
+  (u('9558c63a7ab2'), u('6fed4dcd0f57')),
+  (u('9558c63a7ab2'), u('9c958d126642')) on conflict do nothing;
+
+update public.benefits b set realisation_start_date = v.start_date
+from (values
+  (u('520c07a6a98c'), d(170)),
+  (u('02607d930245'), d(70)),
+  (u('873e0577ebfb'), d(70)),
+  (u('c547c84fcdae'), d(120)),
+  (u('ae875b231125'), d(120)),
+  (u('acc484732f52'), d(120)),
+  (u('331782a88e3c'), d(100)),
+  (u('79310cdf64f3'), d(100)),
+  (u('597189a0c949'), d(140)),
+  (u('f84ea79e3866'), d(140)),
+  (u('cda9f2cba083'), d(300)),
+  (u('44e4f34da838'), d(300)),
+  (u('870a8d917a66'), d(300)),
+  (u('6fed4dcd0f57'), d(-30)),
+  (u('9c958d126642'), d(-30))
+) v(id, start_date)
+where b.id = v.id and b.realisation_start_date is distinct from v.start_date;
+
+-- Benefits not yet in realisation: targets for quarters that end before the realisation start
+-- return to the baseline (no uplift), and measurements for those quarters are dropped.
+update public.benefit_measure_targets t set value = m.baseline_value
+from public.benefit_measures m, public.benefit_periods bp, public.benefits b
+where m.id = t.measure_id and bp.id = t.period_id and b.id = m.benefit_id
+  and b.id in (u('520c07a6a98c'), u('02607d930245'), u('873e0577ebfb'), u('c547c84fcdae'))
+  and bp.finish_date < b.realisation_start_date;
+delete from public.benefit_measurements x
+using public.benefit_measures m, public.benefit_periods bp, public.benefits b
+where m.id = x.measure_id and bp.id = x.period_id and b.id = m.benefit_id
+  and b.id in (u('520c07a6a98c'), u('02607d930245'), u('873e0577ebfb'), u('c547c84fcdae'))
+  and bp.finish_date < b.realisation_start_date;
 
 insert into public.benefit_maps (id, programme_id, name, description, layout) values
   (u('6554be129075'), u('0ae203dc50c2'), 'Efficiency, Automation & AI', 'How automation and AI delivery turns into capability, business change and measurable benefit.', '{}'),
@@ -3631,6 +3734,92 @@ from public.health_snapshots s
 cross join generate_series(1, 11) k
 cross join lateral (select 1 - 0.15 * (1 - (((11 - k) / 11.0) ^ 2 * (3 - 2 * ((11 - k) / 11.0))))::numeric as factor) f
 where s.organisation_id = '98e086a1-6b01-521a-92e9-21dac759c8f4' and not s.is_synthetic
+on conflict do nothing;
+
+-- ---- Pathway snapshots: today's real rows (captured above), then the 11 previous month-ends,
+-- worked out as at each date from the recorded dates (acceptance, delivery, achievement,
+-- forecast history, measurement dates) with today's project delivery health. Synthetic. ----
+create temp table seed_days on commit drop as
+select (date_trunc('month', d(0)) - make_interval(months => k - 1) - interval '1 day')::date as day
+from generate_series(1, 11) k;
+insert into public.pathway_snapshots (organisation_id, workspace_id, programme_id, snapshot_date, capability_id, rag,
+  is_complete, due_in_fy, is_synthetic)
+select c.organisation_id, c.workspace_id, c.programme_id, dy.day, c.id,
+  (case
+    when c.accepted_at <= dy.day then 'green'
+    when c.target_date is null then 'not_set'
+    when c.delivered_date <= dy.day and c.target_date < dy.day
+      and c.target_date + (o.settings -> 'health' ->> 'acceptanceGraceDays')::integer >= dy.day then 'amber'
+    when c.target_date < dy.day then 'red'
+    when dl.any_red then 'red'
+    when coalesce(fh.forecast_date, fh0.forecast_date, c.forecast_date) - c.target_date
+      > (o.settings -> 'health' ->> 'capabilitySlipAmberDays')::integer then 'amber'
+    when dl.any_amber then 'amber'
+    else 'green' end)::public.health,
+  coalesce(c.accepted_at <= dy.day, false),
+  c.target_date >= private.fy_start(o.settings, dy.day) and c.target_date < (private.fy_start(o.settings, dy.day) + interval '1 year')::date,
+  true
+from public.capabilities c
+join public.organisations o on o.id = c.organisation_id
+cross join seed_days dy
+left join lateral (select h.forecast_date from public.capability_forecast_history h
+  where h.capability_id = c.id and h.reporting_date <= dy.day order by h.reporting_date desc limit 1) fh on true
+left join lateral (select h.forecast_date from public.capability_forecast_history h
+  where h.capability_id = c.id order by h.reporting_date limit 1) fh0 on true
+left join (select cp.capability_id, bool_or(dh.delivery = 'red') as any_red, bool_or(dh.delivery = 'amber') as any_amber
+  from public.capability_projects cp join public.v_project_delivery_health dh on dh.project_id = cp.project_id
+  where dh.state <> 'closed' group by cp.capability_id) dl on dl.capability_id = c.id
+where c.organisation_id = '98e086a1-6b01-521a-92e9-21dac759c8f4'
+on conflict do nothing;
+insert into public.pathway_snapshots (organisation_id, workspace_id, programme_id, snapshot_date, outcome_id, rag,
+  is_complete, due_in_fy, is_synthetic)
+select oc.organisation_id, oc.workspace_id, oc.programme_id, dy.day, oc.id,
+  (case
+    when oc.achieved_date <= dy.day then 'green'
+    when oc.target_date < dy.day then 'red'
+    when ind.worst is not null then ind.worst::text
+    when cap.worst is not null then cap.worst::text
+    else 'not_set' end)::public.health,
+  coalesce(oc.achieved_date <= dy.day, false),
+  oc.target_date >= private.fy_start(o.settings, dy.day) and oc.target_date < (private.fy_start(o.settings, dy.day) + interval '1 year')::date,
+  true
+from public.outcomes oc
+join public.organisations o on o.id = oc.organisation_id
+cross join seed_days dy
+left join lateral (
+  select max(case
+      when greatest(0, (e.expected - m.actual_value) / (i.target_value - i.baseline_value)) * 100
+           > (o.settings -> 'health' ->> 'outcomeBehindTrajectoryRedPercent')::numeric then 'red'
+      when greatest(0, (e.expected - m.actual_value) / (i.target_value - i.baseline_value)) * 100
+           > (o.settings -> 'health' ->> 'outcomeBehindTrajectoryAmberPercent')::numeric then 'amber'
+      else 'green' end::public.health) as worst
+  from public.outcome_indicators i
+  join lateral (select x.measured_on, x.actual_value from public.outcome_indicator_measurements x
+    where x.indicator_id = i.id and x.status <> 'queried' and x.measured_on <= dy.day
+    order by x.measured_on desc, (x.status = 'validated') desc limit 1) m on true
+  cross join lateral (select i.baseline_value + (i.target_value - i.baseline_value)
+    * private.clamp((m.measured_on - i.baseline_date)::numeric / (i.target_date - i.baseline_date), 0, 1) as expected) e
+  where i.outcome_id = oc.id) ind on true
+left join lateral (
+  select max(ps.rag) as worst from public.outcome_capabilities x
+  join public.pathway_snapshots ps on ps.capability_id = x.capability_id and ps.snapshot_date = dy.day
+  where x.outcome_id = oc.id) cap on true
+where oc.organisation_id = '98e086a1-6b01-521a-92e9-21dac759c8f4'
+on conflict do nothing;
+insert into public.pathway_snapshots (organisation_id, workspace_id, programme_id, snapshot_date, benefit_id, rag, phase,
+  is_synthetic)
+select br.organisation_id, br.workspace_id, br.programme_id, dy.day, br.benefit_id,
+  case when b.realisation_start_date <= dy.day then br.rag else coalesce(ob.worst, 'not_set') end,
+  case when b.realisation_start_date <= dy.day then 'realisation' else 'readiness' end,
+  true
+from public.v_benefit_readiness br
+join public.benefits b on b.id = br.benefit_id
+cross join seed_days dy
+left join lateral (
+  select max(ps.rag) as worst from public.outcome_benefits x
+  join public.pathway_snapshots ps on ps.outcome_id = x.outcome_id and ps.snapshot_date = dy.day
+  where x.benefit_id = br.benefit_id) ob on true
+where br.organisation_id = '98e086a1-6b01-521a-92e9-21dac759c8f4'
 on conflict do nothing;
 
 do $$
