@@ -64,6 +64,7 @@ import {
   type PortfolioOverview,
 } from "@/services/analytics";
 import { reportGapCounts } from "@/services/assurance";
+import { useGovernance } from "@/hooks/use-governance";
 import { dataAsOf, getSummaryMetrics, periodStatus } from "@/services/overview";
 import { useDeliveryVersion } from "@/services/sprints";
 export const Route = createFileRoute("/portfolio/")({
@@ -828,6 +829,7 @@ function OverviewBand({
   const pathway = usePathway();
   const forecasts = rpc.data?.forecasts;
   const [sort, setSort] = useState<WatchSort>("overspend");
+  const governance = useGovernance();
   const openChanges = useMemo(() => {
     const counts = new Map<string, number>();
     for (const change of governance.data?.changes ?? [])
