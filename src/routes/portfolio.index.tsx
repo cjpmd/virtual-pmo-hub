@@ -82,7 +82,7 @@ export const Route = createFileRoute("/portfolio/")({
     ],
   }),
   validateSearch: (search: Record<string, unknown>): { programme?: string | undefined } => ({
-    programme: typeof search.programme === "string" && search.programme ? search.programme : undefined,
+    programme: typeof search["programme"] === "string" && search["programme"] ? search["programme"] : undefined,
   }),
   component: PortfolioPage,
 });
