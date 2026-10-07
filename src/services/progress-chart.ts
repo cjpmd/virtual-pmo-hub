@@ -91,18 +91,43 @@ export const SERIES: Record<SeriesKey, SeriesMeta> = {
     unit: "percent",
     dashed: true,
   },
-  schedule: { key: "schedule", label: "Schedule", colour: "var(--series-dim-schedule)", unit: "percent" },
-  financial: { key: "financial", label: "Financial", colour: "var(--series-dim-financial)", unit: "percent" },
+  schedule: {
+    key: "schedule",
+    label: "Schedule",
+    colour: "var(--series-dim-schedule)",
+    unit: "percent",
+  },
+  financial: {
+    key: "financial",
+    label: "Financial",
+    colour: "var(--series-dim-financial)",
+    unit: "percent",
+  },
   effort: { key: "effort", label: "Effort", colour: "var(--series-dim-effort)", unit: "percent" },
   issue: { key: "issue", label: "Issues", colour: "var(--series-dim-issue)", unit: "percent" },
-  benefit: { key: "benefit", label: "Benefits health", colour: "var(--series-dim-benefit)", unit: "percent" },
+  benefit: {
+    key: "benefit",
+    label: "Benefits health",
+    colour: "var(--series-dim-benefit)",
+    unit: "percent",
+  },
 };
 
 /** Chips shown for each tab, and which start switched on. */
 export const TABS: Record<ChartTab, { label: string; chips: SeriesKey[]; on: SeriesKey[] }> = {
   overlay: {
     label: "Overlay",
-    chips: ["plan", "spend", "tasks", "milestones", "green", "risks", "capabilities", "outcomes", "benefits"],
+    chips: [
+      "plan",
+      "spend",
+      "tasks",
+      "milestones",
+      "green",
+      "risks",
+      "capabilities",
+      "outcomes",
+      "benefits",
+    ],
     on: ["spend", "tasks", "milestones", "green", "capabilities"],
   },
   spend: { label: "Spend", chips: ["plan", "spend"], on: ["plan", "spend"] },
@@ -114,8 +139,22 @@ export const TABS: Record<ChartTab, { label: string; chips: SeriesKey[]; on: Ser
   },
   benefits: {
     label: "Benefits",
-    chips: ["capabilities", "outcomes", "benefits", "capabilitiesGreen", "outcomesGreen", "benefitsGreen"],
-    on: ["capabilities", "outcomes", "benefits", "capabilitiesGreen", "outcomesGreen", "benefitsGreen"],
+    chips: [
+      "capabilities",
+      "outcomes",
+      "benefits",
+      "capabilitiesGreen",
+      "outcomesGreen",
+      "benefitsGreen",
+    ],
+    on: [
+      "capabilities",
+      "outcomes",
+      "benefits",
+      "capabilitiesGreen",
+      "outcomesGreen",
+      "benefitsGreen",
+    ],
   },
   timeline: { label: "Timeline", chips: ["milestones"], on: ["milestones"] },
 };
@@ -123,9 +162,25 @@ export const TABS: Record<ChartTab, { label: string; chips: SeriesKey[]; on: Ser
 // ---- Inputs -------------------------------------------------------------------------
 
 export interface ProgressInputs {
-  money: Array<{ projectId: string; month: string; kind: "budget" | "actual" | "forecast"; amount: number }>;
-  tasks: Array<{ projectId: string; finish: string | null; status: string | null; doneAt: string | null }>;
-  risks: Array<{ projectId: string | null; score: number; createdAt: string; closedAt: string | null; status: string }>;
+  money: Array<{
+    projectId: string;
+    month: string;
+    kind: "budget" | "actual" | "forecast";
+    amount: number;
+  }>;
+  tasks: Array<{
+    projectId: string;
+    finish: string | null;
+    status: string | null;
+    doneAt: string | null;
+  }>;
+  risks: Array<{
+    projectId: string | null;
+    score: number;
+    createdAt: string;
+    closedAt: string | null;
+    status: string;
+  }>;
   pathway: Array<{
     date: string;
     programmeId: string | null;
@@ -137,7 +192,12 @@ export interface ProgressInputs {
     realised: number | null;
     profile: number | null;
   }>;
-  pathwayDates: Array<{ kind: "capability" | "outcome"; programmeId: string; date: string | null; done: boolean }>;
+  pathwayDates: Array<{
+    kind: "capability" | "outcome";
+    programmeId: string;
+    date: string | null;
+    done: boolean;
+  }>;
   committees: Array<{ date: string; title: string }>;
 }
 
@@ -151,7 +211,10 @@ export interface ChartMilestone {
   reportToCommittee: boolean;
 }
 
-export async function loadProgressInputs(orgId: string, projectIds: string[]): Promise<ProgressInputs> {
+export async function loadProgressInputs(
+  orgId: string,
+  projectIds: string[],
+): Promise<ProgressInputs> {
   const ids = projectIds.length ? projectIds : ["00000000-0000-0000-0000-000000000000"];
   const [money, tasks, risks, pathway, capabilities, outcomes, packs] = await Promise.all([
     supabase
@@ -185,7 +248,10 @@ export async function loadProgressInputs(orgId: string, projectIds: string[]): P
       .select("programme_id, forecast_date, target_date, status")
       .eq("organisation_id", orgId)
       .is("archived_at", null),
-    supabase.from("outcomes").select("programme_id, target_date, status").eq("organisation_id", orgId),
+    supabase
+      .from("outcomes")
+      .select("programme_id, target_date, status")
+      .eq("organisation_id", orgId),
     supabase
       .from("committee_packs")
       .select("meeting_date, title")
@@ -292,15 +358,29 @@ export function fyStart(month: string, startMonth: number) {
 }
 
 const monthEnd = (month: string) => `${addMonths(month, 1)}-01`; // exclusive bound
-const pct = (part: number, whole: number) => (whole > 0 ? Math.min(100, (100 * part) / whole) : undefined);
-const round1 = (value: number | undefined) => (value === undefined ? undefined : Math.round(value * 10) / 10);
+const pct = (part: number, whole: number) =>
+  whole > 0 ? Math.min(100, (100 * part) / whole) : undefined;
+const round1 = (value: number | undefined) =>
+  value === undefined ? undefined : Math.round(value * 10) / 10;
 
 /** Months shown for a range: FY = the current FY; 12m = trailing year; all = earliest record to FY end. */
-export function rangeMonths(range: ChartRange, today: string, fyStartMonth: number, earliest?: string) {
+export function rangeMonths(
+  range: ChartRange,
+  today: string,
+  fyStartMonth: number,
+  earliest?: string,
+) {
   const current = today.slice(0, 7);
   const start = fyStart(current, fyStartMonth);
   const end = addMonths(start, 11);
-  const first = range === "fy" ? start : range === "12m" ? addMonths(current, -11) : earliest && earliest < start ? earliest : start;
+  const first =
+    range === "fy"
+      ? start
+      : range === "12m"
+        ? addMonths(current, -11)
+        : earliest && earliest < start
+          ? earliest
+          : start;
   const last = range === "12m" ? current : end;
   const months: string[] = [];
   for (let m = first; m <= last && months.length < 120; m = addMonths(m, 1)) months.push(m);
@@ -323,7 +403,8 @@ export interface BuildInput {
 export function buildProgressChart(input: BuildInput): ProgressChartData {
   const { inputs, milestones, history, projectHistory, today, fyStartMonth } = input;
   const currentMonth = today.slice(0, 7);
-  const inProgramme = (id: string | null) => !input.programmeIds || (id !== null && input.programmeIds.has(id));
+  const inProgramme = (id: string | null) =>
+    !input.programmeIds || (id !== null && input.programmeIds.has(id));
   const pathway = inputs.pathway.filter((row) => inProgramme(row.programmeId));
   const earliestCandidates = [
     ...inputs.money.map((row) => row.month),
@@ -355,7 +436,8 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
     bucket.set(row.item, row);
     pathwayByMonth.set(key, bucket);
   }
-  if (pathway.some((row) => row.kind === "capability")) available.add("capabilities").add("capabilitiesGreen");
+  if (pathway.some((row) => row.kind === "capability"))
+    available.add("capabilities").add("capabilitiesGreen");
   if (pathway.some((row) => row.kind === "outcome")) available.add("outcomes").add("outcomesGreen");
   if (pathway.some((row) => row.kind === "benefit")) available.add("benefits").add("benefitsGreen");
   const latestPathwayMonth = [...pathwayByMonth.keys()].sort().pop();
@@ -368,7 +450,10 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
     bucket.set(row.projectId, row);
     projectByMonth.set(key, bucket);
   }
-  if (projectHistory.length) ["schedule", "financial", "effort", "issue", "benefit"].forEach((k) => available.add(k as SeriesKey));
+  if (projectHistory.length)
+    ["schedule", "financial", "effort", "issue", "benefit"].forEach((k) =>
+      available.add(k as SeriesKey),
+    );
   const greenByMonth = new Map(history.map((row) => [row.date.slice(0, 7), row.percentOnTrack]));
   available.add("green");
 
@@ -389,18 +474,28 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
     // Plan and spend: cumulative from FY start over the FY budget.
     const fyBudget = fy.reduce((sum, m) => sum + (money.get(m)?.budget ?? 0), 0);
     if (fyBudget > 0) {
-      values.plan = pct(upTo.reduce((sum, m) => sum + (money.get(m)?.budget ?? 0), 0), fyBudget);
+      values.plan = pct(
+        upTo.reduce((sum, m) => sum + (money.get(m)?.budget ?? 0), 0),
+        fyBudget,
+      );
       const spent = upTo.reduce(
-        (sum, m) => sum + (m <= currentMonth ? (money.get(m)?.actual ?? 0) : (money.get(m)?.forecast ?? 0)),
+        (sum, m) =>
+          sum + (m <= currentMonth ? (money.get(m)?.actual ?? 0) : (money.get(m)?.forecast ?? 0)),
         0,
       );
       values.spend = pct(spent, fyBudget);
     }
 
     // Tasks done ÷ tasks due this FY; forecast from the run rate so far.
-    const dueTasks = liveTasks.filter((task) => (task.finish as string).slice(0, 7) >= fyFirst && (task.finish as string).slice(0, 7) <= fyLast);
+    const dueTasks = liveTasks.filter(
+      (task) =>
+        (task.finish as string).slice(0, 7) >= fyFirst &&
+        (task.finish as string).slice(0, 7) <= fyLast,
+    );
     if (dueTasks.length) {
-      const doneBy = (bound: string) => dueTasks.filter((task) => task.status === "done" && task.doneAt && task.doneAt < bound).length;
+      const doneBy = (bound: string) =>
+        dueTasks.filter((task) => task.status === "done" && task.doneAt && task.doneAt < bound)
+          .length;
       if (!forecast) values.tasks = pct(doneBy(end), dueTasks.length);
       else {
         const elapsed = Math.max(1, fy.filter((m) => m <= currentMonth).length);
@@ -411,22 +506,30 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
     }
 
     // Milestones signed off ÷ baselined this FY; forecast from forecast dates.
-    const baselined = milestones.filter((m) => m.baselineDate.slice(0, 7) >= fyFirst && m.baselineDate.slice(0, 7) <= fyLast);
+    const baselined = milestones.filter(
+      (m) => m.baselineDate.slice(0, 7) >= fyFirst && m.baselineDate.slice(0, 7) <= fyLast,
+    );
     if (baselined.length) {
       const landed = baselined.filter((m) =>
-        forecast ? (m.actualDate ?? m.forecastDate) < end : m.actualDate !== null && m.actualDate < end,
+        forecast
+          ? (m.actualDate ?? m.forecastDate) < end
+          : m.actualDate !== null && m.actualDate < end,
       ).length;
       values.milestones = pct(landed, baselined.length);
     }
 
     // Projects green: month-end snapshot, live for the current month.
     if (month === currentMonth) values.green = input.liveGreen;
-    else if (!forecast && greenByMonth.get(month) !== undefined) values.green = greenByMonth.get(month);
+    else if (!forecast && greenByMonth.get(month) !== undefined)
+      values.green = greenByMonth.get(month);
 
     // Red risks open at month end.
     if (!forecast && inputs.risks.length) {
       values.risks = inputs.risks.filter(
-        (risk) => risk.score >= 15 && risk.createdAt < end && (risk.closedAt === null ? risk.status === "open" : risk.closedAt >= end),
+        (risk) =>
+          risk.score >= 15 &&
+          risk.createdAt < end &&
+          (risk.closedAt === null ? risk.status === "open" : risk.closedAt >= end),
       ).length;
     }
 
@@ -453,8 +556,14 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
       }
       const benefits = rows.filter((row) => row.kind === "benefit");
       const profile = benefits.reduce((sum, row) => sum + (row.profile ?? 0), 0);
-      values.benefits = pct(benefits.reduce((sum, row) => sum + (row.realised ?? 0), 0), profile);
-      values.benefitsGreen = pct(benefits.filter((row) => row.rag === "On Track").length, benefits.length);
+      values.benefits = pct(
+        benefits.reduce((sum, row) => sum + (row.realised ?? 0), 0),
+        profile,
+      );
+      values.benefitsGreen = pct(
+        benefits.filter((row) => row.rag === "On Track").length,
+        benefits.length,
+      );
     }
     // Capability and outcome forecasts: the latest recorded position plus items forecast to land.
     if (forecast && latestPathwayMonth) {
@@ -467,7 +576,14 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
         if (!due.length) continue;
         const done = due.filter((row) => row.complete).length;
         const landing = inputs.pathwayDates.filter(
-          (row) => row.kind === kind && !row.done && inProgramme(row.programmeId) && row.date && row.date >= `${currentMonth}-01` && row.date < end && row.date.slice(0, 7) <= fyLast,
+          (row) =>
+            row.kind === kind &&
+            !row.done &&
+            inProgramme(row.programmeId) &&
+            row.date &&
+            row.date >= `${currentMonth}-01` &&
+            row.date < end &&
+            row.date.slice(0, 7) <= fyLast,
         ).length;
         values[key] = pct(done + landing, due.length);
       }
@@ -487,10 +603,18 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
         label: m.title,
         kind: m.type.toLowerCase() === "gate" ? ("gate" as const) : ("milestone" as const),
       })),
-    ...inputs.committees.map((c) => ({ month: c.date.slice(0, 7), date: c.date, label: c.title, kind: "committee" as const })),
+    ...inputs.committees.map((c) => ({
+      month: c.date.slice(0, 7),
+      date: c.date,
+      label: c.title,
+      kind: "committee" as const,
+    })),
   ].filter((marker) => months.includes(marker.month));
 
   const lead = (current.spend ?? 0) - (current.milestones ?? 0);
-  const gap = current.spend !== undefined && current.milestones !== undefined && lead > 15 ? Math.round(lead) : null;
+  const gap =
+    current.spend !== undefined && current.milestones !== undefined && lead > 15
+      ? Math.round(lead)
+      : null;
   return { points, currentMonth, current, available, markers, gap };
 }

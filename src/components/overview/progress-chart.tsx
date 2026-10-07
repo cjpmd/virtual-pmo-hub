@@ -17,7 +17,11 @@ const RANGES: Array<{ value: ChartRange; label: string }> = [
 ];
 
 const fmt = (key: SeriesKey, value: number | undefined) =>
-  value === undefined ? "—" : SERIES[key].unit === "count" ? String(Math.round(value)) : `${Math.round(value)}%`;
+  value === undefined
+    ? "—"
+    : SERIES[key].unit === "count"
+      ? String(Math.round(value))
+      : `${Math.round(value)}%`;
 
 /**
  * The overview centrepiece (spec §4 ProgressChart). Every series is % of its own full-year
@@ -114,13 +118,23 @@ export function ProgressChart({
     .filter(Boolean)
     .join(". ");
   const showGap =
-    data.gap !== null && todayIndex >= 0 && visible.includes("spend") && visible.includes("milestones");
+    data.gap !== null &&
+    todayIndex >= 0 &&
+    visible.includes("spend") &&
+    visible.includes("milestones");
   const cursorPoint = cursor === null ? null : data.points[cursor];
 
   return (
-    <section aria-label="Portfolio progress" className="flex min-w-0 flex-col gap-2.5 px-4 py-3.5 font-geist sm:px-5">
+    <section
+      aria-label="Portfolio progress"
+      className="flex min-w-0 flex-col gap-2.5 px-4 py-3.5 font-geist sm:px-5"
+    >
       <div className="flex flex-wrap items-center justify-between gap-2.5">
-        <div role="tablist" aria-label="Chart view" className="flex flex-wrap gap-0.5 rounded-lg bg-pmo-panel-2 p-[3px] text-xs">
+        <div
+          role="tablist"
+          aria-label="Chart view"
+          className="flex flex-wrap gap-0.5 rounded-lg bg-pmo-panel-2 p-[3px] text-xs"
+        >
           {(Object.keys(TABS) as ChartTab[]).map((key) => (
             <button
               key={key}
@@ -130,7 +144,9 @@ export function ProgressChart({
               onClick={() => selectTab(key)}
               className={cn(
                 "min-h-7 rounded-md px-2.5",
-                tab === key ? "bg-pmo-accent font-semibold text-primary-foreground" : "text-pmo-muted hover:text-pmo-text",
+                tab === key
+                  ? "bg-pmo-accent font-semibold text-primary-foreground"
+                  : "text-pmo-muted hover:text-pmo-text",
               )}
             >
               {TABS[key].label}
@@ -146,7 +162,9 @@ export function ProgressChart({
               onClick={() => onRangeChange(item.value)}
               className={cn(
                 "min-h-7 rounded-md px-2",
-                range === item.value ? "bg-pmo-panel-2 text-pmo-text" : "text-pmo-muted hover:text-pmo-text",
+                range === item.value
+                  ? "bg-pmo-panel-2 text-pmo-text"
+                  : "text-pmo-muted hover:text-pmo-text",
               )}
             >
               {item.label}
@@ -167,16 +185,24 @@ export function ProgressChart({
               onClick={() => toggle(key)}
               className={cn(
                 "inline-flex min-h-[30px] items-center gap-[7px] rounded-full border px-2.5 text-xs",
-                pressed ? "border-pmo-line bg-pmo-panel-2 text-pmo-text" : "border-dashed border-pmo-line text-pmo-muted",
+                pressed
+                  ? "border-pmo-line bg-pmo-panel-2 text-pmo-text"
+                  : "border-dashed border-pmo-line text-pmo-muted",
               )}
             >
               <span
                 aria-hidden
                 className="w-3.5"
-                style={meta.dashed ? { borderTop: `2px dashed ${meta.colour}` } : { height: 2, background: meta.colour }}
+                style={
+                  meta.dashed
+                    ? { borderTop: `2px dashed ${meta.colour}` }
+                    : { height: 2, background: meta.colour }
+                }
               />
               {meta.label}
-              <span className="font-geist-mono tabular-nums">{key === "plan" ? fmt(key, data.current.plan) : fmt(key, data.current[key])}</span>
+              <span className="font-geist-mono tabular-nums">
+                {key === "plan" ? fmt(key, data.current.plan) : fmt(key, data.current[key])}
+              </span>
             </button>
           );
         })}
@@ -191,32 +217,68 @@ export function ProgressChart({
           aria-label={summary}
           tabIndex={0}
           onKeyDown={onKey}
-          onMouseMove={(event) => onMove(event.clientX, event.currentTarget.getBoundingClientRect())}
+          onMouseMove={(event) =>
+            onMove(event.clientX, event.currentTarget.getBoundingClientRect())
+          }
           onMouseLeave={() => setCursor(null)}
           onBlur={() => setCursor(null)}
           className="block rounded-md outline-none focus-visible:ring-2 focus-visible:ring-pmo-accent"
         >
           {/* Forecast region */}
           {todayIndex >= 0 && todayIndex < n - 1 && (
-            <rect x={x(todayIndex)} y={pad.top} width={x(n - 1) - x(todayIndex)} height={innerH} fill="var(--pmo-panel-2)" opacity={0.5} />
+            <rect
+              x={x(todayIndex)}
+              y={pad.top}
+              width={x(n - 1) - x(todayIndex)}
+              height={innerH}
+              fill="var(--pmo-panel-2)"
+              opacity={0.5}
+            />
           )}
           {[0, 25, 50, 75, 100].map((tick) => (
             <g key={tick}>
-              <line x1={pad.left} x2={pad.left + innerW} y1={y(tick)} y2={y(tick)} stroke="var(--pmo-line)" />
-              <text x={pad.left - 6} y={y(tick) + 3} textAnchor="end" fontSize={10} fill="var(--pmo-muted)" className="font-geist-mono tabular-nums">
+              <line
+                x1={pad.left}
+                x2={pad.left + innerW}
+                y1={y(tick)}
+                y2={y(tick)}
+                stroke="var(--pmo-line)"
+              />
+              <text
+                x={pad.left - 6}
+                y={y(tick) + 3}
+                textAnchor="end"
+                fontSize={10}
+                fill="var(--pmo-muted)"
+                className="font-geist-mono tabular-nums"
+              >
                 {tick}%
               </text>
             </g>
           ))}
           {showRisks &&
             [0, riskMax / 2, riskMax].map((tick) => (
-              <text key={tick} x={pad.left + innerW + 6} y={yRisk(tick) + 3} fontSize={10} fill="var(--pmo-bad)" className="font-geist-mono tabular-nums">
+              <text
+                key={tick}
+                x={pad.left + innerW + 6}
+                y={yRisk(tick) + 3}
+                fontSize={10}
+                fill="var(--pmo-bad)"
+                className="font-geist-mono tabular-nums"
+              >
                 {Math.round(tick)}
               </text>
             ))}
           {data.points.map((point, i) =>
             n <= 14 || i % Math.ceil(n / 12) === 0 ? (
-              <text key={point.month} x={x(i)} y={height - 6} textAnchor="middle" fontSize={10} fill="var(--pmo-muted)">
+              <text
+                key={point.month}
+                x={x(i)}
+                y={height - 6}
+                textAnchor="middle"
+                fontSize={10}
+                fill="var(--pmo-muted)"
+              >
                 {point.label}
               </text>
             ) : null,
@@ -224,14 +286,33 @@ export function ProgressChart({
           {/* Today line */}
           {todayIndex >= 0 && (
             <g>
-              <line x1={x(todayIndex)} x2={x(todayIndex)} y1={pad.top - 4} y2={pad.top + innerH} stroke="var(--pmo-text)" strokeWidth={1} opacity={0.6} />
-              <text x={x(todayIndex) + 4} y={pad.top + innerH - 4} fontSize={10} fill="var(--pmo-muted)">
+              <line
+                x1={x(todayIndex)}
+                x2={x(todayIndex)}
+                y1={pad.top - 4}
+                y2={pad.top + innerH}
+                stroke="var(--pmo-text)"
+                strokeWidth={1}
+                opacity={0.6}
+              />
+              <text
+                x={x(todayIndex) + 4}
+                y={pad.top + innerH - 4}
+                fontSize={10}
+                fill="var(--pmo-muted)"
+              >
                 Today
               </text>
             </g>
           )}
           {visible.includes("plan") && (
-            <path d={planPath("plan")} fill="none" stroke={SERIES.plan.colour} strokeWidth={1.5} strokeDasharray="5 4" />
+            <path
+              d={planPath("plan")}
+              fill="none"
+              stroke={SERIES.plan.colour}
+              strokeWidth={1.5}
+              strokeDasharray="5 4"
+            />
           )}
           {paths
             .filter((p) => p.key !== "plan")
@@ -239,8 +320,25 @@ export function ProgressChart({
               const meta = SERIES[p.key];
               return (
                 <g key={p.key}>
-                  <path d={p.actual} fill="none" stroke={meta.colour} strokeWidth={2} strokeDasharray={meta.dashed ? "5 4" : undefined} strokeLinejoin="round" />
-                  {p.forecast && <path d={p.forecast} fill="none" stroke={meta.colour} strokeWidth={2} strokeDasharray="2 4" strokeLinecap="round" opacity={0.85} />}
+                  <path
+                    d={p.actual}
+                    fill="none"
+                    stroke={meta.colour}
+                    strokeWidth={2}
+                    strokeDasharray={meta.dashed ? "5 4" : undefined}
+                    strokeLinejoin="round"
+                  />
+                  {p.forecast && (
+                    <path
+                      d={p.forecast}
+                      fill="none"
+                      stroke={meta.colour}
+                      strokeWidth={2}
+                      strokeDasharray="2 4"
+                      strokeLinecap="round"
+                      opacity={0.85}
+                    />
+                  )}
                 </g>
               );
             })}
@@ -253,7 +351,15 @@ export function ProgressChart({
                 stroke="var(--pmo-bad)"
                 strokeWidth={1.5}
               />
-              <text x={x(todayIndex) - 18} y={(y(spendNow) + y(milestonesNow)) / 2 + 3} textAnchor="end" fontSize={11} fontWeight={600} fill="var(--pmo-bad-text)" className="font-geist-mono tabular-nums">
+              <text
+                x={x(todayIndex) - 18}
+                y={(y(spendNow) + y(milestonesNow)) / 2 + 3}
+                textAnchor="end"
+                fontSize={11}
+                fontWeight={600}
+                fill="var(--pmo-bad-text)"
+                className="font-geist-mono tabular-nums"
+              >
                 {data.gap} pts gap
               </text>
             </g>
@@ -263,41 +369,86 @@ export function ProgressChart({
             const index = data.points.findIndex((p) => p.month === marker.month);
             if (index < 0) return null;
             const day = Number(marker.date.slice(8, 10)) / 31;
-            const mx = Math.min(pad.left + innerW, x(index) + (n > 1 ? day * (innerW / (n - 1)) : 0));
+            const mx = Math.min(
+              pad.left + innerW,
+              x(index) + (n > 1 ? day * (innerW / (n - 1)) : 0),
+            );
             const size = tab === "timeline" ? 6 : 5;
-            const kindLabel = marker.kind === "committee" ? "Committee" : marker.kind === "gate" ? "Gate" : "Key milestone";
+            const kindLabel =
+              marker.kind === "committee"
+                ? "Committee"
+                : marker.kind === "gate"
+                  ? "Gate"
+                  : "Key milestone";
             return (
-              <g key={`${marker.label}-${i}`} tabIndex={0} aria-label={`${kindLabel}: ${marker.label}, ${marker.date}`} className="outline-none [&:focus>polygon]:stroke-pmo-text">
+              <g
+                key={`${marker.label}-${i}`}
+                tabIndex={0}
+                aria-label={`${kindLabel}: ${marker.label}, ${marker.date}`}
+                className="outline-none [&:focus>polygon]:stroke-pmo-text"
+              >
                 <title>{`${kindLabel}: ${marker.label} (${marker.date.split("-").reverse().join("/")})`}</title>
                 <polygon
                   points={`${mx},${12 - size} ${mx + size},12 ${mx},${12 + size} ${mx - size},12`}
-                  fill={marker.kind === "committee" ? "var(--pmo-accent)" : marker.kind === "gate" ? "var(--pmo-warn)" : "var(--series-milestones)"}
+                  fill={
+                    marker.kind === "committee"
+                      ? "var(--pmo-accent)"
+                      : marker.kind === "gate"
+                        ? "var(--pmo-warn)"
+                        : "var(--series-milestones)"
+                  }
                   stroke="var(--pmo-panel)"
                   strokeWidth={1}
                 />
                 {tab === "timeline" && (
-                  <line x1={mx} x2={mx} y1={18} y2={pad.top + innerH} stroke="var(--pmo-line)" strokeDasharray="2 3" />
+                  <line
+                    x1={mx}
+                    x2={mx}
+                    y1={18}
+                    y2={pad.top + innerH}
+                    stroke="var(--pmo-line)"
+                    strokeDasharray="2 3"
+                  />
                 )}
               </g>
             );
           })}
           {/* Crosshair */}
           {cursorPoint && cursor !== null && (
-            <line x1={x(cursor)} x2={x(cursor)} y1={pad.top} y2={pad.top + innerH} stroke="var(--pmo-muted)" strokeDasharray="3 3" />
+            <line
+              x1={x(cursor)}
+              x2={x(cursor)}
+              y1={pad.top}
+              y2={pad.top + innerH}
+              stroke="var(--pmo-muted)"
+              strokeDasharray="3 3"
+            />
           )}
           {cursorPoint &&
             cursor !== null &&
             visible.map((key) => {
               const value = cursorPoint.values[key];
               if (value === undefined) return null;
-              return <circle key={key} cx={x(cursor)} cy={key === "risks" ? yRisk(value) : y(value)} r={3.5} fill={SERIES[key].colour} stroke="var(--pmo-panel)" strokeWidth={1.5} />;
+              return (
+                <circle
+                  key={key}
+                  cx={x(cursor)}
+                  cy={key === "risks" ? yRisk(value) : y(value)}
+                  r={3.5}
+                  fill={SERIES[key].colour}
+                  stroke="var(--pmo-panel)"
+                  strokeWidth={1.5}
+                />
+              );
             })}
         </svg>
         {cursorPoint && cursor !== null && (
           <div
             aria-live="polite"
             className="pointer-events-none absolute top-6 z-10 min-w-40 rounded-md border border-pmo-line bg-pmo-panel px-3 py-2 text-xs shadow-lg"
-            style={x(cursor) > width / 2 ? { right: width - x(cursor) + 10 } : { left: x(cursor) + 10 }}
+            style={
+              x(cursor) > width / 2 ? { right: width - x(cursor) + 10 } : { left: x(cursor) + 10 }
+            }
           >
             <p className="mb-1 font-semibold text-pmo-text">
               {cursorPoint.label}
@@ -306,10 +457,16 @@ export function ProgressChart({
             {visible.map((key) => (
               <p key={key} className="flex items-center justify-between gap-4 text-pmo-muted">
                 <span className="flex items-center gap-1.5">
-                  <span aria-hidden className="size-2 rounded-full" style={{ background: SERIES[key].colour }} />
+                  <span
+                    aria-hidden
+                    className="size-2 rounded-full"
+                    style={{ background: SERIES[key].colour }}
+                  />
                   {SERIES[key].label}
                 </span>
-                <span className="font-geist-mono tabular-nums text-pmo-text">{fmt(key, cursorPoint.values[key])}</span>
+                <span className="font-geist-mono tabular-nums text-pmo-text">
+                  {fmt(key, cursorPoint.values[key])}
+                </span>
               </p>
             ))}
           </div>

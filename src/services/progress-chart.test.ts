@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { buildProgressChart, fyStart, type ProgressInputs } from "./progress-chart";
 
-const empty: ProgressInputs = { money: [], tasks: [], risks: [], pathway: [], pathwayDates: [], committees: [] };
+const empty: ProgressInputs = {
+  money: [],
+  tasks: [],
+  risks: [],
+  pathway: [],
+  pathwayDates: [],
+  committees: [],
+};
 const base = {
   milestones: [],
   history: [],
@@ -25,10 +32,22 @@ describe("progress chart", () => {
       { projectId: "p", month: "2026-09", kind: "actual" as const, amount },
     ];
     const milestones = [
-      { id: "m", title: "M", type: "Delivery", baselineDate: "2027-01-01", forecastDate: "2027-01-01", actualDate: null, reportToCommittee: false },
+      {
+        id: "m",
+        title: "M",
+        type: "Delivery",
+        baselineDate: "2027-01-01",
+        forecastDate: "2027-01-01",
+        actualDate: null,
+        reportToCommittee: false,
+      },
     ];
-    expect(buildProgressChart({ ...base, milestones, inputs: { ...empty, money: money(160) } }).gap).toBe(16);
-    expect(buildProgressChart({ ...base, milestones, inputs: { ...empty, money: money(150) } }).gap).toBeNull();
+    expect(
+      buildProgressChart({ ...base, milestones, inputs: { ...empty, money: money(160) } }).gap,
+    ).toBe(16);
+    expect(
+      buildProgressChart({ ...base, milestones, inputs: { ...empty, money: money(150) } }).gap,
+    ).toBeNull();
   });
 
   it("hides benefits-chain series until pathway snapshots exist", () => {
