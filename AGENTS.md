@@ -23,3 +23,4 @@
 - Revoke execute from `public` and `anon` for every new private database function.
 - Regenerate `src/integrations/supabase/types.ts` after an approved schema change; never hand-edit generated database types.
 - Keep changes focused; do not rewrite whole files or restyle pages outside the requested scope.
+- Business case status changes go only through SECURITY DEFINER RPCs with an explicit permission check; the version trigger blocks status edits from plain client updates (current_user = 'authenticated'), so no session setting can bypass it.
