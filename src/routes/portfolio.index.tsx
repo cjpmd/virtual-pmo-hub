@@ -832,7 +832,7 @@ function OverviewBand({
     const counts = new Map<string, number>();
     for (const change of governance.data?.changes ?? [])
       if (change.status === "Proposed")
-        counts.set(change.projectId ?? "", (counts.get(change.projectId ?? "") ?? 0) + 1);
+        counts.set(change.scope.projectId ?? "", (counts.get(change.scope.projectId ?? "") ?? 0) + 1);
     return counts;
   }, [governance.data]);
   const declared = useMemo(() => {
