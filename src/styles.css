@@ -133,6 +133,9 @@
   --color-series-tasks: var(--series-tasks);
   --color-series-milestones: var(--series-milestones);
   --color-series-green: var(--series-green);
+  --color-series-capabilities: var(--series-capabilities);
+  --color-series-outcomes: var(--series-outcomes);
+  --color-series-benefits: var(--series-benefits);
 }
 
 :root {
@@ -158,6 +161,14 @@
   --series-tasks: #a78bfa;
   --series-milestones: #2dd4bf;
   --series-green: #f2b33d;
+  --series-capabilities: #22d3ee;
+  --series-outcomes: #c084fc;
+  --series-benefits: #86efac;
+  --series-dim-schedule: #38bdf8;
+  --series-dim-financial: #818cf8;
+  --series-dim-effort: #f472b6;
+  --series-dim-issue: #fb7185;
+  --series-dim-benefit: #34d399;
   --radius: 0.5rem;
   --background: oklch(0.975 0.006 250);
   --foreground: oklch(0.24 0.035 254);
