@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   CalendarDays,
   CheckCircle2,
@@ -285,6 +285,11 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
               project={project}
               onArchived={() => void navigate({ to: "/portfolio/projects" })}
             />
+            <Button size="sm" variant="outline" asChild>
+              <Link to="/portfolio/projects/$projectCode/business-case" params={{ projectCode: project.code }}>
+                Business case
+              </Link>
+            </Button>
             <Button size="sm" onClick={() => openIssueTask(project.id)}>
               <ListPlus />
               Issue task

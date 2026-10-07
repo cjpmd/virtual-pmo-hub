@@ -1,6 +1,6 @@
 import { AutoBreadcrumbs } from "@/components/section-nav";
 import { formatCompactCurrency } from "@/lib/format";
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { BoardWorkspace, type BoardColumn, type BoardRow } from "@/components/board-workspace";
 import { AppraisalPanel } from "@/components/appraisal-panel";
@@ -268,9 +268,16 @@ function Requests({ requests, people }: { requests: RequestView[]; people: Perso
 
       {selected && (
         <div className="space-y-5">
-          <h2 className="font-display text-lg font-semibold">
-            Appraisal · {selected.request.title}
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-display text-lg font-semibold">
+              Appraisal · {selected.request.title}
+            </h2>
+            <Button size="sm" variant="outline" asChild>
+              <Link to="/portfolio/requests/$requestId/business-case" params={{ requestId: selected.request.id }}>
+                Business case
+              </Link>
+            </Button>
+          </div>
           <AppraisalPanel
             drafts={selected.request.draftBenefits ?? []}
             wholeLifeCost={selected.request.wholeLifeCost ?? selected.request.estimatedCost}
