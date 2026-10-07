@@ -398,6 +398,8 @@ export interface BuildInput {
   today: string;
   fyStartMonth: number;
   range: ChartRange;
+  /** Red-risk threshold from the organisation's risk bands; 15 when unset. */
+  redRiskMinScore?: number;
 }
 
 export function buildProgressChart(input: BuildInput): ProgressChartData {
@@ -527,7 +529,7 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
     if (!forecast && inputs.risks.length) {
       values.risks = inputs.risks.filter(
         (risk) =>
-          risk.score >= 15 &&
+          risk.score >= (input.redRiskMinScore ?? 15) &&
           risk.createdAt < end &&
           (risk.closedAt === null ? risk.status === "open" : risk.closedAt >= end),
       ).length;

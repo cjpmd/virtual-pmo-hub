@@ -11197,7 +11197,12 @@ export type Database = {
         Returns: string
       }
       get_portfolio_overview: {
-        Args: { p_programme?: string; p_range?: string; p_workspace: string }
+        Args: {
+          p_portfolio?: string
+          p_programme?: string
+          p_range?: string
+          p_workspace: string
+        }
         Returns: Json
       }
       join_demo_organisation: { Args: never; Returns: string }

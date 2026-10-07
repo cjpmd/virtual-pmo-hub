@@ -21,7 +21,7 @@ import { ProgrammeStrip } from "@/components/overview/programme-strip";
 import { ProjectWatchlist } from "@/components/overview/project-watchlist";
 import { SignalsList } from "@/components/overview/signals-list";
 import { usePathway } from "@/hooks/use-pathway";
-import { useForecastHistory } from "@/hooks/use-progress-chart";
+import { usePortfolioOverviewData } from "@/hooks/use-progress-chart";
 import { getAssuranceRows } from "@/services/assurance";
 import type { EvidencedRag } from "@/services/forecast";
 import type { Health } from "@/data/types";
@@ -31,7 +31,6 @@ import {
   buildWatchlist,
   type WatchSort,
 } from "@/services/overview-panels";
-import { useProgressInputs } from "@/hooks/use-progress-chart";
 import { useSettings } from "@/services/settings";
 import { buildProgressChart, type ChartRange } from "@/services/progress-chart";
 import { StatusBarSlot, TopBand } from "@/components/shell-slots";
@@ -726,7 +725,11 @@ function OverviewBand({
   switcher: React.ReactNode;
   programmeId: string | null;
 }) {
-  const { portfolio, projects, milestones, history, projectHistory } = data;
+  const { portfolio, projects, milestones } = data;
+  // One RPC call feeds the chart inputs, snapshot history, forecast history, as-of and today.
+  const rpc = usePortfolioOverviewData(portfolio.id);
+  const history = rpc.data?.history ?? data.history;
+  const projectHistory = rpc.data?.projectHistory ?? data.projectHistory;
   const active = useMemo(() => activeOnly(projects), [projects]);
   const navigate = Route.useNavigate();
   const format = useFormat();
@@ -744,7 +747,7 @@ function OverviewBand({
     return reportGapCounts(assurance.data.filter((project) => ids.has(project.id)));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- version tracks the browser-local sprint store
   }, [assurance.data, projects, version]);
-  const today = todayIso();
+  const today = rpc.data?.today ?? todayIso();
   const metrics = useMemo(
     () => gaps && getSummaryMetrics({ projects, milestones, history, projectHistory, gaps, today }),
     [projects, milestones, history, projectHistory, gaps, today],
@@ -755,15 +758,12 @@ function OverviewBand({
   );
   const settings = useSettings();
   const [range, setRange] = useState<ChartRange>("fy");
-  const progressInputs = useProgressInputs(
-    useMemo(() => active.map((project) => project.id), [active]),
-  );
   const activeIds = useMemo(
     () => new Set(scopedActive.map((project) => project.id)),
     [scopedActive],
   );
   const scopedInputs = useMemo(() => {
-    const raw = progressInputs.data;
+    const raw = rpc.data?.inputs;
     if (!raw) return undefined;
     return {
       ...raw,
@@ -771,7 +771,7 @@ function OverviewBand({
       tasks: raw.tasks.filter((row) => activeIds.has(row.projectId)),
       risks: raw.risks.filter((row) => row.projectId !== null && activeIds.has(row.projectId)),
     };
-  }, [progressInputs.data, activeIds]);
+  }, [rpc.data, activeIds]);
   const build = (chartRange: ChartRange) =>
     scopedInputs &&
     buildProgressChart({
@@ -789,6 +789,7 @@ function OverviewBand({
       today,
       fyStartMonth: settings.regional.financialYearStartMonth,
       range: chartRange,
+      redRiskMinScore: rpc.data?.redRiskMinScore ?? 15,
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps -- build closes over the listed values
   const progress = useMemo(
@@ -804,6 +805,7 @@ function OverviewBand({
       today,
       settings.regional.financialYearStartMonth,
       range,
+      rpc.data?.redRiskMinScore,
     ],
   );
   // eslint-disable-next-line react-hooks/exhaustive-deps -- signals always use the financial year
@@ -819,13 +821,12 @@ function OverviewBand({
       programmeIds,
       today,
       settings.regional.financialYearStartMonth,
+      rpc.data?.redRiskMinScore,
     ],
   );
 
   const pathway = usePathway();
-  const forecasts = useForecastHistory(
-    useMemo(() => active.map((project) => project.id), [active]),
-  );
+  const forecasts = rpc.data?.forecasts;
   const [sort, setSort] = useState<WatchSort>("overspend");
   const declared = useMemo(() => {
     const map = new Map<
@@ -846,11 +847,11 @@ function OverviewBand({
       buildWatchlist({
         active: scopedActive,
         declared,
-        forecasts: forecasts.data ?? [],
+        forecasts: forecasts ?? [],
         today,
         sort,
       }),
-    [scopedActive, declared, forecasts.data, today, sort],
+    [scopedActive, declared, forecasts, today, sort],
   );
   const cards = useMemo(
     () => buildProgrammeCards(data.programmes, active, projectHistory, today),
@@ -859,7 +860,7 @@ function OverviewBand({
   const signals = useMemo(() => {
     const monthStart = `${today.slice(0, 7)}-01`;
     const previousPathwayRag = new Map<string, Health>();
-    for (const row of progressInputs.data?.pathway ?? [])
+    for (const row of rpc.data?.inputs.pathway ?? [])
       if (row.date < monthStart) previousPathwayRag.set(row.item, row.rag);
     const last = fyProgress?.points.at(-1);
     return buildSignals({
@@ -880,7 +881,7 @@ function OverviewBand({
     });
   }, [
     today,
-    progressInputs.data,
+    rpc.data,
     fyProgress,
     programmeId,
     data.programmes,
@@ -898,10 +899,12 @@ function OverviewBand({
       replace: true,
       resetScroll: false,
     });
-  const asOf = dataAsOf([
-    ...projects.flatMap((project) => [project.updatedAt, project.lastReportDate]),
-    ...milestones.map((milestone) => milestone.updatedAt),
-  ]);
+  const asOf =
+    rpc.data?.asOf ??
+    dataAsOf([
+      ...projects.flatMap((project) => [project.updatedAt, project.lastReportDate]),
+      ...milestones.map((milestone) => milestone.updatedAt),
+    ]);
   return (
     <>
       <TopBand>
