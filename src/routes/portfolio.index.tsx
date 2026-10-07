@@ -824,9 +824,7 @@ function OverviewBand({
   );
 
   const pathway = usePathway();
-  const forecasts = useForecastHistory(
-    useMemo(() => active.map((project) => project.id), [active]),
-  );
+  const forecasts = rpc.data?.forecasts;
   const [sort, setSort] = useState<WatchSort>("overspend");
   const declared = useMemo(() => {
     const map = new Map<
@@ -847,11 +845,11 @@ function OverviewBand({
       buildWatchlist({
         active: scopedActive,
         declared,
-        forecasts: forecasts.data ?? [],
+        forecasts: forecasts ?? [],
         today,
         sort,
       }),
-    [scopedActive, declared, forecasts.data, today, sort],
+    [scopedActive, declared, forecasts, today, sort],
   );
   const cards = useMemo(
     () => buildProgrammeCards(data.programmes, active, projectHistory, today),
@@ -860,7 +858,7 @@ function OverviewBand({
   const signals = useMemo(() => {
     const monthStart = `${today.slice(0, 7)}-01`;
     const previousPathwayRag = new Map<string, Health>();
-    for (const row of progressInputs.data?.pathway ?? [])
+    for (const row of rpc.data?.inputs.pathway ?? [])
       if (row.date < monthStart) previousPathwayRag.set(row.item, row.rag);
     const last = fyProgress?.points.at(-1);
     return buildSignals({
@@ -881,7 +879,7 @@ function OverviewBand({
     });
   }, [
     today,
-    progressInputs.data,
+    rpc.data,
     fyProgress,
     programmeId,
     data.programmes,
@@ -899,10 +897,12 @@ function OverviewBand({
       replace: true,
       resetScroll: false,
     });
-  const asOf = dataAsOf([
-    ...projects.flatMap((project) => [project.updatedAt, project.lastReportDate]),
-    ...milestones.map((milestone) => milestone.updatedAt),
-  ]);
+  const asOf =
+    rpc.data?.asOf ??
+    dataAsOf([
+      ...projects.flatMap((project) => [project.updatedAt, project.lastReportDate]),
+      ...milestones.map((milestone) => milestone.updatedAt),
+    ]);
   return (
     <>
       <TopBand>
