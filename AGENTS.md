@@ -9,8 +9,17 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-Account settings are a distinct Settings section backed by the existing browser-local settings store; this prototype has no authentication service, so log out only returns to the sign-up demo.
-- Portfolio/programme/project create, edit and close go through src/services/entity-store.ts (browser-local, mutates shared mock arrays, root re-renders on change) — keeps services swappable for a real backend.
-- Forecasting lives in src/services/forecast.ts (pure, vitest-tested); sprint/work-item data in src/services/sprints.ts (browser-local) — one engine so every screen shows identical numbers, swappable for Postgres later.
-- Board items (risks, issues, benefits, decisions, etc.) add/edit/close/delete via BoardWorkspace + src/services/record-store.ts (per-board browser-local deltas) — one consistent behaviour, cleared by Restore sample data.
-- Dependency records use a dedicated browser-local store shared by the register, map and project views, because their linked endpoints must stay valid across views.
+## Project rules
+
+- Read the relevant specification in `docs/design/` or `docs/*.md` before implementing a change — the written specification is authoritative.
+- Read and write application records only through `src/services/`; components and routes must never query Supabase directly.
+- Persist real records in Supabase only; do not add localStorage or mock-data persistence paths.
+- Read health and RAG values from the database `v_*` views; never calculate health in browser code.
+- Route all record mutations through the shared write helper so `updated_at` optimistic concurrency remains enforced.
+- Treat portfolios, programmes, and projects as archivable records; never hard-delete them.
+- Make every schema change in a new migration and never edit an existing migration.
+- Before any database change, present the proposed SQL to the user and stop; apply it only after explicit approval.
+- Every new tenant table must include `organisation_id` and `workspace_id`, use composite foreign keys to tenant-scoped parents, enable RLS, and follow the existing `private.my_workspace_ids(...)` workspace policy pattern.
+- Revoke execute from `public` and `anon` for every new private database function.
+- Regenerate `src/integrations/supabase/types.ts` after an approved schema change; never hand-edit generated database types.
+- Keep changes focused; do not rewrite whole files or restyle pages outside the requested scope.
