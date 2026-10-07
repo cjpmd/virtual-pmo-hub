@@ -149,7 +149,7 @@ export async function getWorkspaceId(orgId: string): Promise<string> {
     .order("created_at")
     .limit(1)
     .maybeSingle();
-  if (error) throw new ServiceError("unavailable", "Loading the workspace failed.", error.message);
+  if (error) throw new ServiceError("unknown", "Loading the workspace failed.", error.message);
   if (!data) throw new ServiceError("not_found", "This organisation has no workspace yet.");
   return data.id;
 }
@@ -168,7 +168,7 @@ export async function getPortfolioOverviewData(
     p_range: "all",
   });
   if (error)
-    throw new ServiceError("unavailable", "Loading the portfolio overview failed.", error.message);
+    throw new ServiceError("unknown", "Loading the portfolio overview failed.", error.message);
   const rpc = data as unknown as RpcPayload;
 
   return {
