@@ -67,7 +67,13 @@ export function fromPostgrest(
   else if (code === "42501" || code === "PGRST301") kind = "forbidden";
   else if (code === "PGRST116") kind = "not_found";
   else if (code === "23505") kind = "conflict";
-  else if (code === "23503" || code === "23514" || code === "23502" || code === "22P02")
+  else if (
+    code === "23503" ||
+    code === "23514" ||
+    code === "23502" ||
+    code === "22P02" ||
+    code === "22023" // raise ... using errcode '22023' in RPCs: a rule message for people
+  )
     kind = "invalid";
   else if (code === "P0001")
     kind = "invalid"; // raise exception in a trigger: its text is meant for people
