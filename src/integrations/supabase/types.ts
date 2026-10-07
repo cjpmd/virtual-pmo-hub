@@ -1427,6 +1427,535 @@ export type Database = {
           },
         ]
       }
+      business_case_benefits: {
+        Row: {
+          annual_value: number
+          baseline: string | null
+          category_id: string
+          category_list: string
+          classification: Database["public"]["Enums"]["benefit_classification"]
+          created_at: string
+          created_by: string | null
+          id: string
+          measure: string | null
+          organisation_id: string
+          owner_id: string | null
+          sort_order: number
+          strategic_objective_id: string | null
+          target: string | null
+          title: string
+          updated_at: string
+          version_id: string
+          workspace_id: string
+          years_counted: number
+        }
+        Insert: {
+          annual_value?: number
+          baseline?: string | null
+          category_id: string
+          category_list?: string
+          classification: Database["public"]["Enums"]["benefit_classification"]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          measure?: string | null
+          organisation_id: string
+          owner_id?: string | null
+          sort_order?: number
+          strategic_objective_id?: string | null
+          target?: string | null
+          title: string
+          updated_at?: string
+          version_id: string
+          workspace_id: string
+          years_counted?: number
+        }
+        Update: {
+          annual_value?: number
+          baseline?: string | null
+          category_id?: string
+          category_list?: string
+          classification?: Database["public"]["Enums"]["benefit_classification"]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          measure?: string | null
+          organisation_id?: string
+          owner_id?: string | null
+          sort_order?: number
+          strategic_objective_id?: string | null
+          target?: string | null
+          title?: string
+          updated_at?: string
+          version_id?: string
+          workspace_id?: string
+          years_counted?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_case_benefits_category_id_organisation_id_categor_fkey"
+            columns: ["category_id", "organisation_id", "category_list"]
+            isOneToOne: false
+            referencedRelation: "lookup_values"
+            referencedColumns: ["id", "organisation_id", "list_key"]
+          },
+          {
+            foreignKeyName: "business_case_benefits_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_case_benefits_owner_id_organisation_id_fkey"
+            columns: ["owner_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "business_case_benefits_strategic_objective_id_workspace_id_fkey"
+            columns: ["strategic_objective_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_objectives"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "business_case_benefits_version_id_workspace_id_fkey"
+            columns: ["version_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "business_case_versions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "business_case_benefits_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      business_case_options: {
+        Row: {
+          benefits_summary: string | null
+          created_at: string
+          created_by: string | null
+          delivery_cost: number | null
+          description: string | null
+          id: string
+          is_preferred: boolean
+          name: string
+          organisation_id: string
+          risk_summary: string | null
+          sort_order: number
+          updated_at: string
+          version_id: string
+          whole_life_cost: number | null
+          workspace_id: string
+        }
+        Insert: {
+          benefits_summary?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivery_cost?: number | null
+          description?: string | null
+          id?: string
+          is_preferred?: boolean
+          name: string
+          organisation_id: string
+          risk_summary?: string | null
+          sort_order?: number
+          updated_at?: string
+          version_id: string
+          whole_life_cost?: number | null
+          workspace_id: string
+        }
+        Update: {
+          benefits_summary?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivery_cost?: number | null
+          description?: string | null
+          id?: string
+          is_preferred?: boolean
+          name?: string
+          organisation_id?: string
+          risk_summary?: string | null
+          sort_order?: number
+          updated_at?: string
+          version_id?: string
+          whole_life_cost?: number | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_case_options_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_case_options_version_id_workspace_id_fkey"
+            columns: ["version_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "business_case_versions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "business_case_options_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      business_case_sections: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_required: boolean
+          key: string
+          organisation_id: string
+          sort_order: number
+          template_id: string | null
+          title: string
+          updated_at: string
+          version_id: string
+          workspace_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_required?: boolean
+          key: string
+          organisation_id: string
+          sort_order?: number
+          template_id?: string | null
+          title: string
+          updated_at?: string
+          version_id: string
+          workspace_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_required?: boolean
+          key?: string
+          organisation_id?: string
+          sort_order?: number
+          template_id?: string | null
+          title?: string
+          updated_at?: string
+          version_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_case_sections_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_case_sections_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "business_case_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_case_sections_version_id_workspace_id_fkey"
+            columns: ["version_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "business_case_versions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "business_case_sections_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      business_case_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          guidance: string | null
+          id: string
+          is_active: boolean
+          is_required: boolean
+          key: string
+          organisation_id: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          guidance?: string | null
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          key: string
+          organisation_id: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          guidance?: string | null
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          key?: string
+          organisation_id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_case_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_case_templates_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_case_versions: {
+        Row: {
+          business_case_id: string
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decision_id: string | null
+          funding_requested: number | null
+          id: string
+          organisation_id: string
+          preferred_option_id: string | null
+          recorded_by: string | null
+          status: Database["public"]["Enums"]["business_case_status"]
+          submitted_at: string | null
+          submitted_by: string | null
+          updated_at: string
+          version: number
+          whole_life_cost: number | null
+          workspace_id: string
+        }
+        Insert: {
+          business_case_id: string
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decision_id?: string | null
+          funding_requested?: number | null
+          id?: string
+          organisation_id: string
+          preferred_option_id?: string | null
+          recorded_by?: string | null
+          status?: Database["public"]["Enums"]["business_case_status"]
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+          version: number
+          whole_life_cost?: number | null
+          workspace_id: string
+        }
+        Update: {
+          business_case_id?: string
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decision_id?: string | null
+          funding_requested?: number | null
+          id?: string
+          organisation_id?: string
+          preferred_option_id?: string | null
+          recorded_by?: string | null
+          status?: Database["public"]["Enums"]["business_case_status"]
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+          version?: number
+          whole_life_cost?: number | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_case_versions_business_case_id_workspace_id_fkey"
+            columns: ["business_case_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "business_cases"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "business_case_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_case_versions_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "decisions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "business_case_versions_preferred_option_id_id_fkey"
+            columns: ["preferred_option_id", "id"]
+            isOneToOne: false
+            referencedRelation: "business_case_options"
+            referencedColumns: ["id", "version_id"]
+          },
+          {
+            foreignKeyName: "business_case_versions_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_case_versions_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_case_versions_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      business_cases: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          organisation_id: string
+          project_id: string | null
+          request_id: string | null
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organisation_id: string
+          project_id?: string | null
+          request_id?: string | null
+          title: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organisation_id?: string
+          project_id?: string | null
+          request_id?: string | null
+          title?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_cases_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_cases_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "business_cases_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "business_cases_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_financials"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "business_cases_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "business_cases_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_task_stats"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "business_cases_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "business_cases_request_id_workspace_id_fkey"
+            columns: ["request_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "project_requests"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "business_cases_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       capabilities: {
         Row: {
           acceptance_note: string | null
@@ -3510,6 +4039,7 @@ export type Database = {
       documents: {
         Row: {
           archived_at: string | null
+          business_case_id: string | null
           capability_id: string | null
           created_at: string
           file_name: string
@@ -3527,6 +4057,7 @@ export type Database = {
         }
         Insert: {
           archived_at?: string | null
+          business_case_id?: string | null
           capability_id?: string | null
           created_at?: string
           file_name: string
@@ -3544,6 +4075,7 @@ export type Database = {
         }
         Update: {
           archived_at?: string | null
+          business_case_id?: string | null
           capability_id?: string | null
           created_at?: string
           file_name?: string
@@ -3560,6 +4092,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "documents_business_case_fk"
+            columns: ["business_case_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "business_cases"
+            referencedColumns: ["id", "workspace_id"]
+          },
           {
             foreignKeyName: "documents_capability_id_workspace_id_fkey"
             columns: ["capability_id", "workspace_id"]
@@ -11250,6 +11789,38 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      start_business_case_version: {
+        Args: { p_business_case_id: string }
+        Returns: string
+      }
+      submit_business_case: {
+        Args: { p_version_id: string }
+        Returns: {
+          business_case_id: string
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decision_id: string | null
+          funding_requested: number | null
+          id: string
+          organisation_id: string
+          preferred_option_id: string | null
+          recorded_by: string | null
+          status: Database["public"]["Enums"]["business_case_status"]
+          submitted_at: string | null
+          submitted_by: string | null
+          updated_at: string
+          version: number
+          whole_life_cost: number | null
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "business_case_versions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       action_status: "open" | "in_progress" | "done"
@@ -11279,6 +11850,12 @@ export type Database = {
         | "closed"
       benefit_type: "benefit" | "disbenefit"
       booking_type: "soft" | "hard"
+      business_case_status:
+        | "draft"
+        | "submitted"
+        | "approved"
+        | "rejected"
+        | "superseded"
       capability_status: "planned" | "in_progress" | "delivered" | "accepted"
       change_status: "proposed" | "approved" | "rejected"
       confidence: "low" | "medium" | "high"
@@ -11298,7 +11875,7 @@ export type Database = {
         | "confirmed"
         | "closed"
         | "broken"
-      document_scope: "project" | "programme" | "capability"
+      document_scope: "project" | "programme" | "capability" | "business_case"
       entity_state: "active" | "closed"
       external_source: "planner_basic" | "planner_premium" | "import"
       financial_kind: "budget" | "actual" | "forecast"
@@ -11516,6 +12093,13 @@ export const Constants = {
       ],
       benefit_type: ["benefit", "disbenefit"],
       booking_type: ["soft", "hard"],
+      business_case_status: [
+        "draft",
+        "submitted",
+        "approved",
+        "rejected",
+        "superseded",
+      ],
       capability_status: ["planned", "in_progress", "delivered", "accepted"],
       change_status: ["proposed", "approved", "rejected"],
       confidence: ["low", "medium", "high"],
@@ -11537,7 +12121,7 @@ export const Constants = {
         "closed",
         "broken",
       ],
-      document_scope: ["project", "programme", "capability"],
+      document_scope: ["project", "programme", "capability", "business_case"],
       entity_state: ["active", "closed"],
       external_source: ["planner_basic", "planner_premium", "import"],
       financial_kind: ["budget", "actual", "forecast"],
