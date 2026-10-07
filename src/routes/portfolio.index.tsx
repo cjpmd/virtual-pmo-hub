@@ -16,6 +16,10 @@ import {
 import { ManagePortfoliosButton, StateBadge } from "@/components/entity-management";
 import { StatusBar } from "@/components/overview/status-bar";
 import { SummaryStrip } from "@/components/overview/summary-strip";
+import { ProgressChart } from "@/components/overview/progress-chart";
+import { useProgressInputs } from "@/hooks/use-progress-chart";
+import { useSettings } from "@/services/settings";
+import { buildProgressChart, type ChartRange } from "@/services/progress-chart";
 import { StatusBarSlot, TopBand } from "@/components/shell-slots";
 import { HealthPill } from "@/components/health-pill";
 import { PageSkeleton, QueryState } from "@/components/query-state";
@@ -697,6 +701,28 @@ function OverviewBand({
     (periods.data ?? []).filter((period) => period.closed).map((period) => period.periodMonth),
     today,
   );
+  const settings = useSettings();
+  const [range, setRange] = useState<ChartRange>("fy");
+  const progressInputs = useProgressInputs(useMemo(() => active.map((project) => project.id), [active]));
+  const activeIds = useMemo(() => new Set(active.map((project) => project.id)), [active]);
+  const progress = useMemo(
+    () =>
+      progressInputs.data &&
+      buildProgressChart({
+        inputs: progressInputs.data,
+        milestones: milestones.filter((milestone) => activeIds.has(milestone.projectId)),
+        history,
+        projectHistory: projectHistory.filter((row) => activeIds.has(row.projectId)),
+        liveGreen: active.length
+          ? Math.round((100 * active.filter((project) => project.health.overall === "On Track").length) / active.length)
+          : 0,
+        programmeIds: null,
+        today,
+        fyStartMonth: settings.regional.financialYearStartMonth,
+        range,
+      }),
+    [progressInputs.data, milestones, activeIds, history, projectHistory, active, today, settings.regional.financialYearStartMonth, range],
+  );
   const asOf = dataAsOf([
     ...projects.flatMap((project) => [project.updatedAt, project.lastReportDate]),
     ...milestones.map((milestone) => milestone.updatedAt),
@@ -728,6 +754,13 @@ function OverviewBand({
             className="h-[78px] animate-pulse border-y border-pmo-line bg-pmo-panel/40"
           />
         )}
+        <div className="mx-auto max-w-[1600px]">
+          {progress ? (
+            <ProgressChart data={progress} range={range} onRangeChange={setRange} />
+          ) : (
+            <div aria-busy aria-label="Loading the progress chart" className="m-5 h-[330px] animate-pulse rounded-md bg-pmo-panel/40" />
+          )}
+        </div>
       </TopBand>
       <StatusBarSlot>
         <StatusBar
