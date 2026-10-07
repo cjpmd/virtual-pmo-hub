@@ -57,14 +57,16 @@ function Roadmaps({ roadmaps }: { roadmaps: RoadmapView[] }) {
   if (!roadmap) return null;
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <AutoBreadcrumbs />
-        <PageHeader
-          eyebrow="Portfolio planning"
-          title="Roadmaps"
-          description="Coordinate strategic delivery, proposed initiatives and key institutional dates. Click a dependency line to follow its chain."
-        />
-        <label className="grid gap-1 text-xs font-semibold text-muted-foreground">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1 space-y-4">
+          <AutoBreadcrumbs />
+          <PageHeader
+            eyebrow="Portfolio planning"
+            title="Roadmaps"
+            description="Coordinate strategic delivery, proposed initiatives and key institutional dates. Click a dependency line to follow its chain."
+          />
+        </div>
+        <label className="grid shrink-0 gap-1 pt-1 text-xs font-semibold text-muted-foreground">
           Roadmap
           <select
             aria-label="Roadmap"
