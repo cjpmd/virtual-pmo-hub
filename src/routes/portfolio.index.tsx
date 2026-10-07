@@ -25,6 +25,7 @@ import { useFormat } from "@/lib/format";
 import { todayIso } from "@/lib/today";
 import {
   activeOnly,
+  openOnly,
   dayNumber,
   getDeliveryCurve,
   getDimensionScores,
@@ -182,7 +183,7 @@ function PortfolioBody({ data, switcher }: { data: PortfolioOverview; switcher: 
     : [];
 
   const rows: BoardRow[] = programmes.map((programme) => {
-    const items = projects.filter((project) => project.programmeId === programme.id);
+    const items = openOnly(projects).filter((project) => project.programmeId === programme.id);
     const rag = getRag(items);
     return {
       id: programme.id,

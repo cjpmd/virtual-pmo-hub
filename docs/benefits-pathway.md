@@ -464,3 +464,48 @@ The first build computed delivery health twice per query (+50% on 500 projects).
 ### Front end
 
 `HealthThresholds` gains the four keys (type, defaults, Settings → Health thresholds inputs), so saving settings keeps them. `src/integrations/supabase/types.ts` is regenerated; the only changes are additions (five tables, five views, new columns). No screens yet (BP3).
+
+## 12. BP3 as built
+
+The minimum screens to enter and maintain pathway data. They use the existing UI components; the design-token restyle comes with the overview rollout. BP4 (chart series and signals) is not a separate stage: it is built into the overview redesign (ProgressChart and SignalsList in `docs/design/portfolio-overview-spec.md`), reading `pathway_snapshots` and the health views.
+
+### Screens
+
+- **Benefits → Pathway** (`/benefits/pathway`, `?programme=` filter):
+  - three columns: Capabilities → Outcomes → Benefits.
+  - Every card has a RAG chip. Hovering or focusing it shows the reason from the view; accepted capabilities and achieved outcomes show "Complete".
+  - "Show chain" highlights the linked capabilities, outcomes and benefits and dims the rest.
+  - Benefit cards show the phase, a "No pathway" badge, and an inline "Set realisation start" form for readiness-phase benefits.
+  - A Gaps section lists benefits with no pathway.
+- **Capability sheet:**
+  - title, description, owner, status, target/forecast/delivered dates, and delivering projects, plus the forecast history.
+  - Acceptance:
+    - Evidence: upload (documents row first, then the stored object; if the upload fails the row is archived, so a row never exists without its file), download (5-minute signed URL) and archive.
+    - Record acceptance: accepted by, date and note. The button is disabled with the reason ("Attach the acceptance evidence first", "Only a manager or PMO…").
+    - Reverse acceptance: PMO only.
+  - Database triggers still enforce every rule; their messages reach the user verbatim (`service-error.ts`).
+- **Outcome sheet:**
+  - status: Achieved and Not achieved are PMO-only; enabling capabilities and benefits.
+  - Indicators: add, edit, remove, with baseline/target/frequency, a RAG chip, and the counted measurement against the expected value.
+  - Measurements: list with status and query notes; Submit measurement.
+- **Home → Approvals** adds "Outcome indicator measurements awaiting validation": Validate, or Query with a note (PMO). The KPI counts benefit and indicator measurements together.
+
+### Closed projects out of roll-ups
+
+Migration `20261007102643_closed_projects_out_of_rollups.sql` filters `state <> 'closed'` in `v_programme_health` and `v_portfolio_health`.
+
+In the front end, `openOnly()` (analytics.ts) is used by the portfolio programme rows, dashboards RAG, reports (on-track %, budget and forecast), the projects KPI and the programme overview metrics ("x / open", "closed projects not counted").
+
+In lists and on the project header, a closed project shows a muted "Closed" pill instead of a RAG. Its past finish date is no longer tinted "Overdue".
+
+Confirmation on hosted (demo university; 33 open, 4 closed projects):
+
+| Programme | Overall | Worst open project | Closed projects ignored |
+| --- | --- | --- | --- |
+| 1. Standards, Governance & Best Practice | amber | amber | — |
+| 2. Resilience & Business Continuity | red | red | UC2:amber |
+| 3. Optimisation & Cost Management | red | red | FSC:red, SDO:amber |
+| 4. Efficiency, Automation & AI | red | red | — |
+| 5. People, Knowledge & Continuous Improvement | red (benefit: BEN-027 confidence low) | amber | SFZ:red |
+
+Programme 5 stays red because of its benefit dimension, not because of the closed SafeZone project. The summary strip and the overview chart (overview stages 1–2) read the same open-only views and helpers.

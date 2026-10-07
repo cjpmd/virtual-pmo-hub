@@ -60,6 +60,8 @@ export const qk = {
   benefits: {
     all: (orgId: string) => ["org", orgId, "benefits"] as const,
     list: (orgId: string) => ["org", orgId, "benefits", "list"] as const,
+    /** Under benefits: pathway writes change benefit readiness, and benefit writes change the pathway. */
+    pathway: (orgId: string) => ["org", orgId, "benefits", "pathway"] as const,
   },
   dependencies: (orgId: string) => ["org", orgId, "projects", "dependencies"] as const,
   roadmaps: (orgId: string) => ["org", orgId, "projects", "roadmaps"] as const,

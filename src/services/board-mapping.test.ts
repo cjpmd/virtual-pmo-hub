@@ -95,6 +95,24 @@ describe("fromPostgrest", () => {
       fromPostgrest(error("P0001", "Project codes can only be changed by the PMO.")).message,
     ).toBe("Project codes can only be changed by the PMO.");
   });
+  it("passes rule messages a trigger raises with 42501 or 23514 through", () => {
+    expect(
+      fromPostgrest(error("23514", "Attach the acceptance evidence first"), "Accepting").message,
+    ).toBe("Accepting: Attach the acceptance evidence first");
+    expect(fromPostgrest(error("42501", "Only PMO can reverse an acceptance")).kind).toBe(
+      "forbidden",
+    );
+    expect(fromPostgrest(error("42501", "Only PMO can reverse an acceptance")).message).toBe(
+      "Only PMO can reverse an acceptance",
+    );
+  });
+  it("keeps the generic text for Postgres's own constraint wording", () => {
+    expect(
+      fromPostgrest(
+        error("23514", 'new row for relation "capabilities" violates check constraint "x"'),
+      ).message,
+    ).toBe("That change isn't valid.");
+  });
   it("maps unique violations to conflict", () => {
     expect(fromPostgrest(error("23505")).kind).toBe("conflict");
   });

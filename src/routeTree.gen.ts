@@ -45,6 +45,7 @@ import { Route as BenefitsIndexRouteImport } from './routes/benefits.index'
 import { Route as BenefitsBenefitIdRouteImport } from './routes/benefits.$benefitId'
 import { Route as BenefitsDashboardRouteImport } from './routes/benefits.dashboard'
 import { Route as BenefitsMapRouteImport } from './routes/benefits.map'
+import { Route as BenefitsPathwayRouteImport } from './routes/benefits.pathway'
 import { Route as BenefitsRealisationRouteImport } from './routes/benefits.realisation'
 import { Route as BenefitsRegisterRouteImport } from './routes/benefits.register'
 import { Route as CollectionsIndexRouteImport } from './routes/collections.index'
@@ -282,6 +283,11 @@ const BenefitsDashboardRoute = BenefitsDashboardRouteImport.update({
 const BenefitsMapRoute = BenefitsMapRouteImport.update({
   id: '/map',
   path: '/map',
+  getParentRoute: () => BenefitsRoute,
+} as any)
+const BenefitsPathwayRoute = BenefitsPathwayRouteImport.update({
+  id: '/pathway',
+  path: '/pathway',
   getParentRoute: () => BenefitsRoute,
 } as any)
 const BenefitsRealisationRoute = BenefitsRealisationRouteImport.update({
@@ -619,6 +625,7 @@ export interface FileRoutesByFullPath {
   '/benefits/$benefitId': typeof BenefitsBenefitIdRoute
   '/benefits/dashboard': typeof BenefitsDashboardRoute
   '/benefits/map': typeof BenefitsMapRoute
+  '/benefits/pathway': typeof BenefitsPathwayRoute
   '/benefits/realisation': typeof BenefitsRealisationRoute
   '/benefits/register': typeof BenefitsRegisterRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
@@ -701,6 +708,7 @@ export interface FileRoutesByTo {
   '/benefits/$benefitId': typeof BenefitsBenefitIdRoute
   '/benefits/dashboard': typeof BenefitsDashboardRoute
   '/benefits/map': typeof BenefitsMapRoute
+  '/benefits/pathway': typeof BenefitsPathwayRoute
   '/benefits/realisation': typeof BenefitsRealisationRoute
   '/benefits/register': typeof BenefitsRegisterRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
@@ -794,6 +802,7 @@ export interface FileRoutesById {
   '/benefits/$benefitId': typeof BenefitsBenefitIdRoute
   '/benefits/dashboard': typeof BenefitsDashboardRoute
   '/benefits/map': typeof BenefitsMapRoute
+  '/benefits/pathway': typeof BenefitsPathwayRoute
   '/benefits/realisation': typeof BenefitsRealisationRoute
   '/benefits/register': typeof BenefitsRegisterRoute
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
@@ -892,6 +901,7 @@ export interface FileRouteTypes {
     | '/benefits/$benefitId'
     | '/benefits/dashboard'
     | '/benefits/map'
+    | '/benefits/pathway'
     | '/benefits/realisation'
     | '/benefits/register'
     | '/collections/$collectionId'
@@ -974,6 +984,7 @@ export interface FileRouteTypes {
     | '/benefits/$benefitId'
     | '/benefits/dashboard'
     | '/benefits/map'
+    | '/benefits/pathway'
     | '/benefits/realisation'
     | '/benefits/register'
     | '/collections/$collectionId'
@@ -1066,6 +1077,7 @@ export interface FileRouteTypes {
     | '/benefits/$benefitId'
     | '/benefits/dashboard'
     | '/benefits/map'
+    | '/benefits/pathway'
     | '/benefits/realisation'
     | '/benefits/register'
     | '/collections/$collectionId'
@@ -1416,6 +1428,13 @@ declare module '@tanstack/react-router' {
       path: '/map'
       fullPath: '/benefits/map'
       preLoaderRoute: typeof BenefitsMapRouteImport
+      parentRoute: typeof BenefitsRoute
+    }
+    '/benefits/pathway': {
+      id: '/benefits/pathway'
+      path: '/pathway'
+      fullPath: '/benefits/pathway'
+      preLoaderRoute: typeof BenefitsPathwayRouteImport
       parentRoute: typeof BenefitsRoute
     }
     '/benefits/realisation': {
@@ -1831,6 +1850,7 @@ interface BenefitsRouteChildren {
   BenefitsBenefitIdRoute: typeof BenefitsBenefitIdRoute
   BenefitsDashboardRoute: typeof BenefitsDashboardRoute
   BenefitsMapRoute: typeof BenefitsMapRoute
+  BenefitsPathwayRoute: typeof BenefitsPathwayRoute
   BenefitsRealisationRoute: typeof BenefitsRealisationRoute
   BenefitsRegisterRoute: typeof BenefitsRegisterRoute
   BenefitsIndexRoute: typeof BenefitsIndexRoute
@@ -1840,6 +1860,7 @@ const BenefitsRouteChildren: BenefitsRouteChildren = {
   BenefitsBenefitIdRoute: BenefitsBenefitIdRoute,
   BenefitsDashboardRoute: BenefitsDashboardRoute,
   BenefitsMapRoute: BenefitsMapRoute,
+  BenefitsPathwayRoute: BenefitsPathwayRoute,
   BenefitsRealisationRoute: BenefitsRealisationRoute,
   BenefitsRegisterRoute: BenefitsRegisterRoute,
   BenefitsIndexRoute: BenefitsIndexRoute,

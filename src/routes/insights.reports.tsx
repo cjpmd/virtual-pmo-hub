@@ -6,7 +6,7 @@ import { KpiCard, PageHeader } from "@/components/pmo-ui";
 import { Button } from "@/components/ui/button";
 import { formatCompactCurrency, formatDate, formatFinancialYear } from "@/lib/format";
 import { useMilestones, useProjects } from "@/hooks/use-hierarchy";
-import { activeOnly, getRag } from "@/services/analytics";
+import { activeOnly, getRag, openOnly } from "@/services/analytics";
 import { getValueMetrics } from "@/services/benefits-value";
 import { useBenefits } from "@/hooks/use-benefits";
 import { getDecisionMetrics } from "@/services/decisions";
@@ -52,9 +52,9 @@ function Page() {
   const active = activeOnly(projects);
   const metrics = {
     activeProjects: active.length,
-    percentOnTrack: getRag(projects).percentOnTrack,
-    totalBudget: projects.reduce((sum, project) => sum + project.budget, 0),
-    forecast: projects.reduce((sum, project) => sum + project.forecast, 0),
+    percentOnTrack: getRag(openOnly(projects)).percentOnTrack,
+    totalBudget: openOnly(projects).reduce((sum, project) => sum + project.budget, 0),
+    forecast: openOnly(projects).reduce((sum, project) => sum + project.forecast, 0),
   };
   const milestoneQuery = useMilestones(
     projects.map((project) => project.id),

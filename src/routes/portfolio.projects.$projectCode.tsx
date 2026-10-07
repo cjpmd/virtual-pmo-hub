@@ -361,7 +361,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
               className="flex items-center justify-between rounded-md bg-muted/60 px-3 py-2"
             >
               <span className="text-xs text-muted-foreground">{label}</span>
-              <HealthPill health={health} />
+              <HealthPill health={health} closed={project.state === "Closed"} />
             </div>
           ))}
         </div>

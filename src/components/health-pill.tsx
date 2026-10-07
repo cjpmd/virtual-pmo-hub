@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, CircleMinus, ShieldAlert } from "lucide-react";
+import { AlertTriangle, Archive, CheckCircle2, CircleMinus, ShieldAlert } from "lucide-react";
 import type { Health, HealthOverride } from "@/data/types";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -15,15 +15,34 @@ const icons = {
   "Off Track": ShieldAlert,
   "Not Set": CircleMinus,
 };
+/**
+ * A RAG pill. Pass `closed` for a closed project: its health is history, so it shows "Closed"
+ * instead of a RAG (and closed projects are left out of roll-ups).
+ */
 export function HealthPill({
   health,
   override,
+  closed,
   className,
 }: {
   health: Health;
   override?: HealthOverride;
+  closed?: boolean;
   className?: string;
 }) {
+  if (closed)
+    return (
+      <span
+        className={cn(
+          "inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-xs font-semibold",
+          styles["Not Set"],
+          className,
+        )}
+      >
+        <Archive className="size-3.5" />
+        Closed
+      </span>
+    );
   const Icon = icons[health];
   const pill = (
     <span
