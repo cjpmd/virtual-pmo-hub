@@ -250,7 +250,7 @@ export interface ChartPoint {
   month: string; // YYYY-MM
   label: string; // "Sep 26"
   forecast: boolean; // after the current month
-  values: Partial<Record<SeriesKey, number>>;
+  values: Partial<Record<SeriesKey, number | undefined>>;
 }
 
 export interface ChartMarker {
@@ -264,7 +264,7 @@ export interface ProgressChartData {
   points: ChartPoint[];
   currentMonth: string;
   /** Today's value per series (current month), for the chips. */
-  current: Partial<Record<SeriesKey, number>>;
+  current: Partial<Record<SeriesKey, number | undefined>>;
   /** Series with no underlying records are hidden (e.g. pathway before BP2 data exists). */
   available: Set<SeriesKey>;
   markers: ChartMarker[];
@@ -384,7 +384,7 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
     const fyFirst = fy[0] as string,
       fyLast = fy[11] as string;
     const upTo = fy.filter((m) => m <= month);
-    const values: Partial<Record<SeriesKey, number>> = {};
+    const values: Partial<Record<SeriesKey, number | undefined>> = {};
 
     // Plan and spend: cumulative from FY start over the FY budget.
     const fyBudget = fy.reduce((sum, m) => sum + (money.get(m)?.budget ?? 0), 0);
