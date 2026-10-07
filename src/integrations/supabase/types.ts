@@ -71,6 +71,13 @@ export type Database = {
             foreignKeyName: "actuals_import_rows_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "actuals_import_rows_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -281,6 +288,13 @@ export type Database = {
             foreignKeyName: "assumptions_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "assumptions_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -445,6 +459,13 @@ export type Database = {
             columns: ["benefit_id", "workspace_id"];
             isOneToOne: false;
             referencedRelation: "v_benefit_period_values";
+            referencedColumns: ["benefit_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "benefit_handovers_benefit_id_workspace_id_fkey";
+            columns: ["benefit_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_benefit_readiness";
             referencedColumns: ["benefit_id", "workspace_id"];
           },
           {
@@ -781,6 +802,13 @@ export type Database = {
             foreignKeyName: "benefit_measures_benefit_id_workspace_id_fkey";
             columns: ["benefit_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_benefit_readiness";
+            referencedColumns: ["benefit_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "benefit_measures_benefit_id_workspace_id_fkey";
+            columns: ["benefit_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_benefit_realisation";
             referencedColumns: ["benefit_id", "workspace_id"];
           },
@@ -832,6 +860,13 @@ export type Database = {
             columns: ["benefit_id", "workspace_id"];
             isOneToOne: false;
             referencedRelation: "v_benefit_period_values";
+            referencedColumns: ["benefit_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "benefit_objectives_benefit_id_workspace_id_fkey";
+            columns: ["benefit_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_benefit_readiness";
             referencedColumns: ["benefit_id", "workspace_id"];
           },
           {
@@ -946,6 +981,13 @@ export type Database = {
             foreignKeyName: "benefit_projects_benefit_id_workspace_id_fkey";
             columns: ["benefit_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_benefit_readiness";
+            referencedColumns: ["benefit_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "benefit_projects_benefit_id_workspace_id_fkey";
+            columns: ["benefit_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_benefit_realisation";
             referencedColumns: ["benefit_id", "workspace_id"];
           },
@@ -955,6 +997,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "benefit_projects_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "benefit_projects_project_id_workspace_id_fkey";
@@ -1055,6 +1104,13 @@ export type Database = {
             foreignKeyName: "benefit_reviews_benefit_id_workspace_id_fkey";
             columns: ["benefit_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_benefit_readiness";
+            referencedColumns: ["benefit_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "benefit_reviews_benefit_id_workspace_id_fkey";
+            columns: ["benefit_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_benefit_realisation";
             referencedColumns: ["benefit_id", "workspace_id"];
           },
@@ -1101,6 +1157,7 @@ export type Database = {
           planned_total_value: number;
           portfolio_id: string;
           programme_id: string | null;
+          realisation_start_date: string | null;
           ref: string;
           sro_id: string | null;
           status: Database["public"]["Enums"]["benefit_status"];
@@ -1128,6 +1185,7 @@ export type Database = {
           planned_total_value?: number;
           portfolio_id: string;
           programme_id?: string | null;
+          realisation_start_date?: string | null;
           ref: string;
           sro_id?: string | null;
           status?: Database["public"]["Enums"]["benefit_status"];
@@ -1155,6 +1213,7 @@ export type Database = {
           planned_total_value?: number;
           portfolio_id?: string;
           programme_id?: string | null;
+          realisation_start_date?: string | null;
           ref?: string;
           sro_id?: string | null;
           status?: Database["public"]["Enums"]["benefit_status"];
@@ -1322,6 +1381,13 @@ export type Database = {
             foreignKeyName: "budget_baselines_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "budget_baselines_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -1357,42 +1423,73 @@ export type Database = {
       };
       capabilities: {
         Row: {
+          acceptance_note: string | null;
+          accepted_at: string | null;
+          accepted_by_id: string | null;
+          archived_at: string | null;
           created_at: string;
           created_by: string | null;
+          delivered_date: string | null;
           description: string | null;
+          forecast_date: string | null;
           id: string;
           organisation_id: string;
           owner_id: string | null;
           programme_id: string;
+          status: Database["public"]["Enums"]["capability_status"];
+          target_date: string | null;
           title: string;
           updated_at: string;
           workspace_id: string;
         };
         Insert: {
+          acceptance_note?: string | null;
+          accepted_at?: string | null;
+          accepted_by_id?: string | null;
+          archived_at?: string | null;
           created_at?: string;
           created_by?: string | null;
+          delivered_date?: string | null;
           description?: string | null;
+          forecast_date?: string | null;
           id?: string;
           organisation_id: string;
           owner_id?: string | null;
           programme_id: string;
+          status?: Database["public"]["Enums"]["capability_status"];
+          target_date?: string | null;
           title: string;
           updated_at?: string;
           workspace_id: string;
         };
         Update: {
+          acceptance_note?: string | null;
+          accepted_at?: string | null;
+          accepted_by_id?: string | null;
+          archived_at?: string | null;
           created_at?: string;
           created_by?: string | null;
+          delivered_date?: string | null;
           description?: string | null;
+          forecast_date?: string | null;
           id?: string;
           organisation_id?: string;
           owner_id?: string | null;
           programme_id?: string;
+          status?: Database["public"]["Enums"]["capability_status"];
+          target_date?: string | null;
           title?: string;
           updated_at?: string;
           workspace_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "capabilities_accepted_by_fkey";
+            columns: ["accepted_by_id", "organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id", "organisation_id"];
+          },
           {
             foreignKeyName: "capabilities_created_by_fkey";
             columns: ["created_by"];
@@ -1437,6 +1534,68 @@ export type Database = {
           },
         ];
       };
+      capability_forecast_history: {
+        Row: {
+          capability_id: string;
+          created_at: string;
+          created_by: string | null;
+          forecast_date: string;
+          id: string;
+          organisation_id: string;
+          reporting_date: string;
+          workspace_id: string;
+        };
+        Insert: {
+          capability_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          forecast_date: string;
+          id?: string;
+          organisation_id: string;
+          reporting_date: string;
+          workspace_id: string;
+        };
+        Update: {
+          capability_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          forecast_date?: string;
+          id?: string;
+          organisation_id?: string;
+          reporting_date?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "capability_forecast_history_capability_id_workspace_id_fkey";
+            columns: ["capability_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "capabilities";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "capability_forecast_history_capability_id_workspace_id_fkey";
+            columns: ["capability_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_capability_health";
+            referencedColumns: ["capability_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "capability_forecast_history_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "capability_forecast_history_workspace_id_organisation_id_fkey";
+            columns: ["workspace_id", "organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id", "organisation_id"];
+          },
+        ];
+      };
       capability_projects: {
         Row: {
           capability_id: string;
@@ -1465,11 +1624,25 @@ export type Database = {
             referencedColumns: ["id", "workspace_id"];
           },
           {
+            foreignKeyName: "capability_projects_capability_id_workspace_id_fkey";
+            columns: ["capability_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_capability_health";
+            referencedColumns: ["capability_id", "workspace_id"];
+          },
+          {
             foreignKeyName: "capability_projects_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "capability_projects_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "capability_projects_project_id_workspace_id_fkey";
@@ -1627,6 +1800,13 @@ export type Database = {
             foreignKeyName: "change_requests_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "change_requests_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -1710,6 +1890,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "collection_projects_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "collection_projects_project_id_workspace_id_fkey";
@@ -1968,6 +2155,13 @@ export type Database = {
             foreignKeyName: "cost_lines_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "cost_lines_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -2077,6 +2271,13 @@ export type Database = {
             foreignKeyName: "decision_actions_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "decision_actions_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -2151,6 +2352,13 @@ export type Database = {
             foreignKeyName: "decision_benefits_benefit_id_workspace_id_fkey";
             columns: ["benefit_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_benefit_readiness";
+            referencedColumns: ["benefit_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "decision_benefits_benefit_id_workspace_id_fkey";
+            columns: ["benefit_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_benefit_realisation";
             referencedColumns: ["benefit_id", "workspace_id"];
           },
@@ -2167,6 +2375,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "decision_benefits_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "decision_benefits_project_id_workspace_id_fkey";
@@ -2248,6 +2463,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "decision_change_requests_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "decision_change_requests_project_id_workspace_id_fkey";
@@ -2341,6 +2563,13 @@ export type Database = {
             foreignKeyName: "decision_dependencies_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "decision_dependencies_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -2417,6 +2646,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "decision_issues_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "decision_issues_project_id_workspace_id_fkey";
@@ -2524,6 +2760,13 @@ export type Database = {
             foreignKeyName: "decision_options_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "decision_options_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -2593,6 +2836,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "decision_risks_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "decision_risks_project_id_workspace_id_fkey";
@@ -2817,6 +3067,13 @@ export type Database = {
             foreignKeyName: "decisions_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "decisions_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -3009,6 +3266,13 @@ export type Database = {
             foreignKeyName: "dependencies_giver_project_id_workspace_id_fkey";
             columns: ["giver_project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "dependencies_giver_project_id_workspace_id_fkey";
+            columns: ["giver_project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -3088,6 +3352,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "dependencies_receiver_project_id_workspace_id_fkey";
+            columns: ["receiver_project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "dependencies_receiver_project_id_workspace_id_fkey";
@@ -3226,6 +3497,152 @@ export type Database = {
           },
         ];
       };
+      documents: {
+        Row: {
+          archived_at: string | null;
+          capability_id: string | null;
+          created_at: string;
+          file_name: string;
+          id: string;
+          mime_type: string;
+          organisation_id: string;
+          programme_id: string | null;
+          project_id: string | null;
+          scope: Database["public"]["Enums"]["document_scope"];
+          size_bytes: number;
+          storage_path: string;
+          uploaded_by: string | null;
+          version: number;
+          workspace_id: string;
+        };
+        Insert: {
+          archived_at?: string | null;
+          capability_id?: string | null;
+          created_at?: string;
+          file_name: string;
+          id?: string;
+          mime_type: string;
+          organisation_id: string;
+          programme_id?: string | null;
+          project_id?: string | null;
+          scope: Database["public"]["Enums"]["document_scope"];
+          size_bytes: number;
+          storage_path: string;
+          uploaded_by?: string | null;
+          version?: number;
+          workspace_id: string;
+        };
+        Update: {
+          archived_at?: string | null;
+          capability_id?: string | null;
+          created_at?: string;
+          file_name?: string;
+          id?: string;
+          mime_type?: string;
+          organisation_id?: string;
+          programme_id?: string | null;
+          project_id?: string | null;
+          scope?: Database["public"]["Enums"]["document_scope"];
+          size_bytes?: number;
+          storage_path?: string;
+          uploaded_by?: string | null;
+          version?: number;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "documents_capability_id_workspace_id_fkey";
+            columns: ["capability_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "capabilities";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "documents_capability_id_workspace_id_fkey";
+            columns: ["capability_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_capability_health";
+            referencedColumns: ["capability_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "documents_programme_id_workspace_id_fkey";
+            columns: ["programme_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "programmes";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "documents_programme_id_workspace_id_fkey";
+            columns: ["programme_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_programme_financials";
+            referencedColumns: ["programme_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "documents_programme_id_workspace_id_fkey";
+            columns: ["programme_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_programme_health";
+            referencedColumns: ["programme_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "documents_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "documents_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "documents_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_financials";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "documents_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "documents_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_task_stats";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "documents_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_projects";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "documents_uploaded_by_fkey";
+            columns: ["uploaded_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "documents_workspace_id_organisation_id_fkey";
+            columns: ["workspace_id", "organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id", "organisation_id"];
+          },
+        ];
+      };
       exchange_rates: {
         Row: {
           created_at: string;
@@ -3321,6 +3738,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "financial_forecast_history_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "financial_forecast_history_project_id_workspace_id_fkey";
@@ -3478,6 +3902,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "financial_values_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "financial_values_project_id_workspace_id_fkey";
@@ -3695,6 +4126,13 @@ export type Database = {
             foreignKeyName: "health_snapshots_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "health_snapshots_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -3907,6 +4345,13 @@ export type Database = {
             foreignKeyName: "improvement_actions_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "improvement_actions_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -4066,6 +4511,13 @@ export type Database = {
             foreignKeyName: "issues_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "issues_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -4138,6 +4590,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "lesson_project_types_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "lesson_project_types_project_id_workspace_id_fkey";
@@ -4284,6 +4743,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "lessons_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "lessons_project_id_workspace_id_fkey";
@@ -4504,6 +4970,13 @@ export type Database = {
             foreignKeyName: "milestone_forecast_history_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "milestone_forecast_history_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -4610,6 +5083,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "milestones_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "milestones_project_id_workspace_id_fkey";
@@ -4899,6 +5379,13 @@ export type Database = {
             foreignKeyName: "outcome_benefits_benefit_id_workspace_id_fkey";
             columns: ["benefit_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_benefit_readiness";
+            referencedColumns: ["benefit_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "outcome_benefits_benefit_id_workspace_id_fkey";
+            columns: ["benefit_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_benefit_realisation";
             referencedColumns: ["benefit_id", "workspace_id"];
           },
@@ -4908,6 +5395,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "outcomes";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "outcome_benefits_outcome_id_workspace_id_fkey";
+            columns: ["outcome_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_outcome_health";
+            referencedColumns: ["outcome_id", "workspace_id"];
           },
           {
             foreignKeyName: "outcome_benefits_workspace_id_organisation_id_fkey";
@@ -4946,11 +5440,25 @@ export type Database = {
             referencedColumns: ["id", "workspace_id"];
           },
           {
+            foreignKeyName: "outcome_capabilities_capability_id_workspace_id_fkey";
+            columns: ["capability_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_capability_health";
+            referencedColumns: ["capability_id", "workspace_id"];
+          },
+          {
             foreignKeyName: "outcome_capabilities_outcome_id_workspace_id_fkey";
             columns: ["outcome_id", "workspace_id"];
             isOneToOne: false;
             referencedRelation: "outcomes";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "outcome_capabilities_outcome_id_workspace_id_fkey";
+            columns: ["outcome_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_outcome_health";
+            referencedColumns: ["outcome_id", "workspace_id"];
           },
           {
             foreignKeyName: "outcome_capabilities_workspace_id_organisation_id_fkey";
@@ -4961,8 +5469,208 @@ export type Database = {
           },
         ];
       };
+      outcome_indicator_measurements: {
+        Row: {
+          actual_value: number;
+          created_at: string;
+          created_by: string | null;
+          evidence: string | null;
+          evidence_path: string | null;
+          id: string;
+          indicator_id: string;
+          measured_on: string;
+          notes: string | null;
+          organisation_id: string;
+          query_note: string | null;
+          status: Database["public"]["Enums"]["measurement_status"];
+          submitted_by_id: string | null;
+          submitted_date: string | null;
+          updated_at: string;
+          validated_by_id: string | null;
+          validated_date: string | null;
+          workspace_id: string;
+        };
+        Insert: {
+          actual_value: number;
+          created_at?: string;
+          created_by?: string | null;
+          evidence?: string | null;
+          evidence_path?: string | null;
+          id?: string;
+          indicator_id: string;
+          measured_on: string;
+          notes?: string | null;
+          organisation_id: string;
+          query_note?: string | null;
+          status?: Database["public"]["Enums"]["measurement_status"];
+          submitted_by_id?: string | null;
+          submitted_date?: string | null;
+          updated_at?: string;
+          validated_by_id?: string | null;
+          validated_date?: string | null;
+          workspace_id: string;
+        };
+        Update: {
+          actual_value?: number;
+          created_at?: string;
+          created_by?: string | null;
+          evidence?: string | null;
+          evidence_path?: string | null;
+          id?: string;
+          indicator_id?: string;
+          measured_on?: string;
+          notes?: string | null;
+          organisation_id?: string;
+          query_note?: string | null;
+          status?: Database["public"]["Enums"]["measurement_status"];
+          submitted_by_id?: string | null;
+          submitted_date?: string | null;
+          updated_at?: string;
+          validated_by_id?: string | null;
+          validated_date?: string | null;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "outcome_indicator_measurement_submitted_by_id_organisation_fkey";
+            columns: ["submitted_by_id", "organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id", "organisation_id"];
+          },
+          {
+            foreignKeyName: "outcome_indicator_measurement_validated_by_id_organisation_fkey";
+            columns: ["validated_by_id", "organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id", "organisation_id"];
+          },
+          {
+            foreignKeyName: "outcome_indicator_measurement_workspace_id_organisation_id_fkey";
+            columns: ["workspace_id", "organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id", "organisation_id"];
+          },
+          {
+            foreignKeyName: "outcome_indicator_measurements_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "outcome_indicator_measurements_indicator_id_workspace_id_fkey";
+            columns: ["indicator_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "outcome_indicators";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "outcome_indicator_measurements_indicator_id_workspace_id_fkey";
+            columns: ["indicator_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_outcome_indicator_health";
+            referencedColumns: ["indicator_id", "workspace_id"];
+          },
+        ];
+      };
+      outcome_indicators: {
+        Row: {
+          baseline_date: string;
+          baseline_value: number;
+          created_at: string;
+          created_by: string | null;
+          data_source: string | null;
+          frequency: Database["public"]["Enums"]["measure_frequency"];
+          id: string;
+          measurement_method: string | null;
+          name: string;
+          next_due_date: string | null;
+          organisation_id: string;
+          outcome_id: string;
+          sort_order: number;
+          target_date: string;
+          target_value: number;
+          unit: string | null;
+          updated_at: string;
+          workspace_id: string;
+        };
+        Insert: {
+          baseline_date: string;
+          baseline_value: number;
+          created_at?: string;
+          created_by?: string | null;
+          data_source?: string | null;
+          frequency?: Database["public"]["Enums"]["measure_frequency"];
+          id?: string;
+          measurement_method?: string | null;
+          name: string;
+          next_due_date?: string | null;
+          organisation_id: string;
+          outcome_id: string;
+          sort_order?: number;
+          target_date: string;
+          target_value: number;
+          unit?: string | null;
+          updated_at?: string;
+          workspace_id: string;
+        };
+        Update: {
+          baseline_date?: string;
+          baseline_value?: number;
+          created_at?: string;
+          created_by?: string | null;
+          data_source?: string | null;
+          frequency?: Database["public"]["Enums"]["measure_frequency"];
+          id?: string;
+          measurement_method?: string | null;
+          name?: string;
+          next_due_date?: string | null;
+          organisation_id?: string;
+          outcome_id?: string;
+          sort_order?: number;
+          target_date?: string;
+          target_value?: number;
+          unit?: string | null;
+          updated_at?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "outcome_indicators_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "outcome_indicators_outcome_id_workspace_id_fkey";
+            columns: ["outcome_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "outcomes";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "outcome_indicators_outcome_id_workspace_id_fkey";
+            columns: ["outcome_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_outcome_health";
+            referencedColumns: ["outcome_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "outcome_indicators_workspace_id_organisation_id_fkey";
+            columns: ["workspace_id", "organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id", "organisation_id"];
+          },
+        ];
+      };
       outcomes: {
         Row: {
+          achieved_date: string | null;
+          archived_at: string | null;
           created_at: string;
           created_by: string | null;
           description: string | null;
@@ -4970,11 +5678,15 @@ export type Database = {
           organisation_id: string;
           owner_id: string | null;
           programme_id: string;
+          status: Database["public"]["Enums"]["outcome_status"];
+          target_date: string | null;
           title: string;
           updated_at: string;
           workspace_id: string;
         };
         Insert: {
+          achieved_date?: string | null;
+          archived_at?: string | null;
           created_at?: string;
           created_by?: string | null;
           description?: string | null;
@@ -4982,11 +5694,15 @@ export type Database = {
           organisation_id: string;
           owner_id?: string | null;
           programme_id: string;
+          status?: Database["public"]["Enums"]["outcome_status"];
+          target_date?: string | null;
           title: string;
           updated_at?: string;
           workspace_id: string;
         };
         Update: {
+          achieved_date?: string | null;
+          archived_at?: string | null;
           created_at?: string;
           created_by?: string | null;
           description?: string | null;
@@ -4994,6 +5710,8 @@ export type Database = {
           organisation_id?: string;
           owner_id?: string | null;
           programme_id?: string;
+          status?: Database["public"]["Enums"]["outcome_status"];
+          target_date?: string | null;
           title?: string;
           updated_at?: string;
           workspace_id?: string;
@@ -5043,6 +5761,148 @@ export type Database = {
           },
         ];
       };
+      pathway_snapshots: {
+        Row: {
+          benefit_id: string | null;
+          capability_id: string | null;
+          created_at: string;
+          due_in_fy: boolean;
+          fy_profile_value: number | null;
+          id: string;
+          is_complete: boolean;
+          is_synthetic: boolean;
+          organisation_id: string;
+          outcome_id: string | null;
+          phase: string | null;
+          programme_id: string | null;
+          rag: Database["public"]["Enums"]["health"];
+          realised_value: number | null;
+          snapshot_date: string;
+          workspace_id: string;
+        };
+        Insert: {
+          benefit_id?: string | null;
+          capability_id?: string | null;
+          created_at?: string;
+          due_in_fy?: boolean;
+          fy_profile_value?: number | null;
+          id?: string;
+          is_complete?: boolean;
+          is_synthetic?: boolean;
+          organisation_id: string;
+          outcome_id?: string | null;
+          phase?: string | null;
+          programme_id?: string | null;
+          rag: Database["public"]["Enums"]["health"];
+          realised_value?: number | null;
+          snapshot_date: string;
+          workspace_id: string;
+        };
+        Update: {
+          benefit_id?: string | null;
+          capability_id?: string | null;
+          created_at?: string;
+          due_in_fy?: boolean;
+          fy_profile_value?: number | null;
+          id?: string;
+          is_complete?: boolean;
+          is_synthetic?: boolean;
+          organisation_id?: string;
+          outcome_id?: string | null;
+          phase?: string | null;
+          programme_id?: string | null;
+          rag?: Database["public"]["Enums"]["health"];
+          realised_value?: number | null;
+          snapshot_date?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "pathway_snapshots_benefit_id_workspace_id_fkey";
+            columns: ["benefit_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "benefits";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "pathway_snapshots_benefit_id_workspace_id_fkey";
+            columns: ["benefit_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_benefit_period_values";
+            referencedColumns: ["benefit_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "pathway_snapshots_benefit_id_workspace_id_fkey";
+            columns: ["benefit_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_benefit_readiness";
+            referencedColumns: ["benefit_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "pathway_snapshots_benefit_id_workspace_id_fkey";
+            columns: ["benefit_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_benefit_realisation";
+            referencedColumns: ["benefit_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "pathway_snapshots_capability_id_workspace_id_fkey";
+            columns: ["capability_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "capabilities";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "pathway_snapshots_capability_id_workspace_id_fkey";
+            columns: ["capability_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_capability_health";
+            referencedColumns: ["capability_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "pathway_snapshots_outcome_id_workspace_id_fkey";
+            columns: ["outcome_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "outcomes";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "pathway_snapshots_outcome_id_workspace_id_fkey";
+            columns: ["outcome_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_outcome_health";
+            referencedColumns: ["outcome_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "pathway_snapshots_programme_id_workspace_id_fkey";
+            columns: ["programme_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "programmes";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "pathway_snapshots_programme_id_workspace_id_fkey";
+            columns: ["programme_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_programme_financials";
+            referencedColumns: ["programme_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "pathway_snapshots_programme_id_workspace_id_fkey";
+            columns: ["programme_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_programme_health";
+            referencedColumns: ["programme_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "pathway_snapshots_workspace_id_organisation_id_fkey";
+            columns: ["workspace_id", "organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id", "organisation_id"];
+          },
+        ];
+      };
       phase_lessons_review_attendees: {
         Row: {
           organisation_id: string;
@@ -5079,6 +5939,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "phase_lessons_review_attendees_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "phase_lessons_review_attendees_project_id_workspace_id_fkey";
@@ -5189,6 +6056,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "phase_lessons_reviews_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "phase_lessons_reviews_project_id_workspace_id_fkey";
@@ -5536,6 +6410,13 @@ export type Database = {
             foreignKeyName: "project_buckets_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "project_buckets_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -5623,6 +6504,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "project_plan_links_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "project_plan_links_project_id_workspace_id_fkey";
@@ -5834,6 +6722,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "project_team_members_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "project_team_members_project_id_workspace_id_fkey";
@@ -6301,6 +7196,13 @@ export type Database = {
             foreignKeyName: "resource_assignments_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "resource_assignments_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -6706,6 +7608,13 @@ export type Database = {
             foreignKeyName: "risks_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "risks_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -6868,6 +7777,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "roadmap_items_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "roadmap_items_project_id_workspace_id_fkey";
@@ -7283,6 +8199,13 @@ export type Database = {
             foreignKeyName: "status_reports_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "status_reports_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -7473,6 +8396,13 @@ export type Database = {
             foreignKeyName: "sync_conflicts_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "sync_conflicts_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -7541,6 +8471,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "sync_log_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "sync_log_project_id_workspace_id_fkey";
@@ -7639,6 +8576,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "sync_outbox_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "sync_outbox_project_id_workspace_id_fkey";
@@ -7756,6 +8700,13 @@ export type Database = {
             foreignKeyName: "user_favourites_project_id_fkey";
             columns: ["project_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id"];
+          },
+          {
+            foreignKeyName: "user_favourites_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id"];
           },
@@ -7811,6 +8762,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "work_item_assignees_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "work_item_assignees_project_id_workspace_id_fkey";
@@ -7936,6 +8894,13 @@ export type Database = {
             foreignKeyName: "work_item_attachments_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "work_item_attachments_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -8044,6 +9009,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "work_item_checklist_items_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "work_item_checklist_items_project_id_workspace_id_fkey";
@@ -8159,6 +9131,13 @@ export type Database = {
             foreignKeyName: "work_item_events_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "work_item_events_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -8269,6 +9248,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "work_item_links_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "work_item_links_project_id_workspace_id_fkey";
@@ -8414,6 +9400,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "work_item_offers_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "work_item_offers_project_id_workspace_id_fkey";
@@ -8641,6 +9634,13 @@ export type Database = {
             foreignKeyName: "work_items_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "work_items_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -8806,6 +9806,74 @@ export type Database = {
           },
         ];
       };
+      v_benefit_readiness: {
+        Row: {
+          benefit_id: string | null;
+          has_pathway: boolean | null;
+          needs_realisation_start: boolean | null;
+          organisation_id: string | null;
+          phase: string | null;
+          portfolio_id: string | null;
+          programme_id: string | null;
+          rag: Database["public"]["Enums"]["health"] | null;
+          realisation_start_date: string | null;
+          reason: string | null;
+          ref: string | null;
+          title: string | null;
+          workspace_id: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "benefits_portfolio_id_workspace_id_fkey";
+            columns: ["portfolio_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "portfolios";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "benefits_portfolio_id_workspace_id_fkey";
+            columns: ["portfolio_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_portfolio_financials";
+            referencedColumns: ["portfolio_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "benefits_portfolio_id_workspace_id_fkey";
+            columns: ["portfolio_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_portfolio_health";
+            referencedColumns: ["portfolio_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "benefits_programme_id_portfolio_id_fkey";
+            columns: ["programme_id", "portfolio_id"];
+            isOneToOne: false;
+            referencedRelation: "programmes";
+            referencedColumns: ["id", "portfolio_id"];
+          },
+          {
+            foreignKeyName: "benefits_programme_id_portfolio_id_fkey";
+            columns: ["programme_id", "portfolio_id"];
+            isOneToOne: false;
+            referencedRelation: "v_programme_financials";
+            referencedColumns: ["programme_id", "portfolio_id"];
+          },
+          {
+            foreignKeyName: "benefits_programme_id_portfolio_id_fkey";
+            columns: ["programme_id", "portfolio_id"];
+            isOneToOne: false;
+            referencedRelation: "v_programme_health";
+            referencedColumns: ["programme_id", "portfolio_id"];
+          },
+          {
+            foreignKeyName: "benefits_workspace_id_organisation_id_fkey";
+            columns: ["workspace_id", "organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id", "organisation_id"];
+          },
+        ];
+      };
       v_benefit_realisation: {
         Row: {
           achieved_fraction: number | null;
@@ -8871,6 +9939,53 @@ export type Database = {
           },
           {
             foreignKeyName: "benefits_workspace_id_organisation_id_fkey";
+            columns: ["workspace_id", "organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id", "organisation_id"];
+          },
+        ];
+      };
+      v_capability_health: {
+        Row: {
+          awaiting_acceptance_past_target: boolean | null;
+          capability_id: string | null;
+          forecast_date: string | null;
+          is_complete: boolean | null;
+          organisation_id: string | null;
+          programme_id: string | null;
+          rag: Database["public"]["Enums"]["health"] | null;
+          reason: string | null;
+          slip_days: number | null;
+          status: Database["public"]["Enums"]["capability_status"] | null;
+          target_date: string | null;
+          title: string | null;
+          workspace_id: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "capabilities_programme_id_workspace_id_fkey";
+            columns: ["programme_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "programmes";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "capabilities_programme_id_workspace_id_fkey";
+            columns: ["programme_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_programme_financials";
+            referencedColumns: ["programme_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "capabilities_programme_id_workspace_id_fkey";
+            columns: ["programme_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_programme_health";
+            referencedColumns: ["programme_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "capabilities_workspace_id_organisation_id_fkey";
             columns: ["workspace_id", "organisation_id"];
             isOneToOne: false;
             referencedRelation: "workspaces";
@@ -9010,6 +10125,13 @@ export type Database = {
             foreignKeyName: "work_items_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "work_items_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -9127,6 +10249,13 @@ export type Database = {
             foreignKeyName: "milestones_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "milestones_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -9153,6 +10282,97 @@ export type Database = {
           },
           {
             foreignKeyName: "milestones_workspace_id_organisation_id_fkey";
+            columns: ["workspace_id", "organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id", "organisation_id"];
+          },
+        ];
+      };
+      v_outcome_health: {
+        Row: {
+          indicator_driven: boolean | null;
+          is_complete: boolean | null;
+          organisation_id: string | null;
+          outcome_id: string | null;
+          programme_id: string | null;
+          rag: Database["public"]["Enums"]["health"] | null;
+          reason: string | null;
+          status: Database["public"]["Enums"]["outcome_status"] | null;
+          target_date: string | null;
+          title: string | null;
+          workspace_id: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "outcomes_programme_id_workspace_id_fkey";
+            columns: ["programme_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "programmes";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "outcomes_programme_id_workspace_id_fkey";
+            columns: ["programme_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_programme_financials";
+            referencedColumns: ["programme_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "outcomes_programme_id_workspace_id_fkey";
+            columns: ["programme_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_programme_health";
+            referencedColumns: ["programme_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "outcomes_workspace_id_organisation_id_fkey";
+            columns: ["workspace_id", "organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id", "organisation_id"];
+          },
+        ];
+      };
+      v_outcome_indicator_health: {
+        Row: {
+          actual_value: number | null;
+          baseline_date: string | null;
+          baseline_value: number | null;
+          expected_value: number | null;
+          indicator_id: string | null;
+          measured_on: string | null;
+          measurement_id: string | null;
+          measurement_overdue: boolean | null;
+          measurement_status: Database["public"]["Enums"]["measurement_status"] | null;
+          name: string | null;
+          organisation_id: string | null;
+          outcome_id: string | null;
+          rag: Database["public"]["Enums"]["health"] | null;
+          reason: string | null;
+          shortfall_percent: number | null;
+          target_date: string | null;
+          target_value: number | null;
+          unit: string | null;
+          workspace_id: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "outcome_indicators_outcome_id_workspace_id_fkey";
+            columns: ["outcome_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "outcomes";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "outcome_indicators_outcome_id_workspace_id_fkey";
+            columns: ["outcome_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_outcome_health";
+            referencedColumns: ["outcome_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "outcome_indicators_workspace_id_organisation_id_fkey";
             columns: ["workspace_id", "organisation_id"];
             isOneToOne: false;
             referencedRelation: "workspaces";
@@ -9260,6 +10480,7 @@ export type Database = {
       v_programme_health: {
         Row: {
           benefit: Database["public"]["Enums"]["health"] | null;
+          benefit_reason: string | null;
           computed_overall: Database["public"]["Enums"]["health"] | null;
           forecast_basis: string | null;
           forecast_finish_date: string | null;
@@ -9294,6 +10515,55 @@ export type Database = {
           },
           {
             foreignKeyName: "programmes_workspace_id_organisation_id_fkey";
+            columns: ["workspace_id", "organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id", "organisation_id"];
+          },
+        ];
+      };
+      v_project_delivery_health: {
+        Row: {
+          code: string | null;
+          delivery: Database["public"]["Enums"]["health"] | null;
+          effective_portfolio_id: string | null;
+          effort: Database["public"]["Enums"]["health"] | null;
+          financial: Database["public"]["Enums"]["health"] | null;
+          finish_date: string | null;
+          health_override: Database["public"]["Enums"]["health"] | null;
+          issue: Database["public"]["Enums"]["health"] | null;
+          organisation_id: string | null;
+          phase_index: number | null;
+          programme_id: string | null;
+          project_id: string | null;
+          schedule: Database["public"]["Enums"]["health"] | null;
+          state: Database["public"]["Enums"]["project_state"] | null;
+          workspace_id: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "projects_programme_id_workspace_id_fkey";
+            columns: ["programme_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "programmes";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "projects_programme_id_workspace_id_fkey";
+            columns: ["programme_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_programme_financials";
+            referencedColumns: ["programme_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "projects_programme_id_workspace_id_fkey";
+            columns: ["programme_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_programme_health";
+            referencedColumns: ["programme_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "projects_workspace_id_organisation_id_fkey";
             columns: ["workspace_id", "organisation_id"];
             isOneToOne: false;
             referencedRelation: "workspaces";
@@ -9357,6 +10627,7 @@ export type Database = {
       v_project_health: {
         Row: {
           benefit: Database["public"]["Enums"]["health"] | null;
+          benefit_reason: string | null;
           computed_overall: Database["public"]["Enums"]["health"] | null;
           effective_portfolio_id: string | null;
           effort: Database["public"]["Enums"]["health"] | null;
@@ -9582,6 +10853,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "roadmap_items_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
           },
           {
             foreignKeyName: "roadmap_items_project_id_workspace_id_fkey";
@@ -9820,6 +11098,13 @@ export type Database = {
             foreignKeyName: "work_items_project_id_workspace_id_fkey";
             columns: ["project_id", "workspace_id"];
             isOneToOne: false;
+            referencedRelation: "v_project_delivery_health";
+            referencedColumns: ["project_id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "work_items_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
             referencedRelation: "v_project_financials";
             referencedColumns: ["project_id", "workspace_id"];
           },
@@ -9961,6 +11246,7 @@ export type Database = {
         | "closed";
       benefit_type: "benefit" | "disbenefit";
       booking_type: "soft" | "hard";
+      capability_status: "planned" | "in_progress" | "delivered" | "accepted";
       change_status: "proposed" | "approved" | "rejected";
       confidence: "low" | "medium" | "high";
       conflict_resolution: "kept_planner" | "reapplied";
@@ -9969,6 +11255,7 @@ export type Database = {
       delivery_status: "on_track" | "future" | "late" | "overdue" | "completed";
       dependency_type: "sequencing" | "alignment" | "information" | "resource" | "external";
       dependency_validation: "inferred" | "proposed" | "confirmed" | "closed" | "broken";
+      document_scope: "project" | "programme" | "capability";
       entity_state: "active" | "closed";
       external_source: "planner_basic" | "planner_premium" | "import";
       financial_kind: "budget" | "actual" | "forecast";
@@ -9992,6 +11279,7 @@ export type Database = {
       offer_response: "accepted" | "declined" | "proposed_date";
       open_closed: "open" | "closed";
       outbox_status: "queued" | "sending" | "retrying" | "failed";
+      outcome_status: "planned" | "emerging" | "achieved" | "not_achieved";
       plan_kind: "basic" | "premium";
       priority: "low" | "moderate" | "high" | "critical";
       project_role:
@@ -10154,6 +11442,7 @@ export const Constants = {
       ],
       benefit_type: ["benefit", "disbenefit"],
       booking_type: ["soft", "hard"],
+      capability_status: ["planned", "in_progress", "delivered", "accepted"],
       change_status: ["proposed", "approved", "rejected"],
       confidence: ["low", "medium", "high"],
       conflict_resolution: ["kept_planner", "reapplied"],
@@ -10162,6 +11451,7 @@ export const Constants = {
       delivery_status: ["on_track", "future", "late", "overdue", "completed"],
       dependency_type: ["sequencing", "alignment", "information", "resource", "external"],
       dependency_validation: ["inferred", "proposed", "confirmed", "closed", "broken"],
+      document_scope: ["project", "programme", "capability"],
       entity_state: ["active", "closed"],
       external_source: ["planner_basic", "planner_premium", "import"],
       financial_kind: ["budget", "actual", "forecast"],
@@ -10186,6 +11476,7 @@ export const Constants = {
       offer_response: ["accepted", "declined", "proposed_date"],
       open_closed: ["open", "closed"],
       outbox_status: ["queued", "sending", "retrying", "failed"],
+      outcome_status: ["planned", "emerging", "achieved", "not_achieved"],
       plan_kind: ["basic", "premium"],
       priority: ["low", "moderate", "high", "critical"],
       project_role: [

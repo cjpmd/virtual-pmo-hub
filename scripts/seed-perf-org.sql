@@ -6,7 +6,7 @@
 --
 -- Creates "Perf Test University" (slug perf-test-university) with one workspace, one
 -- portfolio, 25 programmes and 500 projects, and per project: 3 buckets, 30 tasks,
--- 6 milestones, 4 risks, 2 issues and 1 benefit. Dates are relative to today, so the mix of
+-- 6 milestones, 4 risks, 2 issues, 1 benefit, 2 capabilities and 1 outcome. Dates are relative to today, so the mix of
 -- on-track, slipping and overdue work is the same whenever it runs. IDs are deterministic.
 -- Nobody is a member; to look at it in the app, add yourself to organisation_members.
 
@@ -123,6 +123,9 @@ from perf_ids, generate_series(1, 500) p;
 insert into public.benefit_projects (benefit_id, project_id, attribution_percent)
 select pg_temp.id('benefit', p), pg_temp.id('project', p), 100
 from generate_series(1, 500) p;
+
+-- ---- Benefits pathway: 2 capabilities and 1 outcome (2 indicators) per project ----
+\ir seed-perf-org-pathway.sql
 
 select o.name, (select count(*) from public.projects where organisation_id = o.id) as projects,
        (select count(*) from public.work_items where organisation_id = o.id) as tasks

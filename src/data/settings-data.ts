@@ -335,6 +335,10 @@ export const defaultSettings: AppSettings = {
     riskScoreOffTrack: 15,
     benefitBehindProfilePercent: 20,
     dependencyAtRiskWorkingDays: 10,
+    capabilitySlipAmberDays: 30,
+    acceptanceGraceDays: 0,
+    outcomeBehindTrajectoryAmberPercent: 10,
+    outcomeBehindTrajectoryRedPercent: 25,
   },
   risk: {
     matrixSize: 5,

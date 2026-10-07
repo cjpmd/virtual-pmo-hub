@@ -189,7 +189,7 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
             <KpiCard
               label="Project budgets"
               value={format.compact(metrics.budget)}
-              detail="Across this programme"
+              detail="Open projects in this programme"
               icon="budget"
             />
             <KpiCard
@@ -200,8 +200,8 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
             />
             <KpiCard
               label="On track"
-              value={`${metrics.rag.green} / ${metrics.projectCount}`}
-              detail={`${metrics.rag.amber} amber · ${metrics.rag.red} red`}
+              value={`${metrics.rag.green} / ${metrics.openCount}`}
+              detail={`${metrics.rag.amber} amber · ${metrics.rag.red} red · closed projects not counted`}
               icon="health"
             />
           </div>
@@ -247,7 +247,7 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
                       <div
                         className={`h-full rounded-full ${colour}`}
                         style={{
-                          width: `${metrics.projectCount ? (value / metrics.projectCount) * 100 : 0}%`,
+                          width: `${metrics.openCount ? (value / metrics.openCount) * 100 : 0}%`,
                         }}
                       />
                     </div>
@@ -350,18 +350,21 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
   );
 }
 
+/** Closed projects stay in the list (shown as "Closed") but don't count in the RAG mix or money. */
 function programmeMetrics(projects: ProjectSummary[]) {
   const rag = { green: 0, amber: 0, red: 0 };
-  for (const project of projects) {
+  const open = projects.filter((project) => project.state !== "Closed");
+  for (const project of open) {
     if (project.health.overall === "On Track") rag.green += 1;
     else if (project.health.overall === "At Risk") rag.amber += 1;
     else if (project.health.overall === "Off Track") rag.red += 1;
   }
   return {
     projectCount: projects.length,
+    openCount: open.length,
     active: projects.filter((project) => project.state === "Active").length,
-    budget: projects.reduce((sum, project) => sum + project.budget, 0),
-    forecast: projects.reduce((sum, project) => sum + project.forecast, 0),
+    budget: open.reduce((sum, project) => sum + project.budget, 0),
+    forecast: open.reduce((sum, project) => sum + project.forecast, 0),
     rag,
   };
 }

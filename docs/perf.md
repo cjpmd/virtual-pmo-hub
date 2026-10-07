@@ -65,6 +65,17 @@ With the financials in place, health on the hosted demo was 95–116 ms (project
 
 The first version took 700 ms for 500 projects: the cut-off (latest closed month, else last month) was written as a lateral sub-query, inlined into the monthly-value filters, so `org_today` ran once per value. `20261006133444_financials_cutoff_once` computes it once per organisation in a materialised CTE.
 
+### Benefits pathway (BP2)
+
+The project and programme benefit dimensions now read capability health, which reads project delivery health. Computed naively (`v_project_health` joining `v_capability_health`), the delivery dimensions were worked out twice per query: +50% on 500 projects. The capability rule is now one table-free function, `private.capability_rag`. `v_capability_health` and the two roll-ups each call it with delivery health they have already computed, so it is computed once.
+
+Signed in through RLS (`health_timings.sql`, now including the pathway views):
+
+- **Hosted demo, warm:** project 77 ms, programme 105 ms, portfolio 184 ms; `v_capability_health` 54 ms, `v_outcome_health` 59 ms, `v_benefit_readiness` 68 ms, `v_outcome_indicator_health` 2 ms.
+- **Local, 500 projects** (2 capabilities, 1 outcome and 2 indicators per project): project 634 ms, programme 1.09 s, portfolio 1.92 s. Before BP2: 599 ms, 1.01 s and 1.69 s.
+
+For the comparison, the timing user must belong to one organisation only. The views' materialised CTEs compute every visible row before the outer organisation filter applies, so a member of both test organisations times both.
+
 ### Actuals import
 
 `commit_actuals_import` for 2,000 rows across 400 projects of the 500-project organisation (local, signed in as its admin, rolled back): 2.0 s in replace mode, 1.4 s in add mode. Each row passes the `financial_values` triggers (tenant guard, closed month, audit). The local sandbox is several times slower than hosted.
@@ -76,13 +87,14 @@ The first version took 700 ms for 500 projects: the cut-off (latest closed month
 - 25 programmes and 500 projects;
 - per project: a baseline, four cost lines and 24 months of budget, actuals and forecast (`scripts/seed-perf-org-financials.sql`; one in seven over budget, one in eleven with an open-month overrun);
 - per project: 3 buckets, 30 tasks, 6 milestones, 4 risks, 2 issues and 1 benefit;
+- per project: 2 capabilities (with forecast history), 1 outcome with 2 indicators, linked to the benefit (`scripts/seed-perf-org-pathway.sql`);
 - 60 people;
 - dates relative to today, with a fixed mix of slipped, over-budget, overdue and closed work.
 
 It refuses to run twice and has no members.
 
 ```sh
-psql "$DATABASE_URL" -f scripts/seed-perf-org.sql      # about 10 s locally
+psql "$DATABASE_URL" -f scripts/seed-perf-org.sql      # about 40 s locally (financials and pathway included)
 psql "$DATABASE_URL" -c "analyze"
 ```
 

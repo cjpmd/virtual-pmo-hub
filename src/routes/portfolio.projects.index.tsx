@@ -123,12 +123,14 @@ function ProjectsBody({ items }: { items: ProjectSummary[] }) {
     for (const project of items) counts[project.state] += 1;
     const budget = items.reduce((sum, item) => sum + item.budget, 0);
     const forecast = items.reduce((sum, item) => sum + item.forecast, 0);
-    const onTrack = items.filter((item) => item.health.overall === "On Track").length;
+    // Closed projects don't count towards "on track".
+    const open = items.filter((item) => item.state !== "Closed");
+    const onTrack = open.filter((item) => item.health.overall === "On Track").length;
     return {
       counts,
       budget,
       forecast,
-      percentOnTrack: items.length ? Math.round((onTrack / items.length) * 100) : 0,
+      percentOnTrack: open.length ? Math.round((onTrack / open.length) * 100) : 0,
       outstanding: items.filter(isStatusReportOverdue).length,
     };
   }, [items]);

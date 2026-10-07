@@ -921,7 +921,7 @@ export function LifecycleSettings() {
 
       <SettingsCard
         title="RAG health thresholds"
-        description="The percentages used by the calculated schedule, effort, financial, benefit and dependency health rules."
+        description="The thresholds used by the calculated schedule, effort, financial, benefit, benefits pathway and dependency health rules."
       >
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <NumberField
@@ -969,6 +969,29 @@ export function LifecycleSettings() {
             label="Dependency At Risk window (working days)"
             value={health.dependencyAtRiskWorkingDays}
             onChange={(value) => set({ dependencyAtRiskWorkingDays: value })}
+          />
+          <NumberField
+            label="Capability forecast slip → At Risk (days)"
+            value={health.capabilitySlipAmberDays}
+            onChange={(value) => set({ capabilitySlipAmberDays: value })}
+            hint="Forecast acceptance date beyond the target date."
+          />
+          <NumberField
+            label="Acceptance grace period (days)"
+            value={health.acceptanceGraceDays}
+            onChange={(value) => set({ acceptanceGraceDays: value })}
+            hint="A delivered capability past its target shows Awaiting acceptance (At Risk) for this long before Off Track. 0 = strict."
+          />
+          <NumberField
+            label="Outcome behind trajectory → At Risk (%)"
+            value={health.outcomeBehindTrajectoryAmberPercent}
+            onChange={(value) => set({ outcomeBehindTrajectoryAmberPercent: value })}
+            hint="Shortfall against the straight line from baseline to target, as a share of the planned change."
+          />
+          <NumberField
+            label="Outcome behind trajectory → Off Track (%)"
+            value={health.outcomeBehindTrajectoryRedPercent}
+            onChange={(value) => set({ outcomeBehindTrajectoryRedPercent: value })}
           />
         </div>
       </SettingsCard>

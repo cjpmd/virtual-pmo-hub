@@ -99,6 +99,14 @@ export interface HealthThresholds {
   riskScoreOffTrack: number;
   benefitBehindProfilePercent: number;
   dependencyAtRiskWorkingDays: number;
+  /** Capability forecast this many days past its target → At Risk. */
+  capabilitySlipAmberDays: number;
+  /** Days after a delivered capability's target date before "awaiting acceptance" turns Off Track. */
+  acceptanceGraceDays: number;
+  /** Outcome indicator behind its trajectory by more than this share of the planned change → At Risk. */
+  outcomeBehindTrajectoryAmberPercent: number;
+  /** … → Off Track. */
+  outcomeBehindTrajectoryRedPercent: number;
 }
 export interface TierSetting {
   tier: ProjectTier;

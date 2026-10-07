@@ -87,6 +87,8 @@ Build each as its own component under `src/components/overview/`, taking a progr
 - report vs data disagree (from `status_reports` declared vs evidenced)
 - milestones forecast to land < 90% of this year's plan
 - a capability or outcome turned amber or red, or a capability is past its target date and not accepted
+- a capability is awaiting acceptance past its target date (`v_capability_health.awaiting_acceptance_past_target`)
+- a benefit has no pathway: not linked to any outcome (`v_benefit_readiness.has_pathway = false`)
 
 **ProgrammeCard.** Name, forecast vs budget (good/bad colour), on-track count, health bar, 6-month sparkline of % green. Selected state: accent border, `aria-current`.
 
@@ -96,7 +98,7 @@ Build each as its own component under `src/components/overview/`, taking a progr
 
 **StatusBar.** As-of time is the latest data refresh, not the page load time.
 
-**Dependency:** the capability and outcome series need the benefits pathway work (capability and outcome dates, status, RAG). Build the chart so those series are hidden until that data exists.
+**Dependency:** the capability and outcome series need the benefits pathway work (capability and outcome dates, status, RAG). Build the chart so those series are hidden until that data exists. Built in BP2 (`docs/benefits-pathway.md` §5 and §11): month-end values come from `pathway_snapshots`, current RAG from the three pathway views.
 
 ## 5. Headline sentence
 

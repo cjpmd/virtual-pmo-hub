@@ -125,6 +125,10 @@ export function getRag(items: Array<{ health: { overall: Health } }>): RagCounts
 export const activeOnly = (items: ProjectSummary[]) =>
   items.filter((project) => project.state === "Active");
 
+/** Projects that still count in roll-ups: everything except closed projects. */
+export const openOnly = <T extends { state: string }>(items: T[]) =>
+  items.filter((project) => project.state !== "Closed");
+
 export const ragSegments = (rag: RagCounts) => [
   { key: "green", label: "On track", value: rag.green, colour: "var(--viz-good)" },
   { key: "amber", label: "At risk", value: rag.amber, colour: "var(--viz-warning)" },

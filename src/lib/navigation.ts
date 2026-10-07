@@ -22,6 +22,7 @@ import {
   Settings,
   ShieldAlert,
   Target,
+  Workflow,
   UsersRound,
   Waypoints,
 } from "lucide-react";
@@ -150,6 +151,7 @@ export const sections: Section[] = [
     pages: [
       { to: "/benefits", label: "Value dashboard", icon: Gauge },
       { to: "/benefits/register", label: "Register", icon: Rows3 },
+      { to: "/benefits/pathway", label: "Pathway", icon: Workflow },
       { to: "/benefits/map", label: "Map", icon: Target },
       { to: "/benefits/realisation", label: "Realisation", icon: ChartNoAxesCombined },
     ],

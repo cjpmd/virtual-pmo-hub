@@ -1,4 +1,4 @@
--- Health and financial view timings as a signed-in user through RLS (never as postgres: RLS is the cost).
+-- Health, financial and benefits pathway view timings as a signed-in user through RLS (never as postgres: RLS is the cost).
 -- Set :uid to an organisation admin's profile id and :org to the organisation's slug:
 --   psql "$DB_URL" -v uid=<profile uuid> -v org=demo-university -f supabase/tests/health_timings.sql
 -- sum(length(h::text)) forces every column to be computed; count(*) alone lets the planner
@@ -36,6 +36,26 @@ where h.organisation_id = (select id from public.organisations where slug = :'or
 select 'v_projects' as view, count(*), sum(length(h::text)) from public.v_projects h
 where h.organisation_id = (select id from public.organisations where slug = :'org');
 select 'v_projects' as view, count(*), sum(length(h::text)) from public.v_projects h
+where h.organisation_id = (select id from public.organisations where slug = :'org');
+select 'v_project_delivery_health' as view, count(*), sum(length(h::text)) from public.v_project_delivery_health h
+where h.organisation_id = (select id from public.organisations where slug = :'org');
+select 'v_project_delivery_health' as view, count(*), sum(length(h::text)) from public.v_project_delivery_health h
+where h.organisation_id = (select id from public.organisations where slug = :'org');
+select 'v_capability_health' as view, count(*), sum(length(h::text)) from public.v_capability_health h
+where h.organisation_id = (select id from public.organisations where slug = :'org');
+select 'v_capability_health' as view, count(*), sum(length(h::text)) from public.v_capability_health h
+where h.organisation_id = (select id from public.organisations where slug = :'org');
+select 'v_outcome_indicator_health' as view, count(*), sum(length(h::text)) from public.v_outcome_indicator_health h
+where h.organisation_id = (select id from public.organisations where slug = :'org');
+select 'v_outcome_indicator_health' as view, count(*), sum(length(h::text)) from public.v_outcome_indicator_health h
+where h.organisation_id = (select id from public.organisations where slug = :'org');
+select 'v_outcome_health' as view, count(*), sum(length(h::text)) from public.v_outcome_health h
+where h.organisation_id = (select id from public.organisations where slug = :'org');
+select 'v_outcome_health' as view, count(*), sum(length(h::text)) from public.v_outcome_health h
+where h.organisation_id = (select id from public.organisations where slug = :'org');
+select 'v_benefit_readiness' as view, count(*), sum(length(h::text)) from public.v_benefit_readiness h
+where h.organisation_id = (select id from public.organisations where slug = :'org');
+select 'v_benefit_readiness' as view, count(*), sum(length(h::text)) from public.v_benefit_readiness h
 where h.organisation_id = (select id from public.organisations where slug = :'org');
 \timing off
 rollback;

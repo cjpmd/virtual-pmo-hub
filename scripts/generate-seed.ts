@@ -30,6 +30,16 @@ import {
   strategicObjectives,
 } from "../src/data/mock-data";
 import { defaultSettings, demoUsers } from "../src/data/settings-data";
+import {
+  capabilityPathway,
+  newCapabilities,
+  newOutcomes,
+  outcomePathway,
+  QUARTER_ONE_START,
+  realisationStart,
+  rephasedBenefits,
+  type CapabilityPathway,
+} from "./seed-data/benefits-pathway";
 import type { DependencyEnd, Health, RoadmapHealth } from "../src/data/types";
 
 // ---------------------------------------------------------------------------
@@ -82,6 +92,9 @@ const offset = (value: string) => {
 };
 /** A mock DD/MM/YYYY date as a seed-relative SQL date. */
 const d = (value: string | undefined | null) => (value ? raw(`d(${offset(value)})`) : null);
+/** A day offset from the seed anchor as a SQL date. */
+const dn = (n: number | undefined | null) =>
+  n === undefined || n === null ? null : raw(`d(${n})`);
 /** A mock DD/MM/YYYY date as a seed-relative timestamptz (09:00 local). */
 const ts = (value: string | undefined | null) => (value ? raw(`ts(${offset(value)})`) : null);
 
@@ -948,6 +961,14 @@ insert(
       eligibility_confirmed_date: d(b.eligibilityConfirmedDate),
       planned_total_value: b.plannedTotalValue,
       dependency_notes: b.dependencies,
+      realisation_start_date: dn(
+        realisationStart[b.id] ??
+          (["in_realisation", "realised", "partially_realised", "not_realised"].includes(
+            benefitStatus(b.status),
+          )
+            ? QUARTER_ONE_START
+            : null),
+      ),
     };
   }),
 );
@@ -1052,49 +1073,157 @@ insert(
       confirmed_date: d(b.handover!.confirmedDate),
     })),
 );
-insert(
-  "capabilities",
-  capabilities.map((c) => ({
-    id: uid("capability", c.id),
-    programme_id: PR(c.programmeId),
-    title: c.title,
-    description: c.description,
-    owner_id: person(c.owner),
-  })),
-);
-insert(
-  "capability_projects",
-  capabilities.flatMap((c) =>
-    c.projectIds.map((p) => ({ capability_id: uid("capability", c.id), project_id: P(p) })),
-  ),
-);
-insert(
-  "outcomes",
-  outcomes.map((o) => ({
-    id: uid("outcome", o.id),
-    programme_id: PR(o.programmeId),
-    title: o.title,
-    description: o.description,
-    owner_id: person(o.owner),
-  })),
-);
-insert(
-  "outcome_capabilities",
-  outcomes.flatMap((o) =>
-    o.capabilityIds.map((c) => ({
-      outcome_id: uid("outcome", o.id),
-      capability_id: uid("capability", c),
+function emitPathway() {
+  // Benefits pathway (docs/benefits-pathway.md §6): dates, status and acceptance for the mock
+  // capabilities and outcomes, plus four of each added for the programmes the mock data left out.
+  const allCapabilities = [
+    ...capabilities.map((c) => ({ ...c, ...capabilityPathway[c.id]! })),
+    ...newCapabilities,
+  ];
+  const allOutcomes = [
+    ...outcomes.map((o) => ({ ...o, ...outcomePathway[o.id]! })),
+    ...newOutcomes,
+  ];
+  insert(
+    "capabilities",
+    allCapabilities.map((c) => ({
+      id: uid("capability", c.id),
+      programme_id: PR(c.programmeId),
+      title: c.title,
+      description: c.description,
+      owner_id: person(c.owner),
+      status: c.status,
+      target_date: dn(c.target),
+      forecast_date: dn(c.forecast),
+      delivered_date: dn(c.delivered),
+      accepted_at: dn(c.accepted),
+      accepted_by_id: person(c.acceptedBy),
+      acceptance_note: (c as CapabilityPathway).acceptanceNote ?? null,
     })),
-  ),
-);
-insert(
-  "outcome_benefits",
-  outcomes.flatMap((o) =>
-    o.benefitIds
-      .filter((b) => benefitIds.has(b) || (dropped.push(`${o.id}: benefit ${b}`), false))
-      .map((b) => ({ outcome_id: uid("outcome", o.id), benefit_id: uid("benefit", b) })),
-  ),
-);
+    ` on conflict (id) do update set status = excluded.status, target_date = excluded.target_date,
+    forecast_date = excluded.forecast_date, delivered_date = excluded.delivered_date, accepted_at = excluded.accepted_at,
+    accepted_by_id = excluded.accepted_by_id, acceptance_note = excluded.acceptance_note`,
+  );
+  insert(
+    "capability_projects",
+    allCapabilities.flatMap((c) =>
+      c.projectIds.map((p) => ({ capability_id: uid("capability", c.id), project_id: P(p) })),
+    ),
+    " on conflict do nothing",
+  );
+  // The trigger records today's forecast; these are the earlier ones.
+  insert(
+    "capability_forecast_history",
+    allCapabilities.flatMap((c) =>
+      (c.history ?? []).map(([reported, forecast]) => ({
+        capability_id: uid("capability", c.id),
+        reporting_date: dn(reported),
+        forecast_date: dn(forecast),
+      })),
+    ),
+    " on conflict (capability_id, reporting_date) do nothing",
+  );
+  insert(
+    "outcomes",
+    allOutcomes.map((o) => ({
+      id: uid("outcome", o.id),
+      programme_id: PR(o.programmeId),
+      title: o.title,
+      description: o.description,
+      owner_id: person(o.owner),
+      status: o.status,
+      target_date: dn(o.target),
+      achieved_date: dn(o.achieved),
+    })),
+    ` on conflict (id) do update set status = excluded.status, target_date = excluded.target_date,
+    achieved_date = excluded.achieved_date`,
+  );
+  insert(
+    "outcome_indicators",
+    allOutcomes.flatMap((o) =>
+      o.indicators.map((i, n) => ({
+        id: uid("outcome_indicator", `${o.id}:${i.key}`),
+        outcome_id: uid("outcome", o.id),
+        name: i.name,
+        unit: i.unit,
+        baseline_value: i.baseline,
+        baseline_date: dn(i.baselineDate),
+        target_value: i.target,
+        target_date: dn(i.targetDate),
+        frequency: i.frequency,
+        next_due_date: dn(i.nextDue),
+        data_source: i.dataSource,
+        sort_order: n + 1,
+      })),
+    ),
+    " on conflict (id) do nothing",
+  );
+  insert(
+    "outcome_indicator_measurements",
+    allOutcomes.flatMap((o) =>
+      o.indicators.flatMap((i) =>
+        i.measurements.map((m) => ({
+          id: uid("indicator_measurement", `${o.id}:${i.key}:${m.key}`),
+          indicator_id: uid("outcome_indicator", `${o.id}:${i.key}`),
+          measured_on: dn(m.measuredOn),
+          actual_value: m.value,
+          evidence: m.evidence ?? i.dataSource,
+          submitted_by_id: person(m.submittedBy),
+          submitted_date: dn(m.measuredOn + 3),
+          validated_by_id: person(m.validatedBy),
+          validated_date: m.status === "submitted" ? null : dn(m.measuredOn + 6),
+          query_note: m.queryNote ?? null,
+          status: m.status,
+        })),
+      ),
+    ),
+    " on conflict (id) do nothing",
+  );
+  insert(
+    "outcome_capabilities",
+    allOutcomes.flatMap((o) =>
+      o.capabilityIds.map((c) => ({
+        outcome_id: uid("outcome", o.id),
+        capability_id: uid("capability", c),
+      })),
+    ),
+    " on conflict do nothing",
+  );
+  insert(
+    "outcome_benefits",
+    allOutcomes.flatMap((o) =>
+      o.benefitIds
+        .filter((b) => benefitIds.has(b) || (dropped.push(`${o.id}: benefit ${b}`), false))
+        .map((b) => ({ outcome_id: uid("outcome", o.id), benefit_id: uid("benefit", b) })),
+    ),
+    " on conflict do nothing",
+  );
+  // Realisation starts other than the default (the insert sets them on a fresh seed; this
+  // sets them on a demo organisation seeded before Stage BP2).
+  emit(`update public.benefits b set realisation_start_date = v.start_date
+from (values
+  ${Object.entries(realisationStart)
+    .map(([b, n]) => `(${uid("benefit", b)}, ${dn(n)})`)
+    .join(",\n  ")}
+) v(id, start_date)
+where b.id = v.id and b.realisation_start_date is distinct from v.start_date;
+`);
+  emit(`-- Benefits not yet in realisation: targets for quarters that end before the realisation start
+-- return to the baseline (no uplift), and measurements for those quarters are dropped.
+update public.benefit_measure_targets t set value = m.baseline_value
+from public.benefit_measures m, public.benefit_periods bp, public.benefits b
+where m.id = t.measure_id and bp.id = t.period_id and b.id = m.benefit_id
+  and b.id in (${rephasedBenefits.map((b) => uid("benefit", b)).join(", ")})
+  and bp.finish_date < b.realisation_start_date;
+delete from public.benefit_measurements x
+using public.benefit_measures m, public.benefit_periods bp, public.benefits b
+where m.id = x.measure_id and bp.id = x.period_id and b.id = m.benefit_id
+  and b.id in (${rephasedBenefits.map((b) => uid("benefit", b)).join(", ")})
+  and bp.finish_date < b.realisation_start_date;
+`);
+}
+emitPathway();
+
 insert(
   "benefit_maps",
   benefitMaps.map((m) => ({
@@ -1312,6 +1441,93 @@ insert(
 // ---------------------------------------------------------------------------
 // Assemble: header, org, reference data, resources, then the sections above.
 // ---------------------------------------------------------------------------
+const pathwayHistory = `-- ---- Pathway snapshots: today's real rows (captured above), then the 11 previous month-ends,
+-- worked out as at each date from the recorded dates (acceptance, delivery, achievement,
+-- forecast history, measurement dates) with today's project delivery health. Synthetic. ----
+create temp table seed_days on commit drop as
+select (date_trunc('month', d(0)) - make_interval(months => k - 1) - interval '1 day')::date as day
+from generate_series(1, 11) k;
+insert into public.pathway_snapshots (organisation_id, workspace_id, programme_id, snapshot_date, capability_id, rag,
+  is_complete, due_in_fy, is_synthetic)
+select c.organisation_id, c.workspace_id, c.programme_id, dy.day, c.id,
+  (case
+    when c.accepted_at <= dy.day then 'green'
+    when c.target_date is null then 'not_set'
+    when c.delivered_date <= dy.day and c.target_date < dy.day
+      and c.target_date + (o.settings -> 'health' ->> 'acceptanceGraceDays')::integer >= dy.day then 'amber'
+    when c.target_date < dy.day then 'red'
+    when dl.any_red then 'red'
+    when coalesce(fh.forecast_date, fh0.forecast_date, c.forecast_date) - c.target_date
+      > (o.settings -> 'health' ->> 'capabilitySlipAmberDays')::integer then 'amber'
+    when dl.any_amber then 'amber'
+    else 'green' end)::public.health,
+  coalesce(c.accepted_at <= dy.day, false),
+  c.target_date >= private.fy_start(o.settings, dy.day) and c.target_date < (private.fy_start(o.settings, dy.day) + interval '1 year')::date,
+  true
+from public.capabilities c
+join public.organisations o on o.id = c.organisation_id
+cross join seed_days dy
+left join lateral (select h.forecast_date from public.capability_forecast_history h
+  where h.capability_id = c.id and h.reporting_date <= dy.day order by h.reporting_date desc limit 1) fh on true
+left join lateral (select h.forecast_date from public.capability_forecast_history h
+  where h.capability_id = c.id order by h.reporting_date limit 1) fh0 on true
+left join (select cp.capability_id, bool_or(dh.delivery = 'red') as any_red, bool_or(dh.delivery = 'amber') as any_amber
+  from public.capability_projects cp join public.v_project_delivery_health dh on dh.project_id = cp.project_id
+  where dh.state <> 'closed' group by cp.capability_id) dl on dl.capability_id = c.id
+where c.organisation_id = '${ORG}'
+on conflict do nothing;
+insert into public.pathway_snapshots (organisation_id, workspace_id, programme_id, snapshot_date, outcome_id, rag,
+  is_complete, due_in_fy, is_synthetic)
+select oc.organisation_id, oc.workspace_id, oc.programme_id, dy.day, oc.id,
+  (case
+    when oc.achieved_date <= dy.day then 'green'
+    when oc.target_date < dy.day then 'red'
+    when ind.worst is not null then ind.worst::text
+    when cap.worst is not null then cap.worst::text
+    else 'not_set' end)::public.health,
+  coalesce(oc.achieved_date <= dy.day, false),
+  oc.target_date >= private.fy_start(o.settings, dy.day) and oc.target_date < (private.fy_start(o.settings, dy.day) + interval '1 year')::date,
+  true
+from public.outcomes oc
+join public.organisations o on o.id = oc.organisation_id
+cross join seed_days dy
+left join lateral (
+  select max(case
+      when greatest(0, (e.expected - m.actual_value) / (i.target_value - i.baseline_value)) * 100
+           > (o.settings -> 'health' ->> 'outcomeBehindTrajectoryRedPercent')::numeric then 'red'
+      when greatest(0, (e.expected - m.actual_value) / (i.target_value - i.baseline_value)) * 100
+           > (o.settings -> 'health' ->> 'outcomeBehindTrajectoryAmberPercent')::numeric then 'amber'
+      else 'green' end::public.health) as worst
+  from public.outcome_indicators i
+  join lateral (select x.measured_on, x.actual_value from public.outcome_indicator_measurements x
+    where x.indicator_id = i.id and x.status <> 'queried' and x.measured_on <= dy.day
+    order by x.measured_on desc, (x.status = 'validated') desc limit 1) m on true
+  cross join lateral (select i.baseline_value + (i.target_value - i.baseline_value)
+    * private.clamp((m.measured_on - i.baseline_date)::numeric / (i.target_date - i.baseline_date), 0, 1) as expected) e
+  where i.outcome_id = oc.id) ind on true
+left join lateral (
+  select max(ps.rag) as worst from public.outcome_capabilities x
+  join public.pathway_snapshots ps on ps.capability_id = x.capability_id and ps.snapshot_date = dy.day
+  where x.outcome_id = oc.id) cap on true
+where oc.organisation_id = '${ORG}'
+on conflict do nothing;
+insert into public.pathway_snapshots (organisation_id, workspace_id, programme_id, snapshot_date, benefit_id, rag, phase,
+  is_synthetic)
+select br.organisation_id, br.workspace_id, br.programme_id, dy.day, br.benefit_id,
+  case when b.realisation_start_date <= dy.day then br.rag else coalesce(ob.worst, 'not_set') end,
+  case when b.realisation_start_date <= dy.day then 'realisation' else 'readiness' end,
+  true
+from public.v_benefit_readiness br
+join public.benefits b on b.id = br.benefit_id
+cross join seed_days dy
+left join lateral (
+  select max(ps.rag) as worst from public.outcome_benefits x
+  join public.pathway_snapshots ps on ps.outcome_id = x.outcome_id and ps.snapshot_date = dy.day
+  where x.benefit_id = br.benefit_id) ob on true
+where br.organisation_id = '${ORG}'
+on conflict do nothing;
+`;
+
 const body = out.splice(0);
 const s = defaultSettings;
 const orgSettings = {
@@ -1553,6 +1769,7 @@ cross join lateral (select 1 - 0.15 * (1 - (((11 - k) / 11.0) ^ 2 * (3 - 2 * ((1
 where s.organisation_id = '${ORG}' and not s.is_synthetic
 on conflict do nothing;
 `);
+emit(pathwayHistory);
 emit(`do $$
 begin
   raise notice 'Demo organisation seeded: ${ORG}';
@@ -1569,4 +1786,45 @@ end $$;
 drop schema seed_tmp cascade;
 commit;
 `);
+if (process.argv.includes("--pathway-patch")) {
+  // Adds the benefits pathway data to a demo organisation seeded before Stage BP2 (run after the
+  // 20261007 benefits pathway migration). Dates use that seed's own anchor, recovered from its
+  // first benefit quarter, so it lines up whenever it runs. Idempotent. Its helpers live in their
+  // own schema, so a seed_tmp left behind by an earlier seed run doesn't get in the way.
+  out.length = 0;
+  emitPathway();
+  const pathwaySql = out.splice(0);
+  emit(`-- Benefits pathway data for an existing demo organisation. GENERATED by
+--   npx tsx scripts/generate-seed.ts --pathway-patch > scripts/demo-benefits-pathway.sql
+-- Do not edit by hand. Run after the benefits pathway migration; safe to run again.
+
+begin;
+set local vpmo.seeding = 'on';
+
+do $$
+begin
+  if not exists (select 1 from public.organisations where id = '${ORG}') then
+    raise exception 'The demo organisation is not seeded';
+  end if;
+end $$;
+
+create schema pathway_patch_tmp;
+revoke all on schema pathway_patch_tmp from public;
+set local search_path = pathway_patch_tmp, public;
+create function pathway_patch_tmp.u(k text) returns uuid language sql immutable set search_path = '' as $f$ select md5('virtual-pmo-demo:' || k)::uuid $f$;
+create function pathway_patch_tmp.anchor() returns date language sql stable set search_path = '' as $f$
+  select min(start_date) + ${-QUARTER_ONE_START} from public.benefit_periods where organisation_id = '${ORG}'
+$f$;
+create function pathway_patch_tmp.d(n integer) returns date language sql stable set search_path = '' as $f$ select pathway_patch_tmp.anchor() + n $f$;
+`);
+  out.push(...pathwaySql);
+  emit(`-- Today's health and pathway snapshots with the new rules, then the pathway history.
+select private.capture_health_snapshots('${ORG}');
+delete from public.pathway_snapshots where organisation_id = '${ORG}' and is_synthetic;
+`);
+  emit(pathwayHistory);
+  emit(`drop schema pathway_patch_tmp cascade;
+commit;
+`);
+}
 process.stdout.write(out.join("\n"));

@@ -19,7 +19,7 @@ import { PageHeader } from "@/components/pmo-ui";
 import { useMilestones, useProjects } from "@/hooks/use-hierarchy";
 import { useResourceData } from "@/hooks/use-resources";
 import { formatDate } from "@/lib/format";
-import { activeOnly, getRag } from "@/services/analytics";
+import { activeOnly, getRag, openOnly } from "@/services/analytics";
 import { resourceDashboard } from "@/services/resources";
 import type { ProjectSummary } from "@/services/hierarchy";
 import { cn } from "@/lib/utils";
@@ -172,7 +172,7 @@ function WidgetBody({ type }: { type: Widget }) {
       </p>
     );
   const active = activeOnly(projects),
-    rag = getRag(projects),
+    rag = getRag(openOnly(projects)),
     programmes = new Set(active.map((project) => project.programmeId ?? "none")).size;
   if (type === "KPI number")
     return (

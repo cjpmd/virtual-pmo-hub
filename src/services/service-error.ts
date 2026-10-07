@@ -42,6 +42,17 @@ const messages: Record<ServiceErrorKind, string> = {
   unknown: "Something went wrong. Please try again.",
 };
 
+/**
+ * Triggers that enforce a rule raise their own sentence with a standard code (42501 for a
+ * role check, 23514 for a missing precondition), e.g. "Attach the acceptance evidence first".
+ * Those read better than the generic text; Postgres's own wording for RLS, privileges and
+ * constraints does not, so it keeps the generic message.
+ */
+const POSTGRES_WORDING =
+  /^(new row|permission denied|insert or update|update or delete|null value|duplicate key|invalid input|value too long|column |relation |violates)/i;
+const isRuleMessage = (kind: ServiceErrorKind, text: string | undefined) =>
+  (kind === "forbidden" || kind === "invalid") && !!text && !POSTGRES_WORDING.test(text);
+
 /** Maps a PostgREST error (from supabase-js) to a ServiceError with a readable message. */
 export function fromPostgrest(
   error: PostgrestError,
@@ -63,7 +74,10 @@ export function fromPostgrest(
   else if (!code && /fetch|network/i.test(error.message)) kind = "network";
   // PostgREST answers a statement timeout with HTTP 500; a gateway timeout is 504.
   else if (status === 500 || status === 504) kind = "timeout";
-  message = kind === "invalid" && code === "P0001" ? error.message : messages[kind];
+  message =
+    (kind === "invalid" && code === "P0001") || isRuleMessage(kind, error.message)
+      ? error.message
+      : messages[kind];
   if (kind === "conflict" && error.details) message = `${messages.conflict} ${error.details}`;
   return new ServiceError(kind, context ? `${context}: ${message}` : message, {
     code,
