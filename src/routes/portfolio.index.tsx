@@ -771,7 +771,7 @@ function OverviewBand({
       tasks: raw.tasks.filter((row) => activeIds.has(row.projectId)),
       risks: raw.risks.filter((row) => row.projectId !== null && activeIds.has(row.projectId)),
     };
-  }, [progressInputs.data, activeIds]);
+  }, [rpc.data, activeIds]);
   const build = (chartRange: ChartRange) =>
     scopedInputs &&
     buildProgressChart({
