@@ -53,13 +53,18 @@ export function usePortfolioFinancials(portfolioId: string | undefined) {
   });
 }
 
-export function useProjectFinancialsList(filter: { programmeId?: string; portfolioId?: string }) {
+export function useProjectFinancialsList(filter: {
+  programmeId?: string;
+  portfolioId?: string;
+  projectIds?: string[];
+}) {
   const orgId = useOrgId();
   const scope = filter.programmeId
     ? `programme:${filter.programmeId}`
     : `portfolio:${filter.portfolioId ?? ""}`;
+  const projectScope = filter.projectIds ? [...filter.projectIds].sort().join(",") : "all";
   return useQuery({
-    queryKey: qk.projects.financialsList(orgId, scope),
+    queryKey: qk.projects.financialsList(orgId, `${scope}:${projectScope}`),
     queryFn: () => listProjectFinancials(filter),
     enabled: Boolean(filter.programmeId || filter.portfolioId),
   });
