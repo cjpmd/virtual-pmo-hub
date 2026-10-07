@@ -747,7 +747,7 @@ function OverviewBand({
     return reportGapCounts(assurance.data.filter((project) => ids.has(project.id)));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- version tracks the browser-local sprint store
   }, [assurance.data, projects, version]);
-  const today = todayIso();
+  const today = rpc.data?.today ?? todayIso();
   const metrics = useMemo(
     () => gaps && getSummaryMetrics({ projects, milestones, history, projectHistory, gaps, today }),
     [projects, milestones, history, projectHistory, gaps, today],
@@ -758,15 +758,12 @@ function OverviewBand({
   );
   const settings = useSettings();
   const [range, setRange] = useState<ChartRange>("fy");
-  const progressInputs = useProgressInputs(
-    useMemo(() => active.map((project) => project.id), [active]),
-  );
   const activeIds = useMemo(
     () => new Set(scopedActive.map((project) => project.id)),
     [scopedActive],
   );
   const scopedInputs = useMemo(() => {
-    const raw = progressInputs.data;
+    const raw = rpc.data?.inputs;
     if (!raw) return undefined;
     return {
       ...raw,
