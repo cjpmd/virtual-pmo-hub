@@ -828,6 +828,13 @@ function OverviewBand({
   const pathway = usePathway();
   const forecasts = rpc.data?.forecasts;
   const [sort, setSort] = useState<WatchSort>("overspend");
+  const openChanges = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const change of governance.data?.changes ?? [])
+      if (change.status === "Proposed")
+        counts.set(change.projectId ?? "", (counts.get(change.projectId ?? "") ?? 0) + 1);
+    return counts;
+  }, [governance.data]);
   const declared = useMemo(() => {
     const map = new Map<
       string,
@@ -848,10 +855,11 @@ function OverviewBand({
         active: scopedActive,
         declared,
         forecasts: forecasts ?? [],
+        openChanges,
         today,
         sort,
       }),
-    [scopedActive, declared, forecasts, today, sort],
+    [scopedActive, declared, forecasts, openChanges, today, sort],
   );
   const cards = useMemo(
     () => buildProgrammeCards(data.programmes, active, projectHistory, today),
