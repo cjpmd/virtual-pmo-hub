@@ -21,7 +21,7 @@ import { ProgrammeStrip } from "@/components/overview/programme-strip";
 import { ProjectWatchlist } from "@/components/overview/project-watchlist";
 import { SignalsList } from "@/components/overview/signals-list";
 import { usePathway } from "@/hooks/use-pathway";
-import { useForecastHistory } from "@/hooks/use-progress-chart";
+import { usePortfolioOverviewData } from "@/hooks/use-progress-chart";
 import { getAssuranceRows } from "@/services/assurance";
 import type { EvidencedRag } from "@/services/forecast";
 import type { Health } from "@/data/types";
@@ -31,7 +31,6 @@ import {
   buildWatchlist,
   type WatchSort,
 } from "@/services/overview-panels";
-import { useProgressInputs } from "@/hooks/use-progress-chart";
 import { useSettings } from "@/services/settings";
 import { buildProgressChart, type ChartRange } from "@/services/progress-chart";
 import { StatusBarSlot, TopBand } from "@/components/shell-slots";
