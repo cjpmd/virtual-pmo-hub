@@ -171,6 +171,7 @@ export function ProjectWatchlist({
                       </span>
                     </button>
                   </th>
+                  <td colSpan={3} />
                   <td
                     className={cn(
                       "px-2 py-2 text-right font-geist-mono tabular-nums",
@@ -179,7 +180,8 @@ export function ProjectWatchlist({
                   >
                     {signed(group.variance)}
                   </td>
-                  <td colSpan={3} />
+                  <td />
+                  <td className="hidden sm:table-cell" />
                 </tr>
                 {open &&
                   group.rows.map((row) => (
