@@ -8,13 +8,20 @@ function Spark({ points }: { points: Array<number | null> }) {
   if (values.length < 2) return <span className="text-[11px] text-pmo-muted">No trend yet</span>;
   const first = values[0] as number,
     last = values[values.length - 1] as number;
-  const tone = last > first ? "var(--pmo-good)" : last < first ? "var(--pmo-bad)" : "var(--pmo-muted)";
+  const tone =
+    last > first ? "var(--pmo-good)" : last < first ? "var(--pmo-bad)" : "var(--pmo-muted)";
   const coords = points
     .map((v, i) => (v === null ? null : `${2 + i * 12},${18 - (v / 100) * 16}`))
     .filter(Boolean)
     .join(" ");
   return (
-    <svg width="64" height="20" viewBox="0 0 64 20" role="img" aria-label={`% green over six months: ${values.join(", ")}`}>
+    <svg
+      width="64"
+      height="20"
+      viewBox="0 0 64 20"
+      role="img"
+      aria-label={`% green over six months: ${values.join(", ")}`}
+    >
       <polyline points={coords} fill="none" stroke={tone} strokeWidth="1.5" />
     </svg>
   );
@@ -39,16 +46,25 @@ export function ProgrammeCard({
       aria-current={selected ? "page" : undefined}
       className={cn(
         "flex min-w-0 flex-col gap-2 rounded-[10px] border bg-pmo-panel px-3.5 py-3 text-left font-geist transition-colors",
-        selected ? "border-pmo-accent ring-1 ring-pmo-accent" : "border-pmo-line hover:border-pmo-muted",
+        selected
+          ? "border-pmo-accent ring-1 ring-pmo-accent"
+          : "border-pmo-line hover:border-pmo-muted",
       )}
     >
       <span className="truncate text-sm font-semibold text-pmo-text">{card.name}</span>
       <div className="flex items-end justify-between gap-2">
         <div className="flex flex-col gap-0.5">
-          <span className={cn("font-geist-mono text-[15px] tabular-nums", over ? "text-pmo-bad-text" : "text-pmo-good")}>
+          <span
+            className={cn(
+              "font-geist-mono text-[15px] tabular-nums",
+              over ? "text-pmo-bad-text" : "text-pmo-good",
+            )}
+          >
             {over ? "+" : card.variance < 0 ? "−" : ""}
             {format.compact(Math.abs(card.variance))}
-            <span className="sr-only">{over ? " forecast over budget" : " forecast under budget"}</span>
+            <span className="sr-only">
+              {over ? " forecast over budget" : " forecast under budget"}
+            </span>
           </span>
           <span className="text-[11px] text-pmo-muted">
             <span className="font-geist-mono tabular-nums">
@@ -83,9 +99,17 @@ export function ProgrammeStrip({
   onSelect: (id: string | null) => void;
 }) {
   return (
-    <nav aria-label="Programmes" className="grid gap-2.5 [grid-template-columns:repeat(auto-fit,minmax(190px,1fr))]">
+    <nav
+      aria-label="Programmes"
+      className="grid gap-2.5 [grid-template-columns:repeat(auto-fit,minmax(190px,1fr))]"
+    >
       {cards.map((card) => (
-        <ProgrammeCard key={card.id ?? "all"} card={card} selected={card.id === selected} onSelect={() => onSelect(card.id)} />
+        <ProgrammeCard
+          key={card.id ?? "all"}
+          card={card}
+          selected={card.id === selected}
+          onSelect={() => onSelect(card.id)}
+        />
       ))}
     </nav>
   );

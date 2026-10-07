@@ -25,7 +25,10 @@ export interface ForecastPoint {
   budget: number;
 }
 
-export async function listForecastHistory(orgId: string, projectIds: string[]): Promise<ForecastPoint[]> {
+export async function listForecastHistory(
+  orgId: string,
+  projectIds: string[],
+): Promise<ForecastPoint[]> {
   if (!projectIds.length) return [];
   const rows = unwrap(
     await supabase
@@ -61,17 +64,27 @@ const lastMonths = (current: string, n: number) => {
 };
 
 export const evidencedToHealth = (rag: EvidencedRag | undefined): Health =>
-  rag === "Green" ? "On Track" : rag === "Amber" ? "At Risk" : rag === "Red" ? "Off Track" : "Not Set";
-const rank = (h: Health) => (h === "On Track" ? 0 : h === "At Risk" ? 1 : h === "Off Track" ? 2 : -1);
+  rag === "Green"
+    ? "On Track"
+    : rag === "Amber"
+      ? "At Risk"
+      : rag === "Red"
+        ? "Off Track"
+        : "Not Set";
+const rank = (h: Health) =>
+  h === "On Track" ? 0 : h === "At Risk" ? 1 : h === "Off Track" ? 2 : -1;
 
 /** % of projects green in each month-end snapshot, over the last six months. */
 function greenTrend(projectIds: Set<string>, history: ProjectSnapshot[], months: string[]) {
   return months.map((month) => {
     const last = new Map<string, ProjectSnapshot>();
     for (const row of history)
-      if (row.date.slice(0, 7) === month && projectIds.has(row.projectId)) last.set(row.projectId, row);
+      if (row.date.slice(0, 7) === month && projectIds.has(row.projectId))
+        last.set(row.projectId, row);
     const list = [...last.values()];
-    return list.length ? Math.round((100 * list.filter((r) => r.overall === "On Track").length) / list.length) : null;
+    return list.length
+      ? Math.round((100 * list.filter((r) => r.overall === "On Track").length) / list.length)
+      : null;
   });
 }
 
@@ -164,7 +177,8 @@ export function buildWatchlist(input: {
   const current = input.today.slice(0, 7);
   const months = lastMonths(current, 6);
   const byProject = new Map<string, ForecastPoint[]>();
-  for (const point of input.forecasts) byProject.set(point.projectId, [...(byProject.get(point.projectId) ?? []), point]);
+  for (const point of input.forecasts)
+    byProject.set(point.projectId, [...(byProject.get(point.projectId) ?? []), point]);
   const rows: WatchRow[] = input.active.map((p) => {
     const points = byProject.get(p.id) ?? [];
     const before = points.filter((pt) => pt.month < current).at(-1);
@@ -195,7 +209,14 @@ export function buildWatchlist(input: {
   const groups = new Map<string, WatchGroup>();
   for (const row of rows) {
     const key = row.programmeId ?? "none";
-    const group = groups.get(key) ?? { id: row.programmeId, name: row.programmeName, onTrack: 0, total: 0, variance: 0, rows: [] };
+    const group = groups.get(key) ?? {
+      id: row.programmeId,
+      name: row.programmeName,
+      onTrack: 0,
+      total: 0,
+      variance: 0,
+      rows: [],
+    };
     group.rows.push(row);
     group.total++;
     if (input.active.find((p) => p.id === row.id)?.health.overall === "On Track") group.onTrack++;
@@ -204,7 +225,9 @@ export function buildWatchlist(input: {
   }
   const list = [...groups.values()];
   for (const group of list) group.rows.sort(sorter[input.sort]);
-  return list.sort((a, b) => (input.sort === "overspend" ? b.variance - a.variance : a.name.localeCompare(b.name)));
+  return list.sort((a, b) =>
+    input.sort === "overspend" ? b.variance - a.variance : a.name.localeCompare(b.name),
+  );
 }
 
 // ---- Signals -------------------------------------------------------------------------
@@ -248,7 +271,8 @@ export function buildSignals(input: SignalInput): Signal[] {
   const { today } = input;
   const monthStart = `${today.slice(0, 7)}-01`;
   const out: Signal[] = [];
-  const inScope = (id: string | null) => !input.programmeIds || (id !== null && input.programmeIds.has(id));
+  const inScope = (id: string | null) =>
+    !input.programmeIds || (id !== null && input.programmeIds.has(id));
 
   // 1. Spend leads milestones.
   if (input.spendPercent !== undefined && input.milestonePercent !== undefined) {
@@ -289,7 +313,11 @@ export function buildSignals(input: SignalInput): Signal[] {
     const forecast = input.active.find((p) => p.id === row.id)?.forecast ?? 0;
     const previous = forecast - row.change;
     const pct = previous ? (Math.abs(row.change) / Math.abs(previous)) * 100 : 0;
-    if (Math.abs(row.change) < FORECAST_MOVE_THRESHOLD.amount && pct < FORECAST_MOVE_THRESHOLD.percent) continue;
+    if (
+      Math.abs(row.change) < FORECAST_MOVE_THRESHOLD.amount &&
+      pct < FORECAST_MOVE_THRESHOLD.percent
+    )
+      continue;
     const up = row.change > 0;
     out.push({
       id: `forecast-${row.id}`,
@@ -313,7 +341,10 @@ export function buildSignals(input: SignalInput): Signal[] {
     });
 
   // 5. Milestones forecast to land under 90% of plan.
-  if (input.milestoneYearEndPercent !== undefined && input.milestoneYearEndPercent < MILESTONE_LANDING_PERCENT)
+  if (
+    input.milestoneYearEndPercent !== undefined &&
+    input.milestoneYearEndPercent < MILESTONE_LANDING_PERCENT
+  )
     out.push({
       id: "milestones-landing",
       date: today,
@@ -345,7 +376,11 @@ export function buildSignals(input: SignalInput): Signal[] {
           detail: "Delivered but awaiting acceptance past its target date.",
           link: { kind: "pathway" },
         });
-      else if (capability.targetDate && capability.targetDate < today && capability.status !== "accepted")
+      else if (
+        capability.targetDate &&
+        capability.targetDate < today &&
+        capability.status !== "accepted"
+      )
         out.push({
           id: `cap-late-${capability.id}`,
           date: capability.targetDate,
@@ -376,5 +411,7 @@ export function buildSignals(input: SignalInput): Signal[] {
       });
   }
 
-  return out.sort((a, b) => b.date.localeCompare(a.date) || (a.tone === "bad" ? -1 : 1)).slice(0, MAX_SIGNALS);
+  return out
+    .sort((a, b) => b.date.localeCompare(a.date) || (a.tone === "bad" ? -1 : 1))
+    .slice(0, MAX_SIGNALS);
 }

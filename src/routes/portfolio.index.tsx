@@ -82,7 +82,10 @@ export const Route = createFileRoute("/portfolio/")({
     ],
   }),
   validateSearch: (search: Record<string, unknown>): { programme?: string | undefined } => ({
-    programme: typeof search["programme"] === "string" && search["programme"] ? search["programme"] : undefined,
+    programme:
+      typeof search["programme"] === "string" && search["programme"]
+        ? search["programme"]
+        : undefined,
   }),
   component: PortfolioPage,
 });
@@ -154,13 +157,23 @@ function PortfolioPage() {
   );
 }
 
-function PortfolioBody({ data: full, switcher }: { data: PortfolioOverview; switcher: React.ReactNode }) {
+function PortfolioBody({
+  data: full,
+  switcher,
+}: {
+  data: PortfolioOverview;
+  switcher: React.ReactNode;
+}) {
   const { programme: programmeParam } = Route.useSearch();
-  const selectedProgramme = full.programmes.some((item) => item.id === programmeParam) ? (programmeParam ?? null) : null;
+  const selectedProgramme = full.programmes.some((item) => item.id === programmeParam)
+    ? (programmeParam ?? null)
+    : null;
   // The programme strip filters everything below it (spec §3.4).
   const data = useMemo<PortfolioOverview>(() => {
     if (!selectedProgramme) return full;
-    const ids = new Set(full.projects.filter((p) => p.programmeId === selectedProgramme).map((p) => p.id));
+    const ids = new Set(
+      full.projects.filter((p) => p.programmeId === selectedProgramme).map((p) => p.id),
+    );
     return {
       ...full,
       programmes: full.programmes.filter((item) => item.id === selectedProgramme),
@@ -742,8 +755,13 @@ function OverviewBand({
   );
   const settings = useSettings();
   const [range, setRange] = useState<ChartRange>("fy");
-  const progressInputs = useProgressInputs(useMemo(() => active.map((project) => project.id), [active]));
-  const activeIds = useMemo(() => new Set(scopedActive.map((project) => project.id)), [scopedActive]);
+  const progressInputs = useProgressInputs(
+    useMemo(() => active.map((project) => project.id), [active]),
+  );
+  const activeIds = useMemo(
+    () => new Set(scopedActive.map((project) => project.id)),
+    [scopedActive],
+  );
   const scopedInputs = useMemo(() => {
     const raw = progressInputs.data;
     if (!raw) return undefined;
@@ -762,7 +780,10 @@ function OverviewBand({
       history: programmeId ? [] : history,
       projectHistory: projectHistory.filter((row) => activeIds.has(row.projectId)),
       liveGreen: scopedActive.length
-        ? Math.round((100 * scopedActive.filter((project) => project.health.overall === "On Track").length) / scopedActive.length)
+        ? Math.round(
+            (100 * scopedActive.filter((project) => project.health.overall === "On Track").length) /
+              scopedActive.length,
+          )
         : 0,
       programmeIds,
       today,
@@ -770,22 +791,65 @@ function OverviewBand({
       range: chartRange,
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps -- build closes over the listed values
-  const progress = useMemo(() => build(range), [scopedInputs, milestones, activeIds, history, projectHistory, scopedActive, programmeIds, today, settings.regional.financialYearStartMonth, range]);
+  const progress = useMemo(
+    () => build(range),
+    [
+      scopedInputs,
+      milestones,
+      activeIds,
+      history,
+      projectHistory,
+      scopedActive,
+      programmeIds,
+      today,
+      settings.regional.financialYearStartMonth,
+      range,
+    ],
+  );
   // eslint-disable-next-line react-hooks/exhaustive-deps -- signals always use the financial year
-  const fyProgress = useMemo(() => build("fy"), [scopedInputs, milestones, activeIds, history, projectHistory, scopedActive, programmeIds, today, settings.regional.financialYearStartMonth]);
+  const fyProgress = useMemo(
+    () => build("fy"),
+    [
+      scopedInputs,
+      milestones,
+      activeIds,
+      history,
+      projectHistory,
+      scopedActive,
+      programmeIds,
+      today,
+      settings.regional.financialYearStartMonth,
+    ],
+  );
 
   const pathway = usePathway();
-  const forecasts = useForecastHistory(useMemo(() => active.map((project) => project.id), [active]));
+  const forecasts = useForecastHistory(
+    useMemo(() => active.map((project) => project.id), [active]),
+  );
   const [sort, setSort] = useState<WatchSort>("overspend");
   const declared = useMemo(() => {
-    const map = new Map<string, { declared: Health; evidenced: EvidencedRag; divergent: boolean }>();
+    const map = new Map<
+      string,
+      { declared: Health; evidenced: EvidencedRag; divergent: boolean }
+    >();
     for (const row of getAssuranceRows(assurance.data ?? []))
-      map.set(row.projectId, { declared: row.declared, evidenced: row.evidenced, divergent: row.divergent });
+      map.set(row.projectId, {
+        declared: row.declared,
+        evidenced: row.evidenced,
+        divergent: row.divergent,
+      });
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- version tracks the browser-local sprint store
   }, [assurance.data, version]);
   const watch = useMemo(
-    () => buildWatchlist({ active: scopedActive, declared, forecasts: forecasts.data ?? [], today, sort }),
+    () =>
+      buildWatchlist({
+        active: scopedActive,
+        declared,
+        forecasts: forecasts.data ?? [],
+        today,
+        sort,
+      }),
     [scopedActive, declared, forecasts.data, today, sort],
   );
   const cards = useMemo(
@@ -795,11 +859,14 @@ function OverviewBand({
   const signals = useMemo(() => {
     const monthStart = `${today.slice(0, 7)}-01`;
     const previousPathwayRag = new Map<string, Health>();
-    for (const row of progressInputs.data?.pathway ?? []) if (row.date < monthStart) previousPathwayRag.set(row.item, row.rag);
+    for (const row of progressInputs.data?.pathway ?? [])
+      if (row.date < monthStart) previousPathwayRag.set(row.item, row.rag);
     const last = fyProgress?.points.at(-1);
     return buildSignals({
       today,
-      scopeName: programmeId ? (data.programmes.find((p) => p.id === programmeId)?.name ?? "") : portfolio.name,
+      scopeName: programmeId
+        ? (data.programmes.find((p) => p.id === programmeId)?.name ?? "")
+        : portfolio.name,
       spendPercent: fyProgress?.current.spend,
       milestonePercent: fyProgress?.current.milestones,
       milestoneYearEndPercent: last?.values.milestones,
@@ -811,9 +878,26 @@ function OverviewBand({
       programmeIds,
       money: format.compact,
     });
-  }, [today, progressInputs.data, fyProgress, programmeId, data.programmes, portfolio.name, scopedActive, projectHistory, watch, pathway.data, programmeIds, format.compact]);
+  }, [
+    today,
+    progressInputs.data,
+    fyProgress,
+    programmeId,
+    data.programmes,
+    portfolio.name,
+    scopedActive,
+    projectHistory,
+    watch,
+    pathway.data,
+    programmeIds,
+    format.compact,
+  ]);
   const selectProgramme = (id: string | null) =>
-    navigate({ search: (prev) => ({ ...prev, programme: id ?? undefined }), replace: true, resetScroll: false });
+    navigate({
+      search: (prev) => ({ ...prev, programme: id ?? undefined }),
+      replace: true,
+      resetScroll: false,
+    });
   const asOf = dataAsOf([
     ...projects.flatMap((project) => [project.updatedAt, project.lastReportDate]),
     ...milestones.map((milestone) => milestone.updatedAt),
@@ -850,7 +934,11 @@ function OverviewBand({
             {progress ? (
               <ProgressChart data={progress} range={range} onRangeChange={setRange} />
             ) : (
-              <div aria-busy aria-label="Loading the progress chart" className="m-5 h-[330px] animate-pulse rounded-md bg-pmo-panel/40" />
+              <div
+                aria-busy
+                aria-label="Loading the progress chart"
+                className="m-5 h-[330px] animate-pulse rounded-md bg-pmo-panel/40"
+              />
             )}
           </div>
           <div className="border-t border-pmo-line min-[1100px]:w-[380px] min-[1100px]:shrink-0 min-[1100px]:border-l min-[1100px]:border-t-0">

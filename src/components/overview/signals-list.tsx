@@ -60,10 +60,19 @@ export function SignalsList({ signals }: { signals: Signal[] }) {
       {signals.length ? (
         <ol>
           {signals.map((signal, i) => (
-            <li key={signal.id} className={i ? "flex flex-col gap-[3px] border-t border-pmo-line py-2.5" : "flex flex-col gap-[3px] py-2.5"}>
+            <li
+              key={signal.id}
+              className={
+                i
+                  ? "flex flex-col gap-[3px] border-t border-pmo-line py-2.5"
+                  : "flex flex-col gap-[3px] py-2.5"
+              }
+            >
               <div className="flex justify-between gap-2 text-[13px]">
                 <SignalLink signal={signal} />
-                <span className="shrink-0 font-geist-mono text-[11px] tabular-nums text-pmo-muted">{short(signal.date)}</span>
+                <span className="shrink-0 font-geist-mono text-[11px] tabular-nums text-pmo-muted">
+                  {short(signal.date)}
+                </span>
               </div>
               <span className="text-[13px] leading-[1.45] text-pmo-muted">{signal.detail}</span>
             </li>
