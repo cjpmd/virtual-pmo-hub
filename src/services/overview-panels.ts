@@ -286,7 +286,6 @@ export function buildSignals(input: SignalInput): Signal[] {
   // 3. Forecast moved more than the threshold.
   for (const row of input.watch) {
     if (row.change === null) continue;
-    const base = row.variance - row.change; // last month's variance; percent is of forecast
     const forecast = input.active.find((p) => p.id === row.id)?.forecast ?? 0;
     const previous = forecast - row.change;
     const pct = previous ? (Math.abs(row.change) / Math.abs(previous)) * 100 : 0;
@@ -297,7 +296,7 @@ export function buildSignals(input: SignalInput): Signal[] {
       date: today,
       tone: up ? "bad" : "warn",
       title: row.name,
-      detail: `Forecast ${up ? "up" : "down"} ${input.money(Math.abs(row.change))}, now ${input.money(Math.abs(row.variance))} ${row.variance >= 0 ? "over" : "under"} budget${base === row.variance ? "" : ""}.`,
+      detail: `Forecast ${up ? "up" : "down"} ${input.money(Math.abs(row.change))}, now ${input.money(Math.abs(row.variance))} ${row.variance >= 0 ? "over" : "under"} budget.`,
       link: { kind: "project", code: row.code },
     });
   }
