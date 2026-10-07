@@ -426,7 +426,7 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
     // Red risks open at month end.
     if (!forecast && inputs.risks.length) {
       values.risks = inputs.risks.filter(
-        (risk) => risk.score >= 15 && risk.createdAt < end && (risk.closedAt === null ? risk.status === "open" || month === currentMonth || true : risk.closedAt >= end),
+        (risk) => risk.score >= 15 && risk.createdAt < end && (risk.closedAt === null ? risk.status === "open" : risk.closedAt >= end),
       ).length;
     }
 
