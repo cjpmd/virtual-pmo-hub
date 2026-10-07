@@ -13,34 +13,67 @@ import { useProjects } from "@/hooks/use-hierarchy";
 import { useFormat } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { monthLabel } from "@/services/actuals-import";
-import type { RollupFinancials as Rollup } from "@/services/financials";
+import type {
+  ProjectFinancials,
+  RollupFinancials as Rollup,
+} from "@/services/financials";
 
 type Scope = { programmeId: string } | { portfolioId: string };
 
 export function RollupFinancials({
   scope,
   breakdown = true,
+  projectIds,
 }: {
   scope: Scope;
   breakdown?: boolean;
+  projectIds?: string[];
 }) {
   const programme = useProgrammeFinancials("programmeId" in scope ? scope.programmeId : "");
   const portfolio = usePortfolioFinancials("portfolioId" in scope ? scope.portfolioId : undefined);
   const query = "programmeId" in scope ? programme : portfolio;
+  const projectFinancials = useProjectFinancialsList({ ...scope, projectIds });
   return (
-    <QueryState query={query}>
-      {(data) =>
-        data ? (
-          <div className="space-y-4">
-            <Summary data={data} kind={"programmeId" in scope ? "programme" : "portfolio"} />
-            {breakdown && <Breakdown scope={scope} />}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">No financials yet.</p>
-        )
-      }
+    <QueryState query={projectFinancials}>
+      {(rows) => (
+        <QueryState query={query}>
+          {(data) =>
+            data ? (
+              <div className="space-y-4">
+                <Summary
+                  data={projectIds ? sumProjects(data, rows) : data}
+                  kind={"programmeId" in scope ? "programme" : "portfolio"}
+                />
+                {breakdown && <Breakdown scope={scope} projectIds={projectIds} />}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No financials yet.</p>
+            )
+          }
+        </QueryState>
+      )}
     </QueryState>
   );
+}
+
+function sumProjects(parent: Rollup, rows: ProjectFinancials[]): Rollup {
+  const sum = (read: (row: ProjectFinancials) => number) =>
+    rows.reduce((total, row) => total + read(row), 0);
+  const budget = sum((row) => row.budget);
+  const eac = sum((row) => row.eac);
+  return {
+    ...parent,
+    projectCount: rows.length,
+    baselinedCount: rows.filter((row) => row.hasBaseline).length,
+    budget,
+    actualToDate: sum((row) => row.actualToDate),
+    actualOpenMonths: sum((row) => row.actualOpenMonths),
+    forecastRemaining: sum((row) => row.forecastRemaining),
+    eac,
+    variance: budget - eac,
+    variancePercent: budget ? Math.round(((eac - budget) / budget) * 1000) / 10 : null,
+    openMonthOverrun: rows.some((row) => row.openMonthOverrun),
+  };
 }
 
 function Summary({ data, kind }: { data: Rollup; kind: "programme" | "portfolio" }) {
@@ -109,9 +142,9 @@ function Summary({ data, kind }: { data: Rollup; kind: "programme" | "portfolio"
   );
 }
 
-function Breakdown({ scope }: { scope: Scope }) {
+function Breakdown({ scope, projectIds }: { scope: Scope; projectIds?: string[] }) {
   const format = useFormat();
-  const list = useProjectFinancialsList(scope);
+  const list = useProjectFinancialsList({ ...scope, projectIds });
   const projects = useProjects();
   const byId = new Map((projects.data ?? []).map((project) => [project.id, project]));
   return (

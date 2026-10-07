@@ -64,6 +64,16 @@ export interface SummaryInput {
 const DAY = 86_400_000;
 const dayOf = (iso: string) => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10));
 
+/** The live counterpart of the snapshot's active-project, unsigned, inclusive 30-day rule. */
+export function isMilestoneDueWithin30(
+  milestone: Pick<PortfolioMilestone, "actualDate" | "forecastDate">,
+  today: string,
+) {
+  if (milestone.actualDate) return false;
+  const days = (dayOf(milestone.forecastDate) - dayOf(today)) / DAY;
+  return days >= 0 && days <= 30;
+}
+
 /** The last month-end snapshot before the current month. */
 export function previousSnapshot<T extends { date: string }>(rows: T[], today: string) {
   const month = today.slice(0, 7);
@@ -100,13 +110,11 @@ export function getSummaryMetrics(input: SummaryInput): SummaryMetric[] {
     if (ids.has(row.projectId) && row.date.slice(0, 7) < month) lastMonth.set(row.projectId, row);
   const greenBefore = [...lastMonth.values()].filter((row) => row.overall === "On Track").length;
 
-  const now = dayOf(today);
-  const live = input.milestones.filter((m) => ids.has(m.projectId) && m.status !== "Completed");
-  const due30 = live.filter((m) => {
-    const days = (dayOf(m.forecastDate) - now) / DAY;
-    return days >= 0 && days <= 30;
-  }).length;
-  const overdue = live.filter((m) => m.status === "Overdue").length;
+  const activeMilestones = input.milestones.filter((milestone) => ids.has(milestone.projectId));
+  const due30 = activeMilestones.filter((milestone) => isMilestoneDueWithin30(milestone, today)).length;
+  const overdue = activeMilestones.filter(
+    (milestone) => !milestone.actualDate && dayOf(milestone.forecastDate) < dayOf(today),
+  ).length;
 
   return [
     {
@@ -160,13 +168,12 @@ export function getSummaryMetrics(input: SummaryInput): SummaryMetric[] {
       label: "Milestones 30d",
       unit: "count",
       value: due30,
-      // A forward window, not a level carried month to month: there is no "last month" value
-      // without milestone snapshots, so the strip shows the overdue count instead.
-      change: null,
-      detail: {
-        text: `${overdue} overdue`,
-        tone: overdue ? "bad" : "neutral",
-      },
+      change:
+        snapshot?.milestonesDue30 === undefined ? null : due30 - snapshot.milestonesDue30,
+      detail:
+        snapshot?.milestonesDue30 === undefined
+          ? { text: `${overdue} overdue`, tone: overdue ? "bad" : "neutral" }
+          : undefined,
     },
     {
       key: "gaps",

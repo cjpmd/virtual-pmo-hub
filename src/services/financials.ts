@@ -295,10 +295,13 @@ export async function getPortfolioFinancials(portfolioId: string) {
 export async function listProjectFinancials(filter: {
   programmeId?: string;
   portfolioId?: string;
+  projectIds?: string[];
 }) {
+  if (filter.projectIds && !filter.projectIds.length) return [];
   let query = supabase.from("v_project_financials").select("*");
   if (filter.programmeId) query = query.eq("programme_id", filter.programmeId);
   if (filter.portfolioId) query = query.eq("effective_portfolio_id", filter.portfolioId);
+  if (filter.projectIds) query = query.in("project_id", filter.projectIds);
   return unwrap(await query.range(0, 1999), "Loading project financials").map(toSummary);
 }
 

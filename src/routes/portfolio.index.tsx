@@ -21,6 +21,7 @@ import { HealthPill } from "@/components/health-pill";
 import { PageSkeleton, QueryState } from "@/components/query-state";
 import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
 import { RollupFinancials } from "@/components/rollup-financials";
+import { Switch } from "@/components/ui/switch";
 import { usePortfolioOverview } from "@/hooks/use-hierarchy";
 import { useAssuranceProjects } from "@/hooks/use-assurance";
 import { useFinancialPeriods } from "@/hooks/use-financials";
@@ -156,6 +157,7 @@ function PortfolioBody({ data, switcher }: { data: PortfolioOverview; switcher: 
   } = useMemo(() => getDimensionScores(active, data.projectHistory), [active, data.projectHistory]);
   const delivery = useMemo(() => getDeliveryCurve(allMilestones), [allMilestones]);
   const [horizon, setHorizon] = useState("180");
+  const [includeInactiveFinancials, setIncludeInactiveFinancials] = useState(false);
 
   const milestoneMetrics = getMilestoneMetrics(allMilestones);
   const slipped = useMemo(() => {
@@ -206,14 +208,33 @@ function PortfolioBody({ data, switcher }: { data: PortfolioOverview; switcher: 
       <OverviewBand data={data} switcher={switcher} active={active} />
 
       <section className="space-y-3">
-        <div>
-          <h2 className="font-display text-lg font-semibold">Financial summary</h2>
-          <p className="text-sm text-muted-foreground">
-            Every project in the portfolio, including proposed and closed ones: money already spent
-            stays on the books. The summary strip above counts active projects only.
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-display text-lg font-semibold">Financial summary</h2>
+            <p className="text-sm text-muted-foreground">
+              {includeInactiveFinancials
+                ? "Includes active, proposed, on-hold and closed projects."
+                : "Active projects only, matching the summary strip above."}
+            </p>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Switch
+              checked={includeInactiveFinancials}
+              onCheckedChange={setIncludeInactiveFinancials}
+              aria-label="Include proposed and closed projects"
+            />
+            Include proposed and closed
+          </label>
         </div>
-        <RollupFinancials scope={{ portfolioId: portfolio.id }} breakdown={false} />
+        <RollupFinancials
+          scope={{ portfolioId: portfolio.id }}
+          breakdown={false}
+          projectIds={
+            includeInactiveFinancials
+              ? projects.map((project) => project.id)
+              : active.map((project) => project.id)
+          }
+        />
       </section>
 
       <div className="grid gap-4 xl:grid-cols-12">

@@ -5,6 +5,7 @@ import {
   changeTone,
   dataAsOf,
   getSummaryMetrics,
+  isMilestoneDueWithin30,
   periodStatus,
   type MetricKey,
   type SummaryMetric,
@@ -21,8 +22,12 @@ const project = (id: string, over: Partial<ProjectSummary>) =>
     health: { overall: "On Track" },
     ...over,
   }) as unknown as ProjectSummary;
-const milestone = (projectId: string, forecastDate: string, status = "Not Started") =>
-  ({ projectId, forecastDate, status }) as unknown as PortfolioMilestone;
+const milestone = (
+  projectId: string,
+  forecastDate: string,
+  status = "Not Started",
+  actualDate?: string,
+) => ({ projectId, forecastDate, status, actualDate }) as unknown as PortfolioMilestone;
 
 const today = "2026-10-07";
 const projects = [
@@ -43,7 +48,14 @@ const metrics = (programmeId?: string) =>
       ],
       history: [
         { date: "2026-08-31", budget: 150, forecast: 150, spend: 50, variance: 0 },
-        { date: "2026-09-30", budget: 200, forecast: 210, spend: 60, variance: 10 },
+        {
+          date: "2026-09-30",
+          budget: 200,
+          forecast: 210,
+          spend: 60,
+          variance: 10,
+          milestonesDue30: 3,
+        },
         { date: "2026-10-05", budget: 999, forecast: 999, spend: 999, variance: 999 },
       ] as never,
       projectHistory: [
@@ -67,8 +79,8 @@ describe("summary strip", () => {
     expect(m.spend.detail?.text).toBe("40% of budget");
     // a is green now (amber before), b amber now (green before), c closed: net no change.
     expect(m.onTrack).toMatchObject({ value: 1, of: 2, change: 0 });
-    expect(m.milestones).toMatchObject({ value: 1, change: null });
-    expect(m.milestones.detail).toEqual({ text: "1 overdue", tone: "bad" });
+    expect(m.milestones).toMatchObject({ value: 1, change: -2 });
+    expect(m.milestones.detail).toBeUndefined();
     expect(m.gaps).toMatchObject({ value: 3, change: 2 });
   });
 
@@ -85,6 +97,25 @@ describe("summary strip", () => {
     expect(changeTone("onTrack", -2)).toBe("bad");
     expect(changeTone("budget", 50)).toBe("neutral");
     expect(changeTone("gaps", 0)).toBe("neutral");
+  });
+
+  it("counts the inclusive 30-day forecast window only when not signed off", () => {
+    expect(isMilestoneDueWithin30(milestone("a", "2026-10-07"), today)).toBe(true);
+    expect(isMilestoneDueWithin30(milestone("a", "2026-11-06"), today)).toBe(true);
+    expect(isMilestoneDueWithin30(milestone("a", "2026-11-07"), today)).toBe(false);
+    expect(isMilestoneDueWithin30(milestone("a", "2026-10-20", "Completed", "2026-10-06"), today)).toBe(false);
+  });
+
+  it("shows overdue detail until a prior-month milestone snapshot exists", () => {
+    const m = getSummaryMetrics({
+      projects,
+      milestones: [milestone("a", "2026-09-01", "Overdue")],
+      history: [{ date: "2026-09-30", budget: 200 }] as never,
+      projectHistory: [],
+      gaps: { current: 0, previous: null },
+      today,
+    }).find((item) => item.key === "milestones");
+    expect(m).toMatchObject({ value: 0, change: null, detail: { text: "1 overdue", tone: "bad" } });
   });
 });
 

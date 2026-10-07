@@ -45,6 +45,7 @@ export interface PortfolioSnapshot {
   spend: number | undefined;
   variance: number | undefined;
   percentOnTrack: number | undefined;
+  milestonesDue30: number | undefined;
 }
 
 export interface ProjectSnapshot {
@@ -96,6 +97,7 @@ export async function listPortfolioSnapshots(
       spend: metric(row.metrics, "spend"),
       variance: metric(row.metrics, "variance"),
       percentOnTrack: metric(row.metrics, "percentOnTrack"),
+      milestonesDue30: metric(row.metrics, "milestonesDue30"),
     })),
     periods,
   );
