@@ -72,7 +72,7 @@ function StatusPill({ status }: { status: BusinessCaseStatus }) {
   );
 }
 
-function Panel({ title, subtitle, actions, children }: { title: string; subtitle?: string; actions?: ReactNode; children: ReactNode }) {
+function Panel({ title, subtitle, actions, children }: { title: string; subtitle?: string | undefined; actions?: ReactNode; children: ReactNode }) {
   return (
     <section className="rounded-xl border border-pmo-line bg-pmo-panel font-geist">
       <header className="flex items-center justify-between gap-2 border-b border-pmo-line px-4 py-3">
@@ -108,7 +108,7 @@ export function BusinessCasePage({
   const versions = businessCase?.versions ?? [];
   const version = versions.find((v) => v.id === versionId) ?? versions[0];
   useEffect(() => {
-    if (versions.length && !versions.some((v) => v.id === versionId)) setVersionId(versions[0].id);
+    if (versions.length && !versions.some((v) => v.id === versionId)) setVersionId(versions[0]!.id);
   }, [versions, versionId]);
 
   if (query.isLoading) return <p className="text-sm text-muted-foreground">Loading the business case…</p>;

@@ -107,6 +107,19 @@ export interface BusinessCase {
   versions: CaseVersion[];
 }
 
+type OptionRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  whole_life_cost: number | null;
+  delivery_cost: number | null;
+  benefits_summary: string | null;
+  risk_summary: string | null;
+  is_preferred: boolean;
+  sort_order: number;
+  updated_at: string;
+};
+
 const num = (value: number | string | null) => (value === null ? null : Number(value));
 
 export async function getBusinessCase(owner: CaseOwner): Promise<BusinessCase | null> {
@@ -158,7 +171,7 @@ export async function getBusinessCase(owner: CaseOwner): Promise<BusinessCase | 
           content: s.content,
           updatedAt: s.updated_at,
         })),
-        options: bySort(v.business_case_options).map((o) => ({
+        options: bySort(v.business_case_options as unknown as OptionRow[]).map((o) => ({
           id: o.id,
           name: o.name,
           description: o.description,

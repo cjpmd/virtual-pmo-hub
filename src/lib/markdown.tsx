@@ -28,23 +28,23 @@ function inline(text: string, keyBase: string): ReactNode[] {
 }
 
 export function Markdown({ source }: { source: string }) {
-  const lines = source.replace(/\r\n/g, "\n").split("\n");
+  const lines: string[] = source.replace(/\r\n/g, "\n").split("\n");
   const blocks: ReactNode[] = [];
   let i = 0;
   while (i < lines.length) {
-    const line = lines[i];
+    const line = lines[i] ?? "";
     if (!line.trim()) {
       i++;
       continue;
     }
     const heading = /^(#{1,3})\s+(.*)$/.exec(line);
     if (heading) {
-      const level = heading[1].length;
+      const level = (heading[1] ?? "").length;
       const cls =
         level === 1 ? "text-base font-semibold" : level === 2 ? "text-sm font-semibold" : "text-sm font-medium";
       blocks.push(
         <p key={i} className={cls}>
-          {inline(heading[2], `h${i}`)}
+          {inline(heading[2] ?? "", `h${i}`)}
         </p>,
       );
       i++;
@@ -56,8 +56,8 @@ export function Markdown({ source }: { source: string }) {
       const ordered = numbered.test(line);
       const rule = ordered ? numbered : bullet;
       const items: ReactNode[] = [];
-      while (i < lines.length && rule.test(lines[i])) {
-        items.push(<li key={i}>{inline(lines[i].replace(rule, ""), `li${i}`)}</li>);
+      while (i < lines.length && rule.test((lines[i] ?? ""))) {
+        items.push(<li key={i}>{inline((lines[i] ?? "").replace(rule, ""), `li${i}`)}</li>);
         i++;
       }
       blocks.push(
@@ -74,8 +74,8 @@ export function Markdown({ source }: { source: string }) {
       continue;
     }
     const para: string[] = [];
-    while (i < lines.length && lines[i].trim() && !/^(#{1,3})\s/.test(lines[i]) && !bullet.test(lines[i]) && !numbered.test(lines[i])) {
-      para.push(lines[i]);
+    while (i < lines.length && (lines[i] ?? "").trim() && !/^(#{1,3})\s/.test((lines[i] ?? "")) && !bullet.test((lines[i] ?? "")) && !numbered.test((lines[i] ?? ""))) {
+      para.push((lines[i] ?? ""));
       i++;
     }
     blocks.push(<p key={`p${i}`}>{inline(para.join(" "), `p${i}`)}</p>);
