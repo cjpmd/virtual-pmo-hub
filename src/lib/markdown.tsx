@@ -16,7 +16,7 @@ function inline(text: string, keyBase: string): ReactNode[] {
     if (token.startsWith("**")) parts.push(<strong key={key}>{token.slice(2, -2)}</strong>);
     else if (token.startsWith("`"))
       parts.push(
-        <code key={key} className="rounded bg-muted px-1 font-geist-mono text-[0.9em]">
+        <code key={key} className="rounded bg-muted px-1 pmo-num text-[0.9em]">
           {token.slice(1, -1)}
         </code>,
       );
