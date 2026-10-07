@@ -112,8 +112,24 @@ create trigger business_cases_updated_at before update on public.business_cases
 create trigger business_cases_audit after insert or update or delete on public.business_cases
   for each row execute function private.audit_row_change();
 
+-- Requests the caller wrote or asked for (created_by, or requester is their resource).
+create function private.my_authored_request_ids()
+returns uuid[]
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(array_agg(r.id), '{}')
+  from public.project_requests r
+  where r.created_by = (select auth.uid())
+     or r.requester_id = any (private.my_resource_ids());
+$$;
+revoke all on function private.my_authored_request_ids() from public, anon;
+grant execute on function private.my_authored_request_ids() to authenticated, service_role;
+
 -- Cases the caller can edit: project cases where the project is editable (contributor,
--- not archived); request cases for managers, matching request_benefit_drafts.
+-- not archived); request cases for managers and for the request's author or requester.
 create function private.my_editable_business_case_ids()
 returns uuid[]
 language sql
@@ -124,7 +140,8 @@ as $$
   select coalesce(array_agg(bc.id), '{}')
   from public.business_cases bc
   where bc.project_id = any (private.my_editable_project_ids())
-     or (bc.request_id is not null and bc.workspace_id = any (private.my_workspace_ids('manager')));
+     or (bc.request_id is not null and (bc.workspace_id = any (private.my_workspace_ids('manager'))
+         or bc.request_id = any (private.my_authored_request_ids())));
 $$;
 revoke all on function private.my_editable_business_case_ids() from public, anon;
 grant execute on function private.my_editable_business_case_ids() to authenticated, service_role;
@@ -138,7 +155,8 @@ create policy business_cases_select on public.business_cases for select to authe
 create policy business_cases_insert on public.business_cases for insert to authenticated
   with check (case when project_id is not null
     then project_id = any ((select private.my_editable_project_ids())::uuid[])
-    else workspace_id = any ((select private.my_workspace_ids('manager'::public.app_role))::uuid[]) end);
+    else workspace_id = any ((select private.my_workspace_ids('manager'::public.app_role))::uuid[])
+      or request_id = any ((select private.my_authored_request_ids())::uuid[]) end);
 -- Title edits only; moving from request to project happens in the F5 conversion RPC.
 create policy business_cases_update on public.business_cases for update to authenticated
   using (id = any ((select private.my_editable_business_case_ids())::uuid[]))
@@ -379,6 +397,24 @@ create trigger business_case_options_10_frozen before insert or update or delete
 create trigger business_case_benefits_10_frozen before insert or update or delete on public.business_case_benefits
   for each row execute function private.business_case_child_frozen();
 
+-- Switching the preferred option is one write: clear the others first.
+create function private.business_case_options_single_preferred()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.is_preferred and (tg_op = 'INSERT' or not old.is_preferred) then
+    update public.business_case_options set is_preferred = false
+    where version_id = new.version_id and id <> new.id and is_preferred;
+  end if;
+  return new;
+end;
+$$;
+revoke all on function private.business_case_options_single_preferred() from public, anon, authenticated;
+create trigger business_case_options_15_single_preferred before insert or update of is_preferred on public.business_case_options
+  for each row execute function private.business_case_options_single_preferred();
+
 -- Keep preferred_option_id and is_preferred in step (the options table is the source).
 create function private.business_case_options_sync_preferred()
 returns trigger
@@ -490,6 +526,9 @@ begin
   if exists (select 1 from public.business_case_versions where business_case_id = v_case.id and status = 'draft') then
     raise exception 'This business case already has a draft' using errcode = '23505';
   end if;
+  if exists (select 1 from public.business_case_versions where business_case_id = v_case.id and status = 'submitted') then
+    raise exception 'A version is awaiting a decision' using errcode = '22023';
+  end if;
   select * into v_prev from public.business_case_versions
   where business_case_id = v_case.id order by version desc limit 1;
 
@@ -566,7 +605,7 @@ begin
   update public.business_case_versions
   set status = 'submitted', submitted_at = now(), submitted_by = (select auth.uid()),
       preferred_option_id = v_preferred.id,
-      whole_life_cost = coalesce(whole_life_cost, v_preferred.whole_life_cost)
+      whole_life_cost = v_preferred.whole_life_cost
   where id = v.id
   returning * into v;
   perform set_config('private.bc_transition', '', true);
@@ -617,10 +656,12 @@ begin
 end;
 $$;
 
--- Business-case documents: whoever can edit the case. Others unchanged.
+-- Business-case documents: whoever can edit the case. Project documents: the project must be
+-- editable. Programme (manager) and capability (contributor) unchanged.
 alter policy documents_insert on public.documents
   with check (
     case when scope::text = 'business_case' then business_case_id = any ((select private.my_editable_business_case_ids())::uuid[])
+         when scope = 'project' then project_id = any ((select private.my_editable_project_ids())::uuid[])
          when scope = 'programme' then workspace_id = any ((select private.my_workspace_ids('manager'))::uuid[])
          else workspace_id = any ((select private.my_workspace_ids('contributor'))::uuid[]) end);
 
@@ -635,6 +676,7 @@ as $$
     select 1 from public.documents d
     where d.storage_path = p_name and d.archived_at is null
       and case when d.scope::text = 'business_case' then d.business_case_id = any (private.my_editable_business_case_ids())
+               when d.scope = 'project' then d.project_id = any (private.my_editable_project_ids())
                else private.has_workspace_role(d.workspace_id, case when d.scope = 'programme' then 'manager'::public.app_role else 'contributor'::public.app_role end) end);
 $$;
 
