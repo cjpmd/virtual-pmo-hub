@@ -32,7 +32,10 @@ export function RollupFinancials({
   const programme = useProgrammeFinancials("programmeId" in scope ? scope.programmeId : "");
   const portfolio = usePortfolioFinancials("portfolioId" in scope ? scope.portfolioId : undefined);
   const query = "programmeId" in scope ? programme : portfolio;
-  const projectFinancials = useProjectFinancialsList({ ...scope, projectIds });
+  const projectFinancials = useProjectFinancialsList({
+    ...scope,
+    ...(projectIds ? { projectIds } : {}),
+  });
   return (
     <QueryState query={projectFinancials}>
       {(rows) => (
@@ -44,7 +47,9 @@ export function RollupFinancials({
                   data={projectIds ? sumProjects(data, rows) : data}
                   kind={"programmeId" in scope ? "programme" : "portfolio"}
                 />
-                {breakdown && <Breakdown scope={scope} projectIds={projectIds} />}
+                {breakdown && (
+                  <Breakdown scope={scope} {...(projectIds ? { projectIds } : {})} />
+                )}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">No financials yet.</p>
@@ -144,7 +149,7 @@ function Summary({ data, kind }: { data: Rollup; kind: "programme" | "portfolio"
 
 function Breakdown({ scope, projectIds }: { scope: Scope; projectIds?: string[] }) {
   const format = useFormat();
-  const list = useProjectFinancialsList({ ...scope, projectIds });
+  const list = useProjectFinancialsList({ ...scope, ...(projectIds ? { projectIds } : {}) });
   const projects = useProjects();
   const byId = new Map((projects.data ?? []).map((project) => [project.id, project]));
   return (
