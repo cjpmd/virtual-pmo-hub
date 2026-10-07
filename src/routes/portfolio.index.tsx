@@ -725,7 +725,11 @@ function OverviewBand({
   switcher: React.ReactNode;
   programmeId: string | null;
 }) {
-  const { portfolio, projects, milestones, history, projectHistory } = data;
+  const { portfolio, projects, milestones } = data;
+  // One RPC call feeds the chart inputs, snapshot history, forecast history, as-of and today.
+  const rpc = usePortfolioOverviewData(portfolio.id);
+  const history = rpc.data?.history ?? data.history;
+  const projectHistory = rpc.data?.projectHistory ?? data.projectHistory;
   const active = useMemo(() => activeOnly(projects), [projects]);
   const navigate = Route.useNavigate();
   const format = useFormat();
