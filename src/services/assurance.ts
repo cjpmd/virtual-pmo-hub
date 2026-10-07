@@ -32,6 +32,8 @@ export interface AssuranceProject {
   programme: string;
   state: ProjectStateLabel;
   declared: Health;
+  /** Declared RAG at the end of last month (latest report before this month), if any. */
+  declaredPrevious: Health | null;
 }
 
 /** Projects with their declared RAG; also registers them with the sprint store. */
@@ -47,8 +49,13 @@ export async function loadAssuranceProjects(orgId: string): Promise<AssurancePro
     listPeople(orgId),
   ]);
   const latest = new Map<string, Health>();
-  for (const row of unwrap(reports, "Loading status reports"))
+  const previous = new Map<string, Health>();
+  const monthStart = `${TODAY.slice(0, 7)}-01`;
+  for (const row of unwrap(reports, "Loading status reports")) {
     if (!latest.has(row.project_id)) latest.set(row.project_id, toHealth(row.overall));
+    if (row.reporting_date < monthStart && !previous.has(row.project_id))
+      previous.set(row.project_id, toHealth(row.overall));
+  }
   const source = new Map(
     unwrap(sources, "Loading projects").map((row) => [row.id, row.task_source]),
   );
@@ -69,6 +76,7 @@ export async function loadAssuranceProjects(orgId: string): Promise<AssurancePro
     programme: project.programmeId ? project.programmeName : "Direct",
     state: project.state,
     declared: latest.get(project.id) ?? project.health.overall,
+    declaredPrevious: previous.get(project.id) ?? null,
   }));
 }
 
@@ -155,6 +163,31 @@ export function getAssuranceRows(projects: AssuranceProject[]) {
     .filter((p) => p.state !== "Proposed")
     .map(getAssuranceRow)
     .sort((a, b) => b.riskScore - a.riskScore);
+}
+
+/**
+ * Report vs data gaps: open projects whose declared RAG is better than the evidence, now and at
+ * the end of last month (the last evidence point before this month against the report then).
+ * previous is null when no project has a point to compare.
+ */
+export function reportGapCounts(projects: AssuranceProject[]) {
+  const counted = projects.filter((p) => p.state !== "Proposed" && p.state !== "Closed");
+  const current = counted.map(getAssuranceRow).filter((r) => r.divergent).length;
+  const monthStart = toDate(`${TODAY.slice(0, 7)}-01`);
+  let compared = 0,
+    previous = 0;
+  for (const project of counted) {
+    const point = forecastHistory(project.code)
+      .filter((p) => p.date < monthStart)
+      .at(-1);
+    if (!point || !project.declaredPrevious) continue;
+    const evidenced = level(point.rag),
+      declared = level(healthRag(project.declaredPrevious));
+    if (evidenced < 0 || declared < 0) continue;
+    compared++;
+    if (evidenced > declared) previous++;
+  }
+  return { current, previous: compared ? previous : null };
 }
 
 /** Roll-up: aggregate forecasts, never velocities. Insufficient evidence is excluded and counted. */
