@@ -1,5 +1,5 @@
 -- F4: business cases and documents (docs/financials-and-business-cases.md §2.1, §2.2, §2.4).
--- NOT APPLIED. For review. decide_business_case and the hand-off actions are F5.
+-- Approved 07/10/2026 with changes (request authors, single preferred write, submit figures, awaiting-decision guard, project document uploads).
 
 -- ---------------------------------------------------------------------------
 -- Enums
