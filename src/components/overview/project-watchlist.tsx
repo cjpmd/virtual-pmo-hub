@@ -116,6 +116,15 @@ export function ProjectWatchlist({
               <th scope="col" className="px-2 py-2 font-medium">
                 Report · data
               </th>
+              <th scope="col" className="px-2 py-2 text-right font-medium" title="Open risks · open issues">
+                Risks · issues
+              </th>
+              <th scope="col" className="px-2 py-2 text-right font-medium" title="Open change requests">
+                Changes
+              </th>
+              <th scope="col" className="px-2 py-2 text-right font-medium" title="Average task completion">
+                % done
+              </th>
               <th scope="col" className="px-2 py-2 text-right font-medium">
                 vs budget
               </th>
@@ -170,7 +179,7 @@ export function ProjectWatchlist({
                   >
                     {signed(group.variance)}
                   </td>
-                  <td colSpan={2} />
+                  <td colSpan={3} />
                 </tr>
                 {open &&
                   group.rows.map((row) => (
@@ -195,6 +204,28 @@ export function ProjectWatchlist({
                       <td className="max-w-0 truncate px-4 py-2 pl-9 text-pmo-text">{row.name}</td>
                       <td className="px-2 py-2">
                         <ReportData declared={row.declared} evidenced={row.evidenced} />
+                      </td>
+                      <td className="px-2 py-2 text-right font-geist-mono tabular-nums">
+                        <span className={cn(row.risks > 0 && "text-pmo-bad-text")}>{row.risks}</span>
+                        {" · "}
+                        <span className={cn(row.issues > 0 && "text-pmo-bad-text")}>{row.issues}</span>
+                        <span className="sr-only"> open risks · {row.issues} open issues</span>
+                      </td>
+                      <td className="px-2 py-2 text-right font-geist-mono tabular-nums">
+                        <span className={row.changes > 0 ? "text-pmo-text" : "text-pmo-muted"}>
+                          {row.changes}
+                        </span>
+                        <span className="sr-only"> open changes</span>
+                      </td>
+                      <td className="px-2 py-2 text-right font-geist-mono tabular-nums">
+                        {row.completion === null ? (
+                          <span className="text-pmo-muted">—</span>
+                        ) : (
+                          <>
+                            <span className="text-pmo-text">{row.completion}%</span>
+                            <span className="sr-only"> tasks complete</span>
+                          </>
+                        )}
                       </td>
                       <td
                         className={cn(

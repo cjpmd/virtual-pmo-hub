@@ -59,3 +59,48 @@ describe("overview signals", () => {
     expect(out.map((s) => s.id)).toEqual(["cap-accept-c"]);
   });
 });
+
+describe("watchlist delivery columns", () => {
+  it("carries open risks, issues, changes and task completion per project", async () => {
+    const { buildWatchlist } = await import("./overview-panels");
+    const project = (over: Partial<import("./hierarchy").ProjectSummary>) =>
+      ({
+        id: "p1",
+        code: "P1",
+        name: "Project 1",
+        programmeId: null,
+        programmeName: "",
+        state: "Active",
+        priority: "Medium",
+        tier: "Small",
+        phaseName: "",
+        phaseIndex: 0,
+        managerName: "",
+        sponsorName: "",
+        budget: 100,
+        actual: 0,
+        forecast: 100,
+        hasBaseline: true,
+        health: { overall: "On Track" },
+        taskCount: 10,
+        overdueTaskCount: 0,
+        averagePercentComplete: 40,
+        openRisks: 2,
+        openIssues: 1,
+        ...over,
+      }) as import("./hierarchy").ProjectSummary;
+    const groups = buildWatchlist({
+      active: [project({})],
+      declared: new Map(),
+      forecasts: [],
+      openChanges: new Map([["p1", 3]]),
+      today: "2026-09-21",
+      sort: "overspend",
+    });
+    const row = groups[0]?.rows[0];
+    expect(row?.risks).toBe(2);
+    expect(row?.issues).toBe(1);
+    expect(row?.changes).toBe(3);
+    expect(row?.completion).toBe(40);
+  });
+});

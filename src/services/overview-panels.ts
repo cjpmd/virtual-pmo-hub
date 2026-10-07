@@ -156,6 +156,11 @@ export interface WatchRow {
   variance: number;
   change: number | null; // forecast change since last month
   trend: Array<number | null>; // variance at each month end
+  /** Open risks and issues, open change requests, and average task completion. */
+  risks: number;
+  issues: number;
+  changes: number;
+  completion: number | null;
 }
 
 export interface WatchGroup {
@@ -171,6 +176,8 @@ export function buildWatchlist(input: {
   active: ProjectSummary[];
   declared: Map<string, { declared: Health; evidenced: EvidencedRag; divergent: boolean }>;
   forecasts: ForecastPoint[];
+  /** Open change requests by project id. */
+  openChanges: Map<string, number>;
   today: string;
   sort: WatchSort;
 }): WatchGroup[] {
@@ -199,6 +206,10 @@ export function buildWatchlist(input: {
         const point = points.filter((pt) => pt.month <= month).at(-1);
         return point ? point.eac - point.budget : null;
       }),
+      risks: p.openRisks,
+      issues: p.openIssues,
+      changes: input.openChanges.get(p.id) ?? 0,
+      completion: p.taskCount ? p.averagePercentComplete : null,
     };
   });
   const sorter: Record<WatchSort, (a: WatchRow, b: WatchRow) => number> = {
