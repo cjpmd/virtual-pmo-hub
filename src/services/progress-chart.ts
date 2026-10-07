@@ -398,6 +398,8 @@ export interface BuildInput {
   today: string;
   fyStartMonth: number;
   range: ChartRange;
+  /** Red-risk threshold from the organisation's risk bands; 15 when unset. */
+  redRiskMinScore?: number;
 }
 
 export function buildProgressChart(input: BuildInput): ProgressChartData {
