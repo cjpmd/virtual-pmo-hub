@@ -130,7 +130,10 @@ function FinancialsBody({ project, data }: { project: ProjectDetail; data: Proje
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section
+        aria-label="Financial summary"
+        className="flex flex-wrap rounded-lg border border-pmo-line bg-pmo-panel font-geist"
+      >
         <Stat
           label="Budget"
           value={summary.hasBaseline ? format.currency(summary.budget) : "No baseline"}
@@ -162,7 +165,7 @@ function FinancialsBody({ project, data }: { project: ProjectDetail; data: Proje
           }
           tone={varianceTone}
         />
-      </div>
+      </section>
 
       {(summary.openMonthOverrun ||
         negatives.length > 0 ||
@@ -478,19 +481,19 @@ function Stat({
   tone?: "good" | "warn" | "bad" | "muted";
 }) {
   return (
-    <div className="rounded-lg border border-border/70 bg-card p-4 shadow-sm">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p
+    <div className="flex min-w-0 flex-[1_1_180px] flex-col gap-0.5 border-r border-pmo-line px-[18px] py-3 last:border-r-0">
+      <span className="text-[11px] uppercase tracking-[0.05em] text-pmo-muted">{label}</span>
+      <span
         className={cn(
-          "mt-1 font-display text-2xl font-semibold tabular-nums",
-          tone === "good" && "text-health-good-foreground",
-          tone === "warn" && "text-health-warn-foreground",
-          tone === "bad" && "text-health-bad-foreground",
+          "pmo-num text-xl font-medium text-pmo-text",
+          tone === "good" && "text-pmo-good",
+          tone === "warn" && "text-pmo-warn",
+          tone === "bad" && "text-pmo-bad-text",
         )}
       >
         {value}
-      </p>
-      <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
+      </span>
+      <span className="pmo-num text-[11px] text-pmo-muted">{detail}</span>
     </div>
   );
 }
