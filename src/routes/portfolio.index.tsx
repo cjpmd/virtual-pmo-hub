@@ -789,6 +789,7 @@ function OverviewBand({
       today,
       fyStartMonth: settings.regional.financialYearStartMonth,
       range: chartRange,
+      redRiskMinScore: rpc.data?.redRiskMinScore,
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps -- build closes over the listed values
   const progress = useMemo(
