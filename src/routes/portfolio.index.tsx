@@ -805,6 +805,7 @@ function OverviewBand({
       today,
       settings.regional.financialYearStartMonth,
       range,
+      rpc.data?.redRiskMinScore,
     ],
   );
   // eslint-disable-next-line react-hooks/exhaustive-deps -- signals always use the financial year
@@ -820,6 +821,7 @@ function OverviewBand({
       programmeIds,
       today,
       settings.regional.financialYearStartMonth,
+      rpc.data?.redRiskMinScore,
     ],
   );
 
