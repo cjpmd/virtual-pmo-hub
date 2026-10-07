@@ -1,17 +1,9 @@
 -- F4: business cases and documents (docs/financials-and-business-cases.md §2.1, §2.2, §2.4).
 -- Approved 07/10/2026 with changes (request authors, single preferred write, submit figures, awaiting-decision guard, project document uploads).
 
--- ---------------------------------------------------------------------------
--- Enums
--- ---------------------------------------------------------------------------
 create type public.business_case_status as enum ('draft', 'submitted', 'approved', 'rejected', 'superseded');
--- The new value is compared as text below, so it can be used in this same transaction.
 alter type public.document_scope add value if not exists 'business_case';
 
--- ---------------------------------------------------------------------------
--- business_case_templates: the organisation's sections (Five Case Model)
--- Organisation-level reference data like lookup_values, so no workspace_id.
--- ---------------------------------------------------------------------------
 create table public.business_case_templates (
   id uuid primary key default gen_random_uuid(),
   organisation_id uuid not null references public.organisations (id) on delete cascade,
@@ -39,7 +31,6 @@ create policy business_case_templates_select on public.business_case_templates f
   using (organisation_id = any ((select private.my_org_ids())::uuid[]));
 create policy business_case_templates_insert on public.business_case_templates for insert to authenticated
   with check (organisation_id = any ((select private.my_org_ids('pmo'::public.app_role))::uuid[]));
--- No delete: removing a section deactivates it (is_active = false).
 create policy business_case_templates_update on public.business_case_templates for update to authenticated
   using (organisation_id = any ((select private.my_org_ids('pmo'::public.app_role))::uuid[]))
   with check (organisation_id = any ((select private.my_org_ids('pmo'::public.app_role))::uuid[]));
@@ -62,7 +53,6 @@ $$;
 revoke all on function private.seed_business_case_templates(uuid) from public, anon, authenticated;
 grant execute on function private.seed_business_case_templates(uuid) to service_role;
 
--- New organisations: seeded on insert (keeps seed_org_defaults untouched). Existing: backfilled.
 create function private.organisations_seed_business_case_templates()
 returns trigger
 language plpgsql
@@ -80,9 +70,6 @@ create trigger organisations_seed_business_case_templates after insert on public
 
 select private.seed_business_case_templates(o.id) from public.organisations o;
 
--- ---------------------------------------------------------------------------
--- business_cases: one per request or project (D3)
--- ---------------------------------------------------------------------------
 create table public.business_cases (
   id uuid primary key default gen_random_uuid(),
   organisation_id uuid not null,
@@ -112,7 +99,6 @@ create trigger business_cases_updated_at before update on public.business_cases
 create trigger business_cases_audit after insert or update or delete on public.business_cases
   for each row execute function private.audit_row_change();
 
--- Requests the caller wrote or asked for (created_by, or requester is their resource).
 create function private.my_authored_request_ids()
 returns uuid[]
 language sql
@@ -128,8 +114,6 @@ $$;
 revoke all on function private.my_authored_request_ids() from public, anon;
 grant execute on function private.my_authored_request_ids() to authenticated, service_role;
 
--- Cases the caller can edit: project cases where the project is editable (contributor,
--- not archived); request cases for managers and for the request's author or requester.
 create function private.my_editable_business_case_ids()
 returns uuid[]
 language sql
@@ -157,14 +141,10 @@ create policy business_cases_insert on public.business_cases for insert to authe
     then project_id = any ((select private.my_editable_project_ids())::uuid[])
     else workspace_id = any ((select private.my_workspace_ids('manager'::public.app_role))::uuid[])
       or request_id = any ((select private.my_authored_request_ids())::uuid[]) end);
--- Title edits only; moving from request to project happens in the F5 conversion RPC.
 create policy business_cases_update on public.business_cases for update to authenticated
   using (id = any ((select private.my_editable_business_case_ids())::uuid[]))
   with check (id = any ((select private.my_editable_business_case_ids())::uuid[]));
 
--- ---------------------------------------------------------------------------
--- business_case_versions
--- ---------------------------------------------------------------------------
 create table public.business_case_versions (
   id uuid primary key default gen_random_uuid(),
   organisation_id uuid not null,
@@ -202,9 +182,6 @@ create index business_case_versions_submitted_by_idx on public.business_case_ver
 create index business_case_versions_recorded_by_idx on public.business_case_versions (recorded_by);
 create index business_case_versions_created_by_idx on public.business_case_versions (created_by);
 
--- ---------------------------------------------------------------------------
--- business_case_sections, business_case_options, business_case_benefits
--- ---------------------------------------------------------------------------
 create table public.business_case_sections (
   id uuid primary key default gen_random_uuid(),
   organisation_id uuid not null,
@@ -256,7 +233,6 @@ create index business_case_options_organisation_idx on public.business_case_opti
 create index business_case_options_version_idx on public.business_case_options (version_id, workspace_id);
 create index business_case_options_created_by_idx on public.business_case_options (created_by);
 
--- The preferred option must belong to the same version.
 alter table public.business_case_versions
   add foreign key (preferred_option_id, id) references public.business_case_options (id, version_id)
   on delete set null (preferred_option_id) deferrable initially deferred;
@@ -295,7 +271,6 @@ create index business_case_benefits_owner_idx on public.business_case_benefits (
 create index business_case_benefits_objective_idx on public.business_case_benefits (strategic_objective_id, workspace_id);
 create index business_case_benefits_created_by_idx on public.business_case_benefits (created_by);
 
--- Tenant guards, updated_at and audit for the version and its children.
 create trigger business_case_versions_00_tenant_guard before insert or update on public.business_case_versions
   for each row execute function private.tenant_guard('business_case_id', 'business_cases');
 create trigger business_case_sections_00_tenant_guard before insert or update on public.business_case_sections
@@ -321,11 +296,6 @@ create trigger business_case_options_audit after insert or update or delete on p
 create trigger business_case_benefits_audit after insert or update or delete on public.business_case_benefits
   for each row execute function private.audit_row_change();
 
--- ---------------------------------------------------------------------------
--- Versioning and freezing (§2.2)
--- ---------------------------------------------------------------------------
--- Versions: number assigned on insert; new rows are always drafts; frozen once submitted.
--- Status changes go through the RPCs, which set private.bc_transition for their transaction.
 create function private.business_case_version_rules()
 returns trigger
 language plpgsql
@@ -367,7 +337,6 @@ revoke all on function private.business_case_version_rules() from public, anon, 
 create trigger business_case_versions_10_rules before insert or update or delete on public.business_case_versions
   for each row execute function private.business_case_version_rules();
 
--- Sections, options and benefits: only while their version is a draft.
 create function private.business_case_child_frozen()
 returns trigger
 language plpgsql
@@ -380,7 +349,6 @@ begin
   if tg_op = 'UPDATE' and new.version_id <> old.version_id then
     raise exception 'Can''t move content to another version' using errcode = '42501';
   end if;
-  -- A version being deleted cascades to its children; the version rule has already checked it.
   select v.status into v_status from public.business_case_versions v
   where v.id = case when tg_op = 'DELETE' then old.version_id else new.version_id end;
   if v_status is not null and v_status <> 'draft' then
@@ -397,7 +365,6 @@ create trigger business_case_options_10_frozen before insert or update or delete
 create trigger business_case_benefits_10_frozen before insert or update or delete on public.business_case_benefits
   for each row execute function private.business_case_child_frozen();
 
--- Switching the preferred option is one write: clear the others first.
 create function private.business_case_options_single_preferred()
 returns trigger
 language plpgsql
@@ -415,7 +382,6 @@ revoke all on function private.business_case_options_single_preferred() from pub
 create trigger business_case_options_15_single_preferred before insert or update of is_preferred on public.business_case_options
   for each row execute function private.business_case_options_single_preferred();
 
--- Keep preferred_option_id and is_preferred in step (the options table is the source).
 create function private.business_case_options_sync_preferred()
 returns trigger
 language plpgsql
@@ -436,7 +402,6 @@ revoke all on function private.business_case_options_sync_preferred() from publi
 create trigger business_case_options_20_sync_preferred after insert or update of is_preferred on public.business_case_options
   for each row execute function private.business_case_options_sync_preferred();
 
--- RLS: everyone in the workspace reads; editors of the case write (triggers freeze non-drafts).
 revoke all on public.business_case_versions, public.business_case_sections,
   public.business_case_options, public.business_case_benefits from anon, authenticated;
 grant select, insert, update, delete on public.business_case_versions, public.business_case_sections,
@@ -458,7 +423,6 @@ create policy business_case_versions_update on public.business_case_versions for
 create policy business_case_versions_delete on public.business_case_versions for delete to authenticated
   using (business_case_id = any ((select private.my_editable_business_case_ids())::uuid[]));
 
--- Children: editable through their version's case. A helper returns the editable version ids.
 create function private.my_editable_business_case_version_ids()
 returns uuid[]
 language sql
@@ -503,11 +467,6 @@ create policy business_case_benefits_update on public.business_case_benefits for
 create policy business_case_benefits_delete on public.business_case_benefits for delete to authenticated
   using (version_id = any ((select private.my_editable_business_case_version_ids())::uuid[]));
 
--- ---------------------------------------------------------------------------
--- RPCs (run as the caller, so RLS and the triggers still decide)
--- ---------------------------------------------------------------------------
--- Start a draft: version 1 from the active templates (and, for a request, its benefit
--- drafts), or version n+1 copying the latest version's sections, options and benefits.
 create function public.start_business_case_version(p_business_case_id uuid)
 returns uuid
 language plpgsql
@@ -615,9 +574,6 @@ $$;
 revoke all on function public.submit_business_case(uuid) from public, anon;
 grant execute on function public.submit_business_case(uuid) to authenticated;
 
--- ---------------------------------------------------------------------------
--- Documents: business-case scope (D6), and removing an incomplete upload (§2.4)
--- ---------------------------------------------------------------------------
 alter table public.documents add column business_case_id uuid;
 alter table public.documents
   add constraint documents_business_case_fk foreign key (business_case_id, workspace_id)
@@ -656,13 +612,11 @@ begin
 end;
 $$;
 
--- Business-case documents: whoever can edit the case. Project documents: the project must be
--- editable. Programme (manager) and capability (contributor) unchanged.
 alter policy documents_insert on public.documents
   with check (
     case when scope::text = 'business_case' then business_case_id = any ((select private.my_editable_business_case_ids())::uuid[])
-         when scope = 'project' then project_id = any ((select private.my_editable_project_ids())::uuid[])
-         when scope = 'programme' then workspace_id = any ((select private.my_workspace_ids('manager'))::uuid[])
+         when scope::text = 'project' then project_id = any ((select private.my_editable_project_ids())::uuid[])
+         when scope::text = 'programme' then workspace_id = any ((select private.my_workspace_ids('manager'))::uuid[])
          else workspace_id = any ((select private.my_workspace_ids('contributor'))::uuid[]) end);
 
 create or replace function private.can_upload_document(p_name text)
@@ -676,11 +630,10 @@ as $$
     select 1 from public.documents d
     where d.storage_path = p_name and d.archived_at is null
       and case when d.scope::text = 'business_case' then d.business_case_id = any (private.my_editable_business_case_ids())
-               when d.scope = 'project' then d.project_id = any (private.my_editable_project_ids())
-               else private.has_workspace_role(d.workspace_id, case when d.scope = 'programme' then 'manager'::public.app_role else 'contributor'::public.app_role end) end);
+               when d.scope::text = 'project' then d.project_id = any (private.my_editable_project_ids())
+               else private.has_workspace_role(d.workspace_id, case when d.scope::text = 'programme' then 'manager'::public.app_role else 'contributor'::public.app_role end) end);
 $$;
 
--- "Remove" for an upload that never completed: the uploader, only while no object exists.
 create function private.my_incomplete_document_ids()
 returns uuid[]
 language sql
@@ -699,7 +652,6 @@ grant execute on function private.my_incomplete_document_ids() to authenticated,
 grant delete on public.documents to authenticated;
 create policy documents_delete on public.documents for delete to authenticated
   using (id = any ((select private.my_incomplete_document_ids())::uuid[]));
--- The audit trigger also records removals.
 drop trigger documents_audit on public.documents;
 create trigger documents_audit after insert or update or delete on public.documents
   for each row execute function private.audit_row_change();
