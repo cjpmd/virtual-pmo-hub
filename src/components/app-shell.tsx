@@ -31,6 +31,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SectionTabs } from "@/components/section-nav";
+import { ShellSlotsContext } from "@/components/shell-slots-context";
 import { useProgrammes, useProjects } from "@/hooks/use-hierarchy";
 import { useFavourites } from "@/hooks/use-favourites";
 import { useNotifications } from "@/hooks/use-notifications";
@@ -47,7 +48,8 @@ import { allPages, findSection, sections, settingsSection } from "@/lib/navigati
 import { cn } from "@/lib/utils";
 import { openIssueTask } from "@/components/issue-task-sheet";
 
-const COLLAPSE_KEY = "virtual-pmo-sidebar-collapsed";
+// The rail's expanded choice, remembered per user on this device.
+const RAIL_KEY = "virtual-pmo-rail-expanded";
 const RECENT_KEY = "virtual-pmo-recent-v2"; // v2: project codes and programme ids
 interface RecentEntry {
   id: string;
@@ -66,7 +68,9 @@ function readRecent(): RecentEntry[] {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const settings = useSettings();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
+  const [bandNode, setBandNode] = useState<HTMLElement | null>(null);
+  const [statusNode, setStatusNode] = useState<HTMLElement | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const { feed: notifications, read: readNotifications, markRead, unread } = useNotifications();
@@ -123,19 +127,23 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
   }, [dark]);
-  // The collapsed choice is remembered between visits.
+  // Collapsed to the 64px icon rail by default; wide screens (1600px+) start expanded. The
+  // user's own choice wins once made.
+  const railKey = `${RAIL_KEY}:${profile.id}`;
   useEffect(() => {
+    let stored: string | null = null;
     try {
-      setCollapsed(localStorage.getItem(COLLAPSE_KEY) === "true");
+      stored = localStorage.getItem(railKey);
     } catch {
       /* storage unavailable */
     }
-  }, []);
+    setCollapsed(stored === null ? window.innerWidth < 1600 : stored !== "true");
+  }, [railKey]);
   const toggleCollapsed = () =>
     setCollapsed((value) => {
       const next = !value;
       try {
-        localStorage.setItem(COLLAPSE_KEY, String(next));
+        localStorage.setItem(railKey, String(!next));
       } catch {
         /* storage unavailable */
       }
@@ -263,559 +271,599 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-background text-foreground">
-        <aside
-          className={cn(
-            "fixed inset-y-0 left-0 z-40 flex flex-col border-r border-sidebar-border bg-sidebar transition-[width]",
-            collapsed ? "w-64 lg:w-[68px]" : "w-64",
-            mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
-          )}
-        >
-          <div className="flex h-16 items-center border-b border-sidebar-border px-4">
-            <span className="grid size-9 shrink-0 place-items-center rounded-md bg-sidebar-primary text-sm font-bold text-sidebar-primary-foreground">
-              {settings.organisation.logoDataUrl ? (
-                <img
-                  src={settings.organisation.logoDataUrl}
-                  alt=""
-                  className="size-7 rounded object-contain"
-                />
-              ) : (
-                settings.organisation.shortName.slice(0, 2).toUpperCase()
+      <ShellSlotsContext.Provider value={{ band: bandNode, status: statusNode }}>
+        <div className="min-h-screen bg-background text-foreground">
+          {/* The rail and header always use the dark tokens: with the top band they frame the page. */}
+          <aside
+            aria-label="Main navigation"
+            className={cn(
+              "dark fixed inset-y-0 left-0 z-50 flex w-[220px] flex-col border-r border-pmo-line bg-pmo-panel font-geist text-pmo-text transition-[width,transform]",
+              collapsed ? "min-[900px]:w-16" : "min-[900px]:w-[220px]",
+              mobileOpen ? "translate-x-0" : "-translate-x-full min-[900px]:translate-x-0",
+            )}
+          >
+            <div
+              className={cn(
+                "flex h-14 items-center border-b border-pmo-line px-3.5",
+                collapsed && "min-[900px]:justify-center min-[900px]:px-0",
               )}
-            </span>
-            {!collapsed && (
-              <div className="ml-3 min-w-0">
-                <p className="truncate font-display font-semibold">Virtual PMO</p>
-                <p className="truncate text-[11px] text-muted-foreground">
+            >
+              <span className="grid size-8 shrink-0 place-items-center rounded-md bg-pmo-accent text-xs font-bold text-white">
+                {settings.organisation.logoDataUrl ? (
+                  <img
+                    src={settings.organisation.logoDataUrl}
+                    alt=""
+                    className="size-7 rounded object-contain"
+                  />
+                ) : (
+                  settings.organisation.shortName.slice(0, 2).toUpperCase()
+                )}
+              </span>
+              <div className={cn("ml-2.5 min-w-0", collapsed && "min-[900px]:hidden")}>
+                <p className="truncate text-sm font-semibold">Virtual PMO</p>
+                <p className="truncate text-[11px] text-pmo-muted">
                   {settings.organisation.shortName} portfolio office
                 </p>
               </div>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="ml-auto lg:hidden"
-              onClick={() => setMobileOpen(false)}
-              aria-label="Close menu"
-            >
-              <X />
-            </Button>
-          </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="ml-auto min-[900px]:hidden"
+                onClick={() => setMobileOpen(false)}
+                aria-label="Close menu"
+              >
+                <X />
+              </Button>
+            </div>
 
-          <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-2.5" aria-label="Sections">
-            {navItems
-              .filter((section) => section.id !== "settings")
-              .map((section) => {
-                const Icon = section.icon;
-                const active = activeSection?.id === section.id;
+            <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-2.5" aria-label="Sections">
+              {navItems
+                .filter((section) => section.id !== "settings")
+                .map((section) => {
+                  const Icon = section.icon;
+                  const active = activeSection?.id === section.id;
+                  const link = (
+                    <Link
+                      to={section.to}
+                      onClick={() => setMobileOpen(false)}
+                      aria-label={collapsed ? section.label : undefined}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "relative flex h-10 items-center gap-3 rounded-md px-3 text-[13px] font-medium transition-colors",
+                        active
+                          ? "bg-pmo-panel-2 text-pmo-text"
+                          : "text-pmo-muted hover:bg-pmo-panel-2/60 hover:text-pmo-text",
+                        collapsed && "min-[900px]:justify-center min-[900px]:px-0",
+                      )}
+                    >
+                      {active && (
+                        <span
+                          className="absolute inset-y-2 left-0 w-[3px] rounded-r bg-pmo-accent"
+                          aria-hidden
+                        />
+                      )}
+                      <Icon className="size-[18px] shrink-0" />
+                      <span className={cn("truncate", collapsed && "min-[900px]:sr-only")}>
+                        {section.label}
+                      </span>
+                    </Link>
+                  );
+                  return (
+                    <div
+                      key={section.id}
+                      className="relative"
+                      onMouseEnter={(event) => {
+                        if (collapsed) openFlyout(section.id, event.currentTarget);
+                      }}
+                      onMouseLeave={closeFlyout}
+                    >
+                      {collapsed ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>{link}</TooltipTrigger>
+                          <TooltipContent side="right">{section.label}</TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        link
+                      )}
+                      {collapsed && flyout?.id === section.id && section.pages.length > 0 && (
+                        <div
+                          style={{ top: flyout.top, left: flyout.left }}
+                          onMouseEnter={() => openFlyout(section.id)}
+                          onMouseLeave={closeFlyout}
+                          className="fixed z-50 hidden min-w-56 rounded-md border border-pmo-line bg-pmo-panel p-2 shadow-xl min-[900px]:block"
+                        >
+                          <p className="px-2 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-wide text-pmo-muted">
+                            {section.label}
+                          </p>
+                          {section.pages.map((page) => (
+                            <Link
+                              key={page.to}
+                              to={page.to}
+                              onClick={() => setFlyout(null)}
+                              className="flex h-9 items-center gap-2.5 rounded px-2 text-sm text-pmo-muted hover:bg-pmo-panel-2 hover:text-pmo-text"
+                            >
+                              <page.icon className="size-4" />
+                              {page.label}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+              {favourites.length > 0 && (
+                <SidebarGroup
+                  title="Favourites"
+                  open={showFavourites}
+                  collapsed={collapsed}
+                  onToggle={() => setShowFavourites((value) => !value)}
+                >
+                  {favourites.map((item) =>
+                    item.type === "Project" ? (
+                      <Link
+                        key={item.id}
+                        to="/portfolio/projects/$projectCode"
+                        params={{ projectCode: item.key }}
+                        className={cn(
+                          "flex h-8 items-center gap-2.5 rounded px-3 text-xs text-pmo-muted hover:bg-pmo-panel-2 hover:text-pmo-text",
+                          collapsed && "min-[900px]:justify-center min-[900px]:px-0",
+                        )}
+                      >
+                        <Star className="size-3.5 shrink-0 fill-primary text-primary" />
+                        <span className={cn("truncate", collapsed && "min-[900px]:sr-only")}>
+                          {item.label}
+                        </span>
+                      </Link>
+                    ) : item.type === "Programme" ? (
+                      <Link
+                        key={item.id}
+                        to="/portfolio/programmes/$programmeId"
+                        params={{ programmeId: item.key }}
+                        className={cn(
+                          "flex h-8 items-center gap-2.5 rounded px-3 text-xs text-pmo-muted hover:bg-pmo-panel-2 hover:text-pmo-text",
+                          collapsed && "min-[900px]:justify-center min-[900px]:px-0",
+                        )}
+                      >
+                        <Star className="size-3.5 shrink-0 fill-primary text-primary" />
+                        <span className={cn("truncate", collapsed && "min-[900px]:sr-only")}>
+                          {item.label}
+                        </span>
+                      </Link>
+                    ) : null,
+                  )}
+                </SidebarGroup>
+              )}
+
+              {recent.length > 0 && (
+                <SidebarGroup
+                  title="Recent"
+                  open={showRecent}
+                  collapsed={collapsed}
+                  onToggle={() => setShowRecent((value) => !value)}
+                >
+                  {recent.map((item) => (
+                    <Link
+                      key={item.id}
+                      to={
+                        item.type === "Project"
+                          ? "/portfolio/projects/$projectCode"
+                          : "/portfolio/programmes/$programmeId"
+                      }
+                      params={
+                        item.type === "Project"
+                          ? { projectCode: item.id }
+                          : { programmeId: item.id }
+                      }
+                      className={cn(
+                        "flex h-8 items-center gap-2.5 rounded px-3 text-xs text-pmo-muted hover:bg-pmo-panel-2 hover:text-pmo-text",
+                        collapsed && "min-[900px]:justify-center min-[900px]:px-0",
+                      )}
+                    >
+                      <span className="grid size-3.5 shrink-0 place-items-center rounded-sm bg-pmo-panel-2 text-[8px] font-bold">
+                        {item.type[0]}
+                      </span>
+                      {
+                        <span className={cn("truncate", collapsed && "min-[900px]:sr-only")}>
+                          {(item.type === "Project"
+                            ? projectList.find((entry) => entry.code === item.id)?.name
+                            : programmeList.find((entry) => entry.id === item.id)?.name) ??
+                            item.label}
+                        </span>
+                      }
+                    </Link>
+                  ))}
+                </SidebarGroup>
+              )}
+            </nav>
+
+            <div className="border-t border-pmo-line p-2.5">
+              {(() => {
+                const active = activeSection?.id === "settings";
                 const link = (
                   <Link
-                    to={section.to}
+                    to="/settings"
                     onClick={() => setMobileOpen(false)}
+                    aria-label={collapsed ? "Settings" : undefined}
+                    aria-current={active ? "page" : undefined}
                     className={cn(
-                      "relative flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors",
+                      "relative flex h-10 items-center gap-3 rounded-md px-3 text-[13px] font-medium",
                       active
-                        ? "bg-sidebar-accent text-sidebar-primary"
-                        : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-foreground",
-                      collapsed && "lg:justify-center lg:px-0",
+                        ? "bg-pmo-panel-2 text-pmo-text"
+                        : "text-pmo-muted hover:bg-pmo-panel-2/60 hover:text-pmo-text",
+                      collapsed && "min-[900px]:justify-center min-[900px]:px-0",
                     )}
                   >
                     {active && (
                       <span
-                        className="absolute inset-y-1.5 left-0 w-1 rounded-r bg-sidebar-primary"
+                        className="absolute inset-y-2 left-0 w-[3px] rounded-r bg-pmo-accent"
                         aria-hidden
                       />
                     )}
-                    <Icon className="size-[18px] shrink-0" />
-                    {!collapsed && <span className="truncate">{section.label}</span>}
+                    <Settings className="size-[18px] shrink-0" />
+                    <span className={cn(collapsed && "min-[900px]:sr-only")}>Settings</span>
                   </Link>
                 );
-                return (
-                  <div
-                    key={section.id}
-                    className="relative"
-                    onMouseEnter={(event) => {
-                      if (collapsed) openFlyout(section.id, event.currentTarget);
-                    }}
-                    onMouseLeave={closeFlyout}
-                  >
-                    {collapsed ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>{link}</TooltipTrigger>
-                        <TooltipContent side="right">{section.label}</TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      link
-                    )}
-                    {collapsed && flyout?.id === section.id && section.pages.length > 0 && (
-                      <div
-                        style={{ top: flyout.top, left: flyout.left }}
-                        onMouseEnter={() => openFlyout(section.id)}
-                        onMouseLeave={closeFlyout}
-                        className="fixed z-50 hidden min-w-56 rounded-md border bg-popover p-2 shadow-xl lg:block"
-                      >
-                        <p className="px-2 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                          {section.label}
-                        </p>
-                        {section.pages.map((page) => (
-                          <Link
-                            key={page.to}
-                            to={page.to}
-                            onClick={() => setFlyout(null)}
-                            className="flex h-9 items-center gap-2.5 rounded px-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
-                          >
-                            <page.icon className="size-4" />
-                            {page.label}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                return collapsed ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>{link}</TooltipTrigger>
+                    <TooltipContent side="right">Settings</TooltipContent>
+                  </Tooltip>
+                ) : (
+                  link
                 );
-              })}
-
-            {favourites.length > 0 && (
-              <SidebarGroup
-                title="Favourites"
-                open={showFavourites}
-                collapsed={collapsed}
-                onToggle={() => setShowFavourites((value) => !value)}
-              >
-                {favourites.map((item) =>
-                  item.type === "Project" ? (
-                    <Link
-                      key={item.id}
-                      to="/portfolio/projects/$projectCode"
-                      params={{ projectCode: item.key }}
-                      className="flex h-8 items-center gap-2.5 rounded px-3 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
-                    >
-                      <Star className="size-3.5 shrink-0 fill-primary text-primary" />
-                      {!collapsed && <span className="truncate">{item.label}</span>}
-                    </Link>
-                  ) : item.type === "Programme" ? (
-                    <Link
-                      key={item.id}
-                      to="/portfolio/programmes/$programmeId"
-                      params={{ programmeId: item.key }}
-                      className="flex h-8 items-center gap-2.5 rounded px-3 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
-                    >
-                      <Star className="size-3.5 shrink-0 fill-primary text-primary" />
-                      {!collapsed && <span className="truncate">{item.label}</span>}
-                    </Link>
-                  ) : null,
-                )}
-              </SidebarGroup>
-            )}
-
-            {recent.length > 0 && (
-              <SidebarGroup
-                title="Recent"
-                open={showRecent}
-                collapsed={collapsed}
-                onToggle={() => setShowRecent((value) => !value)}
-              >
-                {recent.map((item) => (
-                  <Link
-                    key={item.id}
-                    to={
-                      item.type === "Project"
-                        ? "/portfolio/projects/$projectCode"
-                        : "/portfolio/programmes/$programmeId"
-                    }
-                    params={
-                      item.type === "Project" ? { projectCode: item.id } : { programmeId: item.id }
-                    }
-                    className="flex h-8 items-center gap-2.5 rounded px-3 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
-                  >
-                    <span className="grid size-3.5 shrink-0 place-items-center rounded-sm bg-muted text-[8px] font-bold">
-                      {item.type[0]}
-                    </span>
-                    {!collapsed && (
-                      <span className="truncate">
-                        {(item.type === "Project"
-                          ? projectList.find((entry) => entry.code === item.id)?.name
-                          : programmeList.find((entry) => entry.id === item.id)?.name) ??
-                          item.label}
-                      </span>
-                    )}
-                  </Link>
-                ))}
-              </SidebarGroup>
-            )}
-          </nav>
-
-          <div className="border-t border-sidebar-border p-2.5">
-            {(() => {
-              const active = activeSection?.id === "settings";
-              const link = (
-                <Link
-                  to="/settings"
-                  onClick={() => setMobileOpen(false)}
-                  className={cn(
-                    "relative flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium",
-                    active
-                      ? "bg-sidebar-accent text-sidebar-primary"
-                      : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-foreground",
-                    collapsed && "lg:justify-center lg:px-0",
-                  )}
-                >
-                  {active && (
-                    <span
-                      className="absolute inset-y-1.5 left-0 w-1 rounded-r bg-sidebar-primary"
-                      aria-hidden
-                    />
-                  )}
-                  <Settings className="size-[18px] shrink-0" />
-                  {!collapsed && <span>Settings</span>}
-                </Link>
-              );
-              return collapsed ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>{link}</TooltipTrigger>
-                  <TooltipContent side="right">Settings</TooltipContent>
-                </Tooltip>
-              ) : (
-                link
-              );
-            })()}
-            <Button
-              variant="ghost"
-              className={cn(
-                "mt-1 w-full text-muted-foreground",
-                collapsed ? "lg:px-0" : "justify-start",
-              )}
-              onClick={toggleCollapsed}
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              {collapsed ? (
-                <ChevronRight />
-              ) : (
-                <>
-                  <ChevronLeft />
-                  <span>Collapse</span>
-                </>
-              )}
-            </Button>
-          </div>
-        </aside>
-
-        <div className={cn("transition-[padding]", collapsed ? "lg:pl-[68px]" : "lg:pl-64")}>
-          <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-background/90 px-4 backdrop-blur-md sm:px-6 lg:px-8">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              onClick={() => setMobileOpen(true)}
-              aria-label="Open menu"
-            >
-              <Menu />
-            </Button>
-            <div className="min-w-0 flex-1">
+              })()}
               <Button
                 variant="ghost"
-                onClick={() => setPalette(true)}
-                className="relative flex h-9 w-full max-w-xl justify-start bg-muted/60 pl-9 pr-3 text-left text-sm font-normal text-muted-foreground"
+                className={cn(
+                  "mt-1 hidden w-full text-pmo-muted hover:bg-pmo-panel-2 hover:text-pmo-text min-[900px]:flex",
+                  collapsed ? "min-[900px]:px-0" : "justify-start",
+                )}
+                onClick={toggleCollapsed}
+                aria-expanded={!collapsed}
+                aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
               >
-                <Search className="absolute left-3 size-4" />
-                Search anything…
-                <kbd className="ml-auto hidden rounded border bg-background px-1.5 py-0.5 text-[10px] sm:inline">
-                  ⌘K
-                </kbd>
+                {collapsed ? (
+                  <ChevronRight />
+                ) : (
+                  <>
+                    <ChevronLeft />
+                    <span>Collapse</span>
+                  </>
+                )}
               </Button>
             </div>
-            <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
-              <div className="relative">
+          </aside>
+
+          <div
+            className={cn(
+              "flex min-h-screen flex-col transition-[padding]",
+              collapsed ? "min-[900px]:pl-16" : "min-[900px]:pl-[220px]",
+            )}
+          >
+            <header className="dark sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-pmo-line bg-pmo-panel px-3 font-geist text-pmo-text sm:px-5">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="min-[900px]:hidden"
+                onClick={() => setMobileOpen(true)}
+                aria-label="Open menu"
+              >
+                <Menu />
+              </Button>
+              <div className="min-w-0 flex-1">
+                {activeSection && activeSection.id !== "settings" ? (
+                  <SectionTabs />
+                ) : (
+                  <p className="truncate text-[13px] font-semibold">{activeSection?.label}</p>
+                )}
+              </div>
+              <div className="ml-auto flex shrink-0 items-center gap-1">
+                {organisations.length > 1 ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="hidden max-w-56 gap-2 sm:flex"
+                        aria-label={`Organisation: ${organisation.name}. Switch organisation`}
+                        disabled={switching}
+                      >
+                        {switching ? <LoaderCircle className="animate-spin" /> : <Building2 />}
+                        <span className="truncate">{organisation.name}</span>
+                        <ChevronDown className="size-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-64">
+                      <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                        Switch organisation
+                      </div>
+                      {organisations.map((item) => (
+                        <DropdownMenuItem
+                          key={item.organisationId}
+                          onSelect={() => switchOrganisation(item.organisationId)}
+                        >
+                          <Check
+                            className={cn(
+                              "size-4",
+                              item.organisationId !== organisation.organisationId && "invisible",
+                            )}
+                          />
+                          <span className="truncate">{item.name}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <span className="hidden max-w-56 items-center gap-2 truncate px-2 text-sm text-muted-foreground sm:flex">
+                    <Building2 className="size-4" />
+                    {organisation.name}
+                  </span>
+                )}
+                <Button
+                  variant="ghost"
+                  onClick={() => setPalette(true)}
+                  aria-label="Search (Ctrl K)"
+                  className="h-9 gap-2 px-2 text-[13px] font-normal text-pmo-muted lg:w-48 lg:justify-start lg:border lg:border-pmo-line lg:bg-pmo-bg"
+                >
+                  <Search className="size-4" />
+                  <span className="hidden lg:inline">Search…</span>
+                  <kbd className="ml-auto hidden rounded border border-pmo-line px-1.5 py-0.5 font-geist-mono text-[10px] lg:inline">
+                    ⌘K
+                  </kbd>
+                </Button>
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setInbox(!inbox)}
+                    aria-label="Notifications"
+                  >
+                    <Bell />
+                    {unread > 0 && (
+                      <span className="absolute right-1 top-1 size-2 rounded-full bg-health-bad" />
+                    )}
+                  </Button>
+                  {inbox && (
+                    <div className="absolute right-0 top-12 w-[340px] rounded-md border bg-popover p-3 shadow-xl">
+                      <div className="flex items-center justify-between">
+                        <strong>Notifications</strong>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => markRead(notifications.map((item) => item.id))}
+                        >
+                          <CheckCheck />
+                          Mark all read
+                        </Button>
+                      </div>
+                      <div className="mt-2 divide-y">
+                        {notifications.slice(0, 6).map((item) => (
+                          <button
+                            key={item.id}
+                            onClick={() => markRead([item.id])}
+                            className={cn(
+                              "block w-full py-3 text-left",
+                              !readNotifications.includes(item.id) && "font-semibold",
+                            )}
+                          >
+                            <span className="text-[10px] uppercase text-primary">{item.kind}</span>
+                            <p className="mt-1 text-sm">{item.text}</p>
+                          </button>
+                        ))}
+                        {!notifications.length && (
+                          <p className="py-4 text-sm text-muted-foreground">
+                            Nothing needs your attention.
+                          </p>
+                        )}
+                      </div>
+                      <Link
+                        to="/home/notifications"
+                        onClick={() => setInbox(false)}
+                        className="mt-2 block text-xs font-semibold text-primary hover:underline"
+                      >
+                        Open the notification centre →
+                      </Link>
+                    </div>
+                  )}
+                </div>
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setInbox(!inbox)}
-                  aria-label="Notifications"
+                  onClick={() => setDark(!dark)}
+                  aria-label="Toggle theme"
                 >
-                  <Bell />
-                  {unread > 0 && (
-                    <span className="absolute right-1 top-1 size-2 rounded-full bg-health-bad" />
-                  )}
+                  {dark ? <Sun /> : <Moon />}
                 </Button>
-                {inbox && (
-                  <div className="absolute right-0 top-12 w-[340px] rounded-md border bg-popover p-3 shadow-xl">
-                    <div className="flex items-center justify-between">
-                      <strong>Notifications</strong>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => markRead(notifications.map((item) => item.id))}
-                      >
-                        <CheckCheck />
-                        Mark all read
-                      </Button>
-                    </div>
-                    <div className="mt-2 divide-y">
-                      {notifications.slice(0, 6).map((item) => (
-                        <button
-                          key={item.id}
-                          onClick={() => markRead([item.id])}
-                          className={cn(
-                            "block w-full py-3 text-left",
-                            !readNotifications.includes(item.id) && "font-semibold",
-                          )}
-                        >
-                          <span className="text-[10px] uppercase text-primary">{item.kind}</span>
-                          <p className="mt-1 text-sm">{item.text}</p>
-                        </button>
-                      ))}
-                      {!notifications.length && (
-                        <p className="py-4 text-sm text-muted-foreground">
-                          Nothing needs your attention.
-                        </p>
-                      )}
-                    </div>
-                    <Link
-                      to="/home/notifications"
-                      onClick={() => setInbox(false)}
-                      className="mt-2 block text-xs font-semibold text-primary hover:underline"
-                    >
-                      Open the notification centre →
-                    </Link>
-                  </div>
-                )}
-              </div>
-              {organisations.length > 1 ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="hidden max-w-56 gap-2 sm:flex"
-                      aria-label={`Organisation: ${organisation.name}. Switch organisation`}
-                      disabled={switching}
+                      className="h-11 gap-2 px-1 sm:px-2"
+                      aria-label={`Account menu for ${user?.name ?? "user"}`}
                     >
-                      {switching ? <LoaderCircle className="animate-spin" /> : <Building2 />}
-                      <span className="truncate">{organisation.name}</span>
-                      <ChevronDown className="size-3.5" />
+                      <span className="hidden min-w-0 text-right sm:block">
+                        <span className="block text-xs font-semibold">{user?.name}</span>
+                        <span
+                          className="block text-[10px] text-muted-foreground"
+                          title="Your role in the workspace you're viewing"
+                        >
+                          {user?.role}
+                        </span>
+                      </span>
+                      <Avatar className="size-9 shrink-0">
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          {(user?.name ?? "")
+                            .split(" ")
+                            .map((part) => part[0])
+                            .join("")
+                            .slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-64">
-                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                      Switch organisation
+                  <DropdownMenuContent align="end" className="w-56">
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground">{user?.email}</div>
+                    <div className="px-2 pb-1.5 text-xs text-muted-foreground">
+                      Organisation role:{" "}
+                      <span className="font-medium text-foreground">{user.orgRole}</span>
                     </div>
-                    {organisations.map((item) => (
-                      <DropdownMenuItem
-                        key={item.organisationId}
-                        onSelect={() => switchOrganisation(item.organisationId)}
-                      >
-                        <Check
-                          className={cn(
-                            "size-4",
-                            item.organisationId !== organisation.organisationId && "invisible",
-                          )}
-                        />
-                        <span className="truncate">{item.name}</span>
-                      </DropdownMenuItem>
-                    ))}
+                    {currentPortfolio && (
+                      <div className="px-2 pb-1.5 text-xs text-muted-foreground">
+                        In this workspace:{" "}
+                        <span className="font-medium text-foreground">{user.role}</span>
+                      </div>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        navigate({ to: "/settings/$section", params: { section: "account" } })
+                      }
+                    >
+                      <UserRound />
+                      Account settings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={logOut}>
+                      <LogOut />
+                      Log out
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              ) : (
-                <span className="hidden max-w-56 items-center gap-2 truncate px-2 text-sm text-muted-foreground sm:flex">
-                  <Building2 className="size-4" />
-                  {organisation.name}
-                </span>
-              )}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setDark(!dark)}
-                aria-label="Toggle theme"
-              >
-                {dark ? <Sun /> : <Moon />}
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="h-11 gap-2 px-1 sm:px-2"
-                    aria-label={`Account menu for ${user?.name ?? "user"}`}
-                  >
-                    <span className="hidden min-w-0 text-right sm:block">
-                      <span className="block text-xs font-semibold">{user?.name}</span>
-                      <span
-                        className="block text-[10px] text-muted-foreground"
-                        title="Your role in the workspace you're viewing"
-                      >
-                        {user?.role}
-                      </span>
-                    </span>
-                    <Avatar className="size-9 shrink-0">
-                      <AvatarFallback className="bg-primary text-primary-foreground">
-                        {(user?.name ?? "")
-                          .split(" ")
-                          .map((part) => part[0])
-                          .join("")
-                          .slice(0, 2)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-2 py-1.5 text-xs text-muted-foreground">{user?.email}</div>
-                  <div className="px-2 pb-1.5 text-xs text-muted-foreground">
-                    Organisation role:{" "}
-                    <span className="font-medium text-foreground">{user.orgRole}</span>
-                  </div>
-                  {currentPortfolio && (
-                    <div className="px-2 pb-1.5 text-xs text-muted-foreground">
-                      In this workspace:{" "}
-                      <span className="font-medium text-foreground">{user.role}</span>
-                    </div>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onSelect={() =>
-                      navigate({ to: "/settings/$section", params: { section: "account" } })
-                    }
-                  >
-                    <UserRound />
-                    Account settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={logOut}>
-                    <LogOut />
-                    Log out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </header>
-
-          <main
-            key={formatKey}
-            className="mx-auto max-w-[1600px] px-4 py-7 sm:px-6 lg:px-8 lg:py-9"
-          >
-            {activeSection && activeSection.id !== "settings" && (
-              <div className="mb-6">
-                <SectionTabs />
               </div>
-            )}
-            {children}
-          </main>
-        </div>
+            </header>
 
-        {(mobileOpen || palette) && (
-          <button
-            aria-label="Close overlay"
-            className="fixed inset-0 z-40 bg-overlay lg:hidden"
-            onClick={() => {
-              setMobileOpen(false);
-              setPalette(false);
-            }}
-          />
-        )}
-        {palette && (
-          <>
-            <button
-              aria-label="Close command palette"
-              className="fixed inset-0 z-40 bg-overlay"
-              onClick={() => setPalette(false)}
-            />
-            <div
-              role="dialog"
-              aria-label="Command palette"
-              className="fixed left-1/2 top-24 z-50 w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 rounded-md border bg-popover p-3 shadow-2xl"
+            {/* Dark top band: filled by pages through <TopBand>; empty (no height) otherwise. */}
+            <div ref={setBandNode} className="dark bg-pmo-bg font-geist text-pmo-text" />
+
+            <main
+              key={formatKey}
+              className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-7 sm:px-6 lg:px-8 lg:py-9"
             >
-              <div className="relative">
-                <Search className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                <Input
-                  autoFocus
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Jump to a page, project or programme…"
-                  className="h-11 pl-9"
-                />
-              </div>
-              {!query && (
-                <>
-                  <p className="px-2 pb-2 pt-4 text-[10px] font-semibold uppercase text-muted-foreground">
-                    Quick actions
-                  </p>
-                  <div className="grid gap-1 sm:grid-cols-3">
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        navigate({ to: "/home/my-work" });
-                        setPalette(false);
-                      }}
-                    >
-                      My work
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        setPalette(false);
-                        openIssueTask();
-                      }}
-                    >
-                      Issue task
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        navigate({ to: "/settings" });
-                        setPalette(false);
-                      }}
-                    >
-                      Open settings
-                    </Button>
-                  </div>
-                  <p className="px-2 pb-2 pt-4 text-[10px] font-semibold uppercase text-muted-foreground">
-                    Sections
-                  </p>
-                  <div className="grid gap-1 sm:grid-cols-2">
-                    {sections.map((section) => (
+              {children}
+            </main>
+            {/* Sticky status bar: filled by pages through <StatusBarSlot>. */}
+            <div ref={setStatusNode} className="sticky bottom-0 z-20" />
+          </div>
+
+          {(mobileOpen || palette) && (
+            <button
+              aria-label="Close overlay"
+              className="fixed inset-0 z-40 bg-overlay min-[900px]:hidden"
+              onClick={() => {
+                setMobileOpen(false);
+                setPalette(false);
+              }}
+            />
+          )}
+          {palette && (
+            <>
+              <button
+                aria-label="Close command palette"
+                className="fixed inset-0 z-40 bg-overlay"
+                onClick={() => setPalette(false)}
+              />
+              <div
+                role="dialog"
+                aria-label="Command palette"
+                className="fixed left-1/2 top-24 z-50 w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 rounded-md border bg-popover p-3 shadow-2xl"
+              >
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 size-4 text-muted-foreground" />
+                  <Input
+                    autoFocus
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Jump to a page, project or programme…"
+                    className="h-11 pl-9"
+                  />
+                </div>
+                {!query && (
+                  <>
+                    <p className="px-2 pb-2 pt-4 text-[10px] font-semibold uppercase text-muted-foreground">
+                      Quick actions
+                    </p>
+                    <div className="grid gap-1 sm:grid-cols-3">
                       <Button
-                        key={section.id}
                         variant="ghost"
-                        className="justify-start"
                         onClick={() => {
-                          navigate({ to: section.to });
+                          navigate({ to: "/home/my-work" });
                           setPalette(false);
                         }}
                       >
-                        <section.icon className="size-4" />
-                        {section.label}
+                        My work
                       </Button>
-                    ))}
-                  </div>
-                </>
-              )}
-              {query && (
-                <>
-                  <p className="px-2 pb-2 pt-4 text-[10px] font-semibold uppercase text-muted-foreground">
-                    Results
-                  </p>
-                  {results.map((item) => (
-                    <button
-                      key={`${item.to}-${item.id}`}
-                      className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm hover:bg-accent"
-                      onClick={() => {
-                        navigate(
-                          item.params ? { to: item.to, params: item.params } : { to: item.to },
-                        );
-                        setPalette(false);
-                        setQuery("");
-                      }}
-                    >
-                      <span className="flex-1 truncate">{item.label}</span>
-                      <span className="text-xs text-muted-foreground">{item.detail}</span>
-                    </button>
-                  ))}
-                  {!results.length && (
-                    <p className="px-3 py-4 text-sm text-muted-foreground">
-                      Nothing matches “{query}”.
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          setPalette(false);
+                          openIssueTask();
+                        }}
+                      >
+                        Issue task
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          navigate({ to: "/settings" });
+                          setPalette(false);
+                        }}
+                      >
+                        Open settings
+                      </Button>
+                    </div>
+                    <p className="px-2 pb-2 pt-4 text-[10px] font-semibold uppercase text-muted-foreground">
+                      Sections
                     </p>
-                  )}
-                </>
-              )}
-            </div>
-          </>
-        )}
-      </div>
+                    <div className="grid gap-1 sm:grid-cols-2">
+                      {sections.map((section) => (
+                        <Button
+                          key={section.id}
+                          variant="ghost"
+                          className="justify-start"
+                          onClick={() => {
+                            navigate({ to: section.to });
+                            setPalette(false);
+                          }}
+                        >
+                          <section.icon className="size-4" />
+                          {section.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {query && (
+                  <>
+                    <p className="px-2 pb-2 pt-4 text-[10px] font-semibold uppercase text-muted-foreground">
+                      Results
+                    </p>
+                    {results.map((item) => (
+                      <button
+                        key={`${item.to}-${item.id}`}
+                        className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm hover:bg-accent"
+                        onClick={() => {
+                          navigate(
+                            item.params ? { to: item.to, params: item.params } : { to: item.to },
+                          );
+                          setPalette(false);
+                          setQuery("");
+                        }}
+                      >
+                        <span className="flex-1 truncate">{item.label}</span>
+                        <span className="text-xs text-muted-foreground">{item.detail}</span>
+                      </button>
+                    ))}
+                    {!results.length && (
+                      <p className="px-3 py-4 text-sm text-muted-foreground">
+                        Nothing matches “{query}”.
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </ShellSlotsContext.Provider>
     </TooltipProvider>
   );
 }
@@ -837,18 +885,19 @@ function SidebarGroup({
     <div className="pt-4">
       <button
         onClick={onToggle}
+        aria-expanded={open}
         className={cn(
-          "flex w-full items-center gap-1 px-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground",
-          collapsed && "lg:justify-center lg:px-0",
+          "flex w-full items-center gap-1 px-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-pmo-muted hover:text-pmo-text",
+          collapsed && "min-[900px]:justify-center min-[900px]:px-0",
         )}
       >
-        {!collapsed && (
-          <>
-            {title}
-            <ChevronDown className={cn("size-3 transition-transform", !open && "-rotate-90")} />
-          </>
+        <span className={cn("flex items-center gap-1", collapsed && "min-[900px]:sr-only")}>
+          {title}
+          <ChevronDown className={cn("size-3 transition-transform", !open && "-rotate-90")} />
+        </span>
+        {collapsed && (
+          <span className="hidden min-[900px]:block min-[900px]:h-px min-[900px]:w-6 min-[900px]:bg-pmo-line" />
         )}
-        {collapsed && <span className="hidden lg:block lg:h-px lg:w-6 lg:bg-border" />}
       </button>
       {open && <div className="space-y-0.5">{children}</div>}
     </div>

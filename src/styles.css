@@ -114,9 +114,50 @@
   --color-site-icon-green: var(--site-icon-green);
   --color-site-tint-violet: var(--site-tint-violet);
   --color-site-icon-violet: var(--site-icon-violet);
+
+  /* App frame and overview (docs/design/portfolio-overview-spec.md §2). */
+  --color-pmo-bg: var(--pmo-bg);
+  --color-pmo-panel: var(--pmo-panel);
+  --color-pmo-panel-2: var(--pmo-panel-2);
+  --color-pmo-line: var(--pmo-line);
+  --color-pmo-track: var(--pmo-track);
+  --color-pmo-text: var(--pmo-text);
+  --color-pmo-muted: var(--pmo-muted);
+  --color-pmo-accent: var(--pmo-accent);
+  --color-pmo-good: var(--pmo-good);
+  --color-pmo-warn: var(--pmo-warn);
+  --color-pmo-orange: var(--pmo-orange);
+  --color-pmo-bad: var(--pmo-bad);
+  --color-pmo-bad-text: var(--pmo-bad-text);
+  --color-series-spend: var(--series-spend);
+  --color-series-tasks: var(--series-tasks);
+  --color-series-milestones: var(--series-milestones);
+  --color-series-green: var(--series-green);
 }
 
 :root {
+  /* ---- App frame and overview tokens (portfolio-overview-spec §2) -------------
+   * The spec's values. The header, rail and top band always use the dark set (they carry
+   * the .dark class); the rest of the page follows the user's theme.
+   */
+  --pmo-bg: #f4f6fa;
+  --pmo-panel: #ffffff;
+  --pmo-panel-2: #eef3ff;
+  --pmo-line: #e4e8ef;
+  --pmo-track: #edf0f5;
+  --pmo-text: #101828;
+  --pmo-muted: #5b6577;
+  --pmo-accent: #2e6be6;
+  --pmo-good: #1b9a4b;
+  --pmo-warn: #f2a516;
+  --pmo-orange: #e0702e;
+  --pmo-bad: #d93b3b;
+  --pmo-bad-text: #b42828;
+  /* Chart series: the same in both themes. */
+  --series-spend: #4c86ff;
+  --series-tasks: #a78bfa;
+  --series-milestones: #2dd4bf;
+  --series-green: #f2b33d;
   --radius: 0.5rem;
   --background: oklch(0.975 0.006 250);
   --foreground: oklch(0.24 0.035 254);
@@ -240,6 +281,19 @@
 }
 
 .dark {
+  --pmo-bg: #0b111c;
+  --pmo-panel: #111a29;
+  --pmo-panel-2: #18233a;
+  --pmo-line: #1f2a3c;
+  --pmo-track: #1a2436;
+  --pmo-text: #e7ecf4;
+  --pmo-muted: #93a0b5;
+  --pmo-accent: #4c86ff;
+  --pmo-good: #35c26b;
+  --pmo-warn: #f2b33d;
+  --pmo-orange: #f28a4a;
+  --pmo-bad: #f0625e;
+  --pmo-bad-text: #f47a76;
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.208 0.042 265.755);
@@ -338,6 +392,13 @@
   table td,
   table th,
   .font-display {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  /* Overview figures: Geist Mono, tabular. */
+  .pmo-num {
+    font-family: var(--font-geist-mono);
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
   }

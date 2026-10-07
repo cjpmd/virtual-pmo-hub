@@ -5,7 +5,7 @@ import { findPage, findSection, type SubPage } from "@/lib/navigation";
 import { useSettings, term } from "@/services/settings";
 import { cn } from "@/lib/utils";
 
-/** Horizontal tab bar listing the current section's sub-pages. */
+/** The current section's pages, as tabs in the dark header band. */
 export function SectionTabs() {
   const path = useRouterState({ select: (state) => state.location.pathname });
   const settings = useSettings();
@@ -16,22 +16,22 @@ export function SectionTabs() {
   return (
     <nav
       aria-label={`${section.label} pages`}
-      className="flex overflow-x-auto border-b border-border"
+      className="flex min-w-0 gap-0.5 overflow-x-auto [scrollbar-width:none]"
     >
       {section.pages.map((page) => {
-        const Icon = page.icon;
+        const current = active?.to === page.to;
         return (
           <Link
             key={page.to}
             to={page.to}
+            aria-current={current ? "page" : undefined}
             className={cn(
-              "flex h-11 shrink-0 items-center gap-2 border-b-2 px-4 text-sm font-medium transition-colors",
-              active?.to === page.to
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground",
+              "flex h-14 shrink-0 items-center px-2.5 text-[13px] transition-colors",
+              current
+                ? "font-semibold text-pmo-text shadow-[inset_0_-2px_0_var(--pmo-accent)]"
+                : "text-pmo-muted hover:text-pmo-text",
             )}
           >
-            <Icon className="size-4" />
             {label(page)}
           </Link>
         );

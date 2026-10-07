@@ -3,7 +3,6 @@ import { useMemo, useState } from "react";
 import { AutoBreadcrumbs } from "@/components/section-nav";
 import { BoardWorkspace, type BoardColumn, type BoardRow } from "@/components/board-workspace";
 import { ChartCard, LegendItem } from "@/components/charts/chart-card";
-import { MetricCard, MetricRow } from "@/components/charts/kpi-card";
 import { CumulativeArea, SmallMultiples } from "@/components/charts/plots";
 import {
   AxisStrip,
@@ -15,12 +14,16 @@ import {
   type DumbbellDatum,
 } from "@/components/charts/primitives";
 import { ManagePortfoliosButton, StateBadge } from "@/components/entity-management";
-import { PageHeader } from "@/components/pmo-ui";
+import { StatusBar } from "@/components/overview/status-bar";
+import { SummaryStrip } from "@/components/overview/summary-strip";
+import { StatusBarSlot, TopBand } from "@/components/shell-slots";
 import { HealthPill } from "@/components/health-pill";
 import { PageSkeleton, QueryState } from "@/components/query-state";
 import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
 import { RollupFinancials } from "@/components/rollup-financials";
 import { usePortfolioOverview } from "@/hooks/use-hierarchy";
+import { useAssuranceProjects } from "@/hooks/use-assurance";
+import { useFinancialPeriods } from "@/hooks/use-financials";
 import { useFormat } from "@/lib/format";
 import { todayIso } from "@/lib/today";
 import {
@@ -42,7 +45,9 @@ import {
   type FinancialRow,
   type PortfolioOverview,
 } from "@/services/analytics";
-import { deltaLabel } from "@/services/trends";
+import { reportGapCounts } from "@/services/assurance";
+import { dataAsOf, getSummaryMetrics, periodStatus } from "@/services/overview";
+import { useDeliveryVersion } from "@/services/sprints";
 export const Route = createFileRoute("/portfolio/")({
   head: () => ({
     meta: [
@@ -100,7 +105,6 @@ function PortfolioPage() {
     );
   return (
     <div className="space-y-6">
-      <AutoBreadcrumbs />
       <QueryState query={overview}>
         {(data) => (
           <PortfolioBody
@@ -151,8 +155,6 @@ function PortfolioBody({ data, switcher }: { data: PortfolioOverview; switcher: 
     overall: overallTrend,
   } = useMemo(() => getDimensionScores(active, data.projectHistory), [active, data.projectHistory]);
   const delivery = useMemo(() => getDeliveryCurve(allMilestones), [allMilestones]);
-  const periods = headlines.periods,
-    since = deltaLabel(periods);
   const [horizon, setHorizon] = useState("180");
 
   const milestoneMetrics = getMilestoneMetrics(allMilestones);
@@ -201,77 +203,16 @@ function PortfolioBody({ data, switcher }: { data: PortfolioOverview; switcher: 
   const variance = headlines.forecast - headlines.budget;
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="Portfolio"
-        title={portfolio.name}
-        description={portfolio.description ?? ""}
-        actions={
-          <div className="flex items-center gap-3">
-            {switcher}
-            <ManagePortfoliosButton />
-            <StateBadge state={portfolio.state} />
-            <HealthPill health={portfolio.health} />
-          </div>
-        }
-      />
-
-      <MetricRow>
-        <MetricCard
-          label="Active projects"
-          value={String(headlines.activeProjects.value)}
-          to="/portfolio/projects"
-          context={`Across ${programmes.length} programmes`}
-          delta={{
-            change: headlines.activeProjects.trend.change,
-            percent: headlines.activeProjects.trend.percent,
-            label: `${headlines.activeProjects.trend.change >= 0 ? "+" : ""}${headlines.activeProjects.trend.change} ${since}`,
-          }}
-          trend={headlines.activeProjects.trend.points}
-        />
-        <MetricCard
-          label="Approved budget"
-          value={money(headlines.budget)}
-          to="/portfolio/projects"
-          context={`${money(headlines.spend)} spent to date`}
-          delta={{
-            change: headlines.budgetSeries.trend.change,
-            percent: headlines.budgetSeries.trend.percent,
-            label: since,
-          }}
-          trend={headlines.budgetSeries.trend.points}
-          trendColour="var(--viz-cat-3)"
-        />
-        <MetricCard
-          label="Forecast variance"
-          value={money(variance)}
-          to="/portfolio/projects"
-          context={`${money(headlines.forecast)} forecast against ${money(headlines.budget)} approved`}
-          delta={{
-            change: headlines.varianceSeries.trend.change,
-            percent: headlines.varianceSeries.trend.percent,
-            label: since,
-            sense: "down-good",
-          }}
-          trend={headlines.varianceSeries.trend.points}
-          trendColour={variance > 0 ? "var(--viz-critical)" : "var(--viz-good)"}
-        />
-        <MetricCard
-          label="Projects on track"
-          value={`${headlines.rag.percentOnTrack}%`}
-          to="/portfolio/projects"
-          context={`${headlines.rag.green} of ${headlines.rag.total} active projects reporting green`}
-          delta={{
-            change: headlines.onTrackSeries.trend.change,
-            percent: headlines.onTrackSeries.trend.percent,
-            label: since,
-          }}
-          trend={headlines.onTrackSeries.trend.points}
-          trendColour={scoreColour(headlines.rag.percentOnTrack)}
-        />
-      </MetricRow>
+      <OverviewBand data={data} switcher={switcher} active={active} />
 
       <section className="space-y-3">
-        <h2 className="font-display text-lg font-semibold">Financial summary</h2>
+        <div>
+          <h2 className="font-display text-lg font-semibold">Financial summary</h2>
+          <p className="text-sm text-muted-foreground">
+            Every project in the portfolio, including proposed and closed ones: money already spent
+            stays on the books. The summary strip above counts active projects only.
+          </p>
+        </div>
         <RollupFinancials scope={{ portfolioId: portfolio.id }} breakdown={false} />
       </section>
 
@@ -700,5 +641,81 @@ function FinancialTable({
         </tbody>
       </table>
     </div>
+  );
+}
+
+/**
+ * The dark top band (title, summary strip) and the status bar. Stage 1 of the overview redesign;
+ * the progress chart and signals join the band in stages 2 and 3. Closed projects never count.
+ */
+function OverviewBand({
+  data,
+  switcher,
+  active,
+}: {
+  data: PortfolioOverview;
+  switcher: React.ReactNode;
+  active: PortfolioOverview["projects"];
+}) {
+  const { portfolio, projects, milestones, history, projectHistory } = data;
+  const assurance = useAssuranceProjects();
+  const periods = useFinancialPeriods();
+  const version = useDeliveryVersion();
+  const gaps = useMemo(() => {
+    if (!assurance.data) return null;
+    const ids = new Set(projects.map((project) => project.id));
+    return reportGapCounts(assurance.data.filter((project) => ids.has(project.id)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- version tracks the browser-local sprint store
+  }, [assurance.data, projects, version]);
+  const today = todayIso();
+  const metrics = useMemo(
+    () => gaps && getSummaryMetrics({ projects, milestones, history, projectHistory, gaps, today }),
+    [projects, milestones, history, projectHistory, gaps, today],
+  );
+  const months = periodStatus(
+    (periods.data ?? []).filter((period) => period.closed).map((period) => period.periodMonth),
+    today,
+  );
+  const asOf = dataAsOf([
+    ...projects.flatMap((project) => [project.updatedAt, project.lastReportDate]),
+    ...milestones.map((milestone) => milestone.updatedAt),
+  ]);
+  return (
+    <>
+      <TopBand>
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4 sm:px-6 lg:px-8">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] uppercase tracking-[0.05em] text-pmo-muted">Portfolio</p>
+            <h1 className="truncate text-xl font-semibold text-pmo-text">{portfolio.name}</h1>
+            {portfolio.description && (
+              <p className="mt-0.5 truncate text-[13px] text-pmo-muted">{portfolio.description}</p>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {switcher}
+            <ManagePortfoliosButton />
+            <StateBadge state={portfolio.state} />
+            <HealthPill health={portfolio.health} />
+          </div>
+        </div>
+        {metrics ? (
+          <SummaryStrip metrics={metrics} />
+        ) : (
+          <div
+            aria-busy
+            aria-label="Loading the summary"
+            className="h-[78px] animate-pulse border-y border-pmo-line bg-pmo-panel/40"
+          />
+        )}
+      </TopBand>
+      <StatusBarSlot>
+        <StatusBar
+          asOf={asOf}
+          closedMonth={months.closed}
+          openMonth={months.open}
+          activeProjects={active.length}
+        />
+      </StatusBarSlot>
+    </>
   );
 }
