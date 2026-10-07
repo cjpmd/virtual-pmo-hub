@@ -435,7 +435,7 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
     if (!forecast && snaps?.size) {
       const list = [...snaps.values()];
       for (const key of ["schedule", "financial", "effort", "issue", "benefit"] as const)
-        values[key] = pct(list.filter((row) => row[key] === "green").length, list.length);
+        values[key] = pct(list.filter((row) => row[key] === "On Track").length, list.length);
     }
 
     // Benefits chain from pathway_snapshots.
@@ -449,12 +449,12 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
         const items = rows.filter((row) => row.kind === kind);
         const due = items.filter((row) => row.dueInFy);
         values[key] = pct(due.filter((row) => row.complete).length, due.length);
-        values[greenKey] = pct(items.filter((row) => row.rag === "green").length, items.length);
+        values[greenKey] = pct(items.filter((row) => row.rag === "On Track").length, items.length);
       }
       const benefits = rows.filter((row) => row.kind === "benefit");
       const profile = benefits.reduce((sum, row) => sum + (row.profile ?? 0), 0);
       values.benefits = pct(benefits.reduce((sum, row) => sum + (row.realised ?? 0), 0), profile);
-      values.benefitsGreen = pct(benefits.filter((row) => row.rag === "green").length, benefits.length);
+      values.benefitsGreen = pct(benefits.filter((row) => row.rag === "On Track").length, benefits.length);
     }
     // Capability and outcome forecasts: the latest recorded position plus items forecast to land.
     if (forecast && latestPathwayMonth) {
