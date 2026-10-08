@@ -4579,6 +4579,7 @@ export type Database = {
           project_id: string | null
           schedule: Database["public"]["Enums"]["health"] | null
           snapshot_date: string
+          source: string
           workspace_id: string
         }
         Insert: {
@@ -4599,6 +4600,7 @@ export type Database = {
           project_id?: string | null
           schedule?: Database["public"]["Enums"]["health"] | null
           snapshot_date: string
+          source?: string
           workspace_id: string
         }
         Update: {
@@ -4619,6 +4621,7 @@ export type Database = {
           project_id?: string | null
           schedule?: Database["public"]["Enums"]["health"] | null
           snapshot_date?: string
+          source?: string
           workspace_id?: string
         }
         Relationships: [
@@ -5569,6 +5572,7 @@ export type Database = {
           id: string
           organisation_id: string
           owner_id: string | null
+          phase_id: string | null
           project_id: string
           ref: string
           report_to_committee: boolean
@@ -5586,6 +5590,7 @@ export type Database = {
           id?: string
           organisation_id: string
           owner_id?: string | null
+          phase_id?: string | null
           project_id: string
           ref: string
           report_to_committee?: boolean
@@ -5603,6 +5608,7 @@ export type Database = {
           id?: string
           organisation_id?: string
           owner_id?: string | null
+          phase_id?: string | null
           project_id?: string
           ref?: string
           report_to_committee?: boolean
@@ -5624,6 +5630,13 @@ export type Database = {
             columns: ["owner_id", "organisation_id"]
             isOneToOne: false
             referencedRelation: "resources"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "milestones_phase_id_fkey"
+            columns: ["phase_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "lifecycle_phases"
             referencedColumns: ["id", "organisation_id"]
           },
           {
@@ -7400,6 +7413,7 @@ export type Database = {
           priority: Database["public"]["Enums"]["priority"]
           programme_id: string | null
           project_officer_id: string | null
+          reporting_cadence: Database["public"]["Enums"]["reporting_cadence"]
           sponsor_id: string | null
           start_date: string | null
           state: Database["public"]["Enums"]["project_state"]
@@ -7433,6 +7447,7 @@ export type Database = {
           priority?: Database["public"]["Enums"]["priority"]
           programme_id?: string | null
           project_officer_id?: string | null
+          reporting_cadence?: Database["public"]["Enums"]["reporting_cadence"]
           sponsor_id?: string | null
           start_date?: string | null
           state?: Database["public"]["Enums"]["project_state"]
@@ -7466,6 +7481,7 @@ export type Database = {
           priority?: Database["public"]["Enums"]["priority"]
           programme_id?: string | null
           project_officer_id?: string | null
+          reporting_cadence?: Database["public"]["Enums"]["reporting_cadence"]
           sponsor_id?: string | null
           start_date?: string | null
           state?: Database["public"]["Enums"]["project_state"]
@@ -8651,6 +8667,8 @@ export type Database = {
           comments: string | null
           created_at: string
           created_by: string | null
+          decisions_needed: string | null
+          declared_benefit: Database["public"]["Enums"]["health"]
           effort: Database["public"]["Enums"]["health"]
           evidenced_benefit: Database["public"]["Enums"]["health"] | null
           evidenced_effort: Database["public"]["Enums"]["health"] | null
@@ -8669,6 +8687,8 @@ export type Database = {
           ref: string
           reporting_date: string
           schedule: Database["public"]["Enums"]["health"]
+          status: Database["public"]["Enums"]["status_report_status"]
+          submitted_at: string | null
           submitter_id: string | null
           updated_at: string
           workspace_id: string
@@ -8679,6 +8699,8 @@ export type Database = {
           comments?: string | null
           created_at?: string
           created_by?: string | null
+          decisions_needed?: string | null
+          declared_benefit?: Database["public"]["Enums"]["health"]
           effort?: Database["public"]["Enums"]["health"]
           evidenced_benefit?: Database["public"]["Enums"]["health"] | null
           evidenced_effort?: Database["public"]["Enums"]["health"] | null
@@ -8697,6 +8719,8 @@ export type Database = {
           ref: string
           reporting_date: string
           schedule?: Database["public"]["Enums"]["health"]
+          status?: Database["public"]["Enums"]["status_report_status"]
+          submitted_at?: string | null
           submitter_id?: string | null
           updated_at?: string
           workspace_id: string
@@ -8707,6 +8731,8 @@ export type Database = {
           comments?: string | null
           created_at?: string
           created_by?: string | null
+          decisions_needed?: string | null
+          declared_benefit?: Database["public"]["Enums"]["health"]
           effort?: Database["public"]["Enums"]["health"]
           evidenced_benefit?: Database["public"]["Enums"]["health"] | null
           evidenced_effort?: Database["public"]["Enums"]["health"] | null
@@ -8725,6 +8751,8 @@ export type Database = {
           ref?: string
           reporting_date?: string
           schedule?: Database["public"]["Enums"]["health"]
+          status?: Database["public"]["Enums"]["status_report_status"]
+          submitted_at?: string | null
           submitter_id?: string | null
           updated_at?: string
           workspace_id?: string
@@ -10728,9 +10756,12 @@ export type Database = {
           id: string | null
           organisation_id: string | null
           owner_id: string | null
+          past_baseline: boolean | null
+          phase_id: string | null
           project_id: string | null
           ref: string | null
           report_to_committee: boolean | null
+          slip_band: string | null
           slip_days: number | null
           status: Database["public"]["Enums"]["delivery_status"] | null
           title: string | null
@@ -10747,9 +10778,12 @@ export type Database = {
           id?: string | null
           organisation_id?: string | null
           owner_id?: string | null
+          past_baseline?: never
+          phase_id?: string | null
           project_id?: string | null
           ref?: string | null
           report_to_committee?: boolean | null
+          slip_band?: never
           slip_days?: never
           status?: never
           title?: string | null
@@ -10766,9 +10800,12 @@ export type Database = {
           id?: string | null
           organisation_id?: string | null
           owner_id?: string | null
+          past_baseline?: never
+          phase_id?: string | null
           project_id?: string | null
           ref?: string | null
           report_to_committee?: boolean | null
+          slip_band?: never
           slip_days?: never
           status?: never
           title?: string | null
@@ -10789,6 +10826,13 @@ export type Database = {
             columns: ["owner_id", "organisation_id"]
             isOneToOne: false
             referencedRelation: "resources"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "milestones_phase_id_fkey"
+            columns: ["phase_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "lifecycle_phases"
             referencedColumns: ["id", "organisation_id"]
           },
           {
@@ -11079,6 +11123,7 @@ export type Database = {
       }
       v_project_delivery_health: {
         Row: {
+          baseline_finish_date: string | null
           code: string | null
           delivery: Database["public"]["Enums"]["health"] | null
           effective_portfolio_id: string | null
@@ -11087,6 +11132,8 @@ export type Database = {
           finish_date: string | null
           health_override: Database["public"]["Enums"]["health"] | null
           issue: Database["public"]["Enums"]["health"] | null
+          milestone_forecast_finish: string | null
+          milestones_after_baseline_finish: number | null
           organisation_id: string | null
           phase_index: number | null
           programme_id: string | null
@@ -11914,10 +11961,12 @@ export type Database = {
         | "sponsor"
       project_state: "proposed" | "active" | "on_hold" | "closed"
       project_tier: "small" | "medium" | "large"
+      reporting_cadence: "weekly" | "fortnightly" | "monthly"
       request_status: "new" | "in_review" | "on_hold" | "approved" | "rejected"
       risk_response: "avoid" | "reduce" | "transfer" | "accept"
       spend_type: "capital" | "operating"
       status_category: "todo" | "in_progress" | "done"
+      status_report_status: "draft" | "submitted"
       sync_health: "healthy" | "warning" | "failing"
       sync_log_kind:
         | "read"
@@ -12167,10 +12216,12 @@ export const Constants = {
       ],
       project_state: ["proposed", "active", "on_hold", "closed"],
       project_tier: ["small", "medium", "large"],
+      reporting_cadence: ["weekly", "fortnightly", "monthly"],
       request_status: ["new", "in_review", "on_hold", "approved", "rejected"],
       risk_response: ["avoid", "reduce", "transfer", "accept"],
       spend_type: ["capital", "operating"],
       status_category: ["todo", "in_progress", "done"],
+      status_report_status: ["draft", "submitted"],
       sync_health: ["healthy", "warning", "failing"],
       sync_log_kind: [
         "read",

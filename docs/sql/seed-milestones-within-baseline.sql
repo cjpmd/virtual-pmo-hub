@@ -1,14 +1,19 @@
--- PROPOSED, NOT APPLIED. Seed-data fix (Stage 1a, option c): pull seed milestones that were
+-- APPLIED 08/10/2026 (execute_sql, one transaction, 78 rows). Kept as the record of the seed-data fix; not a migration.
 -- baselined after their project's baseline finish back inside it.
 --
 -- Rule, per non-closed, non-archived project whose latest milestone baseline is after its
 -- baseline finish:
 --   * only undelivered milestones baselined after today (08/10/2026) move; nothing in the past,
 --     nothing delivered, and closed projects (FSC, SFZ) are untouched;
---   * new baseline = today + (old baseline - today) x (baseline finish - today) / (latest
---     baseline - today), so the order and spacing are kept and the last lands on the finish;
+--   * anchor A = the later of today and the project's latest unmoved milestone baseline;
+--     new baseline = A + max(1, round((old - A) x (baseline finish - A) / (latest baseline - A))),
+--     so order is kept, nothing lands on or before A (so not before today or any unmoved
+--     milestone) and the last lands on the baseline finish;
 --   * forecast moves with it, so each milestone keeps its slip.
--- 79 milestones on 17 projects. The milestone-forecast history and audit triggers are
+-- 78 milestones on 17 projects. Checked before applying: none lands before today or an
+-- unmoved milestone, no new same-date pairs, smallest gap between consecutive milestones
+-- involving a moved one = 9 days (CMI and ACA, MS-003 to MS-004; was 18). The only same-day
+-- pairs on these projects are existing, unmoved past ones (IOFTC and W11, MS-001/MS-002). The milestone-forecast history and audit triggers are
 -- suspended for the update so seed correction doesn't read as a reforecast; updated_at still
 -- bumps (open editors get a conflict, as they should).
 --
@@ -106,19 +111,30 @@ with proj as (
   group by p.id, p.baseline_finish_date
   having max(m.baseline_date) > p.baseline_finish_date
 ),
+cls as (
+  select m.id, m.project_id, m.baseline_date, m.forecast_date, pr.bf, pr.max_b,
+    (m.actual_date is null and m.baseline_date > date '2026-10-08') as moving
+  from public.milestones m
+  join proj pr on pr.id = m.project_id
+),
+anchor as (
+  select project_id,
+    greatest(date '2026-10-08', max(baseline_date) filter (where not moving)) as a
+  from cls
+  group by project_id
+),
 plan as (
-  select m.id,
-    date '2026-10-08' + round((m.baseline_date - date '2026-10-08')::numeric
-      * (pr.bf - date '2026-10-08') / (pr.max_b - date '2026-10-08'))::int as new_b,
-    m.forecast_date - m.baseline_date as slip
-  from proj pr
-  join public.milestones m on m.project_id = pr.id
-  where m.actual_date is null and m.baseline_date > date '2026-10-08'
+  select c.id,
+    an.a + greatest(1, round((c.baseline_date - an.a)::numeric * (c.bf - an.a) / (c.max_b - an.a))::int) as new_b,
+    c.forecast_date - c.baseline_date as slip
+  from cls c
+  join anchor an on an.project_id = c.project_id
+  where c.moving
 )
 update public.milestones m
 set baseline_date = plan.new_b, forecast_date = plan.new_b + plan.slip
 from plan
-where m.id = plan.id and m.baseline_date <> plan.new_b;   -- expect 79 rows
+where m.id = plan.id and m.baseline_date <> plan.new_b;   -- expect 78 rows
 
 alter table public.milestones enable trigger milestones_audit;
 alter table public.milestones enable trigger milestones_forecast_history;

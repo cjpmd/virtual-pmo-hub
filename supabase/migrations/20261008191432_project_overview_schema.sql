@@ -1,4 +1,3 @@
--- PROPOSED, NOT APPLIED. Awaiting approval; becomes supabase/migrations/<timestamp>_project_overview_schema.sql once approved.
 -- Stage 1a: project overview schema (docs/design/project-overview-design.html; decisions of 08/10/2026).
 --   1. milestones.phase_id, nullable, FK to lifecycle_phases.
 --   2. v_milestones: slip_days = (actual_date if delivered, else forecast_date) - baseline_date;
@@ -57,9 +56,11 @@ from public.milestones m;
 -- 3. Project delivery health. Schedule, first match wins (every red before any amber):
 --      red    a milestone's forecast date has passed and it isn't delivered (status 'overdue');
 --      red    an undelivered milestone is forecast more than 30 days late;
---      red    the milestone forecast finish is after the project baseline finish;
+--      red    the milestone forecast finish is beyond the baseline finish by more than
+--             scheduleSlipPercent of the baseline duration (same sum as the declared rule);
 --      red    the declared finish slips more than scheduleSlipPercent (existing rule);
 --      amber  an undelivered milestone is forecast 15-30 days late;
+--      amber  the milestone forecast finish is after the baseline finish, within tolerance;
 --      amber  overdue tasks over taskOverdueAtRiskPercent (existing rule);
 --      green  otherwise.
 --    Milestone forecast finish = latest of (actual date if delivered, else forecast date).
@@ -90,11 +91,14 @@ dims as materialized (
     case
       when coalesce(ms.any_forecast_missed, false) then 'red'::public.health
       when ms.worst_open_slip > 30 then 'red'::public.health
-      when ms.forecast_finish > base.baseline_finish_date then 'red'::public.health
+      when (base.baseline_finish_date - base.start_date) > 0
+        and (ms.forecast_finish - base.baseline_finish_date)::numeric / (base.baseline_finish_date - base.start_date)
+            > private.health_threshold(base.settings, 'scheduleSlipPercent') / 100 then 'red'::public.health
       when (base.baseline_finish_date - base.start_date) > 0
         and (base.finish_date - base.baseline_finish_date)::numeric / (base.baseline_finish_date - base.start_date)
             > private.health_threshold(base.settings, 'scheduleSlipPercent') / 100 then 'red'::public.health
       when ms.worst_open_slip >= 15 then 'amber'::public.health
+      when ms.forecast_finish > base.baseline_finish_date then 'amber'::public.health
       when base.task_count > 0
         and base.overdue_count::numeric / base.task_count > private.health_threshold(base.settings, 'taskOverdueAtRiskPercent') / 100 then 'amber'::public.health
       else 'green'::public.health
@@ -307,8 +311,7 @@ begin
 end;
 $$;
 revoke all on function private.snapshot_on_status_report() from public, anon, authenticated;
-drop trigger status_reports_snapshot on public.status_reports;
-create trigger status_reports_snapshot after insert or update of status on public.status_reports
+create or replace trigger status_reports_snapshot after insert or update of status on public.status_reports
   for each row when (new.status = 'submitted') execute function private.snapshot_on_status_report();
 
 -- ---------------------------------------------------------------------------
