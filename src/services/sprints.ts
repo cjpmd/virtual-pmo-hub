@@ -11,7 +11,12 @@ import {
   type VelocityBasis,
 } from "./forecast";
 
-/** Browser-local sprint & work-item store. One work item list per project feeds the backlog,
+/** NOT A SOURCE OF TRUTH: nothing in the app reads this store any more (Stage 1b). Its data is
+ *  generated in the browser, so no screen may show its figures. Kept, unused, for the sprints
+ *  phase ("option A": sprints and the forecast engine in Supabase as a view), which replaces it.
+ *  Until then the Delivery tab and forecast card show "No sprint data yet".
+ *
+ *  Browser-local sprint & work-item store. One work item list per project feeds the backlog,
  *  sprint board, burn charts and forecasts. Shaped so a real backend can replace it later.
  *  Sprints stay in the browser until the sprints phase (schema §6). Each project's delivery
  *  data is keyed by its project code and generated deterministically from the project's

@@ -22,7 +22,7 @@ import type { Health, HealthDimension, Task } from "@/data/types";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { QueryState } from "@/components/query-state";
-import { useAssuranceProjects } from "@/hooks/use-assurance";
+import { useAssurance } from "@/hooks/use-assurance";
 import { useBenefits } from "@/hooks/use-benefits";
 import {
   useMilestones,
@@ -35,7 +35,6 @@ import { useProjectTasks } from "@/hooks/use-work-items";
 import { useOrganisation } from "@/components/auth/organisation-provider";
 import { fromIsoDate } from "@/lib/format";
 import { todayIso } from "@/lib/today";
-import { getAssuranceRow } from "@/services/assurance";
 import { benefitsForProject } from "@/services/benefits-value";
 import { evidenceDraft, type DraftEvidence } from "@/services/highlight-draft";
 import type { ProjectDetail } from "@/services/hierarchy";
@@ -391,16 +390,16 @@ function Status({
   const me = useMyResourceId();
   const submitReport = useSubmitStatusReport();
   const tasks = useProjectTasks(project.id);
-  const assurance = useAssuranceProjects();
+  const assurance = useAssurance();
   const raid = useRaid(project.id);
   const milestones = useMilestones([project.id], project.id);
   const benefits = useBenefits();
   const evidence = useMemo((): DraftEvidence | undefined => {
-    const target = assurance.data?.find((item) => item.id === project.id);
+    const target = assurance.data?.find((item) => item.projectId === project.id);
     if (!target || !raid.data || !milestones.data || !benefits.data) return undefined;
     const linked = benefitsForProject(benefits.data, project.id);
     return {
-      assurance: getAssuranceRow(target),
+      assurance: target,
       openRisks: raid.data.risks
         .filter((risk) => risk.status === "Open")
         .map((risk) => ({ title: risk.title, score: risk.score })),

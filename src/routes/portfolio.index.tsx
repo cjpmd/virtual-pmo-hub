@@ -22,8 +22,6 @@ import { ProjectWatchlist } from "@/components/overview/project-watchlist";
 import { SignalsList } from "@/components/overview/signals-list";
 import { usePathway } from "@/hooks/use-pathway";
 import { usePortfolioOverviewData } from "@/hooks/use-progress-chart";
-import { getAssuranceRows } from "@/services/assurance";
-import type { EvidencedRag } from "@/services/forecast";
 import type { Health } from "@/data/types";
 import {
   buildProgrammeCards,
@@ -40,7 +38,7 @@ import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
 import { RollupFinancials } from "@/components/rollup-financials";
 import { Switch } from "@/components/ui/switch";
 import { usePortfolioOverview } from "@/hooks/use-hierarchy";
-import { useAssuranceProjects } from "@/hooks/use-assurance";
+import { useAssurance } from "@/hooks/use-assurance";
 import { useFinancialPeriods } from "@/hooks/use-financials";
 import { useFormat } from "@/lib/format";
 import { todayIso } from "@/lib/today";
@@ -66,7 +64,6 @@ import {
 import { reportGapCounts } from "@/services/assurance";
 import { useGovernance } from "@/hooks/use-governance";
 import { dataAsOf, getSummaryMetrics, periodStatus } from "@/services/overview";
-import { useDeliveryVersion } from "@/services/sprints";
 export const Route = createFileRoute("/portfolio/")({
   head: () => ({
     meta: [
@@ -739,15 +736,13 @@ function OverviewBand({
     [active, programmeId],
   );
   const programmeIds = useMemo(() => (programmeId ? new Set([programmeId]) : null), [programmeId]);
-  const assurance = useAssuranceProjects();
+  const assurance = useAssurance();
   const periods = useFinancialPeriods();
-  const version = useDeliveryVersion();
   const gaps = useMemo(() => {
     if (!assurance.data) return null;
     const ids = new Set(projects.map((project) => project.id));
-    return reportGapCounts(assurance.data.filter((project) => ids.has(project.id)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- version tracks the browser-local sprint store
-  }, [assurance.data, projects, version]);
+    return reportGapCounts(assurance.data.filter((row) => ids.has(row.projectId)));
+  }, [assurance.data, projects]);
   const today = rpc.data?.today ?? todayIso();
   const metrics = useMemo(
     () => gaps && getSummaryMetrics({ projects, milestones, history, projectHistory, gaps, today }),
@@ -838,19 +833,15 @@ function OverviewBand({
     return counts;
   }, [governance.data]);
   const declared = useMemo(() => {
-    const map = new Map<
-      string,
-      { declared: Health; evidenced: EvidencedRag; divergent: boolean }
-    >();
-    for (const row of getAssuranceRows(assurance.data ?? []))
+    const map = new Map<string, { declared: Health; evidenced: Health; divergent: boolean }>();
+    for (const row of assurance.data ?? [])
       map.set(row.projectId, {
-        declared: row.declared,
+        declared: row.declared ?? "Not Set",
         evidenced: row.evidenced,
         divergent: row.divergent,
       });
     return map;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- version tracks the browser-local sprint store
-  }, [assurance.data, version]);
+  }, [assurance.data]);
   const watch = useMemo(
     () =>
       buildWatchlist({

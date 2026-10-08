@@ -91,6 +91,8 @@ export interface TerminologySettings {
 // ---- 5. Lifecycle & governance ----
 export interface HealthThresholds {
   scheduleSlipPercent: number;
+  /** A status report better than the evidence for this many days raises a divergence alert. */
+  divergenceAlertDays: number;
   taskOverdueAtRiskPercent: number;
   taskOverdueOffTrackPercent: number;
   financialAtRiskPercent: number;

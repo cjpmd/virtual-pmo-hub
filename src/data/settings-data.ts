@@ -327,6 +327,7 @@ export const defaultSettings: AppSettings = {
   terminology: { terms: { ...defaultTerms } },
   health: {
     scheduleSlipPercent: 10,
+    divergenceAlertDays: 14,
     taskOverdueAtRiskPercent: 15,
     taskOverdueOffTrackPercent: 30,
     financialAtRiskPercent: 0,

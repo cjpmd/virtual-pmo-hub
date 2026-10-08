@@ -931,6 +931,12 @@ export function LifecycleSettings() {
             hint="Slip against the baseline duration."
           />
           <NumberField
+            label="Report better than evidence → alert (days)"
+            value={health.divergenceAlertDays}
+            onChange={(value) => set({ divergenceAlertDays: value })}
+            hint="Days a status report can stay better than the evidence before an assurance alert."
+          />
+          <NumberField
             label="Overdue tasks → At Risk (%)"
             value={health.taskOverdueAtRiskPercent}
             onChange={(value) => set({ taskOverdueAtRiskPercent: value })}

@@ -67,6 +67,7 @@ const NO_UPDATED_AT = new Set<TableName>([
   "decision_risks",
   "dependency_issues",
   "dependency_risks",
+  "divergence_justifications",
   "financial_forecast_history",
   "health_snapshots",
   "lesson_project_types",

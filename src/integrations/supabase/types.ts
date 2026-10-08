@@ -84,6 +84,13 @@ export type Database = {
             foreignKeyName: "actuals_import_rows_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "actuals_import_rows_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -295,6 +302,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "assumptions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -1015,6 +1029,13 @@ export type Database = {
             foreignKeyName: "benefit_projects_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "benefit_projects_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -1388,6 +1409,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "budget_baselines_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -1916,6 +1944,13 @@ export type Database = {
             foreignKeyName: "business_cases_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "business_cases_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -2183,6 +2218,13 @@ export type Database = {
             foreignKeyName: "capability_projects_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "capability_projects_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -2342,6 +2384,13 @@ export type Database = {
             foreignKeyName: "change_requests_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "change_requests_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -2431,6 +2480,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "collection_projects_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -2701,6 +2757,13 @@ export type Database = {
             foreignKeyName: "cost_lines_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "cost_lines_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -2817,6 +2880,13 @@ export type Database = {
             foreignKeyName: "decision_actions_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_actions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -2926,6 +2996,13 @@ export type Database = {
             foreignKeyName: "decision_benefits_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_benefits_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -3008,6 +3085,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_change_requests_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -3109,6 +3193,13 @@ export type Database = {
             foreignKeyName: "decision_dependencies_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_dependencies_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -3191,6 +3282,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_issues_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -3306,6 +3404,13 @@ export type Database = {
             foreignKeyName: "decision_options_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_options_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -3381,6 +3486,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_risks_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -3613,6 +3725,13 @@ export type Database = {
             foreignKeyName: "decisions_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -3812,6 +3931,13 @@ export type Database = {
             foreignKeyName: "dependencies_giver_project_id_workspace_id_fkey"
             columns: ["giver_project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "dependencies_giver_project_id_workspace_id_fkey"
+            columns: ["giver_project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -3897,6 +4023,13 @@ export type Database = {
             columns: ["receiver_project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "dependencies_receiver_project_id_workspace_id_fkey"
+            columns: ["receiver_project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -4036,6 +4169,119 @@ export type Database = {
           },
         ]
       }
+      divergence_justifications: {
+        Row: {
+          author_id: string | null
+          created_at: string
+          declared_at_time: Database["public"]["Enums"]["health"]
+          divergence_days_at_time: number
+          evidenced_at_time: Database["public"]["Enums"]["health"]
+          id: string
+          organisation_id: string
+          project_id: string
+          status_report_id: string
+          text: string
+          workspace_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          created_at?: string
+          declared_at_time: Database["public"]["Enums"]["health"]
+          divergence_days_at_time: number
+          evidenced_at_time: Database["public"]["Enums"]["health"]
+          id?: string
+          organisation_id: string
+          project_id: string
+          status_report_id: string
+          text: string
+          workspace_id: string
+        }
+        Update: {
+          author_id?: string | null
+          created_at?: string
+          declared_at_time?: Database["public"]["Enums"]["health"]
+          divergence_days_at_time?: number
+          evidenced_at_time?: Database["public"]["Enums"]["health"]
+          id?: string
+          organisation_id?: string
+          project_id?: string
+          status_report_id?: string
+          text?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "divergence_justifications_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "divergence_justifications_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "divergence_justifications_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "divergence_justifications_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "divergence_justifications_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_financials"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "divergence_justifications_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "divergence_justifications_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_task_stats"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "divergence_justifications_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "divergence_justifications_status_report_id_project_id_fkey"
+            columns: ["status_report_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "status_reports"
+            referencedColumns: ["id", "project_id"]
+          },
+          {
+            foreignKeyName: "divergence_justifications_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           archived_at: string | null
@@ -4146,6 +4392,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "documents_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -4293,6 +4546,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "financial_forecast_history_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -4463,6 +4723,13 @@ export type Database = {
             foreignKeyName: "financial_values_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "financial_values_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -4579,6 +4846,7 @@ export type Database = {
           project_id: string | null
           schedule: Database["public"]["Enums"]["health"] | null
           snapshot_date: string
+          source: string
           workspace_id: string
         }
         Insert: {
@@ -4599,6 +4867,7 @@ export type Database = {
           project_id?: string | null
           schedule?: Database["public"]["Enums"]["health"] | null
           snapshot_date: string
+          source?: string
           workspace_id: string
         }
         Update: {
@@ -4619,6 +4888,7 @@ export type Database = {
           project_id?: string | null
           schedule?: Database["public"]["Enums"]["health"] | null
           snapshot_date?: string
+          source?: string
           workspace_id?: string
         }
         Relationships: [
@@ -4676,6 +4946,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "health_snapshots_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -4901,6 +5178,13 @@ export type Database = {
             foreignKeyName: "improvement_actions_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "improvement_actions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -5067,6 +5351,13 @@ export type Database = {
             foreignKeyName: "issues_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "issues_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -5145,6 +5436,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "lesson_project_types_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -5298,6 +5596,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "lessons_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -5526,6 +5831,13 @@ export type Database = {
             foreignKeyName: "milestone_forecast_history_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "milestone_forecast_history_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -5569,6 +5881,7 @@ export type Database = {
           id: string
           organisation_id: string
           owner_id: string | null
+          phase_id: string | null
           project_id: string
           ref: string
           report_to_committee: boolean
@@ -5586,6 +5899,7 @@ export type Database = {
           id?: string
           organisation_id: string
           owner_id?: string | null
+          phase_id?: string | null
           project_id: string
           ref: string
           report_to_committee?: boolean
@@ -5603,6 +5917,7 @@ export type Database = {
           id?: string
           organisation_id?: string
           owner_id?: string | null
+          phase_id?: string | null
           project_id?: string
           ref?: string
           report_to_committee?: boolean
@@ -5627,6 +5942,13 @@ export type Database = {
             referencedColumns: ["id", "organisation_id"]
           },
           {
+            foreignKeyName: "milestones_phase_id_fkey"
+            columns: ["phase_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "lifecycle_phases"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
             foreignKeyName: "milestones_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
@@ -5638,6 +5960,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "milestones_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -6500,6 +6829,13 @@ export type Database = {
             foreignKeyName: "phase_lessons_review_attendees_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "phase_lessons_review_attendees_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -6611,6 +6947,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "phase_lessons_reviews_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -6966,6 +7309,13 @@ export type Database = {
             foreignKeyName: "project_buckets_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "project_buckets_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -7059,6 +7409,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "project_plan_links_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -7283,6 +7640,13 @@ export type Database = {
             foreignKeyName: "project_team_members_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "project_team_members_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -7400,6 +7764,7 @@ export type Database = {
           priority: Database["public"]["Enums"]["priority"]
           programme_id: string | null
           project_officer_id: string | null
+          reporting_cadence: Database["public"]["Enums"]["reporting_cadence"]
           sponsor_id: string | null
           start_date: string | null
           state: Database["public"]["Enums"]["project_state"]
@@ -7433,6 +7798,7 @@ export type Database = {
           priority?: Database["public"]["Enums"]["priority"]
           programme_id?: string | null
           project_officer_id?: string | null
+          reporting_cadence?: Database["public"]["Enums"]["reporting_cadence"]
           sponsor_id?: string | null
           start_date?: string | null
           state?: Database["public"]["Enums"]["project_state"]
@@ -7466,6 +7832,7 @@ export type Database = {
           priority?: Database["public"]["Enums"]["priority"]
           programme_id?: string | null
           project_officer_id?: string | null
+          reporting_cadence?: Database["public"]["Enums"]["reporting_cadence"]
           sponsor_id?: string | null
           start_date?: string | null
           state?: Database["public"]["Enums"]["project_state"]
@@ -7746,6 +8113,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "resource_assignments_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -8164,6 +8538,13 @@ export type Database = {
             foreignKeyName: "risks_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "risks_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -8332,6 +8713,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "roadmap_items_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -8651,6 +9039,8 @@ export type Database = {
           comments: string | null
           created_at: string
           created_by: string | null
+          decisions_needed: string | null
+          declared_benefit: Database["public"]["Enums"]["health"]
           effort: Database["public"]["Enums"]["health"]
           evidenced_benefit: Database["public"]["Enums"]["health"] | null
           evidenced_effort: Database["public"]["Enums"]["health"] | null
@@ -8669,6 +9059,8 @@ export type Database = {
           ref: string
           reporting_date: string
           schedule: Database["public"]["Enums"]["health"]
+          status: Database["public"]["Enums"]["status_report_status"]
+          submitted_at: string | null
           submitter_id: string | null
           updated_at: string
           workspace_id: string
@@ -8679,6 +9071,8 @@ export type Database = {
           comments?: string | null
           created_at?: string
           created_by?: string | null
+          decisions_needed?: string | null
+          declared_benefit?: Database["public"]["Enums"]["health"]
           effort?: Database["public"]["Enums"]["health"]
           evidenced_benefit?: Database["public"]["Enums"]["health"] | null
           evidenced_effort?: Database["public"]["Enums"]["health"] | null
@@ -8697,6 +9091,8 @@ export type Database = {
           ref: string
           reporting_date: string
           schedule?: Database["public"]["Enums"]["health"]
+          status?: Database["public"]["Enums"]["status_report_status"]
+          submitted_at?: string | null
           submitter_id?: string | null
           updated_at?: string
           workspace_id: string
@@ -8707,6 +9103,8 @@ export type Database = {
           comments?: string | null
           created_at?: string
           created_by?: string | null
+          decisions_needed?: string | null
+          declared_benefit?: Database["public"]["Enums"]["health"]
           effort?: Database["public"]["Enums"]["health"]
           evidenced_benefit?: Database["public"]["Enums"]["health"] | null
           evidenced_effort?: Database["public"]["Enums"]["health"] | null
@@ -8725,6 +9123,8 @@ export type Database = {
           ref?: string
           reporting_date?: string
           schedule?: Database["public"]["Enums"]["health"]
+          status?: Database["public"]["Enums"]["status_report_status"]
+          submitted_at?: string | null
           submitter_id?: string | null
           updated_at?: string
           workspace_id?: string
@@ -8749,6 +9149,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "status_reports_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -8952,6 +9359,13 @@ export type Database = {
             foreignKeyName: "sync_conflicts_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "sync_conflicts_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -9026,6 +9440,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "sync_log_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -9131,6 +9552,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "sync_outbox_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -9256,6 +9684,13 @@ export type Database = {
             foreignKeyName: "user_favourites_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "user_favourites_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id"]
           },
@@ -9317,6 +9752,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "work_item_assignees_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -9450,6 +9892,13 @@ export type Database = {
             foreignKeyName: "work_item_attachments_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "work_item_attachments_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -9564,6 +10013,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "work_item_checklist_items_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -9687,6 +10143,13 @@ export type Database = {
             foreignKeyName: "work_item_events_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "work_item_events_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -9803,6 +10266,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "work_item_links_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -9955,6 +10425,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "work_item_offers_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -10188,6 +10665,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "work_items_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -10685,6 +11169,13 @@ export type Database = {
             foreignKeyName: "work_items_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "work_items_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -10728,9 +11219,12 @@ export type Database = {
           id: string | null
           organisation_id: string | null
           owner_id: string | null
+          past_baseline: boolean | null
+          phase_id: string | null
           project_id: string | null
           ref: string | null
           report_to_committee: boolean | null
+          slip_band: string | null
           slip_days: number | null
           status: Database["public"]["Enums"]["delivery_status"] | null
           title: string | null
@@ -10747,9 +11241,12 @@ export type Database = {
           id?: string | null
           organisation_id?: string | null
           owner_id?: string | null
+          past_baseline?: never
+          phase_id?: string | null
           project_id?: string | null
           ref?: string | null
           report_to_committee?: boolean | null
+          slip_band?: never
           slip_days?: never
           status?: never
           title?: string | null
@@ -10766,9 +11263,12 @@ export type Database = {
           id?: string | null
           organisation_id?: string | null
           owner_id?: string | null
+          past_baseline?: never
+          phase_id?: string | null
           project_id?: string | null
           ref?: string | null
           report_to_committee?: boolean | null
+          slip_band?: never
           slip_days?: never
           status?: never
           title?: string | null
@@ -10792,6 +11292,13 @@ export type Database = {
             referencedColumns: ["id", "organisation_id"]
           },
           {
+            foreignKeyName: "milestones_phase_id_fkey"
+            columns: ["phase_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "lifecycle_phases"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
             foreignKeyName: "milestones_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
@@ -10803,6 +11310,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "milestones_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -11079,6 +11593,7 @@ export type Database = {
       }
       v_project_delivery_health: {
         Row: {
+          baseline_finish_date: string | null
           code: string | null
           delivery: Database["public"]["Enums"]["health"] | null
           effective_portfolio_id: string | null
@@ -11087,6 +11602,8 @@ export type Database = {
           finish_date: string | null
           health_override: Database["public"]["Enums"]["health"] | null
           issue: Database["public"]["Enums"]["health"] | null
+          milestone_forecast_finish: string | null
+          milestones_after_baseline_finish: number | null
           organisation_id: string | null
           phase_index: number | null
           programme_id: string | null
@@ -11096,6 +11613,71 @@ export type Database = {
           workspace_id: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "projects_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "programmes"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "projects_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_financials"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "projects_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_health"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "projects_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      v_project_divergence: {
+        Row: {
+          code: string | null
+          declared: Database["public"]["Enums"]["health"] | null
+          divergence_alert: boolean | null
+          divergence_days: number | null
+          divergence_kind: string | null
+          divergence_since: string | null
+          divergent: boolean | null
+          divergent_prev_month_end: boolean | null
+          evidenced: Database["public"]["Enums"]["health"] | null
+          finish_vs_baseline_days: number | null
+          justification: string | null
+          justification_at: string | null
+          justification_author_id: string | null
+          justified: boolean | null
+          last_report_date: string | null
+          latest_report_id: string | null
+          next_report_due: string | null
+          organisation_id: string | null
+          programme_id: string | null
+          project_id: string | null
+          report_overdue: boolean | null
+          risk_score: number | null
+          state: Database["public"]["Enums"]["project_state"] | null
+          workspace_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "divergence_justifications_author_id_fkey"
+            columns: ["justification_author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "projects_programme_id_workspace_id_fkey"
             columns: ["programme_id", "workspace_id"]
@@ -11420,6 +12002,13 @@ export type Database = {
             foreignKeyName: "roadmap_items_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "roadmap_items_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
             referencedRelation: "v_project_financials"
             referencedColumns: ["project_id", "workspace_id"]
           },
@@ -11654,6 +12243,13 @@ export type Database = {
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "work_items_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
             referencedColumns: ["project_id", "workspace_id"]
           },
           {
@@ -11914,10 +12510,12 @@ export type Database = {
         | "sponsor"
       project_state: "proposed" | "active" | "on_hold" | "closed"
       project_tier: "small" | "medium" | "large"
+      reporting_cadence: "weekly" | "fortnightly" | "monthly"
       request_status: "new" | "in_review" | "on_hold" | "approved" | "rejected"
       risk_response: "avoid" | "reduce" | "transfer" | "accept"
       spend_type: "capital" | "operating"
       status_category: "todo" | "in_progress" | "done"
+      status_report_status: "draft" | "submitted"
       sync_health: "healthy" | "warning" | "failing"
       sync_log_kind:
         | "read"
@@ -12167,10 +12765,12 @@ export const Constants = {
       ],
       project_state: ["proposed", "active", "on_hold", "closed"],
       project_tier: ["small", "medium", "large"],
+      reporting_cadence: ["weekly", "fortnightly", "monthly"],
       request_status: ["new", "in_review", "on_hold", "approved", "rejected"],
       risk_response: ["avoid", "reduce", "transfer", "accept"],
       spend_type: ["capital", "operating"],
       status_category: ["todo", "in_progress", "done"],
+      status_report_status: ["draft", "submitted"],
       sync_health: ["healthy", "warning", "failing"],
       sync_log_kind: [
         "read",

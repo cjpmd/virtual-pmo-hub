@@ -89,7 +89,34 @@ const selectCls = "h-8 rounded-md border border-input bg-background px-2 text-xs
 const views = ["Backlog", "Sprints", "Board", "Reports", "Forecast"] as const;
 type View = (typeof views)[number];
 
-export function DeliveryWorkspace({ projectId }: { projectId: string }) {
+/**
+ * Sprint data is not stored in Supabase yet (it lives in the browser-local sprints.ts store,
+ * generated per project), so nothing here may show its figures. The Delivery tab and the
+ * forecast card say so until sprints move into the database (the "option A" phase), when
+ * SprintDeliveryWorkspace and SprintForecastPanel below come back, reading the database.
+ */
+function NoSprintData({ title }: { title: string }) {
+  return (
+    <div className="rounded-lg border border-dashed border-border bg-card p-5 text-sm">
+      <p className="font-semibold">{title}</p>
+      <p className="mt-1 text-muted-foreground">
+        No sprint data yet. Sprints, the burn-up, velocity and the what-if forecast return once
+        sprints are recorded in Virtual PMO.
+      </p>
+    </div>
+  );
+}
+
+export function DeliveryWorkspace(_props: { projectId: string }) {
+  return <NoSprintData title="Delivery" />;
+}
+
+export function ForecastPanel(_props: { projectId: string; compact?: boolean }) {
+  return <NoSprintData title="Evidence-based forecast" />;
+}
+
+/** Kept for the sprints phase; not rendered (see NoSprintData). */
+export function SprintDeliveryWorkspace({ projectId }: { projectId: string }) {
   useDeliveryVersion();
   const d = getDelivery(projectId);
   const agile = d.settings.approach !== "waterfall";
@@ -1270,7 +1297,14 @@ function RecoveryPlan({ projectId, d }: { projectId: string; d: ProjectDelivery 
 }
 
 // ---------------- Forecast ----------------
-export function ForecastPanel({ projectId, compact }: { projectId: string; compact?: boolean }) {
+/** Kept for the sprints phase; not rendered (see NoSprintData). */
+export function SprintForecastPanel({
+  projectId,
+  compact,
+}: {
+  projectId: string;
+  compact?: boolean;
+}) {
   useDeliveryVersion();
   const d = getDelivery(projectId);
   const f = getProjectForecast(forecastInputFor(d));
@@ -1392,7 +1426,7 @@ function ForecastView({ projectId, d }: { projectId: string; d: ProjectDelivery 
   const burn = sprint ? sprintDaily(d, sprint) : null;
   return (
     <div className="space-y-6">
-      <ForecastPanel projectId={projectId} />
+      <SprintForecastPanel projectId={projectId} />
       <ChartCard
         title="Burn-up with forecast"
         subtitle={`${basisLabels[basis]} · diamond marks the recovery point`}

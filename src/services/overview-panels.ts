@@ -174,7 +174,8 @@ export interface WatchGroup {
 
 export function buildWatchlist(input: {
   active: ProjectSummary[];
-  declared: Map<string, { declared: Health; evidenced: EvidencedRag; divergent: boolean }>;
+  /** From v_project_divergence; declared is "Not Set" when the project has never reported. */
+  declared: Map<string, { declared: Health; evidenced: Health; divergent: boolean }>;
   forecasts: ForecastPoint[];
   /** Open change requests by project id. */
   openChanges: Map<string, number>;
@@ -197,7 +198,7 @@ export function buildWatchlist(input: {
       programmeId: p.programmeId,
       programmeName: p.programmeName || "No programme",
       declared: assurance?.declared ?? p.health.overall,
-      evidenced: assurance ? evidencedToHealth(assurance.evidenced) : p.health.overall,
+      evidenced: assurance?.evidenced ?? p.health.overall,
       disagree: assurance?.divergent ?? false,
       variance: p.forecast - p.budget,
       change: before ? p.forecast - before.eac : null,

@@ -1,266 +1,145 @@
-// Delivery assurance: the declared RAG (latest submitted status report, else the computed
-// health from v_project_health) against the RAG evidenced by the delivery forecast. Project
-// facts come from Supabase; the forecast runs on the browser-local sprint data (sprints.ts),
-// which is keyed by project code until the sprints phase.
+// Delivery assurance: what the latest submitted status report declares against what the
+// evidence shows. Every judgement here (divergence, its kind and length, alerts, justification,
+// report due dates, risk score) comes from v_project_divergence; this file only joins the
+// project names on and reshapes rows for the screens.
 import type { Health } from "@/data/types";
 import { supabase } from "@/integrations/supabase/client";
-import { listPeople, listProjects } from "./hierarchy";
+import { listProjects } from "./hierarchy";
 import { toHealth, type ProjectStateLabel } from "./labels";
 import { unwrap } from "./service-error";
-import {
-  daysBetween,
-  getProjectForecast,
-  type DeliveryStatus,
-  type EvidencedRag,
-  type ForecastResult,
-} from "./forecast";
-import {
-  TODAY,
-  forecastHistory,
-  forecastInputFor,
-  getDelivery,
-  isStale,
-  lastActivity,
-  registerDeliveryProjects,
-  toDate,
-} from "./sprints";
+import { insertRow } from "./write";
 
-export interface AssuranceProject {
-  id: string;
-  code: string;
-  name: string;
-  programme: string;
-  state: ProjectStateLabel;
-  declared: Health;
-  /** Declared RAG at the end of last month (latest report before this month), if any. */
-  declaredPrevious: Health | null;
-}
-
-/** Projects with their declared RAG; also registers them with the sprint store. */
-export async function loadAssuranceProjects(orgId: string): Promise<AssuranceProject[]> {
-  const [projects, reports, sources, people] = await Promise.all([
-    listProjects(orgId),
-    supabase
-      .from("status_reports")
-      .select("project_id, overall, reporting_date")
-      .eq("organisation_id", orgId)
-      .order("reporting_date", { ascending: false }),
-    supabase.from("projects").select("id, task_source").eq("organisation_id", orgId),
-    listPeople(orgId),
-  ]);
-  const latest = new Map<string, Health>();
-  const previous = new Map<string, Health>();
-  const monthStart = `${TODAY.slice(0, 7)}-01`;
-  for (const row of unwrap(reports, "Loading status reports")) {
-    if (!latest.has(row.project_id)) latest.set(row.project_id, toHealth(row.overall));
-    if (row.reporting_date < monthStart && !previous.has(row.project_id))
-      previous.set(row.project_id, toHealth(row.overall));
-  }
-  const source = new Map(
-    unwrap(sources, "Loading projects").map((row) => [row.id, row.task_source]),
-  );
-  const names = people.map((person) => person.name);
-  registerDeliveryProjects(
-    projects.map((project) => ({
-      code: project.code,
-      state: project.state,
-      manager: project.managerName,
-      taskSource: source.get(project.id) === "native" ? "Native" : "Planner",
-      people: names,
-    })),
-  );
-  return projects.map((project) => ({
-    id: project.id,
-    code: project.code,
-    name: project.name,
-    programme: project.programmeId ? project.programmeName : "Direct",
-    state: project.state,
-    declared: latest.get(project.id) ?? project.health.overall,
-    declaredPrevious: previous.get(project.id) ?? null,
-  }));
-}
-
-const level = (r: EvidencedRag) => (r === "Green" ? 0 : r === "Amber" ? 1 : r === "Red" ? 2 : -1);
-const healthRag = (h: Health): EvidencedRag =>
-  h === "On Track" ? "Green" : h === "At Risk" ? "Amber" : h === "Off Track" ? "Red" : "Grey";
+export type DivergenceKind = "optimistic_at_submission" | "evidence_moved";
 
 export interface AssuranceRow {
   projectId: string;
   code: string;
   name: string;
   programme: string;
-  state: string;
-  declared: Health;
-  evidenced: EvidencedRag;
-  stale: boolean;
-  status: DeliveryStatus;
-  forecast: ForecastResult;
-  daysVsBaseline: number | null;
-  gap: number;
-  converging: boolean;
-  lastUpdateDays: number;
+  programmeId: string | null;
+  state: ProjectStateLabel;
+  /** Overall RAG of the latest submitted report; null when the project has never reported. */
+  declared: Health | null;
+  /** Evidenced overall RAG (v_project_health.computed_overall). */
+  evidenced: Health;
   divergent: boolean;
-  divergenceAlert: boolean;
+  divergenceKind: DivergenceKind | null;
   divergenceDays: number;
-  justification?: string | undefined;
+  divergenceAlert: boolean;
+  justified: boolean;
+  justification: string | null;
+  justificationAt: string | null;
+  latestReportId: string | null;
+  /** Divergent at the end of last month; null when there was nothing to compare. */
+  divergentPrevMonthEnd: boolean | null;
+  lastReportDate: string | null;
+  nextReportDue: string | null;
+  reportOverdue: boolean;
+  forecastFinishDate: string | null;
+  finishVsBaselineDays: number | null;
   riskScore: number;
 }
 
-export function getAssuranceRow(project: AssuranceProject): AssuranceRow {
-  const d = getDelivery(project.code);
-  const f = getProjectForecast(forecastInputFor(d));
-  const declared = project.declared;
-  const stale = project.state !== "Closed" && isStale(d);
-  const evidenced: EvidencedRag = stale ? "Grey" : f.evidencedRag;
-  const divergent =
-    level(evidenced) > level(healthRag(declared)) &&
-    level(evidenced) >= 0 &&
-    level(healthRag(declared)) >= 0;
-  // consecutive most-recent forecast points where evidence was worse than declared
-  let cycles = 0,
-    since: Date | null = null;
-  for (const point of forecastHistory(project.code).reverse()) {
-    if (level(point.rag) > level(healthRag(declared))) {
-      cycles++;
-      since = point.date;
-    } else break;
-  }
-  const divergenceDays = since ? daysBetween(since, toDate(TODAY)) : 0;
-  const divergenceAlert = divergent && (cycles >= 2 || divergenceDays >= 14);
-  const lastUpdateDays = daysBetween(lastActivity(d), toDate(TODAY));
-  const slip = Math.max(0, f.daysVsBaseline ?? 60);
-  const riskScore = Math.round(
-    (divergenceAlert ? 40 : divergent ? 15 : 0) +
-      Math.min(30, slip / 3) +
-      (stale ? 20 : 0) +
-      (!f.converging && f.deliveryStatus !== "insufficient_evidence" ? 15 : 0),
+/** One row per non-archived project, highest assurance risk first. */
+export async function loadAssurance(orgId: string): Promise<AssuranceRow[]> {
+  const [projects, divergence, health] = await Promise.all([
+    listProjects(orgId),
+    supabase
+      .from("v_project_divergence")
+      .select(
+        "project_id, declared, evidenced, divergent, divergence_kind, divergence_days, divergence_alert, justified, justification, justification_at, latest_report_id, divergent_prev_month_end, last_report_date, next_report_due, report_overdue, finish_vs_baseline_days, risk_score",
+      )
+      .eq("organisation_id", orgId),
+    supabase
+      .from("v_project_health")
+      .select("project_id, forecast_finish_date")
+      .eq("organisation_id", orgId),
+  ]);
+  const byId = new Map(unwrap(divergence, "Loading assurance").map((row) => [row.project_id, row]));
+  const finish = new Map(
+    unwrap(health, "Loading project health").map((row) => [
+      row.project_id,
+      row.forecast_finish_date,
+    ]),
   );
-  return {
-    projectId: project.id,
-    code: project.code,
-    name: project.name,
-    programme: project.programme,
-    state: project.state,
-    declared,
-    evidenced,
-    stale,
-    status: f.deliveryStatus,
-    forecast: f,
-    daysVsBaseline: f.daysVsBaseline,
-    gap: f.gapUnits,
-    converging: f.converging,
-    lastUpdateDays,
-    divergent,
-    divergenceAlert,
-    divergenceDays,
-    justification: d.justifications[0]?.text,
-    riskScore,
-  };
+  return projects
+    .flatMap((project): AssuranceRow[] => {
+      const row = byId.get(project.id);
+      if (!row) return [];
+      return [
+        {
+          projectId: project.id,
+          code: project.code,
+          name: project.name,
+          programme: project.programmeId ? project.programmeName : "Direct",
+          programmeId: project.programmeId,
+          state: project.state,
+          declared: row.declared ? toHealth(row.declared) : null,
+          evidenced: toHealth(row.evidenced),
+          divergent: Boolean(row.divergent),
+          divergenceKind: (row.divergence_kind as DivergenceKind | null) ?? null,
+          divergenceDays: row.divergence_days ?? 0,
+          divergenceAlert: Boolean(row.divergence_alert),
+          justified: Boolean(row.justified),
+          justification: row.justification,
+          justificationAt: row.justification_at,
+          latestReportId: row.latest_report_id,
+          divergentPrevMonthEnd: row.divergent_prev_month_end,
+          lastReportDate: row.last_report_date,
+          nextReportDue: row.next_report_due,
+          reportOverdue: Boolean(row.report_overdue),
+          forecastFinishDate: finish.get(project.id) ?? null,
+          finishVsBaselineDays: row.finish_vs_baseline_days,
+          riskScore: row.risk_score ?? 0,
+        },
+      ];
+    })
+    .sort((a, b) => b.riskScore - a.riskScore || a.name.localeCompare(b.name));
 }
 
-export function getAssuranceRows(projects: AssuranceProject[]) {
-  return projects
-    .filter((p) => p.state !== "Proposed")
-    .map(getAssuranceRow)
-    .sort((a, b) => b.riskScore - a.riskScore);
+/** The register and roll-ups leave out proposed projects; "live" also leaves out closed ones. */
+export const assuredRows = (rows: AssuranceRow[]) => rows.filter((r) => r.state !== "Proposed");
+export const liveRows = (rows: AssuranceRow[]) =>
+  assuredRows(rows).filter((r) => r.state !== "Closed");
+
+/** Wording for a divergence, by kind (always with the day count, never colour alone). */
+export function divergenceText(row: Pick<AssuranceRow, "divergenceKind" | "divergenceDays">) {
+  const days = `${row.divergenceDays} day${row.divergenceDays === 1 ? "" : "s"}`;
+  return row.divergenceKind === "optimistic_at_submission"
+    ? `Report declared better than the evidence (${days})`
+    : `Evidence has worsened since the last report (${days}). Next report should reflect this.`;
 }
 
 /**
- * Report vs data gaps: open projects whose declared RAG is better than the evidence, now and at
- * the end of last month (the last evidence point before this month against the report then).
- * previous is null when no project has a point to compare.
+ * Report vs data gaps: open projects whose latest report is better than the evidence, now and at
+ * the end of last month. previous is null when no project had anything to compare then.
  */
-export function reportGapCounts(projects: AssuranceProject[]) {
-  const counted = projects.filter((p) => p.state !== "Proposed" && p.state !== "Closed");
-  const current = counted.map(getAssuranceRow).filter((r) => r.divergent).length;
-  const monthStart = toDate(`${TODAY.slice(0, 7)}-01`);
-  let compared = 0,
-    previous = 0;
-  for (const project of counted) {
-    const point = forecastHistory(project.code)
-      .filter((p) => p.date < monthStart)
-      .at(-1);
-    if (!point || !project.declaredPrevious) continue;
-    const evidenced = level(point.rag),
-      declared = level(healthRag(project.declaredPrevious));
-    if (evidenced < 0 || declared < 0) continue;
-    compared++;
-    if (evidenced > declared) previous++;
-  }
-  return { current, previous: compared ? previous : null };
-}
-
-/** Roll-up: aggregate forecasts, never velocities. Insufficient evidence is excluded and counted. */
-export function rollUp(rows: AssuranceRow[]) {
-  const counted = rows.filter(
-    (r) => r.status !== "insufficient_evidence" && !r.stale && r.state !== "Closed",
-  );
-  const counts = rows.reduce<Record<string, number>>((acc, r) => {
-    const key = r.stale ? "stale" : r.status;
-    acc[key] = (acc[key] ?? 0) + 1;
-    return acc;
-  }, {});
-  const worst = counted.reduce<EvidencedRag>(
-    (w, r) => (level(r.evidenced) > level(w) ? r.evidenced : w),
-    counted.length ? "Green" : "Grey",
-  );
-  const latestFinish = counted
-    .map((r) => r.forecast.forecastFinishDate)
-    .reduce<Date | null>((m, x) => (x && (!m || x > m) ? x : m), null);
+export function reportGapCounts(rows: AssuranceRow[]) {
+  const open = liveRows(rows);
+  const compared = open.filter((r) => r.divergentPrevMonthEnd !== null);
   return {
-    worst,
-    latestFinish,
-    counts,
-    excluded: rows.length - counted.length,
-    notConverging: counted.filter((r) => !r.converging).length,
+    current: open.filter((r) => r.divergent).length,
+    previous: compared.length ? compared.filter((r) => r.divergentPrevMonthEnd).length : null,
   };
 }
 
-export function slipTrend(rows: AssuranceRow[]) {
-  const today = toDate(TODAY);
-  const points: { label: string; avgSlip: number }[] = [];
-  for (let back = 90; back >= 0; back -= 14) {
-    const at = new Date(today.getTime() - back * 86400000);
-    const slips: number[] = [];
-    for (const r of rows.filter((x) => x.state !== "Closed")) {
-      const hist = forecastHistory(r.code)
-        .filter((h) => h.date <= at)
-        .at(-1);
-      if (hist?.finish) slips.push(daysBetween(r.forecast.baselineEndDate, hist.finish));
-    }
-    points.push({
-      label: `${String(at.getDate()).padStart(2, "0")}/${String(at.getMonth() + 1).padStart(2, "0")}`,
-      avgSlip: slips.length ? Math.round(slips.reduce((s, v) => s + v, 0) / slips.length) : 0,
-    });
-  }
-  return points;
-}
-
-export function forecastAccuracy(projects: AssuranceProject[]) {
-  const closed = projects.filter((p) => p.state === "Closed");
-  const errors: Record<25 | 50 | 75, number[]> = { 25: [], 50: [], 75: [] };
-  for (const p of closed) {
-    const hist = forecastHistory(p.code);
-    const d = getDelivery(p.code);
-    if (hist.length < 4) continue;
-    const actual = lastActivity(d);
-    for (const pct of [25, 50, 75] as const) {
-      const point = hist[Math.max(0, Math.round((hist.length * pct) / 100) - 1)];
-      if (point?.finish) errors[pct].push(Math.abs(daysBetween(actual, point.finish)));
-    }
-  }
-  const median = (xs: number[]) => {
-    if (!xs.length) return null;
-    const s = [...xs].sort((a, b) => a - b);
-    const m = Math.floor(s.length / 2);
-    return s.length % 2 ? s[m]! : Math.round((s[m - 1]! + s[m]!) / 2);
-  };
-  return {
-    projects: closed.length,
-    rows: ([25, 50, 75] as const).map((pct) => ({
-      pct,
-      median: median(errors[pct]),
-      samples: errors[pct].length,
-    })),
-  };
+/**
+ * Records why the latest report is better than the evidence. The database ties it to that report
+ * and freezes the declared/evidenced ratings and divergence days itself (a trigger, like the
+ * tenant guard), so the "at the time" columns sent here are placeholders it overwrites.
+ */
+export async function addDivergenceJustification(row: AssuranceRow, text: string) {
+  if (!row.latestReportId) throw new Error("There is no submitted report to justify.");
+  return insertRow(
+    "divergence_justifications",
+    {
+      project_id: row.projectId,
+      status_report_id: row.latestReportId,
+      text: text.trim(),
+      declared_at_time: "not_set",
+      evidenced_at_time: "not_set",
+      divergence_days_at_time: row.divergenceDays,
+    },
+    "Saving the justification",
+  );
 }
