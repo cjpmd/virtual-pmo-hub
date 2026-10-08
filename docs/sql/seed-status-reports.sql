@@ -1,4 +1,5 @@
--- PROPOSED, NOT APPLIED. Seed submitted status reports for the open demo projects, so the
+-- APPLIED 08/10/2026. Part 1 is migration 20261008194610_status_reports_source; Part 2 ran once via
+-- execute_sql (26 reports on 24 projects). Kept as the record of the seed data; not a migration.
 -- assurance views have declared ratings to compare against the evidence.
 --
 -- Part 1 is a schema change (status_reports.source, like health_snapshots.source) so these
