@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Project overview – design reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --band:#0F1828; --band-2:#152238; --band-line:#243452; --band-ink:#E7EDF6; --band-mute:#8D9DB8;
+  --bg:#F4F6FA; --surface:#FFFFFF; --line:#E1E6EF; --ink:#18212F; --mute:#5E6B80;
+  --accent:#5B8DEF; --accent-ink:#2C4A9A;
+  --g:#2FA36B; --a:#E0A33A; --r:#E05B4F; --n:#8D9DB8;
+  --sans:"Geist",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"Geist Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0B1220;--surface:#121B2C;--line:#22304A;--ink:#E7EDF6;--mute:#8D9DB8}}
+:root[data-theme="dark"]{--bg:#0B1220;--surface:#121B2C;--line:#22304A;--ink:#E7EDF6;--mute:#8D9DB8}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 var(--sans)}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1440px;margin:0 auto;padding:0 28px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* ---------- dark band ---------- */
+.band{background:var(--band);color:var(--band-ink)}
+.crumbs{display:flex;gap:6px;flex-wrap:wrap;font-size:12.5px;color:var(--band-mute);padding-top:18px}
+.crumbs a{color:var(--band-mute);text-decoration:none}.crumbs a:hover{color:var(--band-ink)}
+.crumbs span[aria-hidden]{opacity:.5}
+
+.head{display:grid;grid-template-columns:1fr auto;gap:16px 24px;align-items:start;padding:14px 0 18px}
+.title{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.title h1{margin:0;font-size:28px;font-weight:600;letter-spacing:-.015em}
+.code{font-family:var(--mono);font-size:12px;color:var(--band-mute);border:1px solid var(--band-line);border-radius:4px;padding:1px 6px}
+.star{background:none;border:0;color:var(--band-mute);font-size:18px;padding:2px}
+.sub{margin:6px 0 0;color:var(--band-mute);max-width:70ch}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chip{font-size:12px;border-radius:999px;padding:2px 9px;background:var(--band-2);border:1px solid var(--band-line);color:var(--band-ink)}
+.chip b{font-weight:500;color:var(--band-mute);margin-right:4px}
+.actions{display:flex;gap:8px;align-items:center}
+.btn{border:1px solid var(--band-line);background:var(--band-2);color:var(--band-ink);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:500}
+.btn:hover{border-color:#36507a}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.menu{position:relative}
+.menu-list{position:absolute;right:0;top:calc(100% + 6px);background:var(--band-2);border:1px solid var(--band-line);border-radius:8px;padding:4px;min-width:170px;display:none;z-index:5}
+.menu.open .menu-list{display:block}
+.menu-list button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--band-ink);padding:7px 10px;border-radius:6px;font-size:13px}
+.menu-list button:hover{background:var(--band-line)}
+.menu-list .danger{color:#F29A92}
+
+/* lifecycle + people row */
+.facts{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:28px;padding:4px 0 20px;border-bottom:1px solid var(--band-line)}
+.life ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(6,1fr)}
+.life li{position:relative;padding-top:20px;font-size:12px;color:var(--band-mute)}
+.life li::before{content:"";position:absolute;top:5px;left:0;right:0;height:3px;background:var(--band-line)}
+.life li.done::before{background:var(--accent)}
+.life li.now::before{background:linear-gradient(90deg,var(--accent) 45%,var(--band-line) 45%)}
+.life li::after{content:"";position:absolute;top:0;left:0;width:13px;height:13px;border-radius:50%;background:var(--band);border:2px solid var(--band-line)}
+.life li.done::after{background:var(--accent);border-color:var(--accent)}
+.life li.now::after{border-color:var(--accent);box-shadow:0 0 0 4px rgba(91,141,239,.25)}
+.life li.now{color:var(--band-ink);font-weight:500}
+.life li span{display:block;font-size:11px;opacity:.8}
+.life .cap{font-size:12.5px;color:var(--band-mute);margin-bottom:12px}
+.life .cap strong{color:var(--band-ink);font-weight:500}
+.people{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 18px}
+.people dt{font-size:12px;color:var(--band-mute)}
+.people dd{margin:2px 0 0;font-weight:500}
+.people dd small{display:block;font-weight:400;font-size:12px;color:var(--a)}
+
+/* health bar */
+.health{display:grid;grid-template-columns:minmax(260px,1.4fr) repeat(4,minmax(0,1fr));gap:1px;background:var(--band-line);border:1px solid var(--band-line);border-radius:10px;overflow:hidden;margin:18px 0}
+.health > div{background:var(--band-2);padding:10px 14px;min-width:0}
+.health dt{font-size:12px;color:var(--band-mute)}
+.health dd{margin:3px 0 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.rag{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500}
+.rag::before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor}
+.rag.ring::before{background:transparent;border:2px solid currentColor;width:10px;height:10px}
+.rag.g{color:var(--g)}.rag.a{color:var(--a)}.rag.r{color:var(--r)}.rag.n{color:var(--n)}
+.overall .alert{font-size:12px;color:#F29A92;width:100%}
+.overall .alert button{background:none;border:0;color:var(--band-ink);text-decoration:underline;padding:0;font-size:12px}
+
+/* tabs */
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.tabs button{background:none;border:0;color:var(--band-mute);padding:10px 12px 12px;font-size:13.5px;font-weight:500;white-space:nowrap;border-bottom:2px solid transparent}
+.tabs button[aria-selected="true"]{color:var(--band-ink);border-color:var(--accent)}
+.tabs button:hover{color:var(--band-ink)}
+
+/* overview: second band */
+.band.over{background:var(--band-2);border-top:1px solid var(--band-line)}
+.strip{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));border-bottom:1px solid var(--band-line)}
+.kpi{padding:14px 14px 14px 0;min-width:0}
+.kpi + .kpi{padding-left:14px;border-left:1px solid var(--band-line)}
+.kpi dt{font-size:12px;color:var(--band-mute)}
+.kpi dd{margin:4px 0 0;font-family:var(--mono);font-size:19px;font-weight:500;font-variant-numeric:tabular-nums}
+.kpi .d{display:block;font-family:var(--sans);font-size:11.5px;margin-top:2px}
+.d.bad{color:#F29A92}.d.good{color:#7ED3A6}.d.flat{color:var(--band-mute)}
+
+.split{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:24px;padding:18px 0 22px}
+.chart-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.chart-head h2{margin:0;font-size:15px;font-weight:600}
+.chart-head p{margin:2px 0 0;font-size:12.5px;color:var(--band-mute)}
+.presets{display:flex;gap:4px;background:var(--band);border:1px solid var(--band-line);border-radius:8px;padding:3px}
+.presets button{background:none;border:0;color:var(--band-mute);padding:4px 10px;border-radius:6px;font-size:12.5px}
+.presets button[aria-pressed="true"]{background:var(--band-line);color:var(--band-ink)}
+.legend{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 6px}
+.legend button{display:inline-flex;align-items:center;gap:6px;background:none;border:1px solid var(--band-line);color:var(--band-ink);border-radius:999px;padding:3px 10px;font-size:12px}
+.legend button[aria-pressed="false"]{opacity:.45}
+.legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
+.chartbox{overflow-x:auto}
+svg.pc{display:block;width:100%;min-width:640px;height:auto}
+.pc text{font-family:var(--sans);font-size:11px;fill:var(--band-mute)}
+.pc .grid{stroke:var(--band-line)}
+.tip{font-size:12px;color:var(--band-mute);margin-top:6px}
+
+.signals h2{margin:0 0 10px;font-size:15px;font-weight:600}
+.signals ol{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.signals li{background:var(--band);border:1px solid var(--band-line);border-left:3px solid var(--r);border-radius:8px;padding:10px 12px}
+.signals li.a{border-left-color:var(--a)}
+.signals li strong{display:block;font-size:13px;font-weight:600}
+.signals li p{margin:3px 0 0;font-size:12.5px;color:var(--band-mute)}
+.signals li button{margin-top:6px;background:none;border:0;padding:0;color:var(--accent);font-size:12.5px;font-weight:500}
+
+/* ---------- light working area ---------- */
+.work{padding:22px 0 40px;display:grid;gap:18px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+.panel h2{margin:0;font-size:15px;font-weight:600}
+.panel .lede{margin:4px 0 0;color:var(--mute);max-width:90ch}
+.ph{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.tags{display:flex;gap:6px}
+.tag{font-size:12px;border-radius:999px;padding:2px 9px;font-weight:500}
+.tag.a{background:rgba(224,163,58,.14);color:#A26A0B}.tag.r{background:rgba(224,91,79,.13);color:#B9372C}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tag.a{color:#F0C27A}:root:not([data-theme="light"]) .tag.r{color:#F29A92}}
+.fc{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:16px}
+.fc dt{font-size:12px;color:var(--mute)}
+.fc dd{margin:3px 0 0;font-family:var(--mono);font-size:20px;font-weight:500}
+.fc dd small{display:block;font-family:var(--sans);font-size:12px;font-weight:400;color:var(--mute)}
+.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.list{list-style:none;margin:12px 0 0;padding:0}
+.list li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
+.list li:first-child{border-top:0}
+.list .when{font-family:var(--mono);font-size:12px;color:var(--mute)}
+.dot{width:8px;height:8px;border-radius:50%}
+.dot.g{background:var(--g)}.dot.a{background:var(--a)}.dot.r{background:var(--r)}
+.quote{margin:12px 0 0;font-size:13px;color:var(--ink);border-left:3px solid var(--a);padding:2px 0 2px 12px}
+.meta{font-size:12px;color:var(--mute);margin-top:8px}
+.link{background:none;border:0;padding:0;color:var(--accent-ink);font-weight:500;font-size:13px;margin-top:10px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .link{color:var(--accent)}}
+
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.two.wide-left{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+.mkey{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--mute);margin-top:10px}
+.mkey span{display:inline-flex;align-items:center;gap:6px}
+.dia{width:9px;height:9px;transform:rotate(45deg);display:inline-block}
+.dia.hollow{border:1.5px solid var(--mute)}
+.sq{width:11px;height:11px;border-radius:2px;display:inline-block}
+.sq.hatch{background:repeating-linear-gradient(45deg,var(--a) 0 2px,transparent 2px 5px);border:1px solid var(--a)}
+.sq.ringk{border:2px solid var(--ink);border-radius:50%}
+svg.lc{display:block;width:100%;height:auto;margin-top:12px}
+#mc{min-width:760px}#mp{min-width:440px}
+.lc text{font-family:var(--sans);font-size:11.5px;fill:var(--mute)}
+.lc .lbl{fill:var(--ink);font-size:12.5px}
+.lc .grid{stroke:var(--line)}
+.mini{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0 0}
+.mini dt{font-size:12px;color:var(--mute)}
+.mini dd{margin:2px 0 0;font-family:var(--mono);font-size:17px;font-weight:500}
+.mini dd.bad{color:var(--r)}
+.heat{border-collapse:separate;border-spacing:4px;margin-top:10px;width:100%;min-width:420px}
+.heat th{font-size:12px;font-weight:500;color:var(--mute);text-align:left;white-space:nowrap}
+.heat thead th{text-align:center}
+.heat tbody tr:last-child th{color:var(--ink);font-weight:600}
+.heat td{height:30px;border-radius:5px;position:relative;font-size:11px;text-align:center;color:#fff}
+.heat td.g{background:var(--g)}.heat td.a{background:var(--a)}.heat td.r{background:var(--r)}
+.heat td.n{background:transparent;border:1px dashed var(--line);color:var(--mute)}
+.heat td.dec::after{content:"";position:absolute;top:50%;left:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border:2px solid #fff;border-radius:50%}
+.heat tbody tr:last-child td{outline:2px solid var(--surface)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.hr{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;margin-top:6px}
+.hr h3{font-size:13px;font-weight:600;margin:14px 0 4px}
+.hr p{margin:0;font-size:13px;max-width:70ch}
+.hr ul{margin:0;padding-left:18px;font-size:13px}
+.hr li{margin:2px 0}
+.decl{border-collapse:collapse;width:100%;font-size:13px}
+.decl th{text-align:left;font-weight:500;padding:5px 0;color:var(--mute)}
+.decl td{padding:5px 0}
+.decl .ev{font-size:12px;color:var(--mute);text-align:right}
+.decl .ev .rag{font-size:12px}
+@media (max-width:1000px){.two,.two.wide-left,.hr{grid-template-columns:1fr}}
+
+/* portfolio-style cards */
+:root{--ok:#2E9E44;--s1:#F2B01E;--s2:#E8845C;--s3:#D64545;--line-blue:#2B6CD6}
+.card .ch{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.card h2{display:flex;align-items:center;gap:8px}
+.info{display:inline-grid;place-items:center;width:15px;height:15px;border:1.3px solid var(--mute);border-radius:50%;font-size:10px;font-style:italic;font-weight:600;color:var(--mute);cursor:help}
+.card .lede{font-size:13px}
+.ctl{display:flex;gap:8px;align-items:center}
+.seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:2px}
+.seg button{background:none;border:0;padding:3px 10px;border-radius:6px;font-size:12.5px;color:var(--mute)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(20,30,50,.12)}
+.kebab{background:none;border:0;color:var(--mute);font-size:18px;line-height:1;padding:2px 6px;border-radius:6px}
+.kebab:hover{background:var(--bg)}
+.dumb{margin-top:14px}
+.row{display:grid;grid-template-columns:minmax(150px,240px) minmax(0,1fr) 64px;align-items:center;gap:14px;padding:6px 0}
+.nm{min-width:0}.nm strong{display:block;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nm span{display:block;font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trk{position:relative;height:22px;border-bottom:1px solid var(--line)}
+.trk i{position:absolute;top:50%}
+.trk .today{top:0;bottom:-1px;width:0;border-left:1px dashed var(--accent);opacity:.55}
+.trk .bar{height:3px;margin-top:-1.5px;background:var(--c);opacity:.6;border-radius:2px}
+.trk .bar.fc{background:repeating-linear-gradient(90deg,var(--c) 0 5px,transparent 5px 9px);opacity:.85}
+.trk .pt{width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%}
+.trk .pt.base{background:var(--surface);border:2px solid #5E6B80;z-index:1}
+.trk .pt:not(.base){z-index:2}
+.val{text-align:right;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.axisrow{padding:0}.axis{position:relative;height:16px;font-size:11.5px;color:var(--mute)}.axis span{position:absolute;top:0}.axis span:nth-child(1){left:0}.axis span:nth-child(2){left:58.2%;transform:translateX(-50%);color:var(--accent)}.axis span:nth-child(3){right:0}
+.cfoot{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+.cfoot .mkey{margin-top:0}
+.dot0{width:10px;height:10px;border-radius:50%;display:inline-block}
+.dot0.base{border:2px solid #5E6B80;background:var(--surface)}
+.dash{width:16px;border-top:2px dashed var(--mute);display:inline-block}
+.ln{width:16px;height:2.5px;background:var(--line-blue);display:inline-block;border-radius:2px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0 0}
+.stats div{display:flex;flex-direction:column}
+.stats dd{margin:0;font-family:var(--mono);font-size:22px;font-weight:500}
+.stats dt{font-size:12.5px;color:var(--mute)}
+.note{font-size:12.5px;color:var(--mute);margin:10px 0 0;max-width:80ch}
+#mp{min-width:520px}
+.spark{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 22px;margin-top:14px}
+.sp{margin:0}
+.sp figcaption{display:flex;justify-content:space-between;font-size:13px;font-weight:500;margin-bottom:6px}
+.sp figcaption b{font-size:12.5px;font-weight:600}
+.sp svg{display:block;width:100%;height:auto;overflow:visible}
+.sp small{display:block;font-size:11.5px;color:var(--mute);margin-top:4px}
+.sp.ov figcaption span{font-weight:700}
+@media (max-width:700px){.row{grid-template-columns:120px minmax(0,1fr) 56px;gap:8px}.stats{grid-template-columns:repeat(2,1fr)}}
+
+.status{position:sticky;bottom:0;background:var(--band);color:var(--band-mute);font-size:12px;border-top:1px solid var(--band-line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.status .wrap{display:flex;gap:18px;flex-wrap:wrap;padding-top:7px;padding-bottom:7px}
+
+@media (max-width:1200px){.strip{grid-template-columns:repeat(4,minmax(0,1fr))}.kpi:nth-child(5){border-left:0;padding-left:0}.kpi:nth-child(n+5){border-top:1px solid var(--band-line)}.health{grid-template-columns:repeat(3,minmax(0,1fr))}.health .overall{grid-column:1/-1}}
+@media (max-width:1000px){.split,.facts{grid-template-columns:1fr}.three{grid-template-columns:1fr}.fc{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:700px){.wrap{padding:0 16px}.head{grid-template-columns:1fr}.strip{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi:nth-child(odd){border-left:0;padding-left:0}.kpi:nth-child(n+3){border-top:1px solid var(--band-line)}.health{grid-template-columns:1fr 1fr}.people{grid-template-columns:1fr 1fr}.life ol{grid-template-columns:repeat(3,1fr);row-gap:14px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ================= PERSISTENT PROJECT HEADER (all tabs) ================= -->
+<header class="band">
+  <div class="wrap">
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <a href="#">Portfolio</a><span aria-hidden="true">/</span>
+      <a href="#">DTS 2025/26</a><span aria-hidden="true">/</span>
+      <a href="#">1. Standards, Governance &amp; Best Practice</a>
+    </nav>
+
+    <div class="head">
+      <div>
+        <div class="title">
+          <h1>Architecture Review Board</h1>
+          <span class="code">ARB</span>
+          <button class="star" aria-label="Add to watchlist" aria-pressed="false">☆</button>
+        </div>
+        <p class="sub">Improve university services through an architecture review board.</p>
+        <div class="chips">
+          <span class="chip"><b>Tier</b>Medium</span>
+          <span class="chip"><b>Priority</b>High</span>
+          <span class="chip"><b>Tasks</b>Managed in Virtual PMO</span>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn">Edit</button>
+        <button class="btn">Business case</button>
+        <button class="btn primary">Issue task</button>
+        <div class="menu" id="more">
+          <button class="btn" aria-haspopup="true" aria-expanded="false" aria-label="More actions">⋯</button>
+          <div class="menu-list" role="menu">
+            <button role="menuitem">Archive project</button>
+            <button role="menuitem" class="danger">Close project</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="facts">
+      <div class="life">
+        <div class="cap">Lifecycle: <strong>Phase 3 of 6, Design &amp; procure</strong></div>
+        <ol>
+          <li class="done">Start up<span>Phase 1</span></li>
+          <li class="done">Initiation<span>Phase 2</span></li>
+          <li class="now" aria-current="step">Design &amp; procure<span>Phase 3</span></li>
+          <li>Build<span>Phase 4</span></li>
+          <li>Deploy<span>Phase 5</span></li>
+          <li>Close<span>Phase 6</span></li>
+        </ol>
+      </div>
+      <dl class="people">
+        <div><dt>Project manager</dt><dd>Nadia Begum</dd></div>
+        <div><dt>Project officer</dt><dd>Sofia Marsh</dd></div>
+        <div><dt>Sponsor</dt><dd>Daniel Mercer</dd></div>
+        <div><dt>Start</dt><dd class="num">04/05/2026</dd></div>
+        <div><dt>Baseline finish</dt><dd class="num">12/11/2026</dd></div>
+        <div><dt>Forecast finish</dt><dd class="num">10/12/2026<small>28 days late</small></dd></div>
+      </dl>
+    </div>
+
+    <dl class="health" aria-label="Project health">
+      <div class="overall">
+        <dt>Overall</dt>
+        <dd>
+          <span class="rag ring a" title="Declared in latest status report">Declared amber</span>
+          <span class="rag r" title="What delivery data shows">Evidenced red</span>
+          <span class="alert">Report has been better than the evidence for 34 days. <button>Add justification</button></span>
+        </dd>
+      </div>
+      <div><dt>Schedule</dt><dd><span class="rag r">Red</span></dd></div>
+      <div><dt>Budget</dt><dd><span class="rag a">Amber</span></dd></div>
+      <div><dt>Issues &amp; risks</dt><dd><span class="rag a">Amber</span></dd></div>
+      <div><dt>Benefits pathway</dt><dd><span class="rag a">Amber</span></dd></div>
+    </dl>
+
+    <div class="tabs" role="tablist" aria-label="Project sections">
+      <button role="tab" aria-selected="true">Overview</button>
+      <button role="tab" aria-selected="false">Plan</button>
+      <button role="tab" aria-selected="false">Delivery</button>
+      <button role="tab" aria-selected="false">Status</button>
+      <button role="tab" aria-selected="false">RAID log</button>
+      <button role="tab" aria-selected="false">Resources</button>
+      <button role="tab" aria-selected="false">Financials</button>
+      <button role="tab" aria-selected="false">Benefits</button>
+      <button role="tab" aria-selected="false">Business case</button>
+    </div>
+  </div>
+</header>
+
+<!-- ================= OVERVIEW TAB ================= -->
+<main>
+  <section class="band over" aria-label="Project summary">
+    <div class="wrap">
+      <dl class="strip">
+        <div class="kpi"><dt>Budget</dt><dd>£180k</dd><span class="d flat">No change</span></div>
+        <div class="kpi"><dt>Forecast</dt><dd>£194k</dd><span class="d bad">▲ £6k since Sep</span></div>
+        <div class="kpi"><dt>Variance</dt><dd>+7.8%</dd><span class="d bad">▲ 3.3 pts, over budget</span></div>
+        <div class="kpi"><dt>Spent to date</dt><dd>£122k</dd><span class="d flat">68% of budget</span></div>
+        <div class="kpi"><dt>Points done</dt><dd>52%</dd><span class="d bad">14 pts behind plan</span></div>
+        <div class="kpi"><dt>Milestones, next 30 days</dt><dd>2</dd><span class="d bad">1 at risk</span></div>
+        <div class="kpi"><dt>Red risks</dt><dd>1</dd><span class="d bad">▲ 1 since Sep</span></div>
+        <div class="kpi"><dt>Forecast finish</dt><dd>10 Dec</dd><span class="d bad">▲ 9 days later than Sep</span></div>
+      </dl>
+
+      <div class="split">
+        <div>
+          <div class="chart-head">
+            <div>
+              <h2>Progress against plan</h2>
+              <p>Every line is a percentage of its own total plan. Solid is actual, dotted is forecast.</p>
+            </div>
+            <div class="presets" role="group" aria-label="Chart view">
+              <button aria-pressed="true" data-p="overlay">Overlay</button>
+              <button aria-pressed="false" data-p="spend">Spend</button>
+              <button aria-pressed="false" data-p="delivery">Delivery</button>
+              <button aria-pressed="false" data-p="benefits">Benefits</button>
+            </div>
+          </div>
+          <div class="legend" id="legend"></div>
+          <div class="chartbox"><svg class="pc" id="pc" viewBox="0 0 860 330" role="img" aria-labelledby="pc-desc"><desc id="pc-desc">Progress chart: spend is at 68% of budget at the end of September while points done are at 52% of plan, a 16 point gap.</desc></svg></div>
+          <p class="tip">Spend is running 16 points ahead of delivery. Sprint boundaries and gates are marked along the top.</p>
+        </div>
+
+        <aside class="signals" aria-label="Assurance signals">
+          <h2>Assurance signals</h2>
+          <ol>
+            <li><strong>Report says amber, evidence says red</strong><p>For 34 days. The sponsor sees amber in the committee pack.</p><button>Add justification</button></li>
+            <li><strong>Recovery needs 44 points a sprint</strong><p>Best sprint so far was 36. Average over the last 3 is 32.7.</p><button>Open forecast</button></li>
+            <li><strong>Spend ahead of delivery by 16 points</strong><p>68% of budget spent, 52% of points done.</p><button>Open financials</button></li>
+            <li class="a"><strong>Status report due in 3 days</strong><p>Last submitted 11/09/2026.</p><button>Start report</button></li>
+            <li class="a"><strong>Red risk not reviewed for 21 days</strong><p>R-07 Vendor shortlist delayed past gate.</p><button>Review risk</button></li>
+          </ol>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap work">
+    <section class="panel" aria-labelledby="fc-h">
+      <div class="ph">
+        <div>
+          <h2 id="fc-h">Evidence-based forecast</h2>
+          <p class="lede">At a 3-sprint average of 32.7 points, the gap closes by 0.6 points a sprint. Finishing on time needs 44 or more a sprint, which the team has not yet achieved.</p>
+        </div>
+        <div class="tags"><span class="tag a">Recovering late</span><span class="tag r">Evidenced red</span></div>
+      </div>
+      <dl class="fc">
+        <div><dt>Gap to plan</dt><dd>2.7 pts<small>behind baseline</small></dd></div>
+        <div><dt>Recovery date</dt><dd>None<small>no recovery before baseline finish</small></dd></div>
+        <div><dt>Forecast finish</dt><dd>10/12/2026<small>28 days late</small></dd></div>
+        <div><dt>Required velocity</dt><dd>44 pts<small>unrealistic, best so far 36</small></dd></div>
+      </dl>
+    </section>
+
+    <!-- Milestone slippage (matches portfolio card) -->
+    <section class="panel card" aria-labelledby="mc-h">
+      <div class="ch">
+        <div>
+          <h2 id="mc-h">Milestone slippage <span class="info" title="Baseline date against the actual date for delivered milestones, or the current forecast for the rest.">i</span></h2>
+          <p class="lede">Every milestone on this project, baseline against actual or forecast</p>
+        </div>
+        <div class="ctl">
+          <div class="seg" role="group" aria-label="Sort milestones">
+            <button aria-pressed="true" data-sort="date">By date</button>
+            <button aria-pressed="false" data-sort="slip">By slip</button>
+          </div>
+          <button class="kebab" aria-label="More options">⋯</button>
+        </div>
+      </div>
+      <div id="mc" class="dumb" role="list"></div>
+      <div class="row axisrow" aria-hidden="true"><div></div><div class="axis"><span>May 26</span><span>Today</span><span>Jan 27</span></div><div></div></div>
+      <div class="cfoot">
+        <div class="mkey">
+          <span><i class="dot0 base"></i>Baseline</span>
+          <span><i class="dot0" style="background:var(--ok)"></i>On time</span>
+          <span><i class="dot0" style="background:var(--s1)"></i>Up to 14 days</span>
+          <span><i class="dot0" style="background:var(--s2)"></i>15–30 days</span>
+          <span><i class="dot0" style="background:var(--s3)"></i>Over 30 days</span>
+          <span><i class="dash"></i>Not yet delivered</span>
+        </div>
+        <dl class="stats">
+          <div><dd style="color:var(--mute)">2</dd><dt>Due next 30 days</dt></div>
+          <div><dd style="color:var(--s3)">1</dd><dt>Overdue</dt></div>
+          <div><dd style="color:var(--s2)">3</dd><dt>Reforecast</dt></div>
+          <div><dd style="color:var(--s1)">50%</dd><dt>Hit baseline</dt></div>
+        </dl>
+      </div>
+    </section>
+
+    <div class="two wide-left">
+      <!-- Milestone delivery profile (matches portfolio card) -->
+      <section class="panel card" aria-labelledby="mp-h">
+        <div class="ch">
+          <div>
+            <h2 id="mp-h">Milestone delivery profile <span class="info" title="Cumulative count of milestones signed off, against the cumulative count the baseline expected by each date.">i</span></h2>
+            <p class="lede">Cumulative milestones signed off against the baselined plan</p>
+          </div>
+          <button class="kebab" aria-label="More options">⋯</button>
+        </div>
+        <div class="chartbox"><svg class="lc" id="mp" viewBox="0 0 640 260" role="img" aria-label="Cumulative milestones: 4 signed off against 5 baselined by today, forecast to reach all 8 between mid December and mid January."></svg></div>
+        <div class="cfoot">
+          <div class="mkey">
+            <span><i class="dash"></i>Baselined plan</span>
+            <span><i class="ln"></i>Signed off</span>
+            <span><i class="sq" style="background:rgba(43,108,214,.18)"></i>Forecast range</span>
+            <span><i class="dot0" style="background:var(--ok)"></i>On time</span>
+            <span><i class="dot0" style="background:var(--s1)"></i>Late</span>
+          </div>
+          <p class="note">4 of 5 milestones baselined for delivery by now have been signed off, from 8 on this project. 2 landed on time, average slip is 5 days, and 1 is overdue. All 8 are forecast between 18 Dec and 15 Jan, against a baseline of 27 Nov.</p>
+        </div>
+      </section>
+
+      <!-- Health by dimension (matches portfolio card) -->
+      <section class="panel card" aria-labelledby="hd-h">
+        <div class="ch">
+          <div>
+            <h2 id="hd-h">Health by dimension <span class="info" title="Evidenced health at each month-end, from health snapshots.">i</span></h2>
+            <p class="lede">Evidenced health at each month-end, May to date</p>
+          </div>
+          <button class="kebab" aria-label="More options">⋯</button>
+        </div>
+        <div class="spark" id="spark"></div>
+        <p class="note">Rings mark months where the status report declared better than the evidence. Worst of the five dimensions sets overall health.</p>
+      </section>
+    </div>
+    <div class="two wide-left">
+      <!-- Last highlight report -->
+      <section class="panel" aria-labelledby="hr-h">
+        <div class="ph">
+          <div>
+            <h2 id="hr-h">Last highlight report</h2>
+            <p class="meta">August 2026, submitted by Nadia Begum on 11/09/2026. Next due 11/10/2026.</p>
+          </div>
+          <div class="tags"><span class="tag a">Declared amber</span><span class="tag r">Evidenced red at the time</span></div>
+        </div>
+        <div class="hr">
+          <div>
+            <h3>Summary</h3>
+            <p>Shortlisting slipped a sprint while procurement confirmed the framework route. Market engagement closed with five responses. We expect to recover through October by running evaluation and terms of reference in parallel.</p>
+            <h3>Done this period</h3>
+            <ul><li>Market engagement closed, 5 responses received</li><li>Evaluation criteria agreed with Procurement</li><li>Draft ARB terms of reference circulated</li></ul>
+            <h3>Planned next period</h3>
+            <ul><li>Approve vendor shortlist at gate</li><li>Sign off terms of reference</li><li>Recruit two school representatives to the board</li></ul>
+          </div>
+          <div>
+            <h3>Decisions needed</h3>
+            <ul><li>Sponsor to approve running evaluation and ToR in parallel</li><li>Agree whether first sitting can move to December</li></ul>
+            <h3>Declared in this report</h3>
+            <table class="decl">
+              <tr><th scope="row">Schedule</th><td><span class="rag a">Amber</span></td><td class="ev">evidence <span class="rag r">Red</span></td></tr>
+              <tr><th scope="row">Budget</th><td><span class="rag g">Green</span></td><td class="ev">evidence <span class="rag a">Amber</span></td></tr>
+              <tr><th scope="row">Scope</th><td><span class="rag g">Green</span></td><td class="ev">evidence <span class="rag g">Green</span></td></tr>
+              <tr><th scope="row">Resources</th><td><span class="rag g">Green</span></td><td class="ev">evidence <span class="rag a">Amber</span></td></tr>
+              <tr><th scope="row">Risks &amp; issues</th><td><span class="rag a">Amber</span></td><td class="ev">evidence <span class="rag a">Amber</span></td></tr>
+            </table>
+          </div>
+        </div>
+        <button class="link">Open full report</button>
+      </section>
+
+      <section class="panel" aria-labelledby="rk-h">
+        <h2 id="rk-h">Top risks and issues</h2>
+        <ul class="list">
+          <li><span class="dot r"></span><span>R-07 Vendor shortlist delayed past gate</span><span class="when">Risk</span></li>
+          <li><span class="dot a"></span><span>I-02 Architect availability over Christmas</span><span class="when">Issue</span></li>
+          <li><span class="dot a"></span><span>R-03 Template adoption by schools</span><span class="when">Risk</span></li>
+        </ul>
+        <button class="link">Open RAID log</button>
+      </section>
+    </div>
+  </div>
+</main>
+
+<footer class="status">
+  <div class="wrap">
+    <span>Data last changed 08/10/2026 09:42</span>
+    <span>Financials closed to September, October open</span>
+    <span>Sprint 9 of 12 in progress</span>
+  </div>
+</footer>
+
+<script>
+// ---- Progress chart (reference implementation; production uses the shared ProgressChart with scope="project") ----
+const months=["May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan"];
+const todayIdx=4.25; // ~8 Oct
+const S=[
+ {k:"plan",n:"Plan",c:"#8D9DB8",a:[8,20,34,50,66,80,100],f:[],dash:"2 4",group:["overlay","spend","delivery","benefits"]},
+ {k:"spend",n:"Spend",c:"#E0A33A",a:[10,24,40,56,68],f:[68,82,96,108],group:["overlay","spend"]},
+ {k:"points",n:"Points done",c:"#5B8DEF",a:[6,15,27,40,52],f:[52,72,88,100],group:["overlay","delivery"]},
+ {k:"miles",n:"Milestones",c:"#B48CF0",a:[0,25,25,50,50],f:[50,75,100],group:["overlay","delivery"]},
+ {k:"path",n:"Capabilities & outcomes",c:"#2FA36B",a:[0,0,10,20,30],f:[30,50,70,85,100],group:["benefits"]}
+];
+const marks=[{i:0,t:"Start"},{i:1.9,t:"Gate 2"},{i:4.6,t:"Shortlist"},{i:6.4,t:"Baseline finish"},{i:7.3,t:"Forecast finish"}];
+let on=new Set(["plan","spend","points","miles"]);
+const W=860,H=330,L=44,R=16,T=34,B=30,pw=W-L-R,ph=H-T-B;
+const x=i=>L+i*(pw/(months.length-1)), y=v=>T+ph-(Math.min(v,115)/115)*ph;
+function path(arr,start=0){return arr.map((v,j)=>(j?"L":"M")+x(start+j).toFixed(1)+" "+y(v).toFixed(1)).join(" ")}
+function draw(){
+  const svg=document.getElementById("pc");const ns="http://www.w3.org/2000/svg";
+  [...svg.querySelectorAll("g")].forEach(g=>g.remove());
+  const g=document.createElementNS(ns,"g");let h="";
+  h+=`<rect x="${x(todayIdx)}" y="${T}" width="${x(months.length-1)-x(todayIdx)}" height="${ph}" fill="rgba(91,141,239,.06)"/>`;
+  [0,25,50,75,100].forEach(v=>{h+=`<line class="grid" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end">${v}%</text>`});
+  months.forEach((m,i)=>{h+=`<text x="${x(i)}" y="${H-10}" text-anchor="middle">${m}</text>`});
+  marks.forEach(mk=>{h+=`<line x1="${x(mk.i)}" x2="${x(mk.i)}" y1="${T-4}" y2="${T+ph}" stroke="#36507a" stroke-dasharray="1 3"/><text x="${x(mk.i)}" y="${T-10}" text-anchor="middle">${mk.t}</text>`});
+  h+=`<line x1="${x(todayIdx)}" x2="${x(todayIdx)}" y1="${T}" y2="${T+ph}" stroke="#E7EDF6" stroke-width="1"/><text x="${x(todayIdx)+4}" y="${T+12}" style="fill:#E7EDF6">Today</text>`;
+  S.filter(s=>on.has(s.k)).forEach(s=>{
+    h+=`<path d="${path(s.a)}" fill="none" stroke="${s.c}" stroke-width="${s.k==="plan"?1.5:2.25}" ${s.dash?`stroke-dasharray="${s.dash}"`:""} stroke-linejoin="round"/>`;
+    if(s.f.length) h+=`<path d="${path(s.f,s.a.length-1)}" fill="none" stroke="${s.c}" stroke-width="2" stroke-dasharray="5 4" opacity=".85"/>`;
+    const last=s.a.length-1;h+=`<circle cx="${x(last)}" cy="${y(s.a[last])}" r="3.5" fill="${s.c}"/>`;
+  });
+  if(on.has("spend")&&on.has("points")){const xi=x(4);h+=`<line x1="${xi+8}" x2="${xi+8}" y1="${y(68)}" y2="${y(52)}" stroke="#F29A92" stroke-width="2"/><text x="${xi+14}" y="${(y(68)+y(52))/2+4}" style="fill:#F29A92;font-weight:600">16 pts</text>`}
+  g.innerHTML=h;svg.appendChild(g);
+}
+function legend(){
+  const el=document.getElementById("legend");el.innerHTML="";
+  S.forEach(s=>{const b=document.createElement("button");b.setAttribute("aria-pressed",on.has(s.k));b.innerHTML=`<i style="background:${s.c}"></i>${s.n}`;
+    b.onclick=()=>{on.has(s.k)?on.delete(s.k):on.add(s.k);legend();draw()};el.appendChild(b)});
+}
+document.querySelectorAll(".presets button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".presets button").forEach(o=>o.setAttribute("aria-pressed",o===b));
+  on=new Set(S.filter(s=>s.group.includes(b.dataset.p)).map(s=>s.k));legend();draw();
+});
+const more=document.getElementById("more");more.firstElementChild.onclick=e=>{const o=more.classList.toggle("open");e.currentTarget.setAttribute("aria-expanded",o)};
+document.addEventListener("click",e=>{if(!more.contains(e.target))more.classList.remove("open")});
+legend();draw();
+
+// ---- Milestone slippage (dumbbell rows) ----
+(function(){
+  const D=s=>{const[d,m,y]=s.split("/").map(Number);return new Date(y,m-1,d)};
+  const start=D("01/05/2026"),end=D("31/01/2027"),today=D("08/10/2026");
+  const fmt=d=>d.toLocaleDateString("en-GB",{day:"2-digit",month:"short"});
+  const ms=[
+    ["Business case approved","Phase 1","29/05/2026","29/05/2026",1],
+    ["Gate 2, initiation complete","Phase 2","26/06/2026","03/07/2026",1],
+    ["Requirements baselined","Phase 2","31/07/2026","31/07/2026",1],
+    ["Market engagement complete","Phase 3","28/08/2026","11/09/2026",1],
+    ["Vendor shortlist approved","Phase 3","30/09/2026","21/10/2026",0],
+    ["ARB terms of reference signed off","Phase 3","30/10/2026","30/10/2026",0],
+    ["First board sitting","Phase 4","12/11/2026","10/12/2026",0],
+    ["Project closure","Phase 6","27/11/2026","18/12/2026",0]
+  ].map(([n,ph,b,f,done])=>{const bd=D(b),fd=D(f);return{n,ph,bd,fd,done,slip:Math.round((fd-bd)/864e5),overdue:!done&&bd<today}});
+  const P=d=>((d-start)/(end-start)*100).toFixed(2)+"%";
+  const col=s=>s<=0?"var(--ok)":s<=14?"var(--s1)":s<=30?"var(--s2)":"var(--s3)";
+  function render(sort){
+    const list=[...ms].sort(sort==="slip"?(a,b)=>b.slip-a.slip:(a,b)=>a.bd-b.bd);
+    document.getElementById("mc").innerHTML=list.map(m=>{
+      const c=col(m.slip);
+      const sub=m.done?`${m.ph} · Delivered ${fmt(m.fd)}`:`${m.ph} · ${m.overdue?"Overdue, forecast":"Forecast"} ${fmt(m.fd)}`;
+      const lo=m.bd<m.fd?m.bd:m.fd,hi=m.bd<m.fd?m.fd:m.bd;
+      return `<div class="row" role="listitem">
+        <div class="nm"><strong>${m.n}</strong><span>${sub}</span></div>
+        <div class="trk"><i class="today" style="left:${P(today)}"></i>
+          ${m.slip?`<i class="bar${m.done?"":" fc"}" style="left:${P(lo)};width:calc(${P(hi)} - ${P(lo)});--c:${c}"></i>`:""}
+          <i class="pt base" style="left:${P(m.bd)}" title="Baseline ${fmt(m.bd)}"></i>
+          <i class="pt" style="left:${P(m.fd)};background:${c}" title="${m.done?"Delivered":"Forecast"} ${fmt(m.fd)}"></i></div>
+        <div class="val" style="color:${c}">${m.slip>0?"+"+m.slip+"d":"On time"}</div></div>`}).join("");
+  }
+  document.querySelectorAll("[data-sort]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-sort]").forEach(o=>o.setAttribute("aria-pressed",o===b));render(b.dataset.sort)});
+  render("date");
+})();
+
+// ---- Milestone delivery profile (cumulative) ----
+(function(){
+  const D=s=>{const[d,m,y]=s.split("/").map(Number);return new Date(y,m-1,d)};
+  const start=D("01/05/2026"),end=D("31/01/2027"),today=D("08/10/2026");
+  const W=900,H=300,L=34,R=12,T=24,B=30,max=8;
+  const X=d=>L+(d-start)/(end-start)*(W-L-R),Y=v=>T+(H-T-B)*(1-v/max);
+  const line=pts=>pts.map(([t,v],i)=>(i?"L":"M")+X(t).toFixed(1)+" "+Y(v).toFixed(1)).join(" ");
+  const pairs=a=>a.map(([d,n,...r])=>[D(d),n,...r]);
+  const plan=[[start,0],...pairs([["29/05/2026",1],["26/06/2026",2],["31/07/2026",3],["28/08/2026",4],["30/09/2026",5],["30/10/2026",6],["12/11/2026",7],["27/11/2026",8]]),[end,8]];
+  const act=pairs([["29/05/2026",1,1],["03/07/2026",2,0],["31/07/2026",3,1],["11/09/2026",4,0]]);
+  const sOff=[[start,0],...act.map(a=>[a[0],a[1]]),[today,4]];
+  const early=[[today,4],...pairs([["14/10/2026",5],["28/10/2026",6],["01/12/2026",7],["10/12/2026",8]]),[end,8]];
+  const late=[[today,4],...pairs([["28/10/2026",5],["13/11/2026",6],["22/12/2026",7],["15/01/2027",8]]),[end,8]];
+  let h="";
+  [0,2,4,6,8].forEach(v=>h+=`<line class="grid" x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${L-8}" y="${Y(v)+4}" text-anchor="end">${v}</text>`);
+  for(let m=0;m<10;m++){const d=new Date(2026,4+m,1);if(d>end)break;h+=`<text x="${X(d)}" y="${H-8}" text-anchor="middle">${d.toLocaleString("en-GB",{month:"short"}).slice(0,3)} ${String(d.getFullYear()).slice(2)}</text>`}
+  h+=`<path d="${line(early)} ${line([...late].reverse()).replace("M","L")} Z" fill="rgba(43,108,214,.12)"/>`;
+  h+=`<path d="${line(sOff)} L${X(today)} ${Y(0)} L${X(start)} ${Y(0)} Z" fill="url(#mpfill)"/>`;
+  h+=`<path d="${line(plan)}" fill="none" stroke="#5E6B80" stroke-width="1.6" stroke-dasharray="5 4" stroke-linejoin="round"/>`;
+  h+=`<path d="${line(sOff)}" fill="none" stroke="var(--line-blue)" stroke-width="2.4" stroke-linejoin="round"/>`;
+  act.forEach(([t,n,ok])=>h+=`<circle cx="${X(t)}" cy="${Y(n)}" r="4.5" fill="${ok?"var(--ok)":"var(--s1)"}" stroke="var(--surface)" stroke-width="1.5"><title>Milestone ${n} signed off ${t.toLocaleDateString("en-GB")}, ${ok?"on time":"late"}</title></circle>`);
+  h+=`<line x1="${X(today)}" x2="${X(today)}" y1="${T-6}" y2="${H-B}" stroke="#5E6B80" stroke-opacity=".45"/><text x="${X(today)}" y="${T-10}" text-anchor="middle">Today</text>`;
+  const pToday=5+(today-D("30/09/2026"))/(D("30/10/2026")-D("30/09/2026"));
+  h+=`<line x1="${X(today)+7}" x2="${X(today)+7}" y1="${Y(pToday)}" y2="${Y(4)}" stroke="var(--s3)" stroke-width="2"/><text x="${X(today)+13}" y="${Y((pToday+4)/2)+4}" style="fill:var(--s3);font-weight:600">1 behind plan</text>`;
+  const svg=document.getElementById("mp");svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  svg.innerHTML=`<defs><linearGradient id="mpfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2B6CD6" stop-opacity=".22"/><stop offset="1" stop-color="#2B6CD6" stop-opacity=".02"/></linearGradient></defs>`+h;
+})();
+
+// ---- Health by dimension (small multiples) ----
+(function(){
+  const months=["May","Jun","Jul","Aug","Sep","Oct"];
+  const dims={ // evidenced RAG per month; * = declared better than evidence
+    "Schedule":["g","g","a","a","r*","r*"],
+    "Financial":["g","g","g","a*","a*","a"],
+    "Effort":["g","a","a*","g","a*","a"],
+    "Issues and risks":["g","g","a","a","a","a"],
+    "Benefits":["n","n","g","g","a","a"],
+    "Overall":["g","g","a","a*","r*","r*"]};
+  const C={g:"var(--ok)",a:"var(--s1)",r:"var(--s3)"},Wd={g:"Green",a:"Amber",r:"Red",n:"Not set"};
+  const lv={g:0,a:1,r:2};const W=220,H=56,pad=6;
+  const X=i=>pad+i*(W-2*pad)/(months.length-1),Y=s=>8+lv[s]*((H-16)/2);
+  document.getElementById("spark").innerHTML=Object.entries(dims).map(([k,v])=>{
+    const pts=v.map((s,i)=>({i,r:s[0],dec:s.includes("*")})).filter(p=>p.r!=="n");
+    const cur=v[v.length-1][0];
+    let segs="";for(let j=1;j<pts.length;j++)segs+=`<line x1="${X(pts[j-1].i)}" y1="${Y(pts[j-1].r)}" x2="${X(pts[j].i)}" y2="${Y(pts[j].r)}" stroke="${C[pts[j].r]}" stroke-width="1.8"/>`;
+    const area=`<path d="M${X(pts[0].i)} ${H} ${pts.map(p=>`L${X(p.i)} ${Y(p.r)}`).join(" ")} L${X(pts[pts.length-1].i)} ${H} Z" fill="url(#g-${cur})"/>`;
+    const dots=pts.map(p=>`<circle cx="${X(p.i)}" cy="${Y(p.r)}" r="${p.i===months.length-1?3.6:2.8}" fill="${C[p.r]}"><title>${months[p.i]}: ${Wd[p.r]}${p.dec?", declared better":""}</title></circle>${p.dec?`<circle cx="${X(p.i)}" cy="${Y(p.r)}" r="6.2" fill="none" stroke="${C[p.r]}" stroke-width="1.4"/>`:""}`).join("");
+    const gaps=v.filter(s=>s.includes("*")).length;
+    return `<figure class="sp${k==="Overall"?" ov":""}"><figcaption><span>${k}</span><b style="color:${C[cur]}">${Wd[cur]}</b></figcaption>
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${k}: ${v.map((s,i)=>months[i]+" "+Wd[s[0]]).join(", ")}">
+      <defs>${["g","a","r"].map(r=>`<linearGradient id="g-${r}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${({g:"#2E9E44",a:"#F2B01E",r:"#D64545"})[r]}" stop-opacity=".18"/><stop offset="1" stop-color="${({g:"#2E9E44",a:"#F2B01E",r:"#D64545"})[r]}" stop-opacity="0"/></linearGradient>`).join("")}</defs>
+      <line class="grid" x1="0" x2="${W}" y1="${H-.5}" y2="${H-.5}"/>${area}${segs}${dots}</svg>
+      <small>${gaps?`Declared better in ${gaps} of 6 months`:"Report matched evidence"}</small></figure>`}).join("");
+})();
+</script>
+</body>
+</html>
