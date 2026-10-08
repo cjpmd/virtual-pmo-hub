@@ -21,7 +21,7 @@ import { ChangeBaselineAction } from "@/components/change-baseline";
 import { toBaselineChange } from "@/services/financials";
 import { ProjectFinancials } from "@/components/project-financials";
 import { ProjectEditButton, StateBadge } from "@/components/entity-management";
-import { DeclaredVsEvidenced } from "@/components/evidence-ui";
+import { DivergenceNote } from "@/components/divergence-note";
 import { FavouriteButton } from "@/components/favourite-button";
 import { GateChecklist } from "@/components/gate-checklist";
 import { HealthPill } from "@/components/health-pill";
@@ -50,8 +50,7 @@ import {
 import { useFormat } from "@/lib/format";
 import { daysFromToday, todayIso } from "@/lib/today";
 import { cn } from "@/lib/utils";
-import { getAssuranceRow } from "@/services/assurance";
-import { useAssuranceProjects } from "@/hooks/use-assurance";
+import { useAssurance } from "@/hooks/use-assurance";
 import { useStatusReports } from "@/hooks/use-status-reports";
 import { scopedTo, type ResolvedDecision } from "@/services/decisions";
 import { useGovernance } from "@/hooks/use-governance";
@@ -60,7 +59,6 @@ import { getProjectLessons, hasPhaseLessonsReview } from "@/services/lessons";
 import { useLessons } from "@/hooks/use-lessons";
 import { toTaskSource } from "@/services/work-items";
 import { getTierDefinitions } from "@/services/gates";
-import { useDeliveryVersion } from "@/services/sprints";
 import { term, useSettings } from "@/services/settings";
 
 export const Route = createFileRoute("/portfolio/projects/$projectCode")({
@@ -141,7 +139,6 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
   const settings = useSettings();
   const format = useFormat();
   const [tab, setTab] = useState("overview");
-  useDeliveryVersion();
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("task")) setTab("tasks");
   }, []);
@@ -193,12 +190,8 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
       ? hasPhaseLessonsReview(lessonsData.data, project.id, currentPhaseId)
       : false;
   const projectTypeTags = Array.from(new Set(lessons.flatMap((lesson) => lesson.projectTypeTags)));
-  const assuranceProjects = useAssuranceProjects();
-  const assuranceProject = assuranceProjects.data?.find((item) => item.id === project.id);
-  // Delivery data is browser-local and generated per project once the project is registered
-  // (useAssuranceProjects does that), so the delivery views wait for it.
-  const deliveryReady = Boolean(assuranceProject);
-  const assurance = assuranceProject ? getAssuranceRow(assuranceProject) : undefined;
+  const assuranceRows = useAssurance();
+  const assurance = assuranceRows.data?.find((item) => item.projectId === project.id);
 
   const tierInfo = getTierDefinitions().find((item) => item.tier === project.tier);
   const elapsed = (() => {
@@ -372,20 +365,9 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
         </div>
       </header>
       {assurance && (
-        <div className="flex flex-wrap items-center gap-2 rounded-md border border-border/70 bg-card px-3 py-2 text-sm">
-          <span className="text-xs text-muted-foreground">Assurance</span>
-          <DeclaredVsEvidenced
-            declared={assurance.declared}
-            evidenced={assurance.evidenced}
-            stale={assurance.stale}
-          />
-          {assurance.divergenceAlert && (
-            <span className="text-xs font-medium text-health-bad-foreground">
-              Divergence alert: declared RAG better than the evidence for {assurance.divergenceDays}{" "}
-              days
-              {assurance.justification ? "" : ". Justification needed"}
-            </span>
-          )}
+        <div className="rounded-md border border-border/70 bg-card px-3 py-2 text-sm">
+          <span className="mr-2 text-xs text-muted-foreground">Assurance</span>
+          <DivergenceNote row={assurance} canJustify={permissions.canEdit} />
         </div>
       )}
       <div className="flex overflow-x-auto border-b border-border">
@@ -414,7 +396,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
         </div>
       )}
 
-      {tab === "overview" && deliveryReady && <ForecastPanel projectId={project.code} />}
+      {tab === "overview" && <ForecastPanel projectId={project.code} />}
       {tab === "overview" && (
         <div className="grid gap-5 xl:grid-cols-12">
           <div className="space-y-5 xl:col-span-8">
@@ -625,7 +607,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
           {tab === "tasks" && (
             <TaskWorkspace projectId={project.id} taskSource={toTaskSource(project.taskSource)} />
           )}
-          {tab === "delivery" && deliveryReady && <DeliveryWorkspace projectId={project.code} />}
+          {tab === "delivery" && <DeliveryWorkspace projectId={project.code} />}
           {tab === "resources" && <ProjectResources projectId={project.id} />}
           {tab === "benefits" && <ProjectBenefits projectId={project.id} />}
           {tab === "dependencies" && <DependencyTab projectId={project.id} />}

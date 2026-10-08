@@ -1,38 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
 import { AlertTriangle } from "lucide-react";
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { AutoBreadcrumbs } from "@/components/section-nav";
 import { KpiCard, PageHeader } from "@/components/pmo-ui";
 import { ChartCard } from "@/components/charts/chart-card";
-import {
-  DeclaredVsEvidenced,
-  DeliveryChip,
-  HowCalculated,
-  RagPill,
-} from "@/components/evidence-ui";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { deliveryStatusLabels } from "@/services/forecast";
-import {
-  forecastAccuracy,
-  getAssuranceRows,
-  rollUp,
-  slipTrend,
-  type AssuranceProject,
-} from "@/services/assurance";
+import { HowCalculated } from "@/components/evidence-ui";
+import { DeclaredEvidencedPills, DivergenceNote } from "@/components/divergence-note";
+import { liveRows, divergenceText, type AssuranceRow } from "@/services/assurance";
 import { QueryState } from "@/components/query-state";
-import { useAssuranceProjects } from "@/hooks/use-assurance";
-import { addJustification, toIso, useDeliveryVersion } from "@/services/sprints";
-import { formatDate } from "@/lib/format";
+import { useAssurance } from "@/hooks/use-assurance";
+import { useProjectPermissions } from "@/hooks/use-hierarchy";
+import { useFormat } from "@/lib/format";
+import type { Health } from "@/data/types";
 
 export const Route = createFileRoute("/delivery/assurance")({
   head: () => ({
@@ -56,128 +34,100 @@ export const Route = createFileRoute("/delivery/assurance")({
   component: AssurancePage,
 });
 
-const fmt = (d: Date | null) => (d ? formatDate(toIso(d).split("-").reverse().join("/")) : "—");
-
 function AssurancePage() {
-  const query = useAssuranceProjects();
-  return <QueryState query={query}>{(projects) => <Assurance projects={projects} />}</QueryState>;
+  const query = useAssurance();
+  return <QueryState query={query}>{(rows) => <Assurance rows={rows} />}</QueryState>;
 }
 
-function Assurance({ projects }: { projects: AssuranceProject[] }) {
-  const version = useDeliveryVersion();
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- version tracks the browser-local sprint store
-  const rows = useMemo(() => getAssuranceRows(projects), [projects, version]);
-  const live = rows.filter((r) => r.state !== "Closed");
-  const roll = rollUp(live);
-  const trend = useMemo(() => slipTrend(rows), [rows]); // eslint-disable-next-line react-hooks/exhaustive-deps -- version tracks the browser-local sprint store
-  const accuracy = useMemo(() => forecastAccuracy(projects), [projects, version]);
+const ragOrder: Health[] = ["Off Track", "At Risk", "On Track", "Not Set"];
+const ragCountLabel: Record<Health, string> = {
+  "Off Track": "red",
+  "At Risk": "amber",
+  "On Track": "green",
+  "Not Set": "not set",
+};
+/** "2 red · 5 amber · 9 green": counts only; every RAG is the database's. */
+function ragCounts(rows: AssuranceRow[]) {
+  return ragOrder
+    .map((h) => [h, rows.filter((r) => r.evidenced === h).length] as const)
+    .filter(([, n]) => n > 0)
+    .map(([h, n]) => `${n} ${ragCountLabel[h]}`)
+    .join(" · ");
+}
+
+function Assurance({ rows }: { rows: AssuranceRow[] }) {
+  const format = useFormat();
+  const live = liveRows(rows);
   const alerts = live.filter((r) => r.divergenceAlert);
-  const [justifying, setJustifying] = useState<string | null>(null);
-  const [note, setNote] = useState("");
+  const divergent = live.filter((r) => r.divergent);
+  const overdue = live.filter((r) => r.reportOverdue);
+  const latestFinish = live
+    .map((r) => r.forecastFinishDate)
+    .filter((d): d is string => Boolean(d))
+    .sort()
+    .at(-1);
   const programmes = Array.from(new Set(live.map((r) => r.programme)));
+  const slip = (r: AssuranceRow) =>
+    r.finishVsBaselineDays === null
+      ? "—"
+      : r.finishVsBaselineDays > 0
+        ? `+${r.finishVsBaselineDays} days`
+        : `${r.finishVsBaselineDays} days`;
   return (
     <div className="space-y-6">
       <AutoBreadcrumbs />
       <PageHeader
         eyebrow="Assurance from evidence"
         title="Portfolio assurance"
-        description="What project managers declare, next to what the delivery data shows."
+        description="What the latest status reports declare, next to what the delivery data shows."
       />
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
-          label="Evidenced portfolio RAG"
-          value={roll.worst === "Grey" ? "No evidence" : roll.worst}
-          detail={`Worst of ${live.length - roll.excluded} projects · ${roll.excluded} excluded (no or stale evidence)`}
+          label="Evidenced RAG"
+          value={ragCounts(live) || "No projects"}
+          detail={`Across ${live.length} open projects`}
           icon="health"
         />
         <KpiCard
           label="Divergence alerts"
           value={String(alerts.length)}
-          detail="Declared better than evidence for 2+ cycles or 14+ days"
+          detail={`${divergent.length} report${divergent.length === 1 ? "" : "s"} better than the evidence`}
           icon="health"
         />
         <KpiCard
           label="Latest forecast finish"
-          value={fmt(roll.latestFinish)}
-          detail="Latest forecast finish among projects"
+          value={latestFinish ? format.date(latestFinish) : "—"}
+          detail="Latest milestone forecast among open projects"
           icon="forecast"
         />
         <KpiCard
-          label="Not converging"
-          value={String(roll.notConverging)}
-          detail="Scope growing faster than delivery"
+          label="Reports overdue"
+          value={String(overdue.length)}
+          detail="Past the reporting cadence with no submitted report"
           icon="projects"
         />
       </section>
-      {alerts.length > 0 && (
-        <section className="space-y-3 rounded-lg border border-health-bad/30 bg-health-bad/5 p-5">
+      {divergent.length > 0 && (
+        <section
+          className={
+            alerts.length
+              ? "space-y-3 rounded-lg border border-health-bad/30 bg-health-bad/5 p-5"
+              : "space-y-3 rounded-lg border border-border/70 bg-card p-5"
+          }
+        >
           <h2 className="flex items-center gap-2 font-semibold">
-            <AlertTriangle className="size-4 text-health-bad" />
-            Divergence alerts
+            <AlertTriangle className="size-4 text-health-bad" aria-hidden />
+            Reports better than the evidence
           </h2>
-          {alerts.map((r) => (
-            <div
-              key={r.projectId}
-              className="rounded-md border border-border/70 bg-card p-3 text-sm"
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  to="/portfolio/projects/$projectCode"
-                  params={{ projectCode: r.code }}
-                  className="font-medium text-primary hover:underline"
-                >
-                  {r.name}
-                </Link>
-                <DeclaredVsEvidenced declared={r.declared} evidenced={r.evidenced} />
-                <span className="text-xs text-muted-foreground">for {r.divergenceDays} days</span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="ml-auto"
-                  onClick={() => {
-                    setJustifying(r.projectId);
-                    setNote("");
-                  }}
-                >
-                  {r.justification ? "Update justification" : "Add justification"}
-                </Button>
-              </div>
-              {r.justification && (
-                <p className="mt-2 text-muted-foreground">PM justification: “{r.justification}”</p>
-              )}
-              {justifying === r.projectId && (
-                <div className="mt-2 space-y-2">
-                  <Textarea
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder="Why is the declared RAG better than the evidence?"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        if (note.trim()) {
-                          addJustification(r.code, note.trim());
-                          setJustifying(null);
-                        }
-                      }}
-                    >
-                      Save
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setJustifying(null)}>
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
+          {divergent.map((r) => (
+            <DivergentProject key={r.projectId} row={r} />
           ))}
         </section>
       )}
       <ChartCard
         title="Assurance register"
-        subtitle="Sorted by assurance risk: divergence, slippage and stale data"
-        info="Evidenced RAG comes from the forecast engine. Stale evidence means no work item changes in 14 days."
+        subtitle="Sorted by assurance risk: divergence, slippage and overdue reports"
+        info="Declared is the latest submitted status report. Evidenced is the health the delivery data shows, from the database views."
         csv={{
           name: "assurance",
           columns: [
@@ -185,50 +135,47 @@ function Assurance({ projects }: { projects: AssuranceProject[] }) {
             "Programme",
             "Declared",
             "Evidenced",
-            "Delivery status",
-            "Days vs baseline",
-            "Gap",
-            "Converging",
-            "Last update (days)",
+            "Divergence",
+            "Finish vs baseline (days)",
+            "Last report",
+            "Next report due",
             "Risk score",
           ],
           rows: live.map((r) => [
             r.name,
             r.programme,
-            r.declared,
-            r.stale ? "Stale" : r.evidenced,
-            deliveryStatusLabels[r.status],
-            r.daysVsBaseline ?? "",
-            r.gap,
-            r.converging ? "Yes" : "No",
-            r.lastUpdateDays,
+            r.declared ?? "No report yet",
+            r.evidenced,
+            r.divergent ? (r.justified ? "Justified" : divergenceText(r)) : "",
+            r.finishVsBaselineDays ?? "",
+            r.lastReportDate ?? "",
+            r.nextReportDue ?? "",
             r.riskScore,
           ]),
         }}
       >
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[960px] text-sm">
+          <table className="w-full min-w-[880px] text-sm">
             <thead>
               <tr className="text-left text-xs text-muted-foreground">
                 <th className="py-2">Project</th>
                 <th>Declared vs evidenced</th>
-                <th>Delivery status</th>
+                <th>Divergence</th>
                 <th className="text-right">Finish vs baseline</th>
-                <th className="text-right">Gap</th>
-                <th>Converging</th>
-                <th className="text-right">Last update</th>
+                <th className="text-right">Last report</th>
                 <th className="text-right">
                   Risk{" "}
                   <HowCalculated title="assurance risk">
-                    Up to 40 for a divergence alert (15 if declared and evidence simply differ), up
-                    to 30 for forecast slippage, 20 for stale evidence and 15 if not converging.
+                    40 for a divergence alert (15 if the report is simply better than the evidence,
+                    or justified), up to 30 for forecast slip (a point per 3 days) and 20 for an
+                    overdue report.
                   </HowCalculated>
                 </th>
               </tr>
             </thead>
             <tbody>
               {live.map((r) => (
-                <tr key={r.projectId} className="border-t border-border/50">
+                <tr key={r.projectId} className="border-t border-border/50 align-top">
                   <td className="py-2">
                     <Link
                       to="/portfolio/projects/$projectCode"
@@ -239,31 +186,24 @@ function Assurance({ projects }: { projects: AssuranceProject[] }) {
                     </Link>
                     <p className="text-xs text-muted-foreground">{r.programme}</p>
                   </td>
-                  <td>
-                    <DeclaredVsEvidenced
-                      declared={r.declared}
-                      evidenced={r.evidenced}
-                      stale={r.stale}
-                    />
+                  <td className="py-2">
+                    <DeclaredEvidencedPills row={r} />
                   </td>
-                  <td>
-                    <DeliveryChip status={r.status} />
+                  <td className="py-2 text-xs">
+                    {!r.divergent
+                      ? "—"
+                      : r.justified
+                        ? "Justified"
+                        : `${r.divergenceAlert ? "Alert · " : ""}${divergenceText(r)}`}
                   </td>
-                  <td className="text-right">
-                    {r.daysVsBaseline === null
-                      ? r.status === "insufficient_evidence"
-                        ? "—"
-                        : "Never"
-                      : r.daysVsBaseline > 0
-                        ? `+${r.daysVsBaseline} days`
-                        : `${r.daysVsBaseline} days`}
+                  <td className="py-2 text-right">{slip(r)}</td>
+                  <td className="py-2 text-right">
+                    {r.lastReportDate ? format.date(r.lastReportDate) : "None"}
+                    {r.reportOverdue && (
+                      <p className="text-xs font-medium text-health-bad-foreground">Overdue</p>
+                    )}
                   </td>
-                  <td className="text-right">{r.gap > 0 ? r.gap : 0}</td>
-                  <td>
-                    {r.status === "insufficient_evidence" ? "—" : r.converging ? "Yes" : "No"}
-                  </td>
-                  <td className="text-right">{r.lastUpdateDays} days</td>
-                  <td className="text-right font-semibold">{r.riskScore}</td>
+                  <td className="py-2 text-right font-semibold">{r.riskScore}</td>
                 </tr>
               ))}
             </tbody>
@@ -272,35 +212,25 @@ function Assurance({ projects }: { projects: AssuranceProject[] }) {
       </ChartCard>
       <div className="grid gap-6 xl:grid-cols-2">
         <ChartCard
-          title="Delivery status by programme"
-          subtitle="Counts of projects; velocities are never added across projects"
+          title="Evidenced RAG by programme"
+          subtitle="Counts of open projects by evidenced health"
         >
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-muted-foreground">
                 <th className="py-2">Programme</th>
                 <th>Evidenced</th>
-                <th>Statuses</th>
+                <th className="text-right">Reports better than evidence</th>
               </tr>
             </thead>
             <tbody>
               {programmes.map((p) => {
                 const sub = live.filter((r) => r.programme === p);
-                const ru = rollUp(sub);
                 return (
                   <tr key={p} className="border-t border-border/50">
                     <td className="py-2 font-medium">{p}</td>
-                    <td>
-                      <RagPill rag={ru.worst} />
-                    </td>
-                    <td className="text-xs text-muted-foreground">
-                      {Object.entries(ru.counts)
-                        .map(
-                          ([k, v]) =>
-                            `${v} ${k === "stale" ? "stale" : deliveryStatusLabels[k as keyof typeof deliveryStatusLabels].toLowerCase()}`,
-                        )
-                        .join(" · ")}
-                    </td>
+                    <td className="text-xs text-muted-foreground">{ragCounts(sub)}</td>
+                    <td className="text-right">{sub.filter((r) => r.divergent).length}</td>
                   </tr>
                 );
               })}
@@ -309,64 +239,44 @@ function Assurance({ projects }: { projects: AssuranceProject[] }) {
         </ChartCard>
         <ChartCard
           title="Forecast slip trend"
-          subtitle="Average forecast finish vs baseline over the last 90 days"
-          info="Taken from the stored forecast history for each active project."
-          csv={{
-            name: "slip-trend",
-            columns: ["Date", "Average slip (days)"],
-            rows: trend.map((t) => [t.label, t.avgSlip]),
+          subtitle="Average forecast finish vs baseline over time"
+          empty={{
+            title: "History starts 05/10/2026",
+            detail:
+              "The trend appears once enough daily forecast snapshots have been taken from that date.",
           }}
-          table={
-            <table className="w-full text-sm">
-              <tbody>
-                {trend.map((t) => (
-                  <tr key={t.label}>
-                    <td>{t.label}</td>
-                    <td>{t.avgSlip} days</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          }
         >
-          <div className="h-56">
-            <ResponsiveContainer>
-              <LineChart data={trend}>
-                <CartesianGrid vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                <YAxis width={40} tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Line
-                  dataKey="avgSlip"
-                  name="Average slip (days)"
-                  stroke="var(--viz-cat-2)"
-                  strokeWidth={2}
-                  dot
-                  isAnimationActive={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          {null}
         </ChartCard>
         <ChartCard
           className="xl:col-span-2"
           title="Forecast accuracy"
-          subtitle={`How far forecasts were from the actual finish on ${accuracy.projects} closed projects`}
-          info="Median absolute error between the forecast made at that point in the project and the date it actually finished."
+          subtitle="How far forecasts were from the actual finish on closed projects"
+          empty={{
+            title: "No sprint data yet",
+            detail:
+              "Forecast accuracy compares sprint forecasts with actual finishes, and returns once sprints are recorded in Virtual PMO.",
+          }}
         >
-          <div className="grid gap-4 sm:grid-cols-3">
-            {accuracy.rows.map((r) => (
-              <div key={r.pct} className="rounded-md border border-border/70 p-4">
-                <p className="text-xs text-muted-foreground">At {r.pct}% of elapsed duration</p>
-                <p className="mt-1 text-2xl font-semibold">
-                  {r.median === null ? "—" : `${r.median} days`}
-                </p>
-                <p className="text-xs text-muted-foreground">median error · {r.samples} projects</p>
-              </div>
-            ))}
-          </div>
+          {null}
         </ChartCard>
       </div>
+    </div>
+  );
+}
+
+function DivergentProject({ row }: { row: AssuranceRow }) {
+  const permissions = useProjectPermissions(row.projectId);
+  return (
+    <div className="rounded-md border border-border/70 bg-card p-3 text-sm">
+      <Link
+        to="/portfolio/projects/$projectCode"
+        params={{ projectCode: row.code }}
+        className="mr-2 font-medium text-primary hover:underline"
+      >
+        {row.name}
+      </Link>
+      <DivergenceNote row={row} canJustify={permissions.canEdit} />
     </div>
   );
 }
