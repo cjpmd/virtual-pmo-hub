@@ -2,9 +2,9 @@
 -- Stage 1a: project overview schema (docs/design/project-overview-design.html; decisions of 08/10/2026).
 --   1. milestones.phase_id, nullable, FK to lifecycle_phases.
 --   2. v_milestones: slip_days = (actual_date if delivered, else forecast_date) - baseline_date;
---      new trailing columns phase_id, is_overdue (not delivered and baseline passed) and slip_band.
+--      new trailing columns phase_id, past_baseline (display only) and slip_band.
 --   3. v_project_delivery_health: schedule now reads milestone slip (bands as MilestoneSlippage),
---      and the milestone forecast finish is exposed. v_project_health is re-created so it picks
+--      and the milestone forecast finish and a data-quality count are exposed. v_project_health is re-created so it picks
 --      the new columns up, and its forecast_finish_date now comes from the milestones.
 --   4. status_reports: status (draft | submitted), submitted_at, decisions_needed, declared_benefit.
 --      Evidenced health is captured, and a snapshot taken, when a report is submitted.
@@ -26,7 +26,9 @@ create index milestones_phase_idx on public.milestones (phase_id, organisation_i
 -- ---------------------------------------------------------------------------
 -- 2. Milestone view. Existing columns keep their order (m.* listed out so phase_id goes on
 --    the end). Slip bands match the Milestone slippage card: on time (<= 0), minor (1-14),
---    material (15-30), severe (> 30). status is unchanged.
+--    material (15-30), severe (> 30). status is unchanged: 'overdue' still means not delivered
+--    and forecast date passed. past_baseline (not delivered, baseline passed) is for display
+--    ("Past baseline, forecast dd Mon") and is not used by any health rule.
 -- ---------------------------------------------------------------------------
 create or replace view public.v_milestones with (security_invoker = true) as
 select
@@ -42,7 +44,7 @@ select
   end as status,
   (coalesce(m.actual_date, m.forecast_date) - m.baseline_date) as slip_days,
   m.phase_id,
-  (m.actual_date is null and m.baseline_date < private.org_today(m.organisation_id)) as is_overdue,
+  (m.actual_date is null and m.baseline_date < private.org_today(m.organisation_id)) as past_baseline,
   case
     when coalesce(m.actual_date, m.forecast_date) - m.baseline_date <= 0 then 'on_time'
     when coalesce(m.actual_date, m.forecast_date) - m.baseline_date <= 14 then 'minor'
@@ -52,15 +54,17 @@ select
 from public.milestones m;
 
 -- ---------------------------------------------------------------------------
--- 3. Project delivery health. Schedule, first match wins:
---      red    any milestone overdue (not delivered, baseline passed), or any undelivered
---             milestone forecast more than 30 days late, or the milestone forecast finish is
---             after the baseline finish;
---      amber  any undelivered milestone forecast 15-30 days late;
---      then the existing rules unchanged (forecast date missed, declared finish slip over
---      scheduleSlipPercent, overdue tasks over taskOverdueAtRiskPercent), else green.
+-- 3. Project delivery health. Schedule, first match wins (every red before any amber):
+--      red    a milestone's forecast date has passed and it isn't delivered (status 'overdue');
+--      red    an undelivered milestone is forecast more than 30 days late;
+--      red    the milestone forecast finish is after the project baseline finish;
+--      red    the declared finish slips more than scheduleSlipPercent (existing rule);
+--      amber  an undelivered milestone is forecast 15-30 days late;
+--      amber  overdue tasks over taskOverdueAtRiskPercent (existing rule);
+--      green  otherwise.
 --    Milestone forecast finish = latest of (actual date if delivered, else forecast date).
---    Other dimensions unchanged. New columns go on the end.
+--    milestones_after_baseline_finish counts milestones baselined after the project's
+--    baseline finish (data-quality signal). Other dimensions unchanged; new columns at the end.
 -- ---------------------------------------------------------------------------
 create or replace view public.v_project_delivery_health with (security_invoker = true) as
 with base as (
@@ -72,25 +76,25 @@ with base as (
 ),
 ms as materialized (
   select m.project_id,
-    bool_or(m.is_overdue) as any_overdue,
     bool_or(m.status = 'overdue') as any_forecast_missed,
     max(m.slip_days) filter (where m.actual_date is null) as worst_open_slip,
-    max(coalesce(m.actual_date, m.forecast_date)) as forecast_finish
+    max(coalesce(m.actual_date, m.forecast_date)) as forecast_finish,
+    count(*) filter (where m.baseline_date > p.baseline_finish_date) as after_baseline_finish
   from public.v_milestones m
+  join public.projects p on p.id = m.project_id
   group by m.project_id
 ),
 dims as materialized (
   select
     base.id,
     case
-      when coalesce(ms.any_overdue, false) then 'red'::public.health
+      when coalesce(ms.any_forecast_missed, false) then 'red'::public.health
       when ms.worst_open_slip > 30 then 'red'::public.health
       when ms.forecast_finish > base.baseline_finish_date then 'red'::public.health
-      when ms.worst_open_slip >= 15 then 'amber'::public.health
-      when coalesce(ms.any_forecast_missed, false) then 'red'::public.health
       when (base.baseline_finish_date - base.start_date) > 0
         and (base.finish_date - base.baseline_finish_date)::numeric / (base.baseline_finish_date - base.start_date)
             > private.health_threshold(base.settings, 'scheduleSlipPercent') / 100 then 'red'::public.health
+      when ms.worst_open_slip >= 15 then 'amber'::public.health
       when base.task_count > 0
         and base.overdue_count::numeric / base.task_count > private.health_threshold(base.settings, 'taskOverdueAtRiskPercent') / 100 then 'amber'::public.health
       else 'green'::public.health
@@ -115,7 +119,8 @@ dims as materialized (
                    and r.score >= private.health_threshold(base.settings, 'riskScoreAtRisk')) then 'amber'::public.health
       else 'green'::public.health
     end as issue,
-    ms.forecast_finish
+    ms.forecast_finish,
+    coalesce(ms.after_baseline_finish, 0) as after_baseline_finish
   from base
   left join ms on ms.project_id = base.id
 )
@@ -133,7 +138,8 @@ select
   dims.schedule, dims.financial, dims.effort, dims.issue,
   greatest(dims.schedule, dims.financial, dims.effort, dims.issue) as delivery,
   base.baseline_finish_date,
-  dims.forecast_finish as milestone_forecast_finish
+  dims.forecast_finish as milestone_forecast_finish,
+  dims.after_baseline_finish as milestones_after_baseline_finish
 from base join dims on dims.id = base.id;
 
 -- Re-created unchanged except the forecast finish: the milestone forecast when the project has
@@ -219,6 +225,7 @@ left join benefit b on b.project_id = d.project_id;
 -- ---------------------------------------------------------------------------
 -- 4. Status reports: drafts, and the highlight report fields. accomplished and planned stay
 --    the "done this period" and "planned next period" text; comments stays the summary.
+--    Only decisions_needed and declared_benefit are new narrative/RAG fields.
 --    Existing rows are submitted, dated by when they were created.
 -- ---------------------------------------------------------------------------
 create type public.status_report_status as enum ('draft', 'submitted');
