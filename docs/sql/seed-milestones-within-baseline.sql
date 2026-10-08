@@ -1,5 +1,6 @@
 -- APPLIED 08/10/2026 (execute_sql, one transaction, 78 rows). Kept as the record of the seed-data fix; not a migration.
--- baselined after their project's baseline finish back inside it.
+-- Seed-data fix (Stage 1a, option c): pull seed milestones that were baselined after their
+-- project's baseline finish back inside it.
 --
 -- Rule, per non-closed, non-archived project whose latest milestone baseline is after its
 -- baseline finish:
