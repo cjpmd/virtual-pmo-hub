@@ -4169,6 +4169,119 @@ export type Database = {
           },
         ]
       }
+      divergence_justifications: {
+        Row: {
+          author_id: string | null
+          created_at: string
+          declared_at_time: Database["public"]["Enums"]["health"]
+          divergence_days_at_time: number
+          evidenced_at_time: Database["public"]["Enums"]["health"]
+          id: string
+          organisation_id: string
+          project_id: string
+          status_report_id: string
+          text: string
+          workspace_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          created_at?: string
+          declared_at_time: Database["public"]["Enums"]["health"]
+          divergence_days_at_time: number
+          evidenced_at_time: Database["public"]["Enums"]["health"]
+          id?: string
+          organisation_id: string
+          project_id: string
+          status_report_id: string
+          text: string
+          workspace_id: string
+        }
+        Update: {
+          author_id?: string | null
+          created_at?: string
+          declared_at_time?: Database["public"]["Enums"]["health"]
+          divergence_days_at_time?: number
+          evidenced_at_time?: Database["public"]["Enums"]["health"]
+          id?: string
+          organisation_id?: string
+          project_id?: string
+          status_report_id?: string
+          text?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "divergence_justifications_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "divergence_justifications_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "divergence_justifications_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "divergence_justifications_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "divergence_justifications_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_financials"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "divergence_justifications_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "divergence_justifications_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_task_stats"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "divergence_justifications_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "divergence_justifications_status_report_id_project_id_fkey"
+            columns: ["status_report_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "status_reports"
+            referencedColumns: ["id", "project_id"]
+          },
+          {
+            foreignKeyName: "divergence_justifications_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           archived_at: string | null
@@ -11536,13 +11649,18 @@ export type Database = {
           declared: Database["public"]["Enums"]["health"] | null
           divergence_alert: boolean | null
           divergence_days: number | null
+          divergence_kind: string | null
           divergence_since: string | null
           divergent: boolean | null
           divergent_prev_month_end: boolean | null
           evidenced: Database["public"]["Enums"]["health"] | null
           finish_vs_baseline_days: number | null
           justification: string | null
+          justification_at: string | null
+          justification_author_id: string | null
+          justified: boolean | null
           last_report_date: string | null
+          latest_report_id: string | null
           next_report_due: string | null
           organisation_id: string | null
           programme_id: string | null
@@ -11553,6 +11671,13 @@ export type Database = {
           workspace_id: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "divergence_justifications_author_id_fkey"
+            columns: ["justification_author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "projects_programme_id_workspace_id_fkey"
             columns: ["programme_id", "workspace_id"]

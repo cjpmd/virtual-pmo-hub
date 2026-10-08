@@ -1,5 +1,4 @@
--- PROPOSED, NOT APPLIED. Stage 1b: divergence justifications.
--- Becomes supabase/migrations/<version>_divergence_justifications.sql once approved.
+-- Stage 1b: divergence justifications.
 --
 -- A justification explains why the latest submitted report is better than the evidence. It is
 -- tied to that report and records what was true when it was written (declared, evidenced,
