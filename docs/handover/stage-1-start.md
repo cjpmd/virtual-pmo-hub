@@ -77,6 +77,11 @@ forms (`create or replace trigger`) or split the statement out.
 - The pre-1b vs post-1b assurance figures were compared headlessly instead of with screenshots
   (agreed); the "before" screens only showed generated sprint data.
 
+## Rule: tests that write data
+
+Any test that writes data runs in a transaction that is rolled back, or on a dedicated test
+project created for it and deleted afterwards. Never write test records to real or demo projects.
+
 ## Test accounts: recreate credentials in the next session
 
 Two test users exist in Supabase auth:
