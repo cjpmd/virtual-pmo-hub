@@ -37,7 +37,7 @@ import type { Priority } from "@/data/types";
 import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
 import { useBenefits } from "@/hooks/use-benefits";
 import { useEntityMutations } from "@/hooks/use-entities";
-import { usePeople, usePhases, usePortfolioNames, useProgrammes } from "@/hooks/use-hierarchy";
+import { usePeople, usePhases, usePortfolioNames, useProgrammesLight } from "@/hooks/use-hierarchy";
 import { useCan, useWorkspaceRoles } from "@/hooks/use-permissions";
 import { currencySymbol, formatCurrency } from "@/lib/format";
 import { atLeast } from "@/services/auth";
@@ -410,7 +410,7 @@ export function PortfolioManagerDialog({
     [formOpen, setFormOpen] = useState(false);
   const { portfolio: current, select } = useCurrentPortfolio();
   const portfolios = usePortfolioNames().data ?? [];
-  const programmes = useProgrammes().data ?? [];
+  const programmes = useProgrammesLight().data ?? [];
   const roles = useWorkspaceRoles().data ?? [];
   const pmoWorkspace = roles.find((role) => atLeast(role.role, "pmo"))?.workspaceId;
   const canManage = (workspaceId: string) =>
@@ -687,7 +687,7 @@ export function ProjectEditDialog({
   project: ProjectSummary & { businessCase?: string | null };
 }) {
   const mutations = useEntityMutations();
-  const programmes = useProgrammes().data ?? [];
+  const programmes = useProgrammesLight().data ?? [];
   const phases = usePhases().data ?? [];
   const [d, set] = useDraft(open, () => ({
     name: project.name,

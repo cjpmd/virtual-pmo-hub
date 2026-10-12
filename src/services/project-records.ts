@@ -2,6 +2,7 @@
 // Writes are gated by RLS: inserts/updates need can_edit_project(), deletes need a workspace
 // manager. Each write selects the row back, so a write RLS silently filtered becomes a
 // ServiceError("forbidden") instead of a false success.
+import { programmeRefs, projectRefs } from "./hierarchy";
 import type { MilestoneStatus, MilestoneType } from "@/data/types";
 import { supabase } from "@/integrations/supabase/client";
 import { forInsert, type Update } from "./db";
@@ -345,8 +346,8 @@ export async function listOrgRaid(orgId: string) {
       )
       .eq("organisation_id", orgId)
       .order("ref"),
-    supabase.from("v_projects").select("id, code, name, programme_id").eq("organisation_id", orgId),
-    supabase.from("programmes").select("id, name").eq("organisation_id", orgId),
+    projectRefs(orgId),
+    programmeRefs(orgId),
   ]);
   const projectById = new Map(
     unwrap(projects, "Loading projects").map((row) => [row.id ?? "", row]),

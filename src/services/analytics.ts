@@ -7,9 +7,9 @@ import { parseDate } from "@/lib/format";
 import { today, todayIso } from "@/lib/today";
 import {
   listPeople,
-  listProgrammes,
-  listProjects,
-  listPortfolios,
+  sharedPortfolioList,
+  sharedProgrammeList,
+  sharedProjectList,
   type PortfolioSummary,
   type ProgrammeSummary,
   type ProjectSummary,
@@ -52,13 +52,15 @@ export async function loadPortfolioOverview(
   orgId: string,
   portfolioId: string,
 ): Promise<PortfolioOverview> {
-  const [portfolios, programmes, projects, history, people] = await Promise.all([
-    listPortfolios(orgId),
-    listProgrammes(orgId),
-    listProjects(orgId),
-    listPortfolioSnapshots(orgId, portfolioId),
-    listPeople(orgId),
-  ]);
+  const historyLoad = listPortfolioSnapshots(orgId, portfolioId);
+  const peopleLoad = listPeople(orgId);
+  // One health load for the page, one view at a time: each of these views works out project
+  // health, and run side by side they compete for the database's CPU until they time out
+  // (docs/sql/perf-shell-views.sql). Shared reads, so assurance reuses the project list.
+  const projects = await sharedProjectList(orgId);
+  const programmes = await sharedProgrammeList(orgId);
+  const portfolios = await sharedPortfolioList(orgId);
+  const [history, people] = await Promise.all([historyLoad, peopleLoad]);
   const portfolio = portfolios.find((item) => item.id === portfolioId);
   if (!portfolio)
     throw new ServiceError(

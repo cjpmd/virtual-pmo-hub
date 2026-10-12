@@ -16,7 +16,7 @@ import type {
 import type { Database } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { daysFromToday } from "@/lib/today";
-import { listPeople, type Person } from "./hierarchy";
+import { listPeople, type Person, projectRefs } from "./hierarchy";
 import { healthLabel, toHealth } from "./labels";
 import { ServiceError, unwrap } from "./service-error";
 import { deleteRows, insertRow, updateRow } from "./write";
@@ -157,11 +157,7 @@ export async function loadDependencies(orgId: string): Promise<DependenciesData>
       .from("v_dependency_health")
       .select("dependency_id, health, boundary, acceptance_state, slip_working_days")
       .eq("organisation_id", orgId),
-    supabase
-      .from("v_projects")
-      .select("id, code, name, programme_id, workspace_id, manager_id")
-      .eq("organisation_id", orgId)
-      .order("name"),
+    projectRefs(orgId),
     supabase
       .from("programmes")
       .select("id, name, workspace_id, manager_id, project_manager_id")

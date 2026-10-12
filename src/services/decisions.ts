@@ -17,7 +17,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { parseDate } from "@/lib/format";
 import { daysFromToday, today } from "@/lib/today";
-import { listPeople, type Person } from "./hierarchy";
+import { listPeople, type Person, programmeRefs, projectRefs } from "./hierarchy";
 import { ServiceError, unwrap } from "./service-error";
 import { insertRow, insertRows, updateRow } from "./write";
 
@@ -154,11 +154,8 @@ export async function loadGovernance(orgId: string): Promise<GovernanceData> {
         .eq("organisation_id", orgId)
         .in("list_key", ["decision_forum", "change_type"])
         .order("sort_order"),
-      supabase
-        .from("v_projects")
-        .select("id, code, name, programme_id, workspace_id, effective_portfolio_id")
-        .eq("organisation_id", orgId),
-      supabase.from("programmes").select("id, name").eq("organisation_id", orgId),
+      projectRefs(orgId),
+      programmeRefs(orgId),
       listPeople(orgId),
     ]);
 

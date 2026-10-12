@@ -15,7 +15,7 @@ import type { MilestoneStatus, Priority, Task, TaskSource } from "@/data/types";
 import { supabase } from "@/integrations/supabase/client";
 import { fromIsoDate, toIsoDate } from "@/lib/format";
 import { daysFromToday, todayIso } from "@/lib/today";
-import { listPeople, type Person } from "./hierarchy";
+import { listPeople, type Person, programmeRefs } from "./hierarchy";
 import { milestoneStatusLabel, priorityLabel, priorityValue } from "./labels";
 import { unwrap } from "./service-error";
 import { deleteWhere, insertRow, insertRows, updateRow, deleteRows } from "./write";
@@ -423,7 +423,7 @@ export async function listPortfolioTasks(orgId: string): Promise<PortfolioTasksD
       .eq("organisation_id", orgId)
       .is("archived_at", null)
       .order("name"),
-    supabase.from("programmes").select("id, name").eq("organisation_id", orgId).order("name"),
+    programmeRefs(orgId),
     listPeople(orgId),
   ]);
   const names = new Map(people.map((person) => [person.id, person.name]));

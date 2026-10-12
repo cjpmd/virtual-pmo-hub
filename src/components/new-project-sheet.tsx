@@ -17,7 +17,7 @@ import type { ProjectTier, TaskSource } from "@/data/types";
 import { useCollections } from "@/hooks/use-collections";
 import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
 import { useEntityMutations } from "@/hooks/use-entities";
-import { usePeople, usePhases, useProgrammes } from "@/hooks/use-hierarchy";
+import { usePeople, usePhases, useProgrammesLight } from "@/hooks/use-hierarchy";
 import { addDaysIso } from "@/lib/today";
 import { getTierDefinitions } from "@/services/gates";
 import { RelevantLessons } from "@/components/relevant-lessons";
@@ -32,7 +32,7 @@ const steps = ["Basics", "Business case", "Dates & budget", "Task source", "Coll
 
 export function NewProjectSheet({ open, onOpenChange, onCreated }: NewProjectSheetProps) {
   const { portfolio } = useCurrentPortfolio();
-  const programmes = (useProgrammes().data ?? []).filter(
+  const programmes = (useProgrammesLight().data ?? []).filter(
       (item) => item.portfolioId === portfolio?.id && item.state === "Active",
     ),
     people = usePeople().data ?? [],

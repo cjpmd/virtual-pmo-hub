@@ -19,7 +19,9 @@ import {
   type ProjectStateLabel,
   type TierLabel,
 } from "./labels";
+import { qk } from "./query-keys";
 import { ServiceError, unwrap, unwrapMaybe } from "./service-error";
+import { sharedRead } from "./shared-query";
 import type { Priority } from "@/data/types";
 
 export interface Person {
@@ -153,8 +155,61 @@ const nameOf = (
 const num = (value: number | null | undefined) => Number(value ?? 0);
 
 // ---- Reference data ---------------------------------------------------------------
+// listPeople, listPhases, programmeRefs and projectRefs are shared reads (shared-query.ts):
+// every service calls them, one request serves the page. Hooks use the fetch* loaders.
 
-export async function listPeople(orgId: string): Promise<Person[]> {
+/** People in the organisation, shared across services. */
+export const listPeople = (orgId: string) =>
+  sharedRead(qk.resources.list(orgId), () => fetchPeople(orgId));
+
+/** Lifecycle phases, shared across services. */
+export const listPhases = (orgId: string) => sharedRead(qk.phases(orgId), () => fetchPhases(orgId));
+
+export interface ProgrammeRef {
+  id: string;
+  name: string;
+  portfolio_id: string;
+  workspace_id: string;
+  archived: boolean;
+}
+
+/** Every programme, archived included (names for old records). PostgREST-shaped for unwrap. */
+export const programmeRefs = (orgId: string) =>
+  sharedRead(qk.programmes.refs(orgId), async () => ({
+    data: unwrap(
+      await supabase
+        .from("programmes")
+        .select("id, name, portfolio_id, workspace_id, archived_at")
+        .eq("organisation_id", orgId)
+        .order("name"),
+      "Loading programmes",
+    ).map((row): ProgrammeRef => ({
+      id: row.id,
+      name: row.name,
+      portfolio_id: row.portfolio_id,
+      workspace_id: row.workspace_id,
+      archived: row.archived_at !== null,
+    })),
+    error: null,
+  }));
+
+/** Reference columns of every visible project (v_projects), one read shared by services. */
+export const projectRefs = (orgId: string) =>
+  sharedRead(qk.projects.refs(orgId), async () => ({
+    data: unwrap(
+      await supabase
+        .from("v_projects")
+        .select(
+          "id, code, name, programme_id, workspace_id, effective_portfolio_id, state, manager_id, phase_index, phase_id",
+        )
+        .eq("organisation_id", orgId)
+        .order("name"),
+      "Loading projects",
+    ),
+    error: null,
+  }));
+
+export async function fetchPeople(orgId: string): Promise<Person[]> {
   const rows = unwrap(
     await supabase
       .from("resources")
@@ -172,7 +227,7 @@ export async function listPeople(orgId: string): Promise<Person[]> {
   }));
 }
 
-export async function listPhases(orgId: string): Promise<Phase[]> {
+export async function fetchPhases(orgId: string): Promise<Phase[]> {
   const rows = unwrap(
     await supabase
       .from("lifecycle_phases")
@@ -245,16 +300,10 @@ export interface NamedEntity {
 
 /** Names only, for the shell (search, favourites, breadcrumbs): no health views. */
 export async function listProgrammeNames(orgId: string): Promise<NamedEntity[]> {
-  const rows = unwrap(
-    await supabase
-      .from("programmes")
-      .select("id, name")
-      .eq("organisation_id", orgId)
-      .is("archived_at", null)
-      .order("name"),
-    "Loading programmes",
-  );
-  return rows.map((row) => ({ id: row.id, code: null, name: row.name }));
+  const { data } = await programmeRefs(orgId);
+  return data
+    .filter((row) => !row.archived)
+    .map((row) => ({ id: row.id, code: null, name: row.name }));
 }
 
 /** Names and codes only, for the shell: no health or financial views. */
@@ -273,7 +322,14 @@ export async function listProjectNames(
   return rows.map((row) => ({ id: row.id, code: row.code, name: row.name }));
 }
 
-export async function listProgrammes(orgId: string): Promise<ProgrammeSummary[]> {
+/**
+ * Programmes in the organisation. withHealth = false skips v_programme_health (health is then
+ * "Not Set"): pickers and counts only need names and portfolios.
+ */
+export async function listProgrammes(
+  orgId: string,
+  { withHealth = true }: { withHealth?: boolean } = {},
+): Promise<ProgrammeSummary[]> {
   const [programmes, health, people] = await Promise.all([
     supabase
       .from("programmes")
@@ -283,10 +339,12 @@ export async function listProgrammes(orgId: string): Promise<ProgrammeSummary[]>
       .eq("organisation_id", orgId)
       .is("archived_at", null)
       .order("name"),
-    supabase
-      .from("v_programme_health")
-      .select("programme_id, overall, benefit")
-      .eq("organisation_id", orgId),
+    withHealth
+      ? supabase
+          .from("v_programme_health")
+          .select("programme_id, overall, benefit")
+          .eq("organisation_id", orgId)
+      : Promise.resolve({ data: [], error: null }),
     listPeople(orgId),
   ]);
   const byId = new Map(people.map((p) => [p.id, p]));
@@ -407,7 +465,7 @@ async function loadProjectContext(orgId: string, projectIds?: string[]) {
         .eq("organisation_id", orgId)
         .order("reporting_date", { ascending: false }),
     ),
-    supabase.from("programmes").select("id, name").eq("organisation_id", orgId),
+    programmeRefs(orgId),
     listPeople(orgId),
     listPhases(orgId),
   ]);
@@ -490,6 +548,17 @@ function toProjectSummary(
     lastReportDate: context.lastReport.get(id) ?? null,
   };
 }
+
+/**
+ * The project, programme and portfolio lists (with health) as shared reads, for loaders that
+ * build on them (overview, assurance). The hooks use the same keys with the raw loaders.
+ */
+export const sharedProjectList = (orgId: string) =>
+  sharedRead(qk.projects.list(orgId), () => listProjects(orgId), 30_000);
+export const sharedProgrammeList = (orgId: string) =>
+  sharedRead(qk.programmes.list(orgId), () => listProgrammes(orgId), 30_000);
+export const sharedPortfolioList = (orgId: string) =>
+  sharedRead(qk.portfolios.list(orgId), () => listPortfolios(orgId), 30_000);
 
 /** Every visible, non-archived project in the organisation (v_projects excludes archived rows). */
 export async function listProjects(orgId: string): Promise<ProjectSummary[]> {
