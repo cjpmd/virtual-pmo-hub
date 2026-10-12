@@ -32,8 +32,6 @@ export function DivergenceNote({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [text, setText] = useState("");
-  const justify = useJustifyDivergence();
   return (
     <div className={cn("inline-flex flex-wrap items-center gap-2", className)}>
       <DeclaredEvidencedPills row={row} />
@@ -61,45 +59,61 @@ export function DivergenceNote({
           Add justification
         </Button>
       )}
-      {open && (
-        <form
-          className="mt-2 w-full space-y-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (!text.trim()) return;
-            justify.mutate(
-              { row, text },
-              {
-                onSuccess: () => {
-                  setOpen(false);
-                  setText("");
-                },
-              },
-            );
-          }}
-        >
-          <Textarea
-            aria-label={`Justification for ${row.name}`}
-            value={text}
-            maxLength={2000}
-            onChange={(event) => setText(event.target.value)}
-            placeholder="Why is the latest report better than the evidence?"
-          />
-          {justify.error && (
-            <p role="alert" className="text-xs text-health-bad-foreground">
-              {justify.error.message}
-            </p>
-          )}
-          <div className="flex gap-2">
-            <Button size="sm" type="submit" disabled={justify.isPending || !text.trim()}>
-              Save justification
-            </Button>
-            <Button size="sm" variant="ghost" type="button" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-          </div>
-        </form>
-      )}
+      {open && <JustificationForm row={row} onDone={() => setOpen(false)} />}
     </div>
+  );
+}
+
+/** Writes a justification for the latest report (divergence_justifications, shared write helper). */
+export function JustificationForm({
+  row,
+  onDone,
+  className,
+}: {
+  row: AssuranceRow;
+  onDone: () => void;
+  className?: string;
+}) {
+  const [text, setText] = useState("");
+  const justify = useJustifyDivergence();
+  return (
+    <form
+      className={cn("mt-2 w-full space-y-2", className)}
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!text.trim()) return;
+        justify.mutate(
+          { row, text },
+          {
+            onSuccess: () => {
+              setText("");
+              onDone();
+            },
+          },
+        );
+      }}
+    >
+      <Textarea
+        autoFocus
+        aria-label={`Justification for ${row.name}`}
+        value={text}
+        maxLength={2000}
+        onChange={(event) => setText(event.target.value)}
+        placeholder="Why is the latest report better than the evidence?"
+      />
+      {justify.error && (
+        <p role="alert" className="text-xs text-health-bad-foreground">
+          {justify.error.message}
+        </p>
+      )}
+      <div className="flex gap-2">
+        <Button size="sm" type="submit" disabled={justify.isPending || !text.trim()}>
+          Save justification
+        </Button>
+        <Button size="sm" variant="ghost" type="button" onClick={onDone}>
+          Cancel
+        </Button>
+      </div>
+    </form>
   );
 }

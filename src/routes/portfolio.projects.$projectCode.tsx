@@ -1,14 +1,6 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import {
-  CalendarDays,
-  CheckCircle2,
-  Circle,
-  Gavel,
-  ListChecks,
-  ListPlus,
-  PackageCheck,
-} from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { CalendarDays, CheckCircle2, Circle, Gavel } from "lucide-react";
+import { useMemo, useState, type ReactNode } from "react";
 import { AppraisalPanel } from "@/components/appraisal-panel";
 import { BenefitSummary } from "@/components/benefit-summary";
 import { BenefitsHandoverWizard } from "@/components/benefits-handover";
@@ -20,21 +12,18 @@ import { DependencyTab } from "@/components/dependency-tab";
 import { ChangeBaselineAction } from "@/components/change-baseline";
 import { toBaselineChange } from "@/services/financials";
 import { ProjectFinancials } from "@/components/project-financials";
-import { ProjectEditButton, StateBadge } from "@/components/entity-management";
-import { DivergenceNote } from "@/components/divergence-note";
-import { FavouriteButton } from "@/components/favourite-button";
 import { GateChecklist } from "@/components/gate-checklist";
 import { HealthPill } from "@/components/health-pill";
-import { openIssueTask } from "@/components/issue-task-sheet";
 import { LessonsTab } from "@/components/lessons-tab";
-import { Fact, KpiCard } from "@/components/pmo-ui";
+import { KpiCard } from "@/components/pmo-ui";
 import { ProjectMilestones } from "@/components/project-milestones";
 import { ProjectRaid } from "@/components/project-raid";
 import { ProjectResources } from "@/components/project-resources";
 import { QueryState } from "@/components/query-state";
 import { RelevantLessons } from "@/components/relevant-lessons";
 import { AssumptionsWorkspace } from "@/components/assumptions-workspace";
-import { Breadcrumbs } from "@/components/section-nav";
+import { ProjectHeader } from "@/components/project-header";
+import { TopBand } from "@/components/shell-slots";
 import { StatusWorkspace } from "@/components/status-workspace";
 import { TaskWorkspace } from "@/components/task-workspace";
 import { Button } from "@/components/ui/button";
@@ -48,6 +37,16 @@ import {
   useProjectPermissions,
 } from "@/hooks/use-hierarchy";
 import { useFormat } from "@/lib/format";
+import {
+  PROJECT_SUBTABS,
+  defaultSub,
+  projectPanelId,
+  projectTabId,
+  resolveProjectTab,
+  type GroupedTab,
+  type ProjectSubtab,
+  type ProjectTab,
+} from "@/lib/project-tabs";
 import { daysFromToday, todayIso } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { useAssurance } from "@/hooks/use-assurance";
@@ -58,8 +57,6 @@ import type { ProjectDetail } from "@/services/hierarchy";
 import { getProjectLessons, hasPhaseLessonsReview } from "@/services/lessons";
 import { useLessons } from "@/hooks/use-lessons";
 import { toTaskSource } from "@/services/work-items";
-import { getTierDefinitions } from "@/services/gates";
-import { term, useSettings } from "@/services/settings";
 
 export const Route = createFileRoute("/portfolio/projects/$projectCode")({
   head: ({ params }) => ({
@@ -68,32 +65,15 @@ export const Route = createFileRoute("/portfolio/projects/$projectCode")({
       { name: "description", content: "Project detail." },
     ],
   }),
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { tab?: string | undefined; sub?: string | undefined; task?: string | undefined } => {
+    const text = (key: string) =>
+      typeof search[key] === "string" && search[key] ? (search[key] as string) : undefined;
+    return { tab: text("tab"), sub: text("sub"), task: text("task") };
+  },
   component: ProjectPage,
 });
-
-const tabs = [
-  "overview",
-  "milestones",
-  "status",
-  "tasks",
-  "delivery",
-  "resources",
-  "benefits",
-  "raid",
-  "dependencies",
-  "decisions",
-  "assumptions",
-  "lessons",
-  "changes",
-  "financials",
-  "business case",
-];
-
-const taskSourceLabel: Record<string, string> = {
-  manual: "Manual",
-  planner_basic: "Planner Basic",
-  planner_premium: "Planner Premium",
-};
 
 function ProjectPage() {
   const { projectCode } = Route.useParams();
@@ -132,16 +112,57 @@ function Section({
   );
 }
 
-/** Placeholder for tabs that still need the prototype record (demo organisation only until 4c). */
+/** Second-level tabs for Plan and RAID log (?sub=). */
+function SubTabs({
+  group,
+  value,
+  onChange,
+}: {
+  group: GroupedTab;
+  value: ProjectSubtab | undefined;
+  onChange: (sub: ProjectSubtab) => void;
+}) {
+  return (
+    <nav
+      aria-label={group === "plan" ? "Plan sections" : "RAID log sections"}
+      className="-mt-2 flex gap-1 overflow-x-auto rounded-lg border border-border bg-muted/50 p-1 sm:w-fit"
+    >
+      {PROJECT_SUBTABS[group].map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          aria-current={value === item.id ? "page" : undefined}
+          onClick={() => onChange(item.id)}
+          className={cn(
+            "whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+            value === item.id
+              ? "bg-card text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {item.label}
+        </button>
+      ))}
+    </nav>
+  );
+}
 
 function ProjectBody({ project }: { project: ProjectDetail }) {
   const navigate = useNavigate();
-  const settings = useSettings();
   const format = useFormat();
-  const [tab, setTab] = useState("overview");
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("task")) setTab("tasks");
-  }, []);
+  const search = Route.useSearch();
+  const { tab, sub } = resolveProjectTab(search);
+  // ?tab=&sub= in the URL; the old single tab name and ?task= resolve through resolveProjectTab.
+  const setTab = (next: ProjectTab, nextSub: ProjectSubtab | undefined = defaultSub(next)) =>
+    void navigate({
+      to: ".",
+      search: (prev: typeof search) => ({
+        ...(next === "plan" && nextSub === "tasks" && prev.task ? { task: prev.task } : {}),
+        ...(next === "overview" ? {} : { tab: next }),
+        ...(nextSub ? { sub: nextSub } : {}),
+      }),
+      replace: true,
+    });
   const [lessonsReviewed, setLessonsReviewed] = useState(false);
   const [manualTicks, setManualTicks] = useState<string[]>([]);
   const [handover, setHandover] = useState(false);
@@ -192,8 +213,6 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
   const projectTypeTags = Array.from(new Set(lessons.flatMap((lesson) => lesson.projectTypeTags)));
   const assuranceRows = useAssurance();
   const assurance = assuranceRows.data?.find((item) => item.projectId === project.id);
-
-  const tierInfo = getTierDefinitions().find((item) => item.tier === project.tier);
   const elapsed = (() => {
     const fromStart = daysFromToday(project.startDate),
       toFinish = daysFromToday(project.finishDate);
@@ -240,153 +259,29 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
     .slice(0, 8);
 
   return (
-    <div className="space-y-6">
-      <Breadcrumbs
-        trail={[
-          { label: term("portfolio", settings), to: "/portfolio" },
-          { label: portfolio?.name ?? "…", to: "/portfolio" },
-          ...(project.programmeId
-            ? [{ label: project.programmeName, to: "/portfolio/programmes" }]
-            : []),
-          { label: project.name },
-        ]}
-      />
-      <header className="border-b border-border pb-6">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary">
-              {project.programmeName}
-            </p>
-            <div className="flex items-center gap-2">
-              <h1 className="font-display text-3xl font-semibold">{project.name}</h1>
-              <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
-                {project.code}
-              </span>
-              <FavouriteButton target={{ projectId: project.id }} />
-              <span
-                title={tierInfo?.description}
-                className="rounded-full border border-primary/40 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary"
-              >
-                {project.tier} project
-              </span>
-            </div>
-            <p className="mt-2 text-sm text-muted-foreground">{project.businessCase}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <StateBadge state={project.state} />
-            <ProjectEditButton
-              project={project}
-              onArchived={() => void navigate({ to: "/portfolio/projects" })}
-            />
-            <Button size="sm" variant="outline" asChild>
-              <Link to="/portfolio/projects/$projectCode/business-case" params={{ projectCode: project.code }}>
-                Business case
-              </Link>
-            </Button>
-            <Button size="sm" onClick={() => openIssueTask(project.id)}>
-              <ListPlus />
-              Issue task
-            </Button>
-            {permissions.canEdit && (
-              <Button size="sm" variant="outline" onClick={() => setHandover(true)}>
-                <PackageCheck />
-                {project.state === "Closed" ? "Benefits handover" : "Close project"}
-              </Button>
-            )}
-            <span className="inline-flex h-8 items-center gap-1.5 rounded-md bg-accent px-3 text-xs font-semibold text-accent-foreground">
-              <ListChecks className="size-4" />
-              {taskSourceLabel[project.taskSource] ?? project.taskSource}
-            </span>
-          </div>
-        </div>
-        <div className="mt-6 grid gap-4 lg:grid-cols-[1.35fr_1fr]">
-          <div>
-            <p className="mb-3 text-xs font-semibold text-muted-foreground">
-              Lifecycle — {project.phaseName}
-            </p>
-            <div className="flex items-center">
-              {(phases.data ?? []).map((phase, index, all) => (
-                <div key={phase.id} className="flex min-w-0 flex-1 items-center last:flex-none">
-                  <div className="flex flex-col items-center gap-1.5">
-                    <span
-                      className={`grid size-7 place-items-center rounded-full border ${index < project.phaseIndex ? "border-primary bg-primary text-primary-foreground" : index === project.phaseIndex ? "border-primary bg-accent text-primary" : "border-border bg-card text-muted-foreground"}`}
-                    >
-                      {index < project.phaseIndex ? (
-                        <CheckCircle2 className="size-4" />
-                      ) : (
-                        <Circle className="size-3" />
-                      )}
-                    </span>
-                    <span
-                      title={`${phase.name} · ${phase.gateName ?? ""}`}
-                      className={`text-center text-[10px] ${index === project.phaseIndex ? "font-semibold text-primary" : "text-muted-foreground"}`}
-                    >
-                      {phase.shortName}
-                    </span>
-                  </div>
-                  {index < all.length - 1 && (
-                    <div
-                      className={`mb-5 h-px flex-1 ${index < project.phaseIndex ? "bg-primary" : "bg-border"}`}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <Fact label={term("projectManager", settings)} value={project.managerName} />
-            <Fact
-              label={term("projectOfficer", settings)}
-              value={project.projectOfficerName ?? "Unassigned"}
-            />
-            <Fact label={term("sponsor", settings)} value={project.sponsorName} />
-            <Fact label="Tier" value={project.tier} />
-            <Fact label="Priority" value={project.priority} />
-            <Fact label="Finish" value={format.date(project.finishDate ?? undefined)} />
-          </div>
-        </div>
-        <div className="mt-6 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-          {(
-            [
-              ["Overall", project.health.overall],
-              ["Schedule", project.health.schedule],
-              ["Issues & risks", project.health.issue],
-              ["Benefit health", project.health.benefit],
-            ] as const
-          ).map(([label, health]) => (
-            <div
-              key={label}
-              className="flex items-center justify-between rounded-md bg-muted/60 px-3 py-2"
-            >
-              <span className="text-xs text-muted-foreground">{label}</span>
-              <HealthPill health={health} closed={project.state === "Closed"} />
-            </div>
-          ))}
-        </div>
-      </header>
-      {assurance && (
-        <div className="rounded-md border border-border/70 bg-card px-3 py-2 text-sm">
-          <span className="mr-2 text-xs text-muted-foreground">Assurance</span>
-          <DivergenceNote row={assurance} canJustify={permissions.canEdit} />
-        </div>
+    <div
+      role="tabpanel"
+      id={projectPanelId}
+      aria-labelledby={projectTabId(tab)}
+      className="space-y-6"
+    >
+      <TopBand>
+        <ProjectHeader
+          project={project}
+          portfolioName={portfolio?.name}
+          phases={phases.data ?? []}
+          assurance={assurance}
+          finishSlip={undefined}
+          canEdit={permissions.canEdit}
+          tab={tab}
+          onTabChange={(next) => setTab(next)}
+          onHandover={() => setHandover(true)}
+          onArchived={() => void navigate({ to: "/portfolio/projects" })}
+        />
+      </TopBand>
+      {(tab === "plan" || tab === "raid") && (
+        <SubTabs group={tab} value={sub} onChange={(next) => setTab(tab, next)} />
       )}
-      <div className="flex overflow-x-auto border-b border-border">
-        {tabs.map((item) => (
-          <Button
-            key={item}
-            variant="ghost"
-            onClick={() => setTab(item)}
-            className={
-              tab === item
-                ? "rounded-none border-b-2 border-primary text-primary"
-                : "rounded-none text-muted-foreground"
-            }
-          >
-            {item[0]?.toUpperCase()}
-            {item.slice(1)}
-          </Button>
-        ))}
-      </div>
 
       {handedOver !== null && (
         <div className="flex items-center gap-2 rounded-md border border-health-good/40 bg-health-good/10 p-3 text-sm">
@@ -551,7 +446,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
             <Section
               title="Upcoming milestones"
               actions={
-                <Button variant="link" size="sm" onClick={() => setTab("milestones")}>
+                <Button variant="link" size="sm" onClick={() => setTab("plan", "milestones")}>
                   All milestones
                 </Button>
               }
@@ -585,8 +480,8 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
         </div>
       )}
 
-      {tab === "milestones" && <ProjectMilestones projectId={project.id} />}
-      {tab === "raid" && <ProjectRaid projectId={project.id} />}
+      {tab === "plan" && sub === "milestones" && <ProjectMilestones projectId={project.id} />}
+      {tab === "raid" && sub === "risks" && <ProjectRaid projectId={project.id} />}
       {tab === "financials" && <ProjectFinancials project={project} />}
 
       {/* Not yet on Supabase (Stage 4c): these tabs read the demo project's prototype record. */}
@@ -604,14 +499,14 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
               }}
             />
           )}
-          {tab === "tasks" && (
+          {tab === "plan" && sub === "tasks" && (
             <TaskWorkspace projectId={project.id} taskSource={toTaskSource(project.taskSource)} />
           )}
           {tab === "delivery" && <DeliveryWorkspace projectId={project.code} />}
           {tab === "resources" && <ProjectResources projectId={project.id} />}
           {tab === "benefits" && <ProjectBenefits projectId={project.id} />}
-          {tab === "dependencies" && <DependencyTab projectId={project.id} />}
-          {tab === "decisions" && (
+          {tab === "plan" && sub === "dependencies" && <DependencyTab projectId={project.id} />}
+          {tab === "raid" && sub === "decisions" && (
             <div className="space-y-4">
               {decisions.map((item) => (
                 <button
@@ -657,11 +552,11 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
               )}
             </div>
           )}
-          {tab === "assumptions" && (
+          {tab === "raid" && sub === "assumptions" && (
             <AssumptionsWorkspace scope={{ projectId: project.id }} compact />
           )}
-          {tab === "lessons" && <LessonsTab project={project} />}
-          {tab === "changes" && (
+          {tab === "raid" && sub === "lessons" && <LessonsTab project={project} />}
+          {tab === "raid" && sub === "changes" && (
             <Section title="Change requests">
               <div className="mt-4 space-y-3">
                 {changes.map((change) => (
@@ -688,7 +583,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
               </div>
             </Section>
           )}
-          {tab === "business case" && (
+          {tab === "business-case" && (
             <div className="space-y-5">
               <div className="grid gap-5 lg:grid-cols-2">
                 <Section title="Summary">

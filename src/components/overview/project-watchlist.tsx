@@ -19,6 +19,23 @@ const tone: Record<Health, string> = {
   "Not Set": "var(--pmo-muted)",
 };
 
+/** Report = ring, data = dot. Shared with the project header (scope="project"). */
+export function HealthMark({ health, shape }: { health: Health; shape: "ring" | "dot" }) {
+  return shape === "ring" ? (
+    <span
+      aria-hidden
+      className="inline-block size-3 shrink-0 rounded-full border-2"
+      style={{ borderColor: tone[health] }}
+    />
+  ) : (
+    <span
+      aria-hidden
+      className="inline-block size-2 shrink-0 rounded-full"
+      style={{ background: tone[health] }}
+    />
+  );
+}
+
 /** Report = ring, data = dot: status is shape plus colour, never colour alone. */
 function ReportData({ declared, evidenced }: { declared: Health; evidenced: Health }) {
   return (
@@ -26,12 +43,8 @@ function ReportData({ declared, evidenced }: { declared: Health; evidenced: Heal
       className="inline-flex items-center gap-1.5"
       title={`Report: ${declared} · Data: ${evidenced}`}
     >
-      <span
-        aria-hidden
-        className="size-3 rounded-full border-2"
-        style={{ borderColor: tone[declared] }}
-      />
-      <span aria-hidden className="size-2 rounded-full" style={{ background: tone[evidenced] }} />
+      <HealthMark health={declared} shape="ring" />
+      <HealthMark health={evidenced} shape="dot" />
       <span className="sr-only">
         Report {declared}, data {evidenced}
       </span>
