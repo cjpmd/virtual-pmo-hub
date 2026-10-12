@@ -77,6 +77,34 @@ forms (`create or replace trigger`) or split the statement out.
 - The pre-1b vs post-1b assurance figures were compared headlessly instead of with screenshots
   (agreed); the "before" screens only showed generated sprint data.
 
+## Pre-second-customer task: health refresh cost grows with every tenant
+
+Not now; do before a second organisation goes live. The health views (`v_project_health`,
+`v_project_divergence`, `v_programme_health`, `v_portfolio_health`) compute every project they
+can see and filter afterwards: their CTEs are `materialized`, so an `organisation_id` filter
+never reaches the inner tables. Signed-in users only see their own workspaces (RLS), but the
+health refresh (`private.refresh_health_current`, fix B in `docs/sql/perf-health-current-b.sql`)
+runs as `postgres`, which bypasses RLS, so each organisation's refresh computes every tenant.
+Today that is ~0.45 s for 39 projects. With N organisations of similar size, each refresh costs
+roughly N times that, and a full nightly refresh (one per organisation) roughly N x N times.
+
+Options:
+- **Organisation-scoped functions** (`private.project_health_rows(p_org)` etc. holding the view
+  bodies with the filter at the base CTE; the views become `select * from` the function for the
+  signed-in user's organisations). Cost per refresh then scales with that organisation only.
+  Trade-off: the rules move from view text into function text (still one definition, but every
+  view migration becomes a function migration), and functions are opaque to the planner, so the
+  views lose predicate pushdown entirely for ad-hoc queries.
+- **Remove `materialized` from the CTEs** so the planner can push the organisation filter
+  down. Keeps the views as the definition. Trade-off: the CTEs were materialized on purpose
+  (`health_views_single_pass`, docs/perf.md) because inlining made Postgres compute each
+  dimension several times per project; un-materializing risks bringing back the 8 s plans.
+  Would need the per-CTE timing work redone, and the plan can change as data grows.
+- **Refresh per tenant with `set local role` / claims of an org member** instead of `postgres`,
+  so RLS limits the work to that organisation. Cheapest change; relies on there always being a
+  member to impersonate, and RLS overhead comes back into every refresh.
+- Measure first with a synthetic second tenant (500-project org exists locally for this).
+
 ## Rule: tests that write data
 
 Any test that writes data runs in a transaction that is rolled back, or on a dedicated test

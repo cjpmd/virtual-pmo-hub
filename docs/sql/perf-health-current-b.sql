@@ -1,4 +1,5 @@
--- PROPOSAL (not applied). Fix B for the shell health views: store current health per project,
+-- Fix B for the shell health views (approved 12/10/2026 with a queue instead of refreshing inside
+-- the write, a 00:05 Europe/London refresh, and a nightly logged mismatch check): store current health per project,
 -- programme and portfolio, refreshed on write and nightly; the app reads the tables, the v_*
 -- views stay the only definition of every rule. Follows docs/sql/perf-shell-views.sql (A1-A4
 -- applied; target not met).
@@ -31,23 +32,37 @@
 -- The cost moves to writes: computing one organisation's rows from the views takes
 -- p50 443 ms, p95 455 ms (10 runs, as postgres). See "Refresh scope and cost" below.
 --
+-- Write latency BEFORE B (as the member, 20 runs each, each write rolled back in a
+-- subtransaction): milestone update p50 3.2 ms / p95 14.6 ms; work item 3.4 / 8.3 ms;
+-- risk 3.4 / 4.0 ms. Target after B: unchanged (writes only add the queue upsert).
+--
+-- HOW TO APPLY: the Supabase MCP tool holds any SQL containing DELETE for a confirmation this
+-- environment cannot show, so run docs/sql/perf-health-current-b-dryrun.sql in the SQL editor
+-- first (it rolls back), then this file from "create table public.project_health_current" to
+-- the end. Then tell Claude: it saves the migration file, records it in
+-- supabase_migrations.schema_migrations, regenerates types and switches the app's reads.
+--
 -- ===================================================================== REFRESH SCOPE AND COST
+-- * Queued, not inside the write: a row trigger on each table that feeds health upserts the
+--   row's organisation into private.health_refresh_queue (one row per organisation, deduped).
+--   pg_cron runs private.drain_health_refresh_queue() every 5 seconds; it takes each queued
+--   organisation off the queue (committing at once, so writers never wait on it) and refreshes
+--   it once. A write that lands while a refresh runs re-queues the organisation, so nothing is
+--   lost. Writes pay only the queue upsert.
 -- * Whole organisation, not one project. A capability's RAG uses the delivery health of every
 --   project linked to it (v_project_health.caps), so a write to project A can change project
 --   B's benefit health; refreshing only A's row would leave B stale. It costs the same anyway:
 --   the views compute every project in one pass and filter afterwards (materialized CTEs), so a
 --   one-project refresh still computes them all.
--- * Once per write statement (row triggers note the organisation, a statement trigger refreshes
---   it), serialised per organisation with an advisory lock. Bulk writes are one statement.
--- * ~0.45 s added to each write statement today, inside the writer's transaction, so the next
---   read is always fresh. As postgres the views compute every tenant before filtering, so this
---   grows with total project count across organisations. If that becomes a problem the
---   alternative is a queue drained by pg_cron every few seconds (writes unaffected, reads up to
---   a few seconds stale): decision for you.
--- * Date-driven changes (milestones going overdue at midnight, report due dates) need no write:
---   the nightly 02:15 UTC job refreshes every organisation after taking its snapshots. Between
---   midnight (Europe/London) and 02:15 UTC the stored rows still reflect yesterday's date; an
---   extra 00:05 Europe/London run would close that gap if wanted.
+-- * A refresh takes ~0.45 s per organisation today (serialised per organisation with an
+--   advisory lock). As postgres the views compute every tenant before filtering, so this grows
+--   with total project count across organisations (handover: pre-second-customer task).
+-- * Date-driven changes need no write: a full refresh runs at 00:05 Europe/London (pg_cron runs
+--   in UTC, so the job fires at 23:05 and 00:05 UTC and only acts when it is just after
+--   midnight in London) and again in the nightly 02:15 UTC job after the snapshots.
+-- * After each full refresh, private.health_current_mismatches runs for every organisation and
+--   writes one row per organisation to private.health_check_log (mismatches = 0 expected; the
+--   rows themselves are kept in details). Visible in the Table Editor under the private schema.
 --
 -- ======================================================================= WHAT FEEDS HEALTH
 -- From pg_depend over v_project_health, v_project_divergence, v_programme_health and
@@ -248,82 +263,71 @@ begin
 end;
 $$;
 
--- Row trigger: note the row's organisation for this statement (transaction-local setting).
-create function private.health_current_mark()
+-- ---- Queue ---------------------------------------------------------------------------------
+-- Internal (private schema, organisation-level): which organisations need a refresh.
+create table private.health_refresh_queue (
+  organisation_id uuid primary key references public.organisations (id) on delete cascade,
+  queued_at timestamptz not null default now()
+);
+alter table private.health_refresh_queue enable row level security;
+revoke all on private.health_refresh_queue from public, anon, authenticated;
+
+-- Row trigger on every table that feeds health: queue the row's organisation (deduped).
+create function private.health_current_enqueue()
 returns trigger
 language plpgsql security definer set search_path = ''
 as $$
 declare
   r jsonb := to_jsonb(coalesce(new, old));
-  o text := coalesce(r ->> 'organisation_id', case when tg_table_name = 'organisations' then r ->> 'id' end);
-  seen text := coalesce(current_setting('vpmo.health_dirty', true), '');
+  o uuid := coalesce(r ->> 'organisation_id', case when tg_table_name = 'organisations' then r ->> 'id' end)::uuid;
 begin
-  if o is not null and position(o in seen) = 0 then
-    perform set_config('vpmo.health_dirty', seen || ',' || o, true);
+  if o is not null then
+    insert into private.health_refresh_queue (organisation_id) values (o)
+    on conflict (organisation_id) do nothing;
   end if;
   return null;
 end;
 $$;
 
--- Statement trigger: refresh every organisation the statement touched, then forget them.
-create function private.health_current_refresh()
-returns trigger
-language plpgsql security definer set search_path = ''
+-- Drains the queue: each organisation is taken off (and committed) before it is refreshed, so
+-- writers only ever wait for that short delete, and a write during the refresh re-queues it.
+create procedure private.drain_health_refresh_queue()
+language plpgsql
 as $$
 declare
-  o text;
-  dirty text := coalesce(current_setting('vpmo.health_dirty', true), '');
+  o uuid;
 begin
-  if dirty = '' then return null; end if;
-  perform set_config('vpmo.health_dirty', '', true);
-  foreach o in array string_to_array(trim(both ',' from dirty), ',') loop
-    perform private.refresh_health_current(o::uuid);
+  loop
+    delete from private.health_refresh_queue q
+    where q.organisation_id = (
+      select organisation_id from private.health_refresh_queue
+      order by queued_at limit 1 for update skip locked)
+    returning q.organisation_id into o;
+    exit when o is null;
+    commit;
+    perform private.refresh_health_current(o);
+    commit;
   end loop;
-  return null;
 end;
 $$;
 
-revoke all on function private.live_project_health(uuid), private.live_programme_health(uuid),
-  private.live_portfolio_health(uuid), private.refresh_health_current(uuid),
-  private.refresh_all_health_current(), private.health_current_mark(),
-  private.health_current_refresh()
-  from public, anon, authenticated;
-
--- Two triggers on every table that feeds health ("zz" so they run after the tables' own triggers).
-do $$
-declare
-  t text;
-begin
-  foreach t in array array[
-    'benefit_measure_targets', 'benefit_measurements', 'benefit_measures', 'benefit_periods',
-    'benefit_projects', 'benefit_reviews', 'benefits', 'budget_baselines', 'capabilities',
-    'capability_projects', 'divergence_justifications', 'financial_periods', 'financial_values',
-    'health_snapshots', 'issues', 'lifecycle_phases', 'milestones', 'organisations', 'portfolios',
-    'programmes', 'projects', 'risks', 'status_reports', 'work_item_checklist_items', 'work_items'
-  ] loop
-    execute format(
-      'create trigger %I after insert or update or delete on public.%I
-         for each row execute function private.health_current_mark()',
-      t || '_zz_health_mark', t);
-    execute format(
-      'create trigger %I after insert or update or delete on public.%I
-         for each statement execute function private.health_current_refresh()',
-      t || '_zz_health_refresh', t);
-  end loop;
-end $$;
-
--- ---- Nightly ------------------------------------------------------------------------------
--- After the 02:15 UTC snapshots (the snapshot inserts already refresh through the
--- health_snapshots triggers; the explicit full refresh also covers organisations with no
--- open projects and anything date-driven).
-select cron.alter_job(
-  (select jobid from cron.job where jobname = 'vpmo-capture-health-snapshots'),
-  command := 'select private.capture_health_snapshots(); select private.refresh_all_health_current();'
+-- ---- Nightly check log -------------------------------------------------------------------------
+create table private.health_check_log (
+  id bigint generated always as identity primary key,
+  checked_at timestamptz not null default now(),
+  run text not null,
+  organisation_id uuid not null references public.organisations (id) on delete cascade,
+  mismatches integer not null,
+  details jsonb not null default '[]'::jsonb
 );
+create index health_check_log_checked_idx on private.health_check_log (checked_at desc);
+create index health_check_log_organisation_idx on private.health_check_log (organisation_id);
+alter table private.health_check_log enable row level security;
+revoke all on private.health_check_log from public, anon, authenticated;
 
 -- ---- Check: stored rows against the live views ---------------------------------------------
 -- Lists every row that differs (or exists on one side only), ignoring computed_at. Empty means
--- the tables match the views. Run from the SQL editor (not granted to app users).
+-- the tables match the views.
 create function private.health_current_mismatches(p_org uuid)
 returns table (level text, id uuid, stored jsonb, live jsonb)
 language sql stable security definer set search_path = ''
@@ -343,7 +347,89 @@ as $$
   full join (select portfolio_id as id, to_jsonb(t) - 'computed_at' as j from private.live_portfolio_health(p_org) t) l on l.id = s.id
   where s.j is distinct from l.j;
 $$;
-revoke all on function private.health_current_mismatches(uuid) from public, anon, authenticated;
 
--- ---- First fill ------------------------------------------------------------------------------
-select private.refresh_all_health_current();
+-- Runs the check for every organisation and logs one row each; returns the total mismatches.
+create function private.check_health_current(p_run text)
+returns integer
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  o uuid;
+  total integer := 0;
+  n integer;
+  d jsonb;
+begin
+  for o in select id from public.organisations loop
+    select count(*), coalesce(jsonb_agg(to_jsonb(m)), '[]'::jsonb) into n, d
+    from private.health_current_mismatches(o) m;
+    insert into private.health_check_log (run, organisation_id, mismatches, details)
+    values (p_run, o, n, d);
+    total := total + n;
+  end loop;
+  return total;
+end;
+$$;
+
+-- Full refresh, then the logged check (both nightly runs and the first fill).
+create function private.full_health_refresh_and_check(p_run text)
+returns integer
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  perform private.refresh_all_health_current();
+  return private.check_health_current(p_run);
+end;
+$$;
+
+-- 00:05 Europe/London: pg_cron runs in UTC, so the job fires at 23:05 and 00:05 UTC and acts only
+-- in the first quarter-hour of the London day (BST or GMT).
+create function private.london_midnight_health_refresh()
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if (now() at time zone 'Europe/London')::time < time '00:15' then
+    perform private.full_health_refresh_and_check('00:05 Europe/London');
+  end if;
+end;
+$$;
+
+revoke all on function private.live_project_health(uuid), private.live_programme_health(uuid),
+  private.live_portfolio_health(uuid), private.refresh_health_current(uuid),
+  private.refresh_all_health_current(), private.health_current_enqueue(),
+  private.health_current_mismatches(uuid), private.check_health_current(text),
+  private.full_health_refresh_and_check(text), private.london_midnight_health_refresh()
+  from public, anon, authenticated;
+revoke all on procedure private.drain_health_refresh_queue() from public, anon, authenticated;
+
+-- One trigger on every table that feeds health ("zz" so it runs after the tables' own triggers).
+do $$
+declare
+  t text;
+begin
+  foreach t in array array[
+    'benefit_measure_targets', 'benefit_measurements', 'benefit_measures', 'benefit_periods',
+    'benefit_projects', 'benefit_reviews', 'benefits', 'budget_baselines', 'capabilities',
+    'capability_projects', 'divergence_justifications', 'financial_periods', 'financial_values',
+    'health_snapshots', 'issues', 'lifecycle_phases', 'milestones', 'organisations', 'portfolios',
+    'programmes', 'projects', 'risks', 'status_reports', 'work_item_checklist_items', 'work_items'
+  ] loop
+    execute format(
+      'create trigger %I after insert or update or delete on public.%I
+         for each row execute function private.health_current_enqueue()',
+      t || '_zz_health_enqueue', t);
+  end loop;
+end $$;
+
+-- ---- Schedules ------------------------------------------------------------------------------
+select cron.schedule('vpmo-health-refresh-queue', '5 seconds', 'call private.drain_health_refresh_queue()');
+select cron.schedule('vpmo-health-refresh-london-midnight', '5 23,0 * * *',
+  'select private.london_midnight_health_refresh()');
+-- The nightly 02:15 UTC job: snapshots, then the full refresh and the logged check.
+select cron.alter_job(
+  (select jobid from cron.job where jobname = 'vpmo-capture-health-snapshots'),
+  command := 'select private.capture_health_snapshots(); select private.full_health_refresh_and_check(''02:15 UTC'');'
+);
+
+-- ---- First fill and check ----------------------------------------------------------------------
+select private.full_health_refresh_and_check('first fill');
