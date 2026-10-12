@@ -2,7 +2,17 @@
 // Buttons only appear for people whose role allows the action (RLS is the real check):
 // portfolios need PMO; programmes and projects need manager in the workspace.
 import { useEffect, useState, type ReactNode } from "react";
-import { Archive, Check, FolderOpen, Pencil, Plus, RotateCcw } from "lucide-react";
+import {
+  Archive,
+  Check,
+  CircleSlash,
+  FolderOpen,
+  MoreHorizontal,
+  PackageCheck,
+  Pencil,
+  Plus,
+  RotateCcw,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +25,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { Priority } from "@/data/types";
 import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
 import { useEntityMutations } from "@/hooks/use-entities";
@@ -881,32 +898,129 @@ export function ProgrammeActions({
     </div>
   );
 }
-export function ProjectEditButton({
+/** Edit button for the project header; managers and above only (RLS is the real check). */
+export function ProjectEditAction({
   project,
-  onArchived,
+  className,
 }: {
   project: ProjectSummary & { businessCase?: string | null };
-  onArchived?: () => void;
+  className?: string;
 }) {
   const [edit, setEdit] = useState(false);
   const allowed = useCan("manager", project.workspaceId);
   if (!allowed) return null;
   return (
     <>
-      <Button size="sm" variant="outline" onClick={() => setEdit(true)}>
+      <Button size="sm" variant="outline" className={className} onClick={() => setEdit(true)}>
         <Pencil />
         Edit
       </Button>
-      <LifecycleButtons
-        kind="projects"
-        label="project"
-        id={project.id}
-        name={project.name}
-        state={project.state}
-        updatedAt={project.updatedAt}
-        {...(onArchived ? { onArchived } : {})}
-      />
       <ProjectEditDialog open={edit} onOpenChange={setEdit} project={project} />
+    </>
+  );
+}
+
+/**
+ * The project header's ⋯ menu: benefits handover, archive, and close (or reopen). Close and archive
+ * need manager in the workspace; the handover needs edit rights on the project.
+ */
+export function ProjectMoreMenu({
+  project,
+  canHandover,
+  onHandover,
+  onArchived,
+  className,
+}: {
+  project: ProjectSummary;
+  canHandover: boolean;
+  onHandover: () => void;
+  onArchived?: () => void;
+  className?: string;
+}) {
+  const mutations = useEntityMutations();
+  const allowed = useCan("manager", project.workspaceId);
+  const [closing, setClosing] = useState(false),
+    [archiving, setArchiving] = useState(false);
+  if (!allowed && !canHandover) return null;
+  const lastSeen = project.updatedAt;
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="sm" variant="outline" className={className} aria-label="More actions">
+            <MoreHorizontal />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-52">
+          {canHandover && (
+            <DropdownMenuItem onSelect={onHandover}>
+              <PackageCheck />
+              Benefits handover
+            </DropdownMenuItem>
+          )}
+          {allowed && (
+            <>
+              {canHandover && <DropdownMenuSeparator />}
+              <DropdownMenuItem onSelect={() => setArchiving(true)}>
+                <Archive />
+                Archive project
+              </DropdownMenuItem>
+              {project.state === "Closed" ? (
+                <DropdownMenuItem
+                  disabled={mutations.reopen.isPending}
+                  onSelect={() =>
+                    mutations.reopen.mutate(
+                      { kind: "projects", id: project.id, lastSeen },
+                      { onError: fail },
+                    )
+                  }
+                >
+                  <RotateCcw />
+                  Reopen project
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onSelect={() => setClosing(true)}
+                >
+                  <CircleSlash />
+                  Close project
+                </DropdownMenuItem>
+              )}
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <CloseDialog
+        open={closing}
+        onOpenChange={setClosing}
+        kind="project"
+        name={project.name}
+        onConfirm={(reason) =>
+          mutations.close.mutate(
+            { kind: "projects", id: project.id, reason, lastSeen },
+            { onError: fail },
+          )
+        }
+      />
+      <ArchiveDialog
+        open={archiving}
+        onOpenChange={setArchiving}
+        kind="project"
+        name={project.name}
+        onConfirm={() =>
+          mutations.archive.mutate(
+            { kind: "projects", id: project.id, lastSeen },
+            {
+              onError: fail,
+              onSuccess: () => {
+                toast.success(`${project.name} archived`);
+                onArchived?.();
+              },
+            },
+          )
+        }
+      />
     </>
   );
 }
