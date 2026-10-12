@@ -86,6 +86,8 @@ export interface ProjectHealth {
   benefit: Health;
   isOverridden: boolean;
   forecastFinishDate: string | null;
+  /** Forecast finish against baseline on the schedule tolerance (v_project_health). */
+  finishSlip: Health;
 }
 
 export interface ProjectSummary {
@@ -326,7 +328,7 @@ async function loadProjectContext(orgId: string, projectIds?: string[]) {
       supabase
         .from("v_project_health")
         .select(
-          "project_id, overall, schedule, financial, effort, issue, benefit, is_overridden, forecast_finish_date",
+          "project_id, overall, schedule, financial, effort, issue, benefit, is_overridden, forecast_finish_date, finish_slip_health",
         )
         .eq("organisation_id", orgId),
     ),
@@ -432,6 +434,7 @@ function toProjectSummary(
       benefit: toHealth(health?.benefit),
       isOverridden: health?.is_overridden ?? false,
       forecastFinishDate: health?.forecast_finish_date ?? null,
+      finishSlip: toHealth(health?.finish_slip_health),
     },
     taskCount: stats?.task_count ?? 0,
     overdueTaskCount: stats?.overdue_count ?? 0,
