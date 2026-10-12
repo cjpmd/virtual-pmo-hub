@@ -11,7 +11,9 @@ import {
   listPeople,
   listPhases,
   listPortfolios,
+  listProgrammeNames,
   listProgrammes,
+  listProjectNames,
   listProjects,
 } from "@/services/hierarchy";
 import { loadPortfolioOverview } from "@/services/analytics";
@@ -26,6 +28,28 @@ import { qk } from "@/services/query-keys";
 export function usePortfolios() {
   const orgId = useOrgId();
   return useQuery({ queryKey: qk.portfolios.list(orgId), queryFn: () => listPortfolios(orgId) });
+}
+
+/** Portfolios without health (names, state, owner): for the shell and the portfolio picker. */
+export function usePortfolioNames() {
+  const orgId = useOrgId();
+  return useQuery({
+    queryKey: qk.portfolios.names(orgId),
+    queryFn: () => listPortfolios(orgId, { withHealth: false }),
+  });
+}
+
+export function useProgrammeNames() {
+  const orgId = useOrgId();
+  return useQuery({
+    queryKey: qk.programmes.names(orgId),
+    queryFn: () => listProgrammeNames(orgId),
+  });
+}
+
+export function useProjectNames() {
+  const orgId = useOrgId();
+  return useQuery({ queryKey: qk.projects.names(orgId), queryFn: () => listProjectNames(orgId) });
 }
 
 export function useProgrammes() {

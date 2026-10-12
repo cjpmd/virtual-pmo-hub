@@ -14,6 +14,7 @@ export const qk = {
   portfolios: {
     all: (orgId: string) => ["org", orgId, "portfolios"] as const,
     list: (orgId: string) => ["org", orgId, "portfolios", "list"] as const,
+    names: (orgId: string) => ["org", orgId, "portfolios", "names"] as const,
     health: (orgId: string) => ["org", orgId, "portfolios", "health"] as const,
     overview: (orgId: string, portfolioId: string) =>
       ["org", orgId, "portfolios", "overview", portfolioId] as const,
@@ -23,6 +24,7 @@ export const qk = {
   programmes: {
     all: (orgId: string) => ["org", orgId, "programmes"] as const,
     list: (orgId: string) => ["org", orgId, "programmes", "list"] as const,
+    names: (orgId: string) => ["org", orgId, "programmes", "names"] as const,
     detail: (orgId: string, programmeId: string) =>
       ["org", orgId, "programmes", "detail", programmeId] as const,
     financials: (orgId: string, programmeId: string) =>
@@ -31,6 +33,7 @@ export const qk = {
   projects: {
     all: (orgId: string) => ["org", orgId, "projects"] as const,
     list: (orgId: string) => ["org", orgId, "projects", "list"] as const,
+    names: (orgId: string) => ["org", orgId, "projects", "names"] as const,
     detail: (orgId: string, code: string) => ["org", orgId, "projects", "detail", code] as const,
     milestones: (orgId: string, projectId: string) =>
       ["org", orgId, "projects", projectId, "milestones"] as const,
@@ -44,6 +47,8 @@ export const qk = {
     pack: (orgId: string, projectIds: string[]) =>
       ["org", orgId, "projects", "pack", [...projectIds].sort().join(",")] as const,
     assurance: (orgId: string) => ["org", orgId, "projects", "assurance"] as const,
+    projectAssurance: (orgId: string, projectId: string) =>
+      ["org", orgId, "projects", "assurance", projectId] as const,
     allTasks: (orgId: string) => ["org", orgId, "projects", "all-tasks"] as const,
     tasks: (orgId: string, projectId: string) =>
       ["org", orgId, "projects", projectId, "tasks"] as const,

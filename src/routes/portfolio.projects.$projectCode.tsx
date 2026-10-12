@@ -31,7 +31,7 @@ import {
   useMilestones,
   usePeople,
   usePhases,
-  usePortfolios,
+  usePortfolioNames,
   useProject,
   useRaid,
   useProjectPermissions,
@@ -49,7 +49,7 @@ import {
 } from "@/lib/project-tabs";
 import { daysFromToday, todayIso } from "@/lib/today";
 import { cn } from "@/lib/utils";
-import { useAssurance } from "@/hooks/use-assurance";
+import { useProjectAssurance } from "@/hooks/use-assurance";
 import { useStatusReports } from "@/hooks/use-status-reports";
 import { scopedTo, type ResolvedDecision } from "@/services/decisions";
 import { useGovernance } from "@/hooks/use-governance";
@@ -171,7 +171,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
 
   // ---- From Supabase ----
   const phases = usePhases();
-  const portfolios = usePortfolios();
+  const portfolios = usePortfolioNames();
   const people = usePeople();
   const raid = useRaid(project.id);
   const milestones = useMilestones([project.id], project.id);
@@ -211,8 +211,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
       ? hasPhaseLessonsReview(lessonsData.data, project.id, currentPhaseId)
       : false;
   const projectTypeTags = Array.from(new Set(lessons.flatMap((lesson) => lesson.projectTypeTags)));
-  const assuranceRows = useAssurance();
-  const assurance = assuranceRows.data?.find((item) => item.projectId === project.id);
+  const assurance = useProjectAssurance(project).data ?? undefined;
   const elapsed = (() => {
     const fromStart = daysFromToday(project.startDate),
       toFinish = daysFromToday(project.finishDate);

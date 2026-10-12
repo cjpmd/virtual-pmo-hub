@@ -3,7 +3,7 @@
 // correctness, so a blocked or empty store falls back to the first open portfolio.
 import { useCallback, useSyncExternalStore } from "react";
 import { useOrgId } from "@/components/auth/organisation-provider";
-import { usePortfolios } from "@/hooks/use-hierarchy";
+import { usePortfolioNames } from "@/hooks/use-hierarchy";
 
 const key = (orgId: string) => `vpmo.portfolio.${orgId}`;
 const listeners = new Set<() => void>();
@@ -35,7 +35,8 @@ const subscribe = (listener: () => void) => {
 /** The selected portfolio, or the first open one. Undefined while portfolios load. */
 export function useCurrentPortfolio() {
   const orgId = useOrgId();
-  const portfolios = usePortfolios();
+  // Names only: the shell reads this on every page; health comes from usePortfolios where shown.
+  const portfolios = usePortfolioNames();
   const stored = useSyncExternalStore(
     subscribe,
     () => remembered.get(orgId) ?? read(orgId),
