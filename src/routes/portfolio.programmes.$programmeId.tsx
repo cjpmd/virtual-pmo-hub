@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import {
   useMilestones,
   usePeople,
-  usePortfolios,
+  usePortfolioNames,
   useProgramme,
   useProjects,
 } from "@/hooks/use-hierarchy";
@@ -83,7 +83,7 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
   const settings = useSettings();
   const format = useFormat();
   const [tab, setTab] = useState("overview");
-  const portfolios = usePortfolios();
+  const portfolios = usePortfolioNames();
   const allProjects = useProjects();
   const people = usePeople();
   const projects = useMemo(

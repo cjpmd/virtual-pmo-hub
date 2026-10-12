@@ -32,7 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SectionTabs } from "@/components/section-nav";
 import { ShellSlotsContext } from "@/components/shell-slots-context";
-import { useProgrammes, useProjects } from "@/hooks/use-hierarchy";
+import { useProgrammeNames, useProjectNames } from "@/hooks/use-hierarchy";
 import { useFavourites } from "@/hooks/use-favourites";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
@@ -77,8 +77,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [inbox, setInbox] = useState(false);
   const [palette, setPalette] = useState(false);
   const [query, setQuery] = useState("");
-  const projectList = useProjects().data ?? [];
-  const programmeList = useProgrammes().data ?? [];
+  const projectList = useProjectNames().data ?? [];
+  const programmeList = useProgrammeNames().data ?? [];
   const { favourites: favouriteRows } = useFavourites();
   const favourites = favouriteRows.flatMap(
     (row): Array<{ id: string; type: "Project" | "Programme"; label: string; key: string }> => {

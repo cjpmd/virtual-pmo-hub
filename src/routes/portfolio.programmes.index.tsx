@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/pmo-ui";
 import { NewProgrammeButton } from "@/components/entity-management";
 import { QueryError, QueryState } from "@/components/query-state";
 import { AutoBreadcrumbs } from "@/components/section-nav";
-import { usePortfolios, useProgrammes, useProjects } from "@/hooks/use-hierarchy";
+import { usePortfolioNames, useProgrammes, useProjects } from "@/hooks/use-hierarchy";
 
 export const Route = createFileRoute("/portfolio/programmes/")({
   head: () => ({
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/portfolio/programmes/")({
 });
 
 function Programmes() {
-  const portfolios = usePortfolios();
+  const portfolios = usePortfolioNames();
   const programmes = useProgrammes();
   const projects = useProjects();
   const portfolioName = portfolios.data?.map((item) => item.name).join(", ");

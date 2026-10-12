@@ -11770,6 +11770,7 @@ export type Database = {
         Row: {
           benefit: Database["public"]["Enums"]["health"] | null
           benefit_reason: string | null
+          code: string | null
           computed_overall: Database["public"]["Enums"]["health"] | null
           effective_portfolio_id: string | null
           effort: Database["public"]["Enums"]["health"] | null
@@ -11781,9 +11782,11 @@ export type Database = {
           issue: Database["public"]["Enums"]["health"] | null
           organisation_id: string | null
           overall: Database["public"]["Enums"]["health"] | null
+          phase_index: number | null
           programme_id: string | null
           project_id: string | null
           schedule: Database["public"]["Enums"]["health"] | null
+          state: Database["public"]["Enums"]["project_state"] | null
           workspace_id: string | null
         }
         Relationships: [

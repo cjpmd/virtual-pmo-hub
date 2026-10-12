@@ -1,4 +1,4 @@
--- PROPOSAL (not applied). Performance pass on the shell health views (v_portfolio_health,
+-- Performance pass on the shell health views (v_portfolio_health,
 -- v_programme_health). Measured 12/10/2026 as vpmo-test-member (contributor) through RLS.
 --
 -- ===================================================================================== FINDINGS
@@ -75,6 +75,7 @@
 --    Needs a decision on freshness (synchronous refresh in the write vs a short-lag job).
 --
 -- ================================================================================ A1 SQL (DDL)
+-- A1 applied 12/10/2026 (migration perf_shell_views_a1); A2 + A3 committed; B deferred.
 
 create or replace view public.v_project_health with (security_invoker = true) as
 with delivery as materialized (

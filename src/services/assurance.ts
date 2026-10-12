@@ -4,7 +4,7 @@
 // project names on and reshapes rows for the screens.
 import type { Health } from "@/data/types";
 import { supabase } from "@/integrations/supabase/client";
-import { listProjects } from "./hierarchy";
+import { listProjects, type ProjectSummary } from "./hierarchy";
 import { toHealth, type ProjectStateLabel } from "./labels";
 import { unwrap } from "./service-error";
 import { insertRow } from "./write";
@@ -40,16 +40,81 @@ export interface AssuranceRow {
   riskScore: number;
 }
 
+const DIVERGENCE_COLUMNS =
+  "project_id, declared, evidenced, divergent, divergence_kind, divergence_days, divergence_alert, justified, justification, justification_at, latest_report_id, divergent_prev_month_end, last_report_date, next_report_due, report_overdue, finish_vs_baseline_days, risk_score";
+
+type DivergenceRow = {
+  declared: Parameters<typeof toHealth>[0];
+  evidenced: Parameters<typeof toHealth>[0];
+  divergent: boolean | null;
+  divergence_kind: string | null;
+  divergence_days: number | null;
+  divergence_alert: boolean | null;
+  justified: boolean | null;
+  justification: string | null;
+  justification_at: string | null;
+  latest_report_id: string | null;
+  divergent_prev_month_end: boolean | null;
+  last_report_date: string | null;
+  next_report_due: string | null;
+  report_overdue: boolean | null;
+  finish_vs_baseline_days: number | null;
+  risk_score: number | null;
+};
+
+const toAssuranceRow = (
+  project: ProjectSummary,
+  row: DivergenceRow,
+  forecastFinishDate: string | null,
+): AssuranceRow => ({
+  projectId: project.id,
+  code: project.code,
+  name: project.name,
+  programme: project.programmeId ? project.programmeName : "Direct",
+  programmeId: project.programmeId,
+  state: project.state,
+  declared: row.declared ? toHealth(row.declared) : null,
+  evidenced: toHealth(row.evidenced),
+  divergent: Boolean(row.divergent),
+  divergenceKind: (row.divergence_kind as DivergenceKind | null) ?? null,
+  divergenceDays: row.divergence_days ?? 0,
+  divergenceAlert: Boolean(row.divergence_alert),
+  justified: Boolean(row.justified),
+  justification: row.justification,
+  justificationAt: row.justification_at,
+  latestReportId: row.latest_report_id,
+  divergentPrevMonthEnd: row.divergent_prev_month_end,
+  lastReportDate: row.last_report_date,
+  nextReportDue: row.next_report_due,
+  reportOverdue: Boolean(row.report_overdue),
+  forecastFinishDate,
+  finishVsBaselineDays: row.finish_vs_baseline_days,
+  riskScore: row.risk_score ?? 0,
+});
+
+/**
+ * One project's row, for the project header. Reads only that project's v_project_divergence row
+ * (the project page already has the project itself), so it doesn't reload every project.
+ */
+export async function loadProjectAssurance(
+  orgId: string,
+  project: ProjectSummary,
+): Promise<AssuranceRow | null> {
+  const { data, error } = await supabase
+    .from("v_project_divergence")
+    .select(DIVERGENCE_COLUMNS)
+    .eq("organisation_id", orgId)
+    .eq("project_id", project.id)
+    .maybeSingle();
+  if (error) unwrap({ data, error }, "Loading assurance");
+  return data ? toAssuranceRow(project, data, project.health.forecastFinishDate) : null;
+}
+
 /** One row per non-archived project, highest assurance risk first. */
 export async function loadAssurance(orgId: string): Promise<AssuranceRow[]> {
   const [projects, divergence, health] = await Promise.all([
     listProjects(orgId),
-    supabase
-      .from("v_project_divergence")
-      .select(
-        "project_id, declared, evidenced, divergent, divergence_kind, divergence_days, divergence_alert, justified, justification, justification_at, latest_report_id, divergent_prev_month_end, last_report_date, next_report_due, report_overdue, finish_vs_baseline_days, risk_score",
-      )
-      .eq("organisation_id", orgId),
+    supabase.from("v_project_divergence").select(DIVERGENCE_COLUMNS).eq("organisation_id", orgId),
     supabase
       .from("v_project_health")
       .select("project_id, forecast_finish_date")
@@ -66,33 +131,7 @@ export async function loadAssurance(orgId: string): Promise<AssuranceRow[]> {
     .flatMap((project): AssuranceRow[] => {
       const row = byId.get(project.id);
       if (!row) return [];
-      return [
-        {
-          projectId: project.id,
-          code: project.code,
-          name: project.name,
-          programme: project.programmeId ? project.programmeName : "Direct",
-          programmeId: project.programmeId,
-          state: project.state,
-          declared: row.declared ? toHealth(row.declared) : null,
-          evidenced: toHealth(row.evidenced),
-          divergent: Boolean(row.divergent),
-          divergenceKind: (row.divergence_kind as DivergenceKind | null) ?? null,
-          divergenceDays: row.divergence_days ?? 0,
-          divergenceAlert: Boolean(row.divergence_alert),
-          justified: Boolean(row.justified),
-          justification: row.justification,
-          justificationAt: row.justification_at,
-          latestReportId: row.latest_report_id,
-          divergentPrevMonthEnd: row.divergent_prev_month_end,
-          lastReportDate: row.last_report_date,
-          nextReportDue: row.next_report_due,
-          reportOverdue: Boolean(row.report_overdue),
-          forecastFinishDate: finish.get(project.id) ?? null,
-          finishVsBaselineDays: row.finish_vs_baseline_days,
-          riskScore: row.risk_score ?? 0,
-        },
-      ];
+      return [toAssuranceRow(project, row, finish.get(project.id) ?? null)];
     })
     .sort((a, b) => b.riskScore - a.riskScore || a.name.localeCompare(b.name));
 }

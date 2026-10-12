@@ -192,7 +192,15 @@ export async function listPhases(orgId: string): Promise<Phase[]> {
 
 // ---- Portfolios and programmes ------------------------------------------------------
 
-export async function listPortfolios(orgId: string): Promise<PortfolioSummary[]> {
+/**
+ * Portfolios in the organisation. withHealth = false skips v_portfolio_health (health is then
+ * "Not Set"): the shell and the portfolio picker only need names, and the health view is the
+ * most expensive read in the app.
+ */
+export async function listPortfolios(
+  orgId: string,
+  { withHealth = true }: { withHealth?: boolean } = {},
+): Promise<PortfolioSummary[]> {
   const [portfolios, health, people] = await Promise.all([
     supabase
       .from("portfolios")
@@ -202,10 +210,12 @@ export async function listPortfolios(orgId: string): Promise<PortfolioSummary[]>
       .eq("organisation_id", orgId)
       .is("archived_at", null)
       .order("name"),
-    supabase
-      .from("v_portfolio_health")
-      .select("portfolio_id, overall")
-      .eq("organisation_id", orgId),
+    withHealth
+      ? supabase
+          .from("v_portfolio_health")
+          .select("portfolio_id, overall")
+          .eq("organisation_id", orgId)
+      : Promise.resolve({ data: [], error: null }),
     listPeople(orgId),
   ]);
   const byId = new Map(people.map((p) => [p.id, p]));
@@ -225,6 +235,42 @@ export async function listPortfolios(orgId: string): Promise<PortfolioSummary[]>
     health: toHealth(healthById.get(row.id)),
     updatedAt: row.updated_at,
   }));
+}
+
+export interface NamedEntity {
+  id: string;
+  code: string | null;
+  name: string;
+}
+
+/** Names only, for the shell (search, favourites, breadcrumbs): no health views. */
+export async function listProgrammeNames(orgId: string): Promise<NamedEntity[]> {
+  const rows = unwrap(
+    await supabase
+      .from("programmes")
+      .select("id, name")
+      .eq("organisation_id", orgId)
+      .is("archived_at", null)
+      .order("name"),
+    "Loading programmes",
+  );
+  return rows.map((row) => ({ id: row.id, code: null, name: row.name }));
+}
+
+/** Names and codes only, for the shell: no health or financial views. */
+export async function listProjectNames(
+  orgId: string,
+): Promise<Array<NamedEntity & { code: string }>> {
+  const rows = unwrap(
+    await supabase
+      .from("projects")
+      .select("id, code, name")
+      .eq("organisation_id", orgId)
+      .is("archived_at", null)
+      .order("name"),
+    "Loading projects",
+  );
+  return rows.map((row) => ({ id: row.id, code: row.code, name: row.name }));
 }
 
 export async function listProgrammes(orgId: string): Promise<ProgrammeSummary[]> {

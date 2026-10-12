@@ -37,7 +37,7 @@ import type { Priority } from "@/data/types";
 import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
 import { useBenefits } from "@/hooks/use-benefits";
 import { useEntityMutations } from "@/hooks/use-entities";
-import { usePeople, usePhases, usePortfolios, useProgrammes } from "@/hooks/use-hierarchy";
+import { usePeople, usePhases, usePortfolioNames, useProgrammes } from "@/hooks/use-hierarchy";
 import { useCan, useWorkspaceRoles } from "@/hooks/use-permissions";
 import { currencySymbol, formatCurrency } from "@/lib/format";
 import { atLeast } from "@/services/auth";
@@ -409,7 +409,7 @@ export function PortfolioManagerDialog({
   const [editing, setEditing] = useState<PortfolioSummary | undefined>(),
     [formOpen, setFormOpen] = useState(false);
   const { portfolio: current, select } = useCurrentPortfolio();
-  const portfolios = usePortfolios().data ?? [];
+  const portfolios = usePortfolioNames().data ?? [];
   const programmes = useProgrammes().data ?? [];
   const roles = useWorkspaceRoles().data ?? [];
   const pmoWorkspace = roles.find((role) => atLeast(role.role, "pmo"))?.workspaceId;
@@ -526,7 +526,7 @@ export function ProgrammeFormDialog({
 }) {
   const mutations = useEntityMutations();
   const { portfolio } = useCurrentPortfolio();
-  const portfolios = (usePortfolios().data ?? []).filter(
+  const portfolios = (usePortfolioNames().data ?? []).filter(
     (item) => item.state === "Active" || item.id === programme?.portfolioId,
   );
   const [d, set] = useDraft(open, () => ({
