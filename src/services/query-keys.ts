@@ -96,4 +96,6 @@ export const qk = {
   favourites: (orgId: string) => ["org", orgId, "favourites"] as const,
   workspaceRoles: (orgId: string) => ["org", orgId, "workspace-roles"] as const,
   phases: (orgId: string) => ["org", orgId, "phases"] as const,
+  /** When stored health was last refreshed (max computed_at). */
+  healthComputedAt: (orgId: string) => ["org", orgId, "health-computed-at"] as const,
 } as const;

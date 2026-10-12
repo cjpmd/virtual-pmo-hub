@@ -3,6 +3,7 @@
 // (docs/design/project-overview-design.html). Every RAG here comes from the v_* views:
 // declared/evidenced/divergence from v_project_divergence (AssuranceRow), the dimensions and the
 // forecast finish from v_project_health. This file only composes and formats.
+import { HealthUpdating } from "@/components/health-updating";
 import { useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, Check, ListPlus } from "lucide-react";
@@ -366,7 +367,10 @@ function HealthBar({
       className="my-4 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-pmo-line bg-pmo-line md:grid-cols-4 xl:grid-cols-[minmax(260px,1.4fr)_repeat(4,minmax(0,1fr))]"
     >
       <div className="col-span-2 min-w-0 bg-pmo-panel-2 px-3.5 py-2.5 md:col-span-4 xl:col-span-1">
-        <dt className="text-xs text-pmo-muted">Overall</dt>
+        <dt className="flex flex-wrap items-center justify-between gap-2 text-xs text-pmo-muted">
+          Overall
+          <HealthUpdating className="text-pmo-muted" />
+        </dt>
         <dd className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] font-medium">
           {assurance ? (
             <>

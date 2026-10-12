@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { HealthUpdating } from "@/components/health-updating";
 import { UserRound } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AssumptionsWorkspace } from "@/components/assumptions-workspace";
@@ -132,6 +133,7 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
           health={
             <div className="flex items-center gap-3">
               <HealthPill health={programme.health} />
+              <HealthUpdating className="text-muted-foreground" />
               <FavouriteButton target={{ programmeId: programme.id }} />
               <ProgrammeActions
                 programme={programme}
