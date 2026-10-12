@@ -4,7 +4,7 @@
 // from the views, which PostgREST can't embed.
 import type { Priority, RoadmapHealth, RoadmapKeyDate } from "@/data/types";
 import { supabase } from "@/integrations/supabase/client";
-import { listPeople } from "./hierarchy";
+import { listPeople, programmeRefs, projectRefs } from "./hierarchy";
 import { milestoneStatusLabel, priorityLabel } from "./labels";
 import { unwrap } from "./service-error";
 import { updateRow } from "./write";
@@ -97,8 +97,8 @@ export async function listRoadmaps(orgId: string): Promise<RoadmapView[]> {
       .select("roadmap_item_id, collection_id")
       .eq("organisation_id", orgId),
     supabase.from("collections").select("id, name").eq("organisation_id", orgId),
-    supabase.from("v_projects").select("id, code, manager_id").eq("organisation_id", orgId),
-    supabase.from("programmes").select("id, name").eq("organisation_id", orgId),
+    projectRefs(orgId),
+    programmeRefs(orgId),
     // updated_at for standalone items, which can be rescheduled by dragging.
     supabase.from("roadmap_items").select("id, updated_at").eq("organisation_id", orgId),
     listPeople(orgId),

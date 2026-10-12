@@ -8,8 +8,8 @@ import {
   getProgramme,
   getProjectByCode,
   getProjectPermissions,
-  listPeople,
-  listPhases,
+  fetchPeople,
+  fetchPhases,
   listPortfolios,
   listProgrammeNames,
   listProgrammes,
@@ -50,6 +50,15 @@ export function useProgrammeNames() {
 export function useProjectNames() {
   const orgId = useOrgId();
   return useQuery({ queryKey: qk.projects.names(orgId), queryFn: () => listProjectNames(orgId) });
+}
+
+/** Programmes without health: for pickers and counts that only need names and portfolios. */
+export function useProgrammesLight() {
+  const orgId = useOrgId();
+  return useQuery({
+    queryKey: qk.programmes.light(orgId),
+    queryFn: () => listProgrammes(orgId, { withHealth: false }),
+  });
 }
 
 export function useProgrammes() {
@@ -94,7 +103,7 @@ export function usePeople() {
   const orgId = useOrgId();
   return useQuery({
     queryKey: qk.resources.list(orgId),
-    queryFn: () => listPeople(orgId),
+    queryFn: () => fetchPeople(orgId),
     staleTime: 5 * 60_000,
   });
 }
@@ -103,7 +112,7 @@ export function usePhases() {
   const orgId = useOrgId();
   return useQuery({
     queryKey: qk.phases(orgId),
-    queryFn: () => listPhases(orgId),
+    queryFn: () => fetchPhases(orgId),
     staleTime: 10 * 60_000,
   });
 }

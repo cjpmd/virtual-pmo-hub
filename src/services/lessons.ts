@@ -8,7 +8,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate, toIsoDate } from "@/lib/format";
 import { daysFromToday, todayIso } from "@/lib/today";
-import { listPeople, listPhases, type Person, type Phase } from "./hierarchy";
+import { listPeople, listPhases, type Person, type Phase, projectRefs } from "./hierarchy";
 import { projectStateLabel, type ProjectStateLabel } from "./labels";
 import { unwrap } from "./service-error";
 import { insertRow, insertRows, updateRow } from "./write";
@@ -157,11 +157,7 @@ export async function loadLessons(orgId: string): Promise<LessonsData> {
       .eq("organisation_id", orgId)
       .in("list_key", ["lesson_category", "project_type"])
       .order("sort_order"),
-    supabase
-      .from("v_projects")
-      .select("id, code, name, state, phase_index, phase_id")
-      .eq("organisation_id", orgId)
-      .order("name"),
+    projectRefs(orgId),
     listPhases(orgId),
     listPeople(orgId),
   ]);

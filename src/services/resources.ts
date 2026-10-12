@@ -5,6 +5,7 @@
 // team members and projects are read in parallel. The view models keep the prototype's
 // shapes (DD/MM/YYYY dates on the planning grid), and every calculation below is pure, so
 // the allocation grid, dashboard, scenarios and project team all count the same way.
+import { programmeRefs } from "./hierarchy";
 import type { Database } from "@/integrations/supabase/types";
 import type {
   BookingType,
@@ -106,7 +107,7 @@ export async function loadResources(orgId: string): Promise<ResourceData> {
       .eq("organisation_id", orgId)
       .is("archived_at", null)
       .order("name"),
-    supabase.from("programmes").select("id, name").eq("organisation_id", orgId).order("name"),
+    programmeRefs(orgId),
     supabase
       .from("lookup_values")
       .select("id, label")

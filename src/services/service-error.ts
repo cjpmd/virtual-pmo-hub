@@ -11,6 +11,7 @@ export type ServiceErrorKind =
   | "invalid" // check constraint, foreign key or a rule enforced by a trigger
   | "network" // the request did not reach the server
   | "timeout" // the database gave up (statement timeout) or the gateway did
+  | "cancelled" // the read was abandoned because the person left the page
   | "unknown";
 
 export class ServiceError extends Error {
@@ -39,6 +40,7 @@ const messages: Record<ServiceErrorKind, string> = {
   invalid: "That change isn't valid.",
   network: "We couldn't reach the server. Check your connection and try again.",
   timeout: "This is taking too long — please try again.",
+  cancelled: "Loading was cancelled.",
   unknown: "Something went wrong. Please try again.",
 };
 
@@ -77,6 +79,7 @@ export function fromPostgrest(
     kind = "invalid";
   else if (code === "P0001")
     kind = "invalid"; // raise exception in a trigger: its text is meant for people
+  else if (!code && /AbortError/i.test(error.message ?? "")) kind = "cancelled";
   else if (!code && /fetch|network/i.test(error.message)) kind = "network";
   // PostgREST answers a statement timeout with HTTP 500; a gateway timeout is 504.
   else if (status === 500 || status === 504) kind = "timeout";

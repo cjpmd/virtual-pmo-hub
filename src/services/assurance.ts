@@ -4,7 +4,7 @@
 // project names on and reshapes rows for the screens.
 import type { Health } from "@/data/types";
 import { supabase } from "@/integrations/supabase/client";
-import { listProjects, type ProjectSummary } from "./hierarchy";
+import { sharedProjectList, type ProjectSummary } from "./hierarchy";
 import { toHealth, type ProjectStateLabel } from "./labels";
 import { unwrap } from "./service-error";
 import { insertRow } from "./write";
@@ -112,26 +112,19 @@ export async function loadProjectAssurance(
 
 /** One row per non-archived project, highest assurance risk first. */
 export async function loadAssurance(orgId: string): Promise<AssuranceRow[]> {
-  const [projects, divergence, health] = await Promise.all([
-    listProjects(orgId),
-    supabase.from("v_project_divergence").select(DIVERGENCE_COLUMNS).eq("organisation_id", orgId),
-    supabase
-      .from("v_project_health")
-      .select("project_id, forecast_finish_date")
-      .eq("organisation_id", orgId),
-  ]);
+  // The project list is a shared read (the overview loads it too) and already carries
+  // v_project_health.forecast_finish_date, so no second health read here.
+  const projects = await sharedProjectList(orgId);
+  const divergence = await supabase
+    .from("v_project_divergence")
+    .select(DIVERGENCE_COLUMNS)
+    .eq("organisation_id", orgId);
   const byId = new Map(unwrap(divergence, "Loading assurance").map((row) => [row.project_id, row]));
-  const finish = new Map(
-    unwrap(health, "Loading project health").map((row) => [
-      row.project_id,
-      row.forecast_finish_date,
-    ]),
-  );
   return projects
     .flatMap((project): AssuranceRow[] => {
       const row = byId.get(project.id);
       if (!row) return [];
-      return [toAssuranceRow(project, row, finish.get(project.id) ?? null)];
+      return [toAssuranceRow(project, row, project.health.forecastFinishDate)];
     })
     .sort((a, b) => b.riskScore - a.riskScore || a.name.localeCompare(b.name));
 }

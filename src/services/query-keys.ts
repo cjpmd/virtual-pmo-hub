@@ -25,6 +25,10 @@ export const qk = {
     all: (orgId: string) => ["org", orgId, "programmes"] as const,
     list: (orgId: string) => ["org", orgId, "programmes", "list"] as const,
     names: (orgId: string) => ["org", orgId, "programmes", "names"] as const,
+    /** Every programme (archived too): id, name. Shared reference read for services. */
+    refs: (orgId: string) => ["org", orgId, "programmes", "refs"] as const,
+    /** Programme list without health (pickers and counts). */
+    light: (orgId: string) => ["org", orgId, "programmes", "light"] as const,
     detail: (orgId: string, programmeId: string) =>
       ["org", orgId, "programmes", "detail", programmeId] as const,
     financials: (orgId: string, programmeId: string) =>
@@ -34,6 +38,8 @@ export const qk = {
     all: (orgId: string) => ["org", orgId, "projects"] as const,
     list: (orgId: string) => ["org", orgId, "projects", "list"] as const,
     names: (orgId: string) => ["org", orgId, "projects", "names"] as const,
+    /** Every visible project's reference columns (v_projects). Shared reference read. */
+    refs: (orgId: string) => ["org", orgId, "projects", "refs"] as const,
     detail: (orgId: string, code: string) => ["org", orgId, "projects", "detail", code] as const,
     milestones: (orgId: string, projectId: string) =>
       ["org", orgId, "projects", projectId, "milestones"] as const,

@@ -9,7 +9,7 @@
 import type { Health } from "@/data/types";
 import type { Database } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
-import { listPeople, type Person } from "./hierarchy";
+import { listPeople, type Person, projectRefs } from "./hierarchy";
 import { toHealth } from "./labels";
 import { fromPostgrest, ServiceError, unwrap } from "./service-error";
 import { deleteRows, deleteWhere, insertRow, insertRows, updateRow } from "./write";
@@ -252,11 +252,7 @@ export async function loadPathway(orgId: string): Promise<PathwayData> {
       .eq("organisation_id", orgId)
       .neq("status", "closed")
       .order("ref"),
-    supabase
-      .from("v_projects")
-      .select("id, code, name, programme_id, state")
-      .eq("organisation_id", orgId)
-      .order("name"),
+    projectRefs(orgId),
     supabase
       .from("programmes")
       .select("id, name, workspace_id")
