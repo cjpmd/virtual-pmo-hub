@@ -3,6 +3,7 @@
 // portfolios need PMO; programmes and projects need manager in the workspace.
 import { useEffect, useState, type ReactNode } from "react";
 import {
+  AlertTriangle,
   Archive,
   Check,
   CircleSlash,
@@ -34,11 +35,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Priority } from "@/data/types";
 import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
+import { useBenefits } from "@/hooks/use-benefits";
 import { useEntityMutations } from "@/hooks/use-entities";
 import { usePeople, usePhases, usePortfolios, useProgrammes } from "@/hooks/use-hierarchy";
 import { useCan, useWorkspaceRoles } from "@/hooks/use-permissions";
 import { currencySymbol, formatCurrency } from "@/lib/format";
 import { atLeast } from "@/services/auth";
+import { getHandoverCandidates } from "@/services/benefits-value";
 import type { Kind } from "@/services/entities";
 import type { PortfolioSummary, ProgrammeSummary, ProjectSummary } from "@/services/hierarchy";
 import type { ProjectStateLabel } from "@/services/labels";
@@ -122,12 +125,15 @@ export function CloseDialog({
   kind,
   name,
   onConfirm,
+  warning,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   kind: string;
   name: string;
   onConfirm: (reason: string) => void;
+  /** Shown above the reason; never blocks closing. */
+  warning?: ReactNode;
 }) {
   const [reason, setReason] = useState("");
   useEffect(() => {
@@ -143,6 +149,7 @@ export function CloseDialog({
             it later.
           </DialogDescription>
         </DialogHeader>
+        {warning}
         <Field label="Reason for closing" required>
           <Textarea
             value={reason}
@@ -898,6 +905,24 @@ export function ProgrammeActions({
     </div>
   );
 }
+/** Warns (without blocking) when open benefits on the project have no BAU handover yet. */
+function HandoverWarning({ projectId }: { projectId: string }) {
+  const benefits = useBenefits();
+  if (!benefits.data) return null;
+  const pending = getHandoverCandidates(benefits.data, projectId).filter((b) => !b.handover);
+  if (!pending.length) return null;
+  return (
+    <p className="flex items-start gap-2 rounded-md border border-health-warn/40 bg-health-warn/10 p-3 text-sm">
+      <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0 text-health-warn-foreground" />
+      <span>
+        <span className="font-medium">Benefits handover not complete.</span> {pending.length}{" "}
+        benefit{pending.length === 1 ? " has" : "s have"} no BAU owner confirmed yet. You can still
+        close the project; finish the handover from the ⋯ menu.
+      </span>
+    </p>
+  );
+}
+
 /** Edit button for the project header; managers and above only (RLS is the real check). */
 export function ProjectEditAction({
   project,
@@ -996,6 +1021,7 @@ export function ProjectMoreMenu({
         onOpenChange={setClosing}
         kind="project"
         name={project.name}
+        warning={closing ? <HandoverWarning projectId={project.id} /> : null}
         onConfirm={(reason) =>
           mutations.close.mutate(
             { kind: "projects", id: project.id, reason, lastSeen },

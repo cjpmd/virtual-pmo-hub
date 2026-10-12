@@ -1,173 +1,199 @@
--- PROPOSAL (not applied). Stage 1 header: finish_slip_health on v_project_divergence.
+-- PROPOSAL. Stage 1 header: finish_slip_health, computed once in v_project_delivery_health.
 -- The header shows "N days late" under Forecast finish in amber or red per the schedule
--- tolerance. That colour is a RAG decision, so it comes from the view, not the browser.
--- Trailing column (create or replace view keeps every existing column in place):
---   finish_slip_health  not_set  no forecast finish or no baseline finish
---                       green    forecast finish on or before baseline finish
---                       red      late by more than scheduleSlipPercent of the baseline duration
---                                (the same sum as the schedule rule in v_project_delivery_health)
---                       amber    late, within tolerance
--- The proj CTE gains slip_percent; nothing else changes. Non-destructive (no drops).
+-- tolerance. That colour is a RAG decision, so it comes from the views, not the browser.
 --
--- Dry run 12/10/2026 (as a temp view, nothing written): every existing column matched the live
--- view on all 33 non-closed projects. finish_slip_health: ACA, CAIG, IOFTC, W11, DOC, NRDC
--- amber (7 days late, within the 10% tolerance); every other project green; none red today.
--- After approval: apply as migration stage_1_finish_slip_health, regenerate types.
+-- v_project_delivery_health: a new `slip` step works out finish_slip_health for the forecast
+-- finish (latest milestone date if the project has milestones, else the declared finish, the same
+-- date v_project_health.forecast_finish_date shows):
+--   not_set  no forecast finish or no baseline finish
+--   green    on or before the baseline finish
+--   red      late by more than scheduleSlipPercent of the baseline duration
+--   amber    late, within tolerance
+-- The schedule CASE uses it for its forecast-finish clauses instead of repeating the sum:
+--   red    finish_slip_health = 'red'    (was: milestone forecast finish beyond tolerance, or
+--                                          declared finish beyond tolerance)
+--   amber  finish_slip_health = 'amber'  (was: milestone forecast finish after baseline)
+-- The other schedule clauses are unchanged. Behaviour change: for a project with milestones the
+-- declared finish no longer counts separately (the milestone forecast is its forecast finish);
+-- for a project without milestones, a declared finish late within tolerance is now amber.
+-- finish_slip_health is a trailing column on v_project_delivery_health and v_project_health
+-- (v_project_health stores its delivery columns expanded, so it is re-created to carry it).
+-- Both views otherwise unchanged; create or replace only, no drops.
+--
+-- Dry run 12/10/2026 (both views as temp views, compared with the live views by EXCEPT both
+-- ways; nothing written):
+--   every existing column of v_project_delivery_health and v_project_health: 0 rows differ (37/37)
+--   schedule: green 16, amber 14, red 7, live and dry alike (not the 21/11/5 expected; no subset
+--     by state or organisation gives 21/11/5 either) -> not applied, waiting on the user
+--   finish_slip_health: green 29, amber 7 (ACA, CAIG, DOC, IOFTC, NRDC, SFZ, W11), red 1 (FSC)
 
-create or replace view public.v_project_divergence with (security_invoker = true) as
-with proj as (
-  select p.id as project_id, p.organisation_id, p.workspace_id, p.programme_id, p.code, p.state,
-    p.start_date, p.baseline_finish_date, p.reporting_cadence,
-    private.org_today(p.organisation_id) as today,
-    coalesce(private.health_threshold(o.settings, 'divergenceAlertDays'), 14)::integer as alert_days,
-    private.health_threshold(o.settings, 'scheduleSlipPercent') as slip_percent,
-    h.computed_overall as evidenced, h.forecast_finish_date
-  from public.projects p
+create or replace view public.v_project_delivery_health with (security_invoker = true) as
+with base as (
+  select p.*, o.settings, private.org_today(p.organisation_id) as today,
+    s.task_count, s.overdue_count
+  from public.v_projects p
   join public.organisations o on o.id = p.organisation_id
-  join public.v_project_health h on h.project_id = p.id
-  where p.archived_at is null
+  join public.v_project_task_stats s on s.project_id = p.id
 ),
-reports as materialized (
-  select r.id, r.project_id, r.reporting_date, r.overall as declared, r.evidenced_overall,
-    row_number() over (partition by r.project_id order by r.reporting_date desc, r.submitted_at desc) as rn
-  from public.status_reports r
-  where r.status = 'submitted'
+ms as materialized (
+  select m.project_id,
+    bool_or(m.status = 'overdue') as any_forecast_missed,
+    max(m.slip_days) filter (where m.actual_date is null) as worst_open_slip,
+    max(coalesce(m.actual_date, m.forecast_date)) as forecast_finish,
+    count(*) filter (where m.baseline_date > p.baseline_finish_date) as after_baseline_finish
+  from public.v_milestones m
+  join public.projects p on p.id = m.project_id
+  group by m.project_id
 ),
-latest as (
-  select r.id, r.project_id, r.reporting_date, r.declared, r.evidenced_overall
-  from reports r where r.rn = 1
-),
--- The newest justification against the latest submitted report.
-just as (
-  select distinct on (j.status_report_id) j.status_report_id, j.text, j.created_at, j.author_id,
-    j.evidenced_at_time
-  from public.divergence_justifications j
-  order by j.status_report_id, j.created_at desc
-),
-last_two as (
-  select r.project_id,
-    count(*) filter (where r.evidenced_overall > r.declared
-                       and r.declared <> 'not_set' and r.evidenced_overall <> 'not_set') = 2 as both_better
-  from reports r where r.rn <= 2
-  group by r.project_id
-  having count(*) = 2
-),
-days as materialized (
-  select s.project_id, s.snapshot_date,
-    greatest(s.schedule, s.financial, s.effort, s.issue, s.benefit) as evidenced,
-    (select r.declared from reports r
-      where r.project_id = s.project_id and r.reporting_date <= s.snapshot_date
-      order by r.reporting_date desc, r.rn limit 1) as declared
-  from public.health_snapshots s
-  join proj on proj.project_id = s.project_id
-  where s.snapshot_date <= proj.today
-),
-flags as (
-  select d.project_id, d.snapshot_date,
-    (d.declared is not null and d.declared <> 'not_set' and d.evidenced <> 'not_set'
-       and d.evidenced > d.declared) as worse
-  from days d
-),
-runs as (
-  select f.project_id,
-    max(f.snapshot_date) filter (where not f.worse) as last_not_worse,
-    min(f.snapshot_date) filter (where f.worse) as first_worse,
-    max(f.snapshot_date) as last_day
-  from flags f
-  group by f.project_id
-),
-prev as (
-  select proj.project_id,
-    (select greatest(s.schedule, s.financial, s.effort, s.issue, s.benefit)
-       from public.health_snapshots s
-      where s.project_id = proj.project_id
-        and s.snapshot_date <= (date_trunc('month', proj.today) - interval '1 day')::date
-      order by s.snapshot_date desc limit 1) as evidenced,
-    (select r.declared from reports r
-      where r.project_id = proj.project_id
-        and r.reporting_date <= (date_trunc('month', proj.today) - interval '1 day')::date
-      order by r.reporting_date desc, r.rn limit 1) as declared
-  from proj
-),
-base as (
-  select proj.*,
-    l.id as latest_report_id, l.declared, l.reporting_date as last_report_date,
-    jt.text as justification, jt.created_at as justification_at, jt.author_id as justification_author_id,
-    -- Justified until the evidence worsens past what was justified (a new report has no
-    -- justification of its own, so it needs a fresh one).
-    (jt.status_report_id is not null and proj.evidenced <= jt.evidenced_at_time) as justification_holds,
-    (l.declared is not null and l.declared <> 'not_set' and proj.evidenced <> 'not_set'
-       and proj.evidenced > l.declared) as divergent,
-    -- The latest report already declared better than the evidence frozen at its submission.
-    (l.evidenced_overall is not null and l.declared <> 'not_set' and l.evidenced_overall <> 'not_set'
-       and l.evidenced_overall > l.declared) as optimistic_at_submission,
-    coalesce(t.both_better, false) as last_two_better,
-    ru.last_not_worse, ru.first_worse, ru.last_day,
-    case when pv.evidenced is null or pv.declared is null
-              or pv.evidenced = 'not_set' or pv.declared = 'not_set' then null
-         else pv.evidenced > pv.declared end as divergent_prev_month_end,
-    case when proj.state <> 'closed' then
-      (coalesce(l.reporting_date, proj.start_date) + case proj.reporting_cadence
-         when 'weekly' then interval '7 days'
-         when 'fortnightly' then interval '14 days'
-         else interval '1 month' end)::date
-    end as next_report_due
-  from proj
-  left join latest l on l.project_id = proj.project_id
-  left join just jt on jt.status_report_id = l.id
-  left join last_two t on t.project_id = proj.project_id
-  left join runs ru on ru.project_id = proj.project_id
-  left join prev pv on pv.project_id = proj.project_id
-),
-spans as (
-  select b.*,
+-- Forecast finish (milestones if any, else the declared finish) against the baseline finish.
+-- The only place the scheduleSlipPercent tolerance is worked out for the finish date.
+slip as materialized (
+  select base.id, f.forecast_finish,
     case
-      when not b.divergent then null
-      -- history worse up to the latest snapshot: the run starts after the last good day
-      when b.first_worse is not null and (b.last_not_worse is null or b.last_not_worse < b.last_day)
-        then coalesce(
-          (select min(f.snapshot_date) from flags f
-            where f.project_id = b.project_id and f.worse
-              and f.snapshot_date > coalesce(b.last_not_worse, '-infinity'::date)),
-          b.today)
-      else b.today
-    end as divergence_since
-  from base b
+      when f.forecast_finish is null or base.baseline_finish_date is null then 'not_set'::public.health
+      when f.forecast_finish <= base.baseline_finish_date then 'green'::public.health
+      when (base.baseline_finish_date - base.start_date) > 0
+        and (f.forecast_finish - base.baseline_finish_date)::numeric / (base.baseline_finish_date - base.start_date)
+            > private.health_threshold(base.settings, 'scheduleSlipPercent') / 100 then 'red'::public.health
+      else 'amber'::public.health
+    end as finish_slip_health
+  from base
+  left join ms on ms.project_id = base.id
+  cross join lateral (select coalesce(ms.forecast_finish, base.finish_date) as forecast_finish) f
+),
+dims as materialized (
+  select
+    base.id,
+    case
+      when coalesce(ms.any_forecast_missed, false) then 'red'::public.health
+      when ms.worst_open_slip > 30 then 'red'::public.health
+      when slip.finish_slip_health = 'red' then 'red'::public.health
+      when ms.worst_open_slip >= 15 then 'amber'::public.health
+      when slip.finish_slip_health = 'amber' then 'amber'::public.health
+      when base.task_count > 0
+        and base.overdue_count::numeric / base.task_count > private.health_threshold(base.settings, 'taskOverdueAtRiskPercent') / 100 then 'amber'::public.health
+      else 'green'::public.health
+    end as schedule,
+    case
+      when not base.has_baseline then 'not_set'::public.health
+      when base.forecast > base.budget * (1 + private.health_threshold(base.settings, 'financialOffTrackPercent') / 100) then 'red'::public.health
+      when base.forecast > base.budget * (1 + private.health_threshold(base.settings, 'financialAtRiskPercent') / 100) then 'amber'::public.health
+      else 'green'::public.health
+    end as financial,
+    case
+      when base.task_count > 0 and base.overdue_count::numeric / base.task_count > private.health_threshold(base.settings, 'taskOverdueOffTrackPercent') / 100 then 'red'::public.health
+      when base.task_count > 0 and base.overdue_count::numeric / base.task_count > private.health_threshold(base.settings, 'taskOverdueAtRiskPercent') / 100 then 'amber'::public.health
+      else 'green'::public.health
+    end as effort,
+    case
+      when exists (select 1 from public.issues i where i.project_id = base.id and i.status = 'open' and i.severity = 'high')
+        or exists (select 1 from public.risks r where r.project_id = base.id and r.status = 'open'
+                   and r.score >= private.health_threshold(base.settings, 'riskScoreOffTrack')) then 'red'::public.health
+      when exists (select 1 from public.issues i where i.project_id = base.id and i.status = 'open')
+        or exists (select 1 from public.risks r where r.project_id = base.id and r.status = 'open'
+                   and r.score >= private.health_threshold(base.settings, 'riskScoreAtRisk')) then 'amber'::public.health
+      else 'green'::public.health
+    end as issue,
+    ms.forecast_finish,
+    coalesce(ms.after_baseline_finish, 0) as after_baseline_finish,
+    slip.finish_slip_health
+  from base
+  left join ms on ms.project_id = base.id
+  join slip on slip.id = base.id
 )
 select
-  s.project_id, s.organisation_id, s.workspace_id, s.programme_id, s.code, s.state,
-  s.declared, s.evidenced, s.divergent,
-  s.divergence_since,
-  case when s.divergence_since is null then 0 else s.today - s.divergence_since end as divergence_days,
-  (s.divergent and not s.justification_holds
-     and (s.today - s.divergence_since >= s.alert_days or s.last_two_better)) as divergence_alert,
-  s.justification,
-  s.divergent_prev_month_end,
-  s.last_report_date,
-  s.next_report_due,
-  (s.state in ('active', 'on_hold') and s.next_report_due < s.today) as report_overdue,
-  s.forecast_finish_date - s.baseline_finish_date as finish_vs_baseline_days,
-  ( case when s.divergent and not s.justification_holds
-              and (s.today - s.divergence_since >= s.alert_days or s.last_two_better) then 40
-         when s.divergent then 15 else 0 end
-    + least(30, greatest(0, coalesce(s.forecast_finish_date - s.baseline_finish_date, 0)) / 3)
-    + case when s.state in ('active', 'on_hold') and s.next_report_due < s.today then 20 else 0 end
-  )::integer as risk_score,
-  s.latest_report_id,
-  (s.divergent and s.justification_holds) as justified,
-  s.justification_at,
-  s.justification_author_id,
-  case when not s.divergent then null
-       when s.optimistic_at_submission then 'optimistic_at_submission'
-       else 'evidence_moved' end as divergence_kind,
-  -- Forecast finish against baseline finish, on the schedule rule's tolerance.
-  case when s.forecast_finish_date is null or s.baseline_finish_date is null then 'not_set'::public.health
-       when s.forecast_finish_date <= s.baseline_finish_date then 'green'::public.health
-       when (s.baseline_finish_date - s.start_date) > 0
-         and (s.forecast_finish_date - s.baseline_finish_date)::numeric / (s.baseline_finish_date - s.start_date)
-             > s.slip_percent / 100 then 'red'::public.health
-       else 'amber'::public.health
-  end as finish_slip_health
-from spans s;
+  base.id as project_id,
+  base.organisation_id,
+  base.workspace_id,
+  base.programme_id,
+  base.effective_portfolio_id,
+  base.code,
+  base.state,
+  base.phase_index,
+  base.health_override,
+  base.finish_date,
+  dims.schedule, dims.financial, dims.effort, dims.issue,
+  greatest(dims.schedule, dims.financial, dims.effort, dims.issue) as delivery,
+  base.baseline_finish_date,
+  dims.forecast_finish as milestone_forecast_finish,
+  dims.after_baseline_finish as milestones_after_baseline_finish,
+  dims.finish_slip_health
+from base join dims on dims.id = base.id;
 
-
+create or replace view public.v_project_health with (security_invoker = true) as
+with delivery as materialized (
+  select * from public.v_project_delivery_health
+),
+benefit_flags as materialized (
+  select b.id, b.ref,
+    coalesce(b.realisation_start_date <= private.org_today(b.organisation_id), false) as in_realisation,
+    (b.confidence = 'low' or coalesce(r.behind_profile, false)) as is_red,
+    coalesce(r.measurement_overdue, false) as is_overdue,
+    (b.status = 'identified' or not b.eligibility_confirmed) as is_unvalidated,
+    b.confidence = 'low' and b.status <> 'closed' as is_low,
+    b.status <> 'closed' as is_open
+  from public.benefits b
+  left join public.v_benefit_realisation r on r.benefit_id = b.id
+),
+cap_delivery as materialized (
+  select cp.capability_id,
+    string_agg(d.code, ', ' order by d.code) filter (where d.delivery = 'red') as red_projects,
+    string_agg(d.code, ', ' order by d.code) filter (where d.delivery = 'amber') as amber_projects
+  from public.capability_projects cp
+  join delivery d on d.project_id = cp.project_id
+  where d.state <> 'closed'
+  group by cp.capability_id
+),
+caps as materialized (
+  select c.id, c.title, x.rag, x.reason
+  from public.capabilities c
+  join public.organisations o on o.id = c.organisation_id
+  left join cap_delivery cd on cd.capability_id = c.id
+  cross join lateral private.capability_rag(c.status, c.target_date, c.forecast_date, c.accepted_at,
+    private.org_today(c.organisation_id), private.health_threshold(o.settings, 'acceptanceGraceDays')::integer,
+    private.health_threshold(o.settings, 'capabilitySlipAmberDays'), cd.red_projects, cd.amber_projects) x
+  where c.archived_at is null
+),
+items as (
+  select cp.project_id, ch.rag, 1 as priority, 'Capability "' || ch.title || '": ' || ch.reason as reason
+  from public.capability_projects cp
+  join caps ch on ch.id = cp.capability_id
+  union all
+  select bp.project_id,
+    case when f.is_red then 'red'::public.health when f.is_overdue or f.is_unvalidated then 'amber'::public.health else 'green'::public.health end,
+    2,
+    'Benefit ' || f.ref || ': ' || case when f.is_red then 'confidence low or behind profile'
+                                        when f.is_overdue then 'measurement overdue'
+                                        when f.is_unvalidated then 'not yet validated'
+                                        else 'realising to profile' end
+  from public.benefit_projects bp
+  join benefit_flags f on f.id = bp.benefit_id and f.in_realisation
+  union all
+  select bp.project_id, 'amber'::public.health, 3, 'Benefit confidence low, not yet validated'
+  from public.benefit_projects bp
+  join benefit_flags f on f.id = bp.benefit_id and not f.in_realisation
+  join delivery d on d.project_id = bp.project_id
+  where f.is_low or (f.is_open and f.is_unvalidated and d.phase_index >= 2)
+),
+benefit as materialized (
+  select distinct on (i.project_id) i.project_id, i.rag, i.reason
+  from items i
+  order by i.project_id, i.rag desc, i.priority, i.reason
+)
+select
+  d.project_id,
+  d.organisation_id,
+  d.workspace_id,
+  d.programme_id,
+  d.effective_portfolio_id,
+  d.schedule, d.financial, d.effort, d.issue,
+  coalesce(b.rag, 'not_set'::public.health) as benefit,
+  greatest(d.delivery, coalesce(b.rag, 'not_set'::public.health)) as computed_overall,
+  coalesce(d.health_override, greatest(d.delivery, coalesce(b.rag, 'not_set'::public.health))) as overall,
+  d.health_override is not null as is_overridden,
+  coalesce(d.milestone_forecast_finish, d.finish_date) as forecast_finish_date,
+  case when d.milestone_forecast_finish is not null then 'milestones' else 'declared' end::text as forecast_basis,
+  coalesce(b.reason, 'No capabilities or benefits in realisation') as benefit_reason,
+  d.finish_slip_health
+from delivery d
+left join benefit b on b.project_id = d.project_id;
