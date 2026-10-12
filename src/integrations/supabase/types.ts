@@ -6993,6 +6993,71 @@ export type Database = {
           },
         ]
       }
+      portfolio_health_current: {
+        Row: {
+          computed_at: string
+          computed_overall: Database["public"]["Enums"]["health"] | null
+          forecast_basis: string | null
+          forecast_finish_date: string | null
+          is_overridden: boolean | null
+          organisation_id: string
+          overall: Database["public"]["Enums"]["health"] | null
+          portfolio_id: string
+          workspace_id: string
+        }
+        Insert: {
+          computed_at?: string
+          computed_overall?: Database["public"]["Enums"]["health"] | null
+          forecast_basis?: string | null
+          forecast_finish_date?: string | null
+          is_overridden?: boolean | null
+          organisation_id: string
+          overall?: Database["public"]["Enums"]["health"] | null
+          portfolio_id: string
+          workspace_id: string
+        }
+        Update: {
+          computed_at?: string
+          computed_overall?: Database["public"]["Enums"]["health"] | null
+          forecast_basis?: string | null
+          forecast_finish_date?: string | null
+          is_overridden?: boolean | null
+          organisation_id?: string
+          overall?: Database["public"]["Enums"]["health"] | null
+          portfolio_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_health_current_portfolio_id_workspace_id_fkey"
+            columns: ["portfolio_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "portfolios"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "portfolio_health_current_portfolio_id_workspace_id_fkey"
+            columns: ["portfolio_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_portfolio_financials"
+            referencedColumns: ["portfolio_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "portfolio_health_current_portfolio_id_workspace_id_fkey"
+            columns: ["portfolio_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_portfolio_health"
+            referencedColumns: ["portfolio_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "portfolio_health_current_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       portfolios: {
         Row: {
           archived_at: string | null
@@ -7107,6 +7172,80 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organisations"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      programme_health_current: {
+        Row: {
+          benefit: Database["public"]["Enums"]["health"] | null
+          benefit_reason: string | null
+          computed_at: string
+          computed_overall: Database["public"]["Enums"]["health"] | null
+          forecast_basis: string | null
+          forecast_finish_date: string | null
+          is_overridden: boolean | null
+          organisation_id: string
+          overall: Database["public"]["Enums"]["health"] | null
+          portfolio_id: string | null
+          programme_id: string
+          workspace_id: string
+        }
+        Insert: {
+          benefit?: Database["public"]["Enums"]["health"] | null
+          benefit_reason?: string | null
+          computed_at?: string
+          computed_overall?: Database["public"]["Enums"]["health"] | null
+          forecast_basis?: string | null
+          forecast_finish_date?: string | null
+          is_overridden?: boolean | null
+          organisation_id: string
+          overall?: Database["public"]["Enums"]["health"] | null
+          portfolio_id?: string | null
+          programme_id: string
+          workspace_id: string
+        }
+        Update: {
+          benefit?: Database["public"]["Enums"]["health"] | null
+          benefit_reason?: string | null
+          computed_at?: string
+          computed_overall?: Database["public"]["Enums"]["health"] | null
+          forecast_basis?: string | null
+          forecast_finish_date?: string | null
+          is_overridden?: boolean | null
+          organisation_id?: string
+          overall?: Database["public"]["Enums"]["health"] | null
+          portfolio_id?: string | null
+          programme_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programme_health_current_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "programmes"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_health_current_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_financials"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_health_current_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_health"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_health_current_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
           },
         ]
       }
@@ -7342,6 +7481,192 @@ export type Database = {
           },
           {
             foreignKeyName: "project_buckets_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      project_health_current: {
+        Row: {
+          benefit: Database["public"]["Enums"]["health"] | null
+          benefit_reason: string | null
+          code: string | null
+          computed_at: string
+          computed_overall: Database["public"]["Enums"]["health"] | null
+          declared: Database["public"]["Enums"]["health"] | null
+          divergence_alert: boolean | null
+          divergence_days: number | null
+          divergence_kind: string | null
+          divergence_since: string | null
+          divergent: boolean | null
+          divergent_prev_month_end: boolean | null
+          effective_portfolio_id: string | null
+          effort: Database["public"]["Enums"]["health"] | null
+          evidenced: Database["public"]["Enums"]["health"] | null
+          financial: Database["public"]["Enums"]["health"] | null
+          finish_slip_health: Database["public"]["Enums"]["health"] | null
+          finish_vs_baseline_days: number | null
+          forecast_basis: string | null
+          forecast_finish_date: string | null
+          is_overridden: boolean | null
+          issue: Database["public"]["Enums"]["health"] | null
+          justification: string | null
+          justification_at: string | null
+          justification_author_id: string | null
+          justified: boolean | null
+          last_report_date: string | null
+          latest_report_id: string | null
+          milestones_after_baseline_finish: number | null
+          next_report_due: string | null
+          organisation_id: string
+          overall: Database["public"]["Enums"]["health"] | null
+          phase_index: number | null
+          programme_id: string | null
+          project_id: string
+          report_overdue: boolean | null
+          risk_score: number | null
+          schedule: Database["public"]["Enums"]["health"] | null
+          state: Database["public"]["Enums"]["project_state"] | null
+          workspace_id: string
+        }
+        Insert: {
+          benefit?: Database["public"]["Enums"]["health"] | null
+          benefit_reason?: string | null
+          code?: string | null
+          computed_at?: string
+          computed_overall?: Database["public"]["Enums"]["health"] | null
+          declared?: Database["public"]["Enums"]["health"] | null
+          divergence_alert?: boolean | null
+          divergence_days?: number | null
+          divergence_kind?: string | null
+          divergence_since?: string | null
+          divergent?: boolean | null
+          divergent_prev_month_end?: boolean | null
+          effective_portfolio_id?: string | null
+          effort?: Database["public"]["Enums"]["health"] | null
+          evidenced?: Database["public"]["Enums"]["health"] | null
+          financial?: Database["public"]["Enums"]["health"] | null
+          finish_slip_health?: Database["public"]["Enums"]["health"] | null
+          finish_vs_baseline_days?: number | null
+          forecast_basis?: string | null
+          forecast_finish_date?: string | null
+          is_overridden?: boolean | null
+          issue?: Database["public"]["Enums"]["health"] | null
+          justification?: string | null
+          justification_at?: string | null
+          justification_author_id?: string | null
+          justified?: boolean | null
+          last_report_date?: string | null
+          latest_report_id?: string | null
+          milestones_after_baseline_finish?: number | null
+          next_report_due?: string | null
+          organisation_id: string
+          overall?: Database["public"]["Enums"]["health"] | null
+          phase_index?: number | null
+          programme_id?: string | null
+          project_id: string
+          report_overdue?: boolean | null
+          risk_score?: number | null
+          schedule?: Database["public"]["Enums"]["health"] | null
+          state?: Database["public"]["Enums"]["project_state"] | null
+          workspace_id: string
+        }
+        Update: {
+          benefit?: Database["public"]["Enums"]["health"] | null
+          benefit_reason?: string | null
+          code?: string | null
+          computed_at?: string
+          computed_overall?: Database["public"]["Enums"]["health"] | null
+          declared?: Database["public"]["Enums"]["health"] | null
+          divergence_alert?: boolean | null
+          divergence_days?: number | null
+          divergence_kind?: string | null
+          divergence_since?: string | null
+          divergent?: boolean | null
+          divergent_prev_month_end?: boolean | null
+          effective_portfolio_id?: string | null
+          effort?: Database["public"]["Enums"]["health"] | null
+          evidenced?: Database["public"]["Enums"]["health"] | null
+          financial?: Database["public"]["Enums"]["health"] | null
+          finish_slip_health?: Database["public"]["Enums"]["health"] | null
+          finish_vs_baseline_days?: number | null
+          forecast_basis?: string | null
+          forecast_finish_date?: string | null
+          is_overridden?: boolean | null
+          issue?: Database["public"]["Enums"]["health"] | null
+          justification?: string | null
+          justification_at?: string | null
+          justification_author_id?: string | null
+          justified?: boolean | null
+          last_report_date?: string | null
+          latest_report_id?: string | null
+          milestones_after_baseline_finish?: number | null
+          next_report_due?: string | null
+          organisation_id?: string
+          overall?: Database["public"]["Enums"]["health"] | null
+          phase_index?: number | null
+          programme_id?: string | null
+          project_id?: string
+          report_overdue?: boolean | null
+          risk_score?: number | null
+          schedule?: Database["public"]["Enums"]["health"] | null
+          state?: Database["public"]["Enums"]["project_state"] | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_health_current_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "project_health_current_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "project_health_current_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "project_health_current_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_financials"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "project_health_current_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "project_health_current_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_task_stats"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "project_health_current_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "project_health_current_workspace_id_organisation_id_fkey"
             columns: ["workspace_id", "organisation_id"]
             isOneToOne: false
             referencedRelation: "workspaces"

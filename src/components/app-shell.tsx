@@ -32,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SectionTabs } from "@/components/section-nav";
 import { ShellSlotsContext } from "@/components/shell-slots-context";
+import { HealthRefreshWatcher } from "@/hooks/use-health-refresh";
 import { useProgrammeNames, useProjectNames } from "@/hooks/use-hierarchy";
 import { useFavourites } from "@/hooks/use-favourites";
 import { useNotifications } from "@/hooks/use-notifications";
@@ -272,6 +273,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <TooltipProvider>
       <ShellSlotsContext.Provider value={{ band: bandNode, status: statusNode }}>
+        <HealthRefreshWatcher />
         <div className="min-h-screen bg-background text-foreground">
           {/* The rail and header always use the dark tokens: with the top band they frame the page. */}
           <aside

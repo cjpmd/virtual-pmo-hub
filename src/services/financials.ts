@@ -17,6 +17,7 @@ import type { FinancialKind, MonthValue } from "./financials-calc";
 import type { CommitRow } from "./actuals-import";
 import type { ChangeView } from "./decisions";
 import { ServiceError, unwrap, unwrapMaybe } from "./service-error";
+import { markHealthPending } from "./health-pending";
 import { deleteRows, insertRow, updateRow } from "./write";
 
 type BaselineSource = Database["public"]["Enums"]["baseline_source"];
@@ -477,6 +478,7 @@ export async function closeFinancialPeriod(orgId: string, month: string) {
     await supabase.rpc("close_financial_period", { p_organisation_id: orgId, p_month: month }),
     "Closing the month",
   );
+  markHealthPending(null);
 }
 
 export async function reopenFinancialPeriod(orgId: string, month: string, reason: string) {
@@ -488,6 +490,7 @@ export async function reopenFinancialPeriod(orgId: string, month: string, reason
     }),
     "Reopening the month",
   );
+  markHealthPending(null);
 }
 
 // ---- Actuals import -----------------------------------------------------------------------
@@ -556,6 +559,7 @@ export async function commitActualsImport(
     }),
     "Importing actuals",
   ) as { import_id: string; row_count: number; total: number; lines_created: number };
+  markHealthPending(null);
   return {
     importId: result.import_id,
     rowCount: result.row_count,

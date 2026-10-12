@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { HealthUpdating } from "@/components/health-updating";
+import { useHealthComputedAt } from "@/hooks/use-health-refresh";
 import { useMemo, useState } from "react";
 import { AutoBreadcrumbs } from "@/components/section-nav";
 import { BoardWorkspace, type BoardColumn, type BoardRow } from "@/components/board-workspace";
@@ -726,6 +728,7 @@ function OverviewBand({
   const { portfolio, projects, milestones } = data;
   // One RPC call feeds the chart inputs, snapshot history, forecast history, as-of and today.
   const rpc = usePortfolioOverviewData(portfolio.id);
+  const healthComputedAt = useHealthComputedAt();
   const history = rpc.data?.history ?? data.history;
   const projectHistory = rpc.data?.projectHistory ?? data.projectHistory;
   const active = useMemo(() => activeOnly(projects), [projects]);
@@ -900,7 +903,9 @@ function OverviewBand({
       replace: true,
       resetScroll: false,
     });
+  // "Data as of": when the stored health was last refreshed (computed_at).
   const asOf =
+    healthComputedAt.data ??
     rpc.data?.asOf ??
     dataAsOf([
       ...projects.flatMap((project) => [project.updatedAt, project.lastReportDate]),
@@ -922,6 +927,7 @@ function OverviewBand({
             <ManagePortfoliosButton />
             <StateBadge state={portfolio.state} />
             <HealthPill health={portfolio.health} />
+            <HealthUpdating className="text-pmo-muted" />
           </div>
         </div>
         {metrics ? (

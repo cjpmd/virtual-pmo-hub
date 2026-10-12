@@ -248,7 +248,8 @@ export async function fetchPhases(orgId: string): Promise<Phase[]> {
 // ---- Portfolios and programmes ------------------------------------------------------
 
 /**
- * Portfolios in the organisation. withHealth = false skips v_portfolio_health (health is then
+ * Portfolios in the organisation. Health comes from portfolio_health_current (the stored copy of
+ * v_portfolio_health). withHealth = false skips it (health is then
  * "Not Set"): the shell and the portfolio picker only need names, and the health view is the
  * most expensive read in the app.
  */
@@ -267,7 +268,7 @@ export async function listPortfolios(
       .order("name"),
     withHealth
       ? supabase
-          .from("v_portfolio_health")
+          .from("portfolio_health_current")
           .select("portfolio_id, overall")
           .eq("organisation_id", orgId)
       : Promise.resolve({ data: [], error: null }),
@@ -323,7 +324,8 @@ export async function listProjectNames(
 }
 
 /**
- * Programmes in the organisation. withHealth = false skips v_programme_health (health is then
+ * Programmes in the organisation. Health comes from programme_health_current (the stored copy
+ * of v_programme_health). withHealth = false skips it (health is then
  * "Not Set"): pickers and counts only need names and portfolios.
  */
 export async function listProgrammes(
@@ -341,7 +343,7 @@ export async function listProgrammes(
       .order("name"),
     withHealth
       ? supabase
-          .from("v_programme_health")
+          .from("programme_health_current")
           .select("programme_id, overall, benefit")
           .eq("organisation_id", orgId)
       : Promise.resolve({ data: [], error: null }),
@@ -428,9 +430,10 @@ async function loadProjectContext(orgId: string, projectIds?: string[]) {
     column = "project_id",
   ) => (projectIds ? query.in(column, projectIds) : query);
   const [health, stats, risks, issues, reports, programmes, people, phases] = await Promise.all([
+    // Health: the stored copy of v_project_health (project_health_current).
     scope(
       supabase
-        .from("v_project_health")
+        .from("project_health_current")
         .select(
           "project_id, overall, schedule, financial, effort, issue, benefit, is_overridden, forecast_finish_date, finish_slip_health",
         )
@@ -559,6 +562,21 @@ export const sharedProgrammeList = (orgId: string) =>
   sharedRead(qk.programmes.list(orgId), () => listProgrammes(orgId), 30_000);
 export const sharedPortfolioList = (orgId: string) =>
   sharedRead(qk.portfolios.list(orgId), () => listPortfolios(orgId), 30_000);
+
+/** When the stored health was last refreshed: the newest computed_at the user can see. */
+export async function loadHealthComputedAt(orgId: string): Promise<string | null> {
+  const row = unwrapMaybe(
+    await supabase
+      .from("project_health_current")
+      .select("computed_at")
+      .eq("organisation_id", orgId)
+      .order("computed_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    "Loading health refresh time",
+  );
+  return row?.computed_at ?? null;
+}
 
 /** Every visible, non-archived project in the organisation (v_projects excludes archived rows). */
 export async function listProjects(orgId: string): Promise<ProjectSummary[]> {

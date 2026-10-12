@@ -7,6 +7,9 @@
 //                row at all means it was removed or is no longer visible ("not_found").
 //   deleteRows – delete by id; an empty result is "forbidden" (RLS filtered it)
 //
+// Writes to tables that feed health also mark "Updating health…" until the stored health has
+// been refreshed past them (health-pending.ts).
+//
 // Own writes: every write remembers the updated_at it got back, per row. An update sends the
 // newer of that and the caller's lastSeen, so a screen holding a copy loaded before its own
 // previous save (a refetch still in flight, a debounced form, a cached query) doesn't trip
@@ -18,6 +21,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { NewRow, TableName, Update } from "./db";
 import { forInsert } from "./db";
+import { HEALTH_TABLES, markHealthPending } from "./health-pending";
 import { ServiceError, fromPostgrest, unwrapWrite } from "./service-error";
 
 export interface Written {
@@ -99,6 +103,7 @@ const toWritten = (name: TableName, row: unknown): Written => {
   const value = row as Record<string, string | null | undefined>;
   const written = { id: value[keyOf(name)] ?? "", updatedAt: value["updated_at"] ?? null };
   if (written.id && written.updatedAt) ownWrites.set(`${name}:${written.id}`, written.updatedAt);
+  if (HEALTH_TABLES.has(name)) markHealthPending(written.updatedAt);
   return written;
 };
 
@@ -204,6 +209,7 @@ export async function deleteRows(name: TableName, ids: string[], context: string
   if (!ids.length) return;
   unwrapWrite(await table(name).delete().in(keyOf(name), ids).select(keyOf(name)), context);
   for (const id of ids) ownWrites.delete(`${name}:${id}`);
+  if (HEALTH_TABLES.has(name)) markHealthPending(null);
 }
 
 /** Delete link rows matching a filter (e.g. benefit_projects for one benefit). */
@@ -216,4 +222,5 @@ export async function deleteWhere(
   for (const [column, value] of Object.entries(filters)) query = query.eq(column, value);
   const result = await query.select(Object.keys(filters)[0] ?? "*");
   if (result.error) throw fromPostgrest(result.error, context, result.status);
+  if (HEALTH_TABLES.has(name)) markHealthPending(null);
 }

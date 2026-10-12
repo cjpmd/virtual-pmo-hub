@@ -1,7 +1,8 @@
 // Delivery assurance: what the latest submitted status report declares against what the
 // evidence shows. Every judgement here (divergence, its kind and length, alerts, justification,
-// report due dates, risk score) comes from v_project_divergence; this file only joins the
-// project names on and reshapes rows for the screens.
+// report due dates, risk score) comes from v_project_divergence, read from its stored copy
+// project_health_current (refreshed from the views; docs/sql/perf-health-current-b.sql). This file
+// only joins the project names on and reshapes rows for the screens.
 import type { Health } from "@/data/types";
 import { supabase } from "@/integrations/supabase/client";
 import { sharedProjectList, type ProjectSummary } from "./hierarchy";
@@ -101,7 +102,7 @@ export async function loadProjectAssurance(
   project: ProjectSummary,
 ): Promise<AssuranceRow | null> {
   const { data, error } = await supabase
-    .from("v_project_divergence")
+    .from("project_health_current")
     .select(DIVERGENCE_COLUMNS)
     .eq("organisation_id", orgId)
     .eq("project_id", project.id)
@@ -116,7 +117,7 @@ export async function loadAssurance(orgId: string): Promise<AssuranceRow[]> {
   // v_project_health.forecast_finish_date, so no second health read here.
   const projects = await sharedProjectList(orgId);
   const divergence = await supabase
-    .from("v_project_divergence")
+    .from("project_health_current")
     .select(DIVERGENCE_COLUMNS)
     .eq("organisation_id", orgId);
   const byId = new Map(unwrap(divergence, "Loading assurance").map((row) => [row.project_id, row]));

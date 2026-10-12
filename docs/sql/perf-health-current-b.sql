@@ -36,7 +36,9 @@
 -- subtransaction): milestone update p50 3.2 ms / p95 14.6 ms; work item 3.4 / 8.3 ms;
 -- risk 3.4 / 4.0 ms. Target after B: unchanged (writes only add the queue upsert).
 --
--- HOW TO APPLY: the Supabase MCP tool holds any SQL containing DELETE for a confirmation this
+-- APPLIED 12/10/2026 in the SQL editor (migration 20261012120035_health_current_b; dry run and
+-- first fill both 0 mismatches).
+-- HOW IT WAS APPLIED: the Supabase MCP tool holds any SQL containing DELETE for a confirmation this
 -- environment cannot show, so run docs/sql/perf-health-current-b-dryrun.sql in the SQL editor
 -- first (it rolls back), then this file from "create table public.project_health_current" to
 -- the end. Then tell Claude: it saves the migration file, records it in
