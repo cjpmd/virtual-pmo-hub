@@ -55,6 +55,9 @@ forms (`create or replace trigger`) or split the statement out.
 - Forecast: option B for this build (milestone-based). Option A (sprints and the forecast engine
   in Supabase as a view) is the next phase; `sprints.ts` is kept but unused until then, and the
   Delivery tab and forecast card show "No sprint data yet".
+  For the option A phase: fix the `forecast.ts` explanation copy ("which the team has achieved
+  never" should read naturally, e.g. "which the team has not yet achieved"). Left as is in
+  Stage 1 because only the sprint panels render it and they are switched off.
 - Overdue = not delivered and forecast date passed (`v_milestones.status = 'overdue'`).
   "Past baseline, forecast dd Mon" for reforecast milestones past their baseline.
 - Overview data: raw rows from `get_project_overview` plus the shared TypeScript builders with
@@ -69,7 +72,6 @@ forms (`create or replace trigger`) or split the statement out.
   added to the project and portfolio signal builders (Stage 3).
 - Status report form: capture `decisions_needed`, `declared_benefit` and drafts (status) in the
   UI; not done yet.
-- `forecast.ts` copy fix ("has achieved never") is part of Stage 1.
 - Portfolio home: two prettier findings and two hook-dependency warnings in
   `portfolio.index.tsx` and the project page predate this work; left alone.
 - The pre-1b vs post-1b assurance figures were compared headlessly instead of with screenshots
