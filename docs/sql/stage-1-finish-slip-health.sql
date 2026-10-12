@@ -1,10 +1,10 @@
--- PROPOSAL. Stage 1 header: finish_slip_health, computed once in v_project_delivery_health.
+-- Stage 1 header: finish_slip_health, computed once in v_project_delivery_health.
 -- The header shows "N days late" under Forecast finish in amber or red per the schedule
 -- tolerance. That colour is a RAG decision, so it comes from the views, not the browser.
 --
 -- v_project_delivery_health: a new `slip` step works out finish_slip_health for the forecast
--- finish (latest milestone date if the project has milestones, else the declared finish, the same
--- date v_project_health.forecast_finish_date shows):
+-- finish, taken as the later of the latest milestone date and the declared finish (finish_date),
+-- so a PM-declared slip counts even when the milestones haven't been updated:
 --   not_set  no forecast finish or no baseline finish
 --   green    on or before the baseline finish
 --   red      late by more than scheduleSlipPercent of the baseline duration
@@ -13,19 +13,24 @@
 --   red    finish_slip_health = 'red'    (was: milestone forecast finish beyond tolerance, or
 --                                          declared finish beyond tolerance)
 --   amber  finish_slip_health = 'amber'  (was: milestone forecast finish after baseline)
--- The other schedule clauses are unchanged. Behaviour change: for a project with milestones the
--- declared finish no longer counts separately (the milestone forecast is its forecast finish);
--- for a project without milestones, a declared finish late within tolerance is now amber.
+-- The other schedule clauses are unchanged. New behaviour: a declared finish late within
+-- tolerance now gives amber (before, only a milestone forecast finish could).
 -- finish_slip_health is a trailing column on v_project_delivery_health and v_project_health
 -- (v_project_health stores its delivery columns expanded, so it is re-created to carry it).
+-- v_project_health.forecast_finish_date is unchanged (milestones if any, else declared finish).
 -- Both views otherwise unchanged; create or replace only, no drops.
 --
 -- Dry run 12/10/2026 (both views as temp views, compared with the live views by EXCEPT both
 -- ways; nothing written):
---   every existing column of v_project_delivery_health and v_project_health: 0 rows differ (37/37)
---   schedule: green 16, amber 14, red 7, live and dry alike (not the 21/11/5 expected; no subset
---     by state or organisation gives 21/11/5 either) -> not applied, waiting on the user
---   finish_slip_health: green 29, amber 7 (ACA, CAIG, DOC, IOFTC, NRDC, SFZ, W11), red 1 (FSC)
+--   every column other than schedule/delivery/overall: 0 rows differ on either view (37 rows)
+--   schedule, delivery, computed_overall: no project differs from live (16 green, 14 amber, 7 red)
+--   finish_slip_health: green 29, amber 7 (ACA, CAIG, DOC, IOFTC, NRDC, SFZ, W11), red 1 (FSC);
+--     identical to the slip on the shown forecast finish. 17 projects have a declared finish later
+--     than their milestones, but every one equals its baseline finish, so none changes colour.
+--   Live schedule moved from 21/11/5 (Stage 1a apply, 08/10) to 16/14/7 by dates alone: replaying
+--   the views with vpmo.today = 08/10 gives 21/11/5 and reproduces the 99 job snapshots for
+--   09-11/10; no project, milestone, task, risk or issue was edited after the apply.
+-- Applied 12/10/2026 after approval.
 
 create or replace view public.v_project_delivery_health with (security_invoker = true) as
 with base as (
@@ -45,7 +50,8 @@ ms as materialized (
   join public.projects p on p.id = m.project_id
   group by m.project_id
 ),
--- Forecast finish (milestones if any, else the declared finish) against the baseline finish.
+-- Forecast finish against the baseline finish: the later of the latest milestone date and the
+-- declared finish, so a PM-declared slip counts even when the milestones haven't been updated.
 -- The only place the scheduleSlipPercent tolerance is worked out for the finish date.
 slip as materialized (
   select base.id, f.forecast_finish,
@@ -59,7 +65,7 @@ slip as materialized (
     end as finish_slip_health
   from base
   left join ms on ms.project_id = base.id
-  cross join lateral (select coalesce(ms.forecast_finish, base.finish_date) as forecast_finish) f
+  cross join lateral (select greatest(ms.forecast_finish, base.finish_date) as forecast_finish) f
 ),
 dims as materialized (
   select

@@ -9059,6 +9059,7 @@ export type Database = {
           ref: string
           reporting_date: string
           schedule: Database["public"]["Enums"]["health"]
+          source: string
           status: Database["public"]["Enums"]["status_report_status"]
           submitted_at: string | null
           submitter_id: string | null
@@ -9091,6 +9092,7 @@ export type Database = {
           ref: string
           reporting_date: string
           schedule?: Database["public"]["Enums"]["health"]
+          source?: string
           status?: Database["public"]["Enums"]["status_report_status"]
           submitted_at?: string | null
           submitter_id?: string | null
@@ -9123,6 +9125,7 @@ export type Database = {
           ref?: string
           reporting_date?: string
           schedule?: Database["public"]["Enums"]["health"]
+          source?: string
           status?: Database["public"]["Enums"]["status_report_status"]
           submitted_at?: string | null
           submitter_id?: string | null
@@ -11600,6 +11603,7 @@ export type Database = {
           effort: Database["public"]["Enums"]["health"] | null
           financial: Database["public"]["Enums"]["health"] | null
           finish_date: string | null
+          finish_slip_health: Database["public"]["Enums"]["health"] | null
           health_override: Database["public"]["Enums"]["health"] | null
           issue: Database["public"]["Enums"]["health"] | null
           milestone_forecast_finish: string | null
@@ -11769,6 +11773,7 @@ export type Database = {
           effective_portfolio_id: string | null
           effort: Database["public"]["Enums"]["health"] | null
           financial: Database["public"]["Enums"]["health"] | null
+          finish_slip_health: Database["public"]["Enums"]["health"] | null
           forecast_basis: string | null
           forecast_finish_date: string | null
           is_overridden: boolean | null

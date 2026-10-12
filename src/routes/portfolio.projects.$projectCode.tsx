@@ -271,7 +271,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
           portfolioName={portfolio?.name}
           phases={phases.data ?? []}
           assurance={assurance}
-          finishSlip={undefined}
+          finishSlip={project.health.finishSlip}
           canEdit={permissions.canEdit}
           tab={tab}
           onTabChange={(next) => setTab(next)}

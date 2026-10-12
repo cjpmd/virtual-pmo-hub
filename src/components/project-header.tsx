@@ -34,7 +34,7 @@ const HEALTH_WORD: Record<Health, string> = {
 };
 
 const TASK_SOURCE: Record<string, string> = {
-  manual: "Managed in Virtual PMO",
+  native: "Managed in Virtual PMO",
   planner_basic: "Planner Basic",
   planner_premium: "Planner Premium",
 };
@@ -139,7 +139,11 @@ export function ProjectHeader({
               Business case
             </Link>
           </Button>
-          <Button size="sm" onClick={() => openIssueTask(project.id)}>
+          <Button
+            size="sm"
+            className="bg-pmo-accent text-pmo-bg hover:bg-pmo-accent/90"
+            onClick={() => openIssueTask(project.id)}
+          >
             <ListPlus />
             Issue task
           </Button>
