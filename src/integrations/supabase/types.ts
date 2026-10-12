@@ -11604,6 +11604,7 @@ export type Database = {
           financial: Database["public"]["Enums"]["health"] | null
           finish_date: string | null
           finish_slip_health: Database["public"]["Enums"]["health"] | null
+          forecast_finish_date: string | null
           health_override: Database["public"]["Enums"]["health"] | null
           issue: Database["public"]["Enums"]["health"] | null
           milestone_forecast_finish: string | null
