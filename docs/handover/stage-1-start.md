@@ -77,6 +77,25 @@ forms (`create or replace trigger`) or split the statement out.
 - The pre-1b vs post-1b assurance figures were compared headlessly instead of with screenshots
   (agreed); the "before" screens only showed generated sprint data.
 
+## Health reads: stored tables (performance pass, 12/10/2026)
+
+The app reads health from `project_health_current`, `programme_health_current` and
+`portfolio_health_current`, filled only from the v_* views (which stay the definition). Writes to
+any of the 25 tables that feed health queue the organisation; pg_cron drains the queue every 5 s;
+full refresh plus a logged mismatch check (`private.health_check_log`) at 00:05 Europe/London and
+02:15 UTC. Details and numbers: `docs/sql/perf-shell-views.sql`, `docs/sql/perf-health-current-b.sql`.
+- Shell views target met: every stored-health read p95 < 15 ms server-side under 20 back-to-back
+  loads of both pages, no 8 s timeouts. Write latency unchanged (~3.3 ms p50).
+- A write shows in stored health after 4-7 s (5 s tick + 1.8-2.3 s refresh); the person who
+  wrote sees "Updating health…" until then.
+- Client: reference lists deduplicated through the React Query cache (`shared-query.ts`), the
+  shell loads names only, leaving a page aborts its reads (`lib/page-reads.ts`).
+- The Supabase MCP tool holds any SQL containing DELETE for a confirmation this environment never
+  shows; such migrations are dry-run and applied in the SQL editor, then recorded in
+  `supabase_migrations.schema_migrations`.
+- Compute is the smallest tier (Nano/Micro, shared burstable CPU); it amplifies contention.
+- Stage 2 (`get_project_overview`) reads health from the stored tables.
+
 ## Pre-second-customer task: health refresh cost grows with every tenant
 
 Not now; do before a second organisation goes live. The health views (`v_project_health`,

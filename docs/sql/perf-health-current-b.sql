@@ -44,6 +44,21 @@
 -- the end. Then tell Claude: it saves the migration file, records it in
 -- supabase_migrations.schema_migrations, regenerates types and switches the app's reads.
 --
+-- RESULTS AFTER APPLYING (12/10/2026):
+-- * Write latency (member, 20 rolled-back runs each): milestone p50 3.2 / p95 5.0 ms, work item
+--   3.4 / 5.5 ms, risk 3.3 / 5.3 ms. Unchanged (before: 3.2-3.4 ms p50).
+-- * Write to fresh stored health (5 samples, queue entry -> drain committed): 3.8-6.9 s
+--   (up to 5 s waiting for the next tick + the refresh). The refresh itself takes 1.8-2.3 s,
+--   not the ~0.45 s estimated below: that figure used count(*), which lets the planner skip most
+--   columns (docs/perf.md warns about exactly this).
+-- * Reads under 20 back-to-back loads, server-side as the member (probe session during the loads):
+--     /portfolio/projects/ARB   project list p50 1.0 / p95 3.6 ms; one project 0.7 / 0.9 ms;
+--                               programme 0.6 / 2.5 ms; portfolio 0.6 / 2.7 ms
+--     /portfolio (overview)     project list 1.0 / 8.7 ms; one project 0.7 / 4.2 ms;
+--                               programme 0.6 / 0.9 ms; portfolio 0.5 / 0.8 ms
+--   No statement timeouts on either page (0 server errors in 40 loads).
+-- * health_current_mismatches after the queue refreshes: 0 for both organisations.
+--
 -- ===================================================================== REFRESH SCOPE AND COST
 -- * Queued, not inside the write: a row trigger on each table that feeds health upserts the
 --   row's organisation into private.health_refresh_queue (one row per organisation, deduped).
