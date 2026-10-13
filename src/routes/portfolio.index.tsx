@@ -5,16 +5,7 @@ import { useMemo, useState } from "react";
 import { AutoBreadcrumbs } from "@/components/section-nav";
 import { BoardWorkspace, type BoardColumn, type BoardRow } from "@/components/board-workspace";
 import { ChartCard, LegendItem } from "@/components/charts/chart-card";
-import { CumulativeArea, SmallMultiples } from "@/components/charts/plots";
-import {
-  AxisStrip,
-  BulletChart,
-  Dumbbell,
-  SegmentedBar,
-  SortedBars,
-  StatStrip,
-  type DumbbellDatum,
-} from "@/components/charts/primitives";
+import { BulletChart, SegmentedBar, SortedBars, StatStrip } from "@/components/charts/primitives";
 import { ManagePortfoliosButton, StateBadge } from "@/components/entity-management";
 import { StatusBar } from "@/components/overview/status-bar";
 import { SummaryStrip } from "@/components/overview/summary-strip";
@@ -22,6 +13,9 @@ import { ProgressChart } from "@/components/overview/progress-chart";
 import { ProgrammeStrip } from "@/components/overview/programme-strip";
 import { ProjectWatchlist } from "@/components/overview/project-watchlist";
 import { SignalsList } from "@/components/overview/signals-list";
+import { MilestoneSlippage } from "@/components/overview/milestone-slippage";
+import { MilestoneDeliveryProfile } from "@/components/overview/milestone-delivery-profile";
+import { HealthByDimension } from "@/components/overview/health-by-dimension";
 import { usePathway } from "@/hooks/use-pathway";
 import { usePortfolioOverviewData } from "@/hooks/use-progress-chart";
 import type { Health } from "@/data/types";
@@ -47,19 +41,11 @@ import { todayIso } from "@/lib/today";
 import {
   activeOnly,
   openOnly,
-  dayNumber,
-  getDeliveryCurve,
-  getDimensionScores,
-  getMilestoneMetrics,
   getPortfolioHeadlines,
   getProgrammeFinancials,
   getProgrammeRollups,
   getRag,
-  getSlippedMilestones,
   ragSegments,
-  scoreColour,
-  slipColour,
-  slipSeverity,
   type FinancialRow,
   type PortfolioOverview,
 } from "@/services/analytics";
@@ -97,11 +83,6 @@ const columns: BoardColumn[] = [
   { key: "budget", label: "Budget", type: "number", summary: "sum" },
   { key: "forecast", label: "Forecast", type: "number", summary: "sum" },
   { key: "formula", label: "RAG mix", type: "formula" },
-];
-const horizons = [
-  { value: "90", label: "90d" },
-  { value: "180", label: "6m" },
-  { value: "all", label: "All" },
 ];
 
 function PortfolioPage() {
@@ -197,41 +178,7 @@ function PortfolioBody({
     () => getProgrammeRollups(programmes, projects, allMilestones),
     [programmes, projects, allMilestones],
   );
-  const {
-    periods: dimensionPeriods,
-    scores: dimensions,
-    overall: overallTrend,
-  } = useMemo(() => getDimensionScores(active, data.projectHistory), [active, data.projectHistory]);
-  const delivery = useMemo(() => getDeliveryCurve(allMilestones), [allMilestones]);
-  const [horizon, setHorizon] = useState("180");
   const [includeInactiveFinancials, setIncludeInactiveFinancials] = useState(false);
-
-  const milestoneMetrics = getMilestoneMetrics(allMilestones);
-  const slipped = useMemo(() => {
-    const limit = horizon === "all" ? Infinity : dayNumber(todayIso()) + Number(horizon);
-    return getSlippedMilestones(
-      allMilestones.filter((item) => dayNumber(item.forecastDate) <= limit),
-      8,
-    );
-  }, [allMilestones, horizon]);
-  const slipRows: DumbbellDatum[] = slipped.map((item) => {
-    const severity = slipSeverity(item.slipDays);
-    return {
-      key: item.id,
-      label: item.title,
-      sublabel: `${item.projectName} · ${item.ownerName}`,
-      from: dayNumber(item.baselineDate),
-      to: dayNumber(item.forecastDate),
-      colour: slipColour[severity],
-      fromLabel: format.date(item.baselineDate),
-      toLabel: format.date(item.forecastDate),
-      valueLabel: `+${item.slipDays}d`,
-      note: `${severity} slip · reforecast from ${format.date(item.baselineDate)}`,
-    };
-  });
-  const slipTicks = slipRows.length
-    ? [Math.min(...slipRows.map((row) => row.from)), Math.max(...slipRows.map((row) => row.to))]
-    : [];
 
   const rows: BoardRow[] = programmes.map((programme) => {
     const items = openOnly(projects).filter((project) => project.programmeId === programme.id);
@@ -390,80 +337,7 @@ function PortfolioBody({
       </div>
 
       <div className="grid gap-4 xl:grid-cols-12">
-        <ChartCard
-          className="xl:col-span-7"
-          title="Milestone slippage"
-          subtitle="Largest reforecasts against baseline"
-          info="The hollow dot is the baselined date and the filled dot is the current forecast. The length of the connector is the slip; its colour is the severity."
-          timeRange={{ value: horizon, options: horizons, onChange: setHorizon }}
-          aside={
-            <Link
-              to="/delivery/milestones"
-              className="text-xs font-semibold text-primary hover:underline"
-            >
-              View all
-            </Link>
-          }
-          legend={
-            <>
-              <LegendItem colour="var(--viz-ink-muted)" label="Baseline" shape="dot" />
-              <LegendItem colour="var(--viz-warning)" label="Up to 14 days" shape="dot" />
-              <LegendItem colour="var(--viz-serious)" label="15–30 days" shape="dot" />
-              <LegendItem colour="var(--viz-critical)" label="Over 30 days" shape="dot" />
-            </>
-          }
-          csv={{
-            name: "milestone-slippage",
-            columns: ["Milestone", "Project", "Owner", "Baseline", "Forecast", "Slip days"],
-            rows: slipped.map((item) => [
-              item.title,
-              item.projectName,
-              item.ownerName,
-              format.date(item.baselineDate),
-              format.date(item.forecastDate),
-              item.slipDays,
-            ]),
-          }}
-          footer={
-            <StatStrip
-              items={[
-                { label: "Due next 30 days", value: String(milestoneMetrics.upcoming) },
-                {
-                  label: "Overdue",
-                  value: String(milestoneMetrics.overdue),
-                  tone: milestoneMetrics.overdue ? "var(--viz-critical)" : undefined,
-                },
-                {
-                  label: "Reforecast",
-                  value: String(milestoneMetrics.slipped),
-                  tone: "var(--viz-serious)",
-                },
-                {
-                  label: "Hit baseline (90d)",
-                  value: `${milestoneMetrics.percentOnTime}%`,
-                  tone: scoreColour(milestoneMetrics.percentOnTime),
-                },
-              ]}
-            />
-          }
-          empty={
-            slipRows.length
-              ? undefined
-              : {
-                  title: "Nothing has slipped",
-                  detail:
-                    "No incomplete milestone in this window is forecast later than its baseline.",
-                }
-          }
-        >
-          <Dumbbell rows={slipRows} />
-          {slipTicks.length === 2 ? (
-            <AxisStrip
-              labelWidth={190}
-              ticks={slipTicks.map((day) => format.shortDate(new Date(day * 86400000)))}
-            />
-          ) : null}
-        </ChartCard>
+        <MilestoneSlippage className="xl:col-span-7" milestones={allMilestones} />
 
         <div className="flex flex-col gap-4 xl:col-span-5">
           <ChartCard
@@ -557,94 +431,13 @@ function PortfolioBody({
       </div>
 
       <div className="grid gap-4 xl:grid-cols-12">
-        <ChartCard
-          className="xl:col-span-8"
-          title="Milestone delivery profile"
-          subtitle="Cumulative milestones signed off against the baselined plan"
-          info="The dashed line is what the baselined plans said would be complete by now. The filled area is what has actually been signed off. The shaded band ahead of today is the current forecast, allowing for reforecasting."
-          legend={
-            <>
-              <LegendItem colour="var(--viz-ink-muted)" label="Baselined plan" shape="dashed" />
-              <LegendItem colour="var(--viz-cat-1)" label="Signed off" shape="line" />
-              <LegendItem colour="var(--viz-cat-1)" label="Forecast range" />
-            </>
-          }
-          csv={{
-            name: "delivery-profile",
-            columns: ["Month", "Planned", "Signed off", "Forecast low", "Forecast high"],
-            rows: delivery.points.map((point) => [
-              point.period,
-              point.planned,
-              point.actual,
-              point.band?.[0],
-              point.band?.[1],
-            ]),
-          }}
-          footer={`${delivery.delivered} of ${delivery.plannedToDate} milestones baselined for delivery by now have been signed off, from ${delivery.total} across the portfolio.`}
-        >
-          <CumulativeArea
-            data={delivery.points}
-            format={(value) => String(Math.round(value))}
-            todayPeriod={delivery.todayPeriod}
-            valueLabel="Signed off"
-            plannedLabel="Baselined plan"
-            bandLabel="Forecast range"
-            height={248}
-          />
-        </ChartCard>
-        <ChartCard
+        <MilestoneDeliveryProfile className="xl:col-span-8" milestones={allMilestones} />
+        <HealthByDimension
           className="xl:col-span-4"
-          title="Health by dimension"
-          subtitle="Share of active projects reporting green"
-          info="Each dimension is scored independently, so a portfolio that is amber overall can still be green on cost. One plot per dimension keeps the scales comparable."
-          csv={{
-            name: "health-dimensions",
-            columns: ["Dimension", ...dimensionPeriods],
-            rows: dimensions.map((dimension) => [dimension.label, ...dimension.trend.points]),
-          }}
-          footer={`Worst-of across these five dimensions sets each project's overall health. ${
-            dimensions
-              .filter((dimension) => dimension.scored < dimension.total)
-              .map(
-                (dimension) =>
-                  `${dimension.label} is scored on ${dimension.scored} of ${dimension.total}`,
-              )
-              .join("; ") || "Every dimension is scored on all active projects"
-          }.`}
-        >
-          <SmallMultiples
-            className="xl:grid-cols-2"
-            domain={[0, 100]}
-            series={[
-              ...dimensions.map((dimension) => ({
-                key: dimension.key,
-                label: dimension.label,
-                caption: `${dimension.percent}%`,
-                captionTone: scoreColour(dimension.percent),
-                valueLabel: "Projects green",
-                format: (value: number) => `${value}%`,
-                points: dimension.trend.points.map((value, index) => ({
-                  label: dimensionPeriods[index] ?? "",
-                  value,
-                  colour: scoreColour(value),
-                })),
-              })),
-              {
-                key: "overall",
-                label: "Overall",
-                caption: `${headlines.rag.percentOnTrack}%`,
-                captionTone: scoreColour(headlines.rag.percentOnTrack),
-                valueLabel: "Projects green",
-                format: (value: number) => `${value}%`,
-                points: overallTrend.points.map((value, index) => ({
-                  label: dimensionPeriods[index] ?? "",
-                  value,
-                  colour: scoreColour(value),
-                })),
-              },
-            ]}
-          />
-        </ChartCard>
+          active={active}
+          projectHistory={data.projectHistory}
+          percentOnTrack={headlines.rag.percentOnTrack}
+        />
       </div>
 
       <section className="space-y-3">
