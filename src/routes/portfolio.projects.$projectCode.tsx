@@ -24,6 +24,7 @@ import { RelevantLessons } from "@/components/relevant-lessons";
 import { AssumptionsWorkspace } from "@/components/assumptions-workspace";
 import { ProjectHeader } from "@/components/project-header";
 import { TopBand } from "@/components/shell-slots";
+import { ProjectOverviewBand } from "@/components/overview/project-overview-band";
 import { StatusWorkspace } from "@/components/status-workspace";
 import { TaskWorkspace } from "@/components/task-workspace";
 import { Button } from "@/components/ui/button";
@@ -67,10 +68,21 @@ export const Route = createFileRoute("/portfolio/projects/$projectCode")({
   }),
   validateSearch: (
     search: Record<string, unknown>,
-  ): { tab?: string | undefined; sub?: string | undefined; task?: string | undefined } => {
+  ): {
+    tab?: string | undefined;
+    sub?: string | undefined;
+    task?: string | undefined;
+    /** ?dialog=justify opens the Add justification form (overview signals link to it). */
+    dialog?: "justify" | undefined;
+  } => {
     const text = (key: string) =>
       typeof search[key] === "string" && search[key] ? (search[key] as string) : undefined;
-    return { tab: text("tab"), sub: text("sub"), task: text("task") };
+    return {
+      tab: text("tab"),
+      sub: text("sub"),
+      task: text("task"),
+      dialog: text("dialog") === "justify" ? "justify" : undefined,
+    };
   },
   component: ProjectPage,
 });
@@ -274,10 +286,19 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
           canEdit={permissions.canEdit}
           tab={tab}
           onTabChange={(next) => setTab(next)}
+          justifyRequested={search.dialog === "justify"}
+          onJustifyClosed={() =>
+            void navigate({
+              to: ".",
+              search: (prev: typeof search) => ({ ...prev, dialog: undefined }),
+              replace: true,
+            })
+          }
           onHandover={() => setHandover(true)}
           onArchived={() => void navigate({ to: "/portfolio/projects" })}
         />
       </TopBand>
+      {tab === "overview" && <ProjectOverviewBand project={project} />}
       {(tab === "plan" || tab === "raid") && (
         <SubTabs group={tab} value={sub} onChange={(next) => setTab(tab, next)} />
       )}

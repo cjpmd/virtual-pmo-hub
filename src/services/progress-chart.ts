@@ -27,7 +27,8 @@ export type SeriesKey =
   | "financial"
   | "effort"
   | "issue"
-  | "benefit";
+  | "benefit"
+  | "pathway";
 
 export type ChartTab = "overlay" | "spend" | "delivery" | "health" | "benefits" | "timeline";
 export type ChartRange = "fy" | "12m" | "all";
@@ -111,6 +112,12 @@ export const SERIES: Record<SeriesKey, SeriesMeta> = {
     colour: "var(--series-dim-benefit)",
     unit: "percent",
   },
+  pathway: {
+    key: "pathway",
+    label: "Capabilities & outcomes",
+    colour: "var(--series-capabilities)",
+    unit: "percent",
+  },
 };
 
 /** Chips shown for each tab, and which start switched on. */
@@ -157,6 +164,26 @@ export const TABS: Record<ChartTab, { label: string; chips: SeriesKey[]; on: Ser
     ],
   },
   timeline: { label: "Timeline", chips: ["milestones"], on: ["milestones"] },
+};
+
+/** Presets for scope = "project" (project overview design): no health or risk lines. */
+export type ProjectChartTab = "overlay" | "spend" | "delivery" | "benefits";
+export const PROJECT_TABS: Record<
+  ProjectChartTab,
+  { label: string; chips: SeriesKey[]; on: SeriesKey[] }
+> = {
+  overlay: {
+    label: "Overlay",
+    chips: ["plan", "spend", "milestones", "tasks", "pathway"],
+    on: ["plan", "spend", "milestones", "tasks"],
+  },
+  spend: { label: "Spend", chips: ["plan", "spend"], on: ["plan", "spend"] },
+  delivery: {
+    label: "Delivery",
+    chips: ["plan", "milestones", "tasks"],
+    on: ["plan", "milestones", "tasks"],
+  },
+  benefits: { label: "Benefits", chips: ["plan", "pathway"], on: ["plan", "pathway"] },
 };
 
 // ---- Inputs -------------------------------------------------------------------------
@@ -323,7 +350,7 @@ export interface ChartMarker {
   month: string;
   date: string;
   label: string;
-  kind: "milestone" | "gate" | "committee";
+  kind: "milestone" | "gate" | "committee" | "start" | "baseline" | "finish";
 }
 
 export interface ProgressChartData {
@@ -400,6 +427,47 @@ export interface BuildInput {
   range: ChartRange;
   /** Red-risk threshold from the organisation's risk bands; 15 when unset. */
   redRiskMinScore?: number;
+  /**
+   * scope = "project": plot the project's own window (start to the later of baseline and
+   * forecast finish) with every series as % of its whole-project plan instead of the year's.
+   */
+  project?: ProjectWindow | undefined;
+}
+
+export interface ProjectWindow {
+  startDate: string | null;
+  baselineFinishDate: string | null;
+  forecastFinishDate: string | null;
+  /** Approved budget: spend is plotted as % of it. */
+  budget: number;
+  /** Latest closed month (YYYY-MM): later months' spend forecast comes from forecast values. */
+  actualsThrough: string | null;
+  /** Closed projects draw no forecast lines. */
+  closed: boolean;
+}
+
+/** Months a project chart covers: start month to the later of baseline and forecast finish. */
+export function projectMonths(window: ProjectWindow, today: string) {
+  const ends = [window.baselineFinishDate, window.forecastFinishDate]
+    .filter((d): d is string => !!d)
+    .map((d) => d.slice(0, 7))
+    .sort();
+  const first = (window.startDate ?? today).slice(0, 7);
+  const last = ends.at(-1) ?? today.slice(0, 7);
+  const months: string[] = [];
+  for (let m = first; m <= last && months.length < 120; m = addMonths(m, 1)) months.push(m);
+  return months.length ? months : [today.slice(0, 7)];
+}
+
+/** Start, baseline finish and (open projects only) forecast finish, for the project chart. */
+function projectMarkers(window: ProjectWindow): ChartMarker[] {
+  const mark = (date: string | null, label: string, kind: ChartMarker["kind"]) =>
+    date ? [{ month: date.slice(0, 7), date, label, kind }] : [];
+  return [
+    ...mark(window.startDate, "Start", "start"),
+    ...mark(window.baselineFinishDate, "Baseline finish", "baseline"),
+    ...(window.closed ? [] : mark(window.forecastFinishDate, "Forecast finish", "finish")),
+  ];
 }
 
 export function buildProgressChart(input: BuildInput): ProgressChartData {
@@ -413,7 +481,10 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
     ...history.map((row) => row.date.slice(0, 7)),
     ...milestones.map((row) => row.baselineDate.slice(0, 7)),
   ].sort();
-  const months = rangeMonths(input.range, today, fyStartMonth, earliestCandidates[0]);
+  const project = input.project;
+  const months = project
+    ? projectMonths(project, today)
+    : rangeMonths(input.range, today, fyStartMonth, earliestCandidates[0]);
   const available = new Set<SeriesKey>();
 
   // Money by month and kind.
@@ -423,12 +494,22 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
     cell[row.kind] += row.amount;
     money.set(row.month, cell);
   }
+  // The plan period each value is measured against: the financial year, or for a project its
+  // whole life (every month with money, plus the chart window).
+  const projectPlan = project ? [...new Set([...months, ...money.keys()])].sort() : undefined;
   const fyMonths = (month: string) => {
+    if (projectPlan) return projectPlan;
     const start = fyStart(month, fyStartMonth);
     return Array.from({ length: 12 }, (_, i) => addMonths(start, i));
   };
+  const inPlan = (ym: string, first: string, last: string) =>
+    project ? true : ym >= first && ym <= last;
   if ([...money.values()].some((cell) => cell.budget)) available.add("plan");
-  if ([...money.values()].some((cell) => cell.actual || cell.forecast)) available.add("spend");
+  if (
+    [...money.values()].some((cell) => cell.actual || cell.forecast) &&
+    (!project || project.budget > 0)
+  )
+    available.add("spend");
 
   // Pathway: the last snapshot per item in each month.
   const pathwayByMonth = new Map<string, Map<string, (typeof pathway)[number]>>();
@@ -442,6 +523,7 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
     available.add("capabilities").add("capabilitiesGreen");
   if (pathway.some((row) => row.kind === "outcome")) available.add("outcomes").add("outcomesGreen");
   if (pathway.some((row) => row.kind === "benefit")) available.add("benefits").add("benefitsGreen");
+  if (project && pathway.some((row) => row.kind !== "benefit")) available.add("pathway");
   const latestPathwayMonth = [...pathwayByMonth.keys()].sort().pop();
 
   // Project snapshots: the last per project in each month.
@@ -473,26 +555,31 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
     const upTo = fy.filter((m) => m <= month);
     const values: Partial<Record<SeriesKey, number | undefined>> = {};
 
-    // Plan and spend: cumulative from FY start over the FY budget.
+    // Plan and spend: cumulative from FY start over the FY budget. A project's spend is over its
+    // approved budget and counts actuals only for closed months (matching spent to date in
+    // v_project_financials); its forecast months add forecast values after the last closed month.
     const fyBudget = fy.reduce((sum, m) => sum + (money.get(m)?.budget ?? 0), 0);
-    if (fyBudget > 0) {
+    const spendBase = project ? project.budget : fyBudget;
+    const closedTo = project ? (project.actualsThrough ?? "") : currentMonth;
+    const monthSpend = (m: string) => {
+      const cell = money.get(m);
+      if (!project) return m <= currentMonth ? (cell?.actual ?? 0) : (cell?.forecast ?? 0);
+      if (m <= closedTo) return cell?.actual ?? 0;
+      return forecast ? (cell?.forecast ?? 0) : 0;
+    };
+    if (fyBudget > 0)
       values.plan = pct(
         upTo.reduce((sum, m) => sum + (money.get(m)?.budget ?? 0), 0),
         fyBudget,
       );
-      const spent = upTo.reduce(
-        (sum, m) =>
-          sum + (m <= currentMonth ? (money.get(m)?.actual ?? 0) : (money.get(m)?.forecast ?? 0)),
-        0,
-      );
-      values.spend = pct(spent, fyBudget);
+    if (spendBase > 0) {
+      const spent = upTo.reduce((sum, m) => sum + monthSpend(m), 0);
+      values.spend = pct(spent, spendBase);
     }
 
     // Tasks done ÷ tasks due this FY; forecast from the run rate so far.
-    const dueTasks = liveTasks.filter(
-      (task) =>
-        (task.finish as string).slice(0, 7) >= fyFirst &&
-        (task.finish as string).slice(0, 7) <= fyLast,
+    const dueTasks = liveTasks.filter((task) =>
+      inPlan((task.finish as string).slice(0, 7), fyFirst, fyLast),
     );
     if (dueTasks.length) {
       const doneBy = (bound: string) =>
@@ -508,9 +595,7 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
     }
 
     // Milestones signed off ÷ baselined this FY; forecast from forecast dates.
-    const baselined = milestones.filter(
-      (m) => m.baselineDate.slice(0, 7) >= fyFirst && m.baselineDate.slice(0, 7) <= fyLast,
-    );
+    const baselined = milestones.filter((m) => inPlan(m.baselineDate.slice(0, 7), fyFirst, fyLast));
     if (baselined.length) {
       const landed = baselined.filter((m) =>
         forecast
@@ -567,6 +652,21 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
         benefits.length,
       );
     }
+    // Project: capabilities and outcomes as one line, complete ÷ all linked (whole life).
+    if (project && !forecast && bucket) {
+      const items = [...bucket.values()].filter((row) => row.kind !== "benefit");
+      values.pathway = pct(items.filter((row) => row.complete).length, items.length);
+    }
+    if (project && forecast && latestPathwayMonth) {
+      const items = [...(pathwayByMonth.get(latestPathwayMonth)?.values() ?? [])].filter(
+        (row) => row.kind !== "benefit",
+      );
+      const landing = inputs.pathwayDates.filter(
+        (row) => !row.done && row.date && row.date >= `${currentMonth}-01` && row.date < end,
+      ).length;
+      if (items.length)
+        values.pathway = pct(items.filter((row) => row.complete).length + landing, items.length);
+    }
     // Capability and outcome forecasts: the latest recorded position plus items forecast to land.
     if (forecast && latestPathwayMonth) {
       const latest = [...(pathwayByMonth.get(latestPathwayMonth)?.values() ?? [])];
@@ -592,10 +692,17 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
     }
 
     for (const key of Object.keys(values) as SeriesKey[]) values[key] = round1(values[key]);
+    // A closed project has nothing left to forecast.
+    if (project?.closed && forecast)
+      return { month, label: monthLabel(month), forecast, values: {} };
     return { month, label: monthLabel(month), forecast, values };
   });
 
-  const current = points.find((point) => point.month === currentMonth)?.values ?? {};
+  // A finished project's window can end before today: its chips show the last month plotted.
+  const current =
+    points.find((point) => point.month === currentMonth)?.values ??
+    (project && (points.at(-1)?.month ?? "") < currentMonth ? points.at(-1)?.values : undefined) ??
+    {};
   const markers: ChartMarker[] = [
     ...milestones
       .filter((m) => m.reportToCommittee || m.type.toLowerCase() === "gate")
@@ -605,12 +712,13 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
         label: m.title,
         kind: m.type.toLowerCase() === "gate" ? ("gate" as const) : ("milestone" as const),
       })),
-    ...inputs.committees.map((c) => ({
+    ...(project ? [] : inputs.committees).map((c) => ({
       month: c.date.slice(0, 7),
       date: c.date,
       label: c.title,
       kind: "committee" as const,
     })),
+    ...(project ? projectMarkers(project) : []),
   ].filter((marker) => months.includes(marker.month));
 
   const lead = (current.spend ?? 0) - (current.milestones ?? 0);

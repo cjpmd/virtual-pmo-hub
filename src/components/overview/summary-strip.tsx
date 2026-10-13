@@ -16,9 +16,12 @@ const toneClass: Record<Tone, string> = {
  */
 export function SummaryStrip({
   metrics,
+  scope = "portfolio",
   className,
 }: {
   metrics: SummaryMetric[];
+  /** project: "No previous month" until the first month-end exists. */
+  scope?: "portfolio" | "project";
   className?: string;
 }) {
   const format = useFormat();
@@ -38,11 +41,15 @@ export function SummaryStrip({
         const tone = changeTone(metric.key, metric.change);
         const changeUnit = metric.changeUnit ?? (metric.unit === "ratio" ? "count" : metric.unit);
         const value =
-          metric.unit === "ratio"
-            ? `${metric.value} / ${metric.of ?? 0}`
-            : metric.key === "variance"
-              ? show(metric.value, "percent", true)
-              : show(metric.value, metric.unit);
+          metric.unit === "date"
+            ? metric.date
+              ? format.date(metric.date)
+              : "—"
+            : metric.unit === "ratio"
+              ? `${metric.value} / ${metric.of ?? 0}`
+              : metric.key === "variance"
+                ? show(metric.value, "percent", true)
+                : show(metric.value, metric.unit);
         const change =
           metric.change === null
             ? null
@@ -61,7 +68,9 @@ export function SummaryStrip({
             {change !== null ? (
               <span className={cn("pmo-num text-[11px]", toneClass[tone])}>{change}</span>
             ) : !metric.detail ? (
-              <span className="pmo-num text-[11px] text-pmo-muted">no history yet</span>
+              <span className="pmo-num text-[11px] text-pmo-muted">
+                {scope === "project" ? "No previous month" : "no history yet"}
+              </span>
             ) : null}
             {metric.detail && (
               <span className={cn("pmo-num text-[11px]", toneClass[metric.detail.tone])}>

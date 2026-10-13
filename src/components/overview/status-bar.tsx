@@ -11,13 +11,17 @@ export function StatusBar({
   openMonth,
   activeProjects,
   live = true,
+  scope = "portfolio",
   className,
 }: {
   asOf: string | null;
   closedMonth: string | null;
   openMonth: string;
-  activeProjects: number;
+  /** Portfolio only; the project status bar has no project count. */
+  activeProjects?: number;
   live?: boolean;
+  /** project: "Data last changed …" and "Financials closed to September, October open". */
+  scope?: "portfolio" | "project";
   className?: string;
 }) {
   const format = useFormat();
@@ -40,12 +44,26 @@ export function StatusBar({
         {live ? "Live" : "Offline"}
       </span>
       <span>
-        {asOf ? `Data as of ${format.date(asOf)}${time ? ` ${time}` : ""}` : "No data yet"}
+        {asOf
+          ? `${scope === "project" ? "Data last changed" : "Data as of"} ${format.date(asOf)}${time ? ` ${time}` : ""}`
+          : "No data yet"}
       </span>
-      <span>{closedMonth ? `${closedMonth} closed · ${openMonth} open` : `${openMonth} open`}</span>
-      <span>
-        {activeProjects} active {activeProjects === 1 ? "project" : "projects"}
-      </span>
+      {scope === "project" ? (
+        <span>
+          {closedMonth
+            ? `Financials closed to ${closedMonth}, ${openMonth} open`
+            : `No financial month closed yet, ${openMonth} open`}
+        </span>
+      ) : (
+        <span>
+          {closedMonth ? `${closedMonth} closed · ${openMonth} open` : `${openMonth} open`}
+        </span>
+      )}
+      {activeProjects !== undefined && (
+        <span>
+          {activeProjects} active {activeProjects === 1 ? "project" : "projects"}
+        </span>
+      )}
     </footer>
   );
 }

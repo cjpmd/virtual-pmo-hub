@@ -124,6 +124,28 @@ Options:
   member to impersonate, and RLS overhead comes back into every refresh.
 - Measure first with a synthetic second tenant (500-project org exists locally for this).
 
+## Stage 2 and 3: project overview (13/10/2026)
+
+- `get_project_overview(project_id)` (migration `20261013165004`): one security-invoker call with
+  the raw rows; health from `project_health_current`. ARB ~26 ms in the database.
+- Overview tab, second dark band (`components/overview/project-overview-band.tsx`): SummaryStrip,
+  ProgressChart and SignalsList with `scope="project"`, plus StatusBar `scope="project"`. The
+  builders are the shared ones (`overview.ts` getProjectSummaryMetrics, `progress-chart.ts`
+  `project` window, `overview-panels.ts` buildProjectSignals); unit tests in
+  `services/project-overview.test.ts`.
+- Project chart: project start to the later of baseline and forecast finish; plan = budget
+  phasing ÷ phased total; spend = closed-month actuals ÷ approved budget (forecast values after
+  the last closed month); milestones and tasks ÷ the whole project; capabilities and outcomes as
+  one line; closed projects draw no forecast. The spend-vs-delivery signal reads the chart's own
+  figures, so the gap callout, the signal and "Spent to date" agree.
+- Signal "Red risk not updated in N days" uses `updated_at` (no review history yet; see the RAID
+  log backlog). `?dialog=justify` opens Add justification; other signals open their tab via
+  `?tab=&sub=`.
+- MilestoneSlippage, MilestoneDeliveryProfile and HealthByDimension moved unchanged to
+  `components/overview/` (portfolio home pixel-identical before and after).
+- Seed data: several projects have no budget phasing (no Plan line, e.g. ARB), and closed
+  projects' actuals are one lump in Sep 2026 (FSC shows 0% spend inside its window).
+
 ## Pre-launch security task: review signed-in RPCs and business case FK indexes
 
 Not now; do before launch. Don't change them until reviewed. The security advisor flags three
