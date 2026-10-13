@@ -9,6 +9,7 @@ const today = "2026-10-13";
 const milestones = [
   {
     id: "1",
+    slipBand: "on_time",
     title: "Delivery",
     type: "delivery",
     baselineDate: "2026-09-01",
@@ -18,6 +19,7 @@ const milestones = [
   },
   {
     id: "2",
+    slipBand: "severe",
     title: "GATE 0",
     type: "gate",
     baselineDate: "2026-09-16",
@@ -27,6 +29,7 @@ const milestones = [
   },
   {
     id: "3",
+    slipBand: "on_time",
     title: "Design authority",
     type: "gate",
     baselineDate: "2026-11-09",
@@ -36,6 +39,7 @@ const milestones = [
   },
   {
     id: "4",
+    slipBand: "minor",
     title: "Delivery 2",
     type: "delivery",
     baselineDate: "2026-11-27",
@@ -45,6 +49,7 @@ const milestones = [
   },
   {
     id: "5",
+    slipBand: "on_time",
     title: "External",
     type: "external_dependency",
     baselineDate: "2026-12-30",
@@ -110,7 +115,9 @@ describe("project progress chart", () => {
     expect(data.current.spend).toBeCloseTo(55.2, 1); // 160k of 290k; October is still open
     expect(data.current.milestones).toBe(20); // 1 of 5 delivered
     expect(data.current.tasks).toBe(12.5); // 1 of 8 done
-    expect(data.available.has("plan")).toBe(false); // no budget phasing
+    // No budget profile: even phasing over Mar 26–Mar 27 (13 months), 7 of them by September.
+    expect(data.evenPhasing).toBe(true);
+    expect(data.points.find((p) => p.month === "2026-09")?.values.plan).toBeCloseTo(53.8, 1);
     expect(data.gap).toBe(35);
     // The open month's forecast is counted from November on.
     expect(data.points.find((p) => p.month === "2026-11")?.values.spend).toBe(100);
@@ -209,17 +216,17 @@ describe("project signals", () => {
     },
     openRaid: [],
     redRiskMinScore: 15,
-    spendPercent: 55.2,
-    deliveredPercent: 20,
+    spendVsPlan: { month: "September", spend: 55.2, plan: 53.8 },
+    milestonesBaselinedByNow: 2,
+    milestonesDelivered: 1,
     date: (iso: string) => iso.split("-").reverse().join("/"),
   };
 
-  it("lists ARB's divergence, overdue report and spend lead, serious first", () => {
+  it("lists ARB's divergence and overdue report; spend is within 15 points of plan", () => {
     const signals = buildProjectSignals(base);
     expect(signals.map((s) => s.title)).toEqual([
       "Report says amber, evidence says red",
       "Status report overdue by 2 days",
-      "Spend ahead of delivery by 35 points",
     ]);
     expect(signals[0]?.link).toEqual({
       kind: "projectTab",
@@ -241,7 +248,7 @@ describe("project signals", () => {
         finishSlipHealth: "At Risk",
         milestonesAfterBaselineFinish: 2,
       },
-      spendPercent: 20,
+      spendVsPlan: undefined,
       openRaid: [
         {
           kind: "risk",
@@ -270,5 +277,15 @@ describe("project signals", () => {
     expect(signals.find((s) => s.id === "divergence")?.title).toBe(
       "Justified: report says amber, evidence says red",
     );
+  });
+
+  it("raises the spend signal only when spend leads plan and delivery is behind", () => {
+    const ahead = { month: "September", spend: 80, plan: 50 };
+    const fired = buildProjectSignals({ ...base, spendVsPlan: ahead });
+    expect(fired.find((s) => s.id === "spend-lead")?.title).toBe(
+      "Spending ahead of plan while delivery is behind (spend +30 pts, 1 milestone behind)",
+    );
+    const onTrack = buildProjectSignals({ ...base, spendVsPlan: ahead, milestonesDelivered: 2 });
+    expect(onTrack.some((s) => s.id === "spend-lead")).toBe(false);
   });
 });

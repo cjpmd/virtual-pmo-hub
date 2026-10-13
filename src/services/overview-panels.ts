@@ -468,9 +468,14 @@ export interface ProjectSignalInput {
   > | null;
   openRaid: OpenRaidItem[];
   redRiskMinScore: number;
-  /** Spent to date as % of budget, and milestones delivered as % of all milestones. */
-  spendPercent: number | undefined;
-  deliveredPercent: number | undefined;
+  /**
+   * At the last closed month: cumulative spend and plan as % of budget (the chart's values; the
+   * plan is even phasing when there is no budget profile). Undefined when nothing is closed.
+   */
+  spendVsPlan: { month: string; spend: number; plan: number } | undefined;
+  /** Milestones baselined on or before today, and milestones delivered. */
+  milestonesBaselinedByNow: number;
+  milestonesDelivered: number;
   date: (iso: string) => string;
 }
 
@@ -575,16 +580,18 @@ export function buildProjectSignals(input: ProjectSignalInput): Signal[] {
         action: "Review risk",
       });
 
-  // 4. Spend ahead of delivery.
-  if (!input.closed && input.spendPercent !== undefined && input.deliveredPercent !== undefined) {
-    const lead = Math.round(input.spendPercent - input.deliveredPercent);
-    if (lead > SPEND_LEAD_POINTS)
+  // 4. Spending ahead of plan while delivery is behind: both must hold.
+  const plan = input.spendVsPlan;
+  const behind = input.milestonesBaselinedByNow - input.milestonesDelivered;
+  if (!input.closed && plan) {
+    const lead = Math.round(plan.spend - plan.plan);
+    if (lead > SPEND_LEAD_POINTS && behind > 0)
       out.push({
         id: "spend-lead",
         date: today,
         tone: "bad",
-        title: `Spend ahead of delivery by ${lead} points`,
-        detail: `${Math.round(input.spendPercent)}% of budget spent, ${Math.round(input.deliveredPercent)}% of milestones delivered.`,
+        title: `Spending ahead of plan while delivery is behind (spend +${lead} pts, ${plural(behind, "milestone")} behind)`,
+        detail: `${Math.round(plan.spend)}% of budget spent against ${Math.round(plan.plan)}% planned by the end of ${plan.month}; ${input.milestonesDelivered} of ${input.milestonesBaselinedByNow} milestones due by now delivered.`,
         link: tab("financials"),
         action: "Open financials",
       });
