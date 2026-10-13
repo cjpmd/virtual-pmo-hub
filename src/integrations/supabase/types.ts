@@ -12674,6 +12674,7 @@ export type Database = {
         }
         Returns: Json
       }
+      get_project_overview: { Args: { p_project: string }; Returns: Json }
       join_demo_organisation: { Args: never; Returns: string }
       my_workspace_roles: {
         Args: never
