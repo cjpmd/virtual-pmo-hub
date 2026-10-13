@@ -156,6 +156,25 @@ Options:
 - Seed data: closed projects' actuals are one lump in Sep 2026 (FSC, SDO, SFZ, UC2); FSC fix
   proposed in `docs/sql/seed-fsc-actuals-in-window.sql`.
 
+## Stage 4: project overview, light working area (14/10/2026)
+
+- `components/overview/project-overview-work.tsx`, in order: schedule forecast card (replaces
+  the sprint forecast card), MilestoneSlippage, MilestoneDeliveryProfile + HealthByDimension,
+  last highlight report + top risks and issues. The three portfolio cards take
+  `scope="project"`; portfolio mode is unchanged (portfolio home pixel-identical).
+- Figures from `services/project-schedule.ts` (unit-tested): the Stage 2 rules for overdue,
+  hit baseline, average slip, reforecast and the forecast range (late = forecast + average slip,
+  at least 7 days); top risks and issues ranked by band / severity, then days since update.
+- Shared primitives gained opt-in props only: Dumbbell (dashed rows, a marker through every row,
+  "Delivered" tooltip label), CumulativeArea (coloured sign-off dots, a gap bracket at today,
+  whole-number ticks), ChartCard `className` accepts undefined.
+- Kept below the new layout because the design has no place for them yet: the gate checklist
+  and the activity timeline. Decide whether they move (e.g. to Status / Plan) or stay.
+- Empty states: no milestones, no report, no health history ("History starts …"; closed projects
+  with no snapshots say "No health history"), closed projects show final values with no forecast.
+- No-milestones screenshot used a test project (ZZT) in the outsider organisation, archived after;
+  app users cannot hard-delete (no DELETE grant), so delete it in the SQL editor if wanted.
+
 ## Pre-launch security task: review signed-in RPCs and business case FK indexes
 
 Not now; do before launch. Don't change them until reviewed. The security advisor flags three

@@ -40,6 +40,11 @@ export interface ProjectOverviewMilestone extends ChartMilestone {
 /** project_health_current: the stored copy of v_project_health and v_project_divergence. */
 export interface ProjectOverviewHealth {
   overall: Health;
+  schedule: Health;
+  financial: Health;
+  effort: Health;
+  issue: Health;
+  benefit: Health;
   declared: Health | null;
   evidenced: Health | null;
   divergent: boolean;
@@ -68,6 +73,47 @@ export interface OpenRaidItem {
   reviewDate: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/** The five evidenced dimensions plus overall, in display order. */
+export const HEALTH_DIMENSIONS = [
+  "schedule",
+  "financial",
+  "effort",
+  "issue",
+  "benefit",
+  "overall",
+] as const;
+export type HealthDimension = (typeof HEALTH_DIMENSIONS)[number];
+
+/** Last health snapshot in a month, with the ratings declared in the report current then. */
+export interface ProjectHealthMonth {
+  month: string; // YYYY-MM
+  snapshotDate: string;
+  /** seed = sample history loaded with the demo data; job = taken by the nightly snapshot. */
+  source: string;
+  evidenced: Record<HealthDimension, Health>;
+  /** Null when no report had been submitted by that month-end. */
+  declared: Record<HealthDimension, Health> | null;
+}
+
+export interface LatestReport {
+  id: string;
+  reportingDate: string;
+  submittedAt: string | null;
+  author: string | null;
+  comments: string | null;
+  accomplished: string | null;
+  planned: string | null;
+  decisionsNeeded: string | null;
+  declared: Record<HealthDimension, Health>;
+  /** Evidence captured when the report was submitted. */
+  evidenced: Record<HealthDimension, Health>;
+}
+
+export interface RiskBand {
+  label: string;
+  minScore: number;
 }
 
 export interface ProjectOverviewData {
@@ -100,14 +146,21 @@ export interface ProjectOverviewData {
   /** Month-end budget / EAC / actuals (financial_forecast_history); empty until the first close. */
   forecastHistory: Array<{ month: string; budget: number; eac: number; actualToDate: number }>;
   projectHistory: ProjectSnapshot[];
-  latestReport: { reportingDate: string; submittedAt: string | null; author: string | null } | null;
+  healthMonths: ProjectHealthMonth[];
+  latestReport: LatestReport | null;
   openRaid: OpenRaidItem[];
+  riskBands: RiskBand[];
   inputs: ProgressInputs;
 }
 
 /** The project_health_current columns the overview reads. */
 interface RpcHealth {
   overall: string;
+  schedule: string;
+  financial: string;
+  effort: string;
+  issue: string;
+  benefit: string;
   declared: string | null;
   evidenced: string | null;
   divergent: boolean | null;
@@ -168,12 +221,40 @@ interface RpcPayload {
   } | null;
   moneyByMonth: RpcMoneyRow[];
   forecastHistory: Array<{ month: string; budget: number; eac: number; actual_to_date: number }>;
-  projectSnapshots: RpcProjectSnap[];
+  projectSnapshots: Array<
+    RpcProjectSnap & {
+      source: string;
+      declared_overall: string | null;
+      declared_schedule: string | null;
+      declared_financial: string | null;
+      declared_effort: string | null;
+      declared_issue: string | null;
+      declared_benefit: string | null;
+    }
+  >;
   latestReport: {
+    id: string;
     reporting_date: string;
     submitted_at: string | null;
     author: string | null;
+    comments: string | null;
+    accomplished: string | null;
+    planned: string | null;
+    decisions_needed: string | null;
+    declared_overall: string | null;
+    declared_schedule: string | null;
+    declared_financial: string | null;
+    declared_effort: string | null;
+    declared_issue: string | null;
+    declared_benefit: string | null;
+    evidenced_overall: string | null;
+    evidenced_schedule: string | null;
+    evidenced_financial: string | null;
+    evidenced_effort: string | null;
+    evidenced_issue: string | null;
+    evidenced_benefit: string | null;
   } | null;
+  riskBands: Array<{ label?: string; minScore?: number | string }>;
   openRaid: Array<{
     kind: "risk" | "issue";
     id: string;
@@ -220,12 +301,23 @@ export function expandTaskMonths(rows: RpcTaskMonth[]): ProgressInputs["tasks"] 
   return tasks;
 }
 
+/** One Health per dimension, read with `pick` (a column name per dimension). */
+const dims = (pick: (d: HealthDimension) => string | null | undefined) =>
+  Object.fromEntries(
+    HEALTH_DIMENSIONS.map((d) => [d, toHealth((pick(d) ?? null) as RagText)]),
+  ) as Record<HealthDimension, Health>;
+
 const num = (value: number | null) => (value === null ? null : Number(value));
 
 function toHealthRow(h: RpcHealth): ProjectOverviewHealth {
   const kind = h.divergence_kind;
   return {
     overall: toHealth(h.overall as RagText),
+    schedule: toHealth(h.schedule as RagText),
+    financial: toHealth(h.financial as RagText),
+    effort: toHealth(h.effort as RagText),
+    issue: toHealth(h.issue as RagText),
+    benefit: toHealth(h.benefit as RagText),
     declared: rag(h.declared),
     evidenced: rag(h.evidenced),
     divergent: h.divergent === true,
@@ -303,11 +395,29 @@ export async function getProjectOverviewData(
       actualToDate: Number(row.actual_to_date),
     })),
     projectHistory: rpc.projectSnapshots.map(toProjectSnapshot),
+    healthMonths: rpc.projectSnapshots.map((row) => ({
+      month: row.snapshot_date.slice(0, 7),
+      snapshotDate: row.snapshot_date,
+      source: row.source,
+      evidenced: dims((d) => row[d]),
+      declared: row.declared_overall ? dims((d) => row[`declared_${d}`]) : null,
+    })),
     latestReport: rpc.latestReport && {
+      id: rpc.latestReport.id,
       reportingDate: rpc.latestReport.reporting_date,
       submittedAt: rpc.latestReport.submitted_at,
       author: rpc.latestReport.author,
+      comments: rpc.latestReport.comments,
+      accomplished: rpc.latestReport.accomplished,
+      planned: rpc.latestReport.planned,
+      decisionsNeeded: rpc.latestReport.decisions_needed,
+      declared: dims((d) => rpc.latestReport?.[`declared_${d}`] ?? null),
+      evidenced: dims((d) => rpc.latestReport?.[`evidenced_${d}`] ?? null),
     },
+    riskBands: rpc.riskBands
+      .map((band) => ({ label: band.label ?? "", minScore: Number(band.minScore) }))
+      .filter((band) => Number.isFinite(band.minScore))
+      .sort((a, b) => a.minScore - b.minScore),
     openRaid: rpc.openRaid.map((row) => ({
       kind: row.kind,
       id: row.id,

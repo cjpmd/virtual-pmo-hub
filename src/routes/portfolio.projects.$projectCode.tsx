@@ -1,13 +1,12 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { CalendarDays, CheckCircle2, Circle, Gavel } from "lucide-react";
+import { CheckCircle2, Circle, Gavel } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { AppraisalPanel } from "@/components/appraisal-panel";
 import { BenefitSummary } from "@/components/benefit-summary";
 import { BenefitsHandoverWizard } from "@/components/benefits-handover";
 import { ProjectAppraisal, ProjectBenefits } from "@/components/project-benefits";
-import { DeliveryStatusIcon } from "@/components/board-workspace";
 import { DecisionPanel } from "@/components/decision-panel";
-import { DeliveryWorkspace, ForecastPanel } from "@/components/delivery-workspace";
+import { DeliveryWorkspace } from "@/components/delivery-workspace";
 import { DependencyTab } from "@/components/dependency-tab";
 import { ChangeBaselineAction } from "@/components/change-baseline";
 import { toBaselineChange } from "@/services/financials";
@@ -15,7 +14,6 @@ import { ProjectFinancials } from "@/components/project-financials";
 import { GateChecklist } from "@/components/gate-checklist";
 import { HealthPill } from "@/components/health-pill";
 import { LessonsTab } from "@/components/lessons-tab";
-import { KpiCard } from "@/components/pmo-ui";
 import { ProjectMilestones } from "@/components/project-milestones";
 import { ProjectRaid } from "@/components/project-raid";
 import { ProjectResources } from "@/components/project-resources";
@@ -25,16 +23,15 @@ import { AssumptionsWorkspace } from "@/components/assumptions-workspace";
 import { ProjectHeader } from "@/components/project-header";
 import { TopBand } from "@/components/shell-slots";
 import { ProjectOverviewBand } from "@/components/overview/project-overview-band";
+import { ProjectOverviewWork } from "@/components/overview/project-overview-work";
 import { StatusWorkspace } from "@/components/status-workspace";
 import { TaskWorkspace } from "@/components/task-workspace";
-import { Button } from "@/components/ui/button";
 import {
   useMilestones,
   usePeople,
   usePhases,
   usePortfolioNames,
   useProject,
-  useRaid,
   useProjectPermissions,
 } from "@/hooks/use-hierarchy";
 import { useFormat } from "@/lib/format";
@@ -48,7 +45,6 @@ import {
   type ProjectSubtab,
   type ProjectTab,
 } from "@/lib/project-tabs";
-import { daysFromToday, todayIso } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { useProjectAssurance } from "@/hooks/use-assurance";
 import { useStatusReports } from "@/hooks/use-status-reports";
@@ -185,17 +181,12 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
   const phases = usePhases();
   const portfolios = usePortfolioNames();
   const people = usePeople();
-  const raid = useRaid(project.id);
   const milestones = useMilestones([project.id], project.id);
   const portfolio = portfolios.data?.find((item) => item.id === project.portfolioId);
   const names = useMemo(
     () => new Map((people.data ?? []).map((person) => [person.id, person.name])),
     [people.data],
   );
-  const topRisks = (raid.data?.risks ?? []).filter((risk) => risk.status === "Open").slice(0, 3);
-  const upcoming = (milestones.data ?? [])
-    .filter((item) => item.status !== "Completed")
-    .slice(0, 5);
 
   // ---- Still prototype data (Stage 4c), keyed by the demo project's old id ----
   const permissions = useProjectPermissions(project.id);
@@ -224,12 +215,6 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
       : false;
   const projectTypeTags = Array.from(new Set(lessons.flatMap((lesson) => lesson.projectTypeTags)));
   const assurance = useProjectAssurance(project).data ?? undefined;
-  const elapsed = (() => {
-    const fromStart = daysFromToday(project.startDate),
-      toFinish = daysFromToday(project.finishDate);
-    if (fromStart === undefined || toFinish === undefined || toFinish - fromStart <= 0) return 0;
-    return Math.min(100, Math.max(0, Math.round((-fromStart / (toFinish - fromStart)) * 100)));
-  })();
 
   const activity = [
     ...decisions.map((item) => ({
@@ -311,76 +296,16 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
         </div>
       )}
 
-      {tab === "overview" && <ForecastPanel projectId={project.code} />}
       {tab === "overview" && (
-        <div className="grid gap-5 xl:grid-cols-12">
-          <div className="space-y-5 xl:col-span-8">
-            <div className="grid gap-4 sm:grid-cols-3">
-              <KpiCard
-                label="Budget"
-                value={format.compact(project.budget)}
-                detail={`${format.compact(project.actual)} actual`}
-                icon="budget"
-              />
-              <KpiCard
-                label="Forecast"
-                value={format.compact(project.forecast)}
-                detail={`${format.compact(project.forecast - project.budget)} variance`}
-                icon="forecast"
-              />
-              <KpiCard
-                label="Task progress"
-                value={`${project.averagePercentComplete}%`}
-                detail={`${project.taskCount} tasks · ${project.overdueTaskCount} overdue`}
-                icon="projects"
-              />
-            </div>
-            <Section title="Delivery timeline">
-              <div className="mt-5 flex items-center gap-3">
-                <CalendarDays className="size-5 text-primary" />
-                <div className="flex-1">
-                  <div className="h-2 rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full bg-primary"
-                      style={{ width: `${elapsed}%` }}
-                    />
-                  </div>
-                  <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-                    <span>{format.date(project.startDate ?? undefined)}</span>
-                    <span>{format.date(todayIso())}</span>
-                    <span>{format.date(project.finishDate ?? undefined)}</span>
-                  </div>
-                </div>
-              </div>
-            </Section>
-            <Section title="Latest status report">
-              {reports[0] ? (
-                <div className="mt-4">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <HealthPill health={reports[0].overall} />
-                    <span className="text-xs text-muted-foreground">
-                      {format.date(reports[0].reportingDate)} · {reports[0].submitter}
-                    </span>
-                  </div>
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <p className="text-xs font-semibold">Accomplished</p>
-                      <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                        {reports[0].accomplished}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold">Planned next</p>
-                      <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                        {reports[0].planned}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p className="mt-3 text-sm text-muted-foreground">No report submitted.</p>
-              )}
-            </Section>
+        <ProjectOverviewWork
+          project={project}
+          onOpen={(target) => setTab(target.tab, "sub" in target ? target.sub : undefined)}
+        />
+      )}
+      {/* Not in the overview design; kept below it until their own place is decided. */}
+      {tab === "overview" && (
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <div className="min-w-0">
             <Section title="Activity timeline">
               <div className="mt-4 divide-y">
                 {activity.map((entry) => (
@@ -422,34 +347,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
               </div>
             </Section>
           </div>
-          <div className="space-y-5 xl:col-span-4">
-            <Section
-              title="Top risks"
-              actions={
-                <Button variant="link" size="sm" onClick={() => setTab("raid")}>
-                  Open RAID
-                </Button>
-              }
-            >
-              <div className="mt-4 space-y-3">
-                {topRisks.map((risk) => (
-                  <div key={risk.id} className="rounded-md border border-border p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-semibold">{risk.title}</p>
-                      <span className="rounded bg-health-warn/20 px-2 py-0.5 text-xs font-semibold text-health-warn-foreground">
-                        {risk.score}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                      {risk.description}
-                    </p>
-                  </div>
-                ))}
-                {raid.isSuccess && !topRisks.length && (
-                  <p className="text-sm text-muted-foreground">No open risks.</p>
-                )}
-              </div>
-            </Section>
+          <div className="min-w-0">
             {
               <GateChecklist
                 project={project}
@@ -463,39 +361,6 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
                 }
               />
             }
-            <Section
-              title="Upcoming milestones"
-              actions={
-                <Button variant="link" size="sm" onClick={() => setTab("plan", "milestones")}>
-                  All milestones
-                </Button>
-              }
-            >
-              <div className="mt-4 divide-y">
-                {upcoming.map((item) => (
-                  <div key={item.id} className="flex items-start gap-3 py-3">
-                    <DeliveryStatusIcon status={item.status} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{item.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.type} · {(item.ownerId && names.get(item.ownerId)) || "Unassigned"}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs">{format.date(item.forecastDate)}</p>
-                      {item.baselineDate !== item.forecastDate && (
-                        <p className="text-[10px] text-health-warn-foreground">
-                          Baseline {format.date(item.baselineDate)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                {milestones.isSuccess && !upcoming.length && (
-                  <p className="py-3 text-sm text-muted-foreground">No upcoming milestones.</p>
-                )}
-              </div>
-            </Section>
           </div>
         </div>
       )}

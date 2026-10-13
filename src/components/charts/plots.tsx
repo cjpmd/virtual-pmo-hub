@@ -307,6 +307,9 @@ export function CumulativeArea({
   valueLabel = "Delivered",
   plannedLabel = "Planned",
   bandLabel = "Forecast range",
+  dotColour,
+  gap,
+  integerTicks = false,
 }: {
   data: CurvePoint[];
   format: (value: number) => string;
@@ -317,6 +320,12 @@ export function CumulativeArea({
   valueLabel?: string;
   plannedLabel?: string;
   bandLabel?: string;
+  /** A dot on the actual line where this returns a colour (e.g. on time / late sign-offs). */
+  dotColour?: ((point: CurvePoint, index: number) => string | undefined) | undefined;
+  /** A bracket at today between actual and planned, labelled (e.g. "1 behind plan"). */
+  gap?: { from: number; to: number; label: string } | undefined;
+  /** Whole-number value ticks only (small counts). */
+  integerTicks?: boolean;
 }) {
   const gradientId = useId().replace(/[^a-zA-Z0-9]/g, "");
   const TooltipContent = makeRechartsTooltip((payload) => {
@@ -347,6 +356,25 @@ export function CumulativeArea({
           }),
     };
   });
+  const renderDot = (props: { cx?: number; cy?: number; index?: number; payload?: CurvePoint }) => {
+    const colour =
+      dotColour && props.payload && props.index !== undefined
+        ? dotColour(props.payload, props.index)
+        : undefined;
+    return colour && props.cx !== undefined && props.cy !== undefined ? (
+      <circle
+        key={`dot-${props.index}`}
+        cx={props.cx}
+        cy={props.cy}
+        r={4.5}
+        fill={colour}
+        stroke="var(--viz-surface)"
+        strokeWidth={1.5}
+      />
+    ) : (
+      <g key={`dot-${props.index}`} />
+    );
+  };
   return (
     <ResponsiveContainer width="100%" height={height}>
       <ComposedChart data={data} margin={{ top: 12, right: 16, bottom: 4, left: 4 }}>
@@ -358,7 +386,12 @@ export function CumulativeArea({
         </defs>
         <CartesianGrid {...gridProps} />
         <XAxis dataKey="period" {...axisProps} interval="preserveStartEnd" minTickGap={16} />
-        <YAxis {...axisProps} width={58} tickFormatter={(value) => format(Number(value))} />
+        <YAxis
+          {...axisProps}
+          width={58}
+          tickFormatter={(value) => format(Number(value))}
+          {...(integerTicks ? { allowDecimals: false } : {})}
+        />
         <Tooltip
           content={<TooltipContent />}
           cursor={{ stroke: "var(--viz-axis)", strokeWidth: 1 }}
@@ -388,11 +421,28 @@ export function CumulativeArea({
           stroke="var(--viz-cat-1)"
           strokeWidth={2.5}
           fill={`url(#${gradientId})`}
-          dot={false}
+          dot={dotColour ? renderDot : false}
           activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--viz-surface)" }}
           animationDuration={520}
           connectNulls={false}
         />
+        {gap && todayPeriod ? (
+          <ReferenceLine
+            segment={[
+              { x: todayPeriod, y: gap.from },
+              { x: todayPeriod, y: gap.to },
+            ]}
+            stroke="var(--viz-critical)"
+            strokeWidth={2.5}
+            label={{
+              value: gap.label,
+              position: "right",
+              fill: "var(--viz-critical)",
+              fontSize: 11,
+              fontWeight: 600,
+            }}
+          />
+        ) : null}
         {target === undefined ? null : (
           <ReferenceLine
             y={target}
