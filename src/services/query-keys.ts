@@ -55,6 +55,8 @@ export const qk = {
     assurance: (orgId: string) => ["org", orgId, "projects", "assurance"] as const,
     projectAssurance: (orgId: string, projectId: string) =>
       ["org", orgId, "projects", "assurance", projectId] as const,
+    overview: (orgId: string, projectId: string) =>
+      ["org", orgId, "projects", projectId, "overview"] as const,
     allTasks: (orgId: string) => ["org", orgId, "projects", "all-tasks"] as const,
     tasks: (orgId: string, projectId: string) =>
       ["org", orgId, "projects", projectId, "tasks"] as const,

@@ -2,6 +2,7 @@ import { useMemo, useState, type KeyboardEvent } from "react";
 import { useMeasuredWidth } from "@/components/charts/use-measure";
 import { cn } from "@/lib/utils";
 import {
+  PROJECT_TABS,
   SERIES,
   TABS,
   type ChartRange,
@@ -30,23 +31,32 @@ const fmt = (key: SeriesKey, value: number | undefined) =>
  */
 export function ProgressChart({
   data,
-  range,
+  range = "fy",
   onRangeChange,
+  scope = "portfolio",
 }: {
   data: ProgressChartData;
-  range: ChartRange;
-  onRangeChange: (range: ChartRange) => void;
+  range?: ChartRange;
+  onRangeChange?: (range: ChartRange) => void;
+  /**
+   * project: the project overview's presets (Overlay, Spend, Delivery, Benefits), the
+   * project's own window instead of a range switch, and labelled start / gate / finish lines.
+   */
+  scope?: "portfolio" | "project";
 }) {
+  const project = scope === "project";
+  const tabs: Partial<Record<ChartTab, { label: string; chips: SeriesKey[]; on: SeriesKey[] }>> =
+    project ? PROJECT_TABS : TABS;
   const [tab, setTab] = useState<ChartTab>("overlay");
-  const [on, setOn] = useState<Set<SeriesKey>>(() => new Set(TABS.overlay.on));
+  const [on, setOn] = useState<Set<SeriesKey>>(() => new Set(tabs.overlay?.on));
   const [cursor, setCursor] = useState<number | null>(null);
   const { ref, width } = useMeasuredWidth(640);
 
-  const chips = TABS[tab].chips.filter((key) => data.available.has(key));
+  const chips = (tabs[tab]?.chips ?? []).filter((key) => data.available.has(key));
   const visible = chips.filter((key) => on.has(key));
   const selectTab = (next: ChartTab) => {
     setTab(next);
-    setOn(new Set(TABS[next].on));
+    setOn(new Set(tabs[next]?.on));
   };
   const toggle = (key: SeriesKey) =>
     setOn((prev) => {
@@ -56,9 +66,9 @@ export function ProgressChart({
       return next;
     });
 
-  const height = tab === "timeline" ? 340 : 250;
+  const height = tab === "timeline" ? 340 : project ? 290 : 250;
   const showRisks = visible.includes("risks");
-  const pad = { top: 26, right: showRisks ? 40 : 14, bottom: 24, left: 38 };
+  const pad = { top: project ? 38 : 26, right: showRisks ? 40 : 14, bottom: 24, left: 38 };
   const innerW = Math.max(10, width - pad.left - pad.right);
   const innerH = height - pad.top - pad.bottom;
   const n = data.points.length;
@@ -111,7 +121,7 @@ export function ProgressChart({
   const spendNow = data.current.spend,
     milestonesNow = data.current.milestones;
   const summary = [
-    `Portfolio progress, ${data.points[0]?.label ?? ""} to ${data.points[n - 1]?.label ?? ""}.`,
+    `${project ? "Project" : "Portfolio"} progress, ${data.points[0]?.label ?? ""} to ${data.points[n - 1]?.label ?? ""}.`,
     ...visible.map((key) => `${SERIES[key].label} ${fmt(key, data.current[key])}`),
     data.gap !== null ? `Spend leads milestones by ${data.gap} points.` : "",
   ]
@@ -123,19 +133,56 @@ export function ProgressChart({
     visible.includes("spend") &&
     visible.includes("milestones");
   const cursorPoint = cursor === null ? null : data.points[cursor];
+  // Month labels: every one up to 14 months (12 beyond), thinned further when they'd collide.
+  const labelEvery = Math.max(
+    n <= 14 ? 1 : Math.ceil(n / 12),
+    Math.ceil(n / Math.max(1, Math.floor(innerW / 44))),
+  );
+  const markerX = (marker: ProgressChartData["markers"][number]) => {
+    const index = data.points.findIndex((p) => p.month === marker.month);
+    if (index < 0) return null;
+    const day = Number(marker.date.slice(8, 10)) / 31;
+    return Math.min(pad.left + innerW, x(index) + (n > 1 ? day * (innerW / (n - 1)) : 0));
+  };
+  // Project scope: every marker is a labelled dotted line; labels take the first of two rows
+  // where they don't overlap the previous label (otherwise only the line and its tooltip show).
+  const projectMarks = project
+    ? (() => {
+        const rowEnd = [-Infinity, -Infinity];
+        return [...data.markers]
+          .map((marker) => ({ marker, mx: markerX(marker) }))
+          .filter((m): m is { marker: (typeof data.markers)[number]; mx: number } => m.mx !== null)
+          .sort((a, b) => a.mx - b.mx)
+          .map(({ marker, mx }) => {
+            const w = marker.label.length * 5.6;
+            const start = Math.max(pad.left, Math.min(mx - w / 2, pad.left + innerW - w));
+            const row = rowEnd.findIndex((end) => start > end + 6);
+            if (row >= 0) rowEnd[row] = start + w;
+            return { marker, mx, row, start };
+          });
+      })()
+    : [];
 
   return (
     <section
-      aria-label="Portfolio progress"
+      aria-label={project ? "Project progress" : "Portfolio progress"}
       className="flex min-w-0 flex-col gap-2.5 px-4 py-3.5 font-geist sm:px-5"
     >
       <div className="flex flex-wrap items-center justify-between gap-2.5">
+        {project && (
+          <div className="min-w-0">
+            <h2 className="text-[15px] font-semibold text-pmo-text">Progress against plan</h2>
+            <p className="text-[12.5px] text-pmo-muted">
+              Every line is a percentage of its own total plan. Solid is actual, dotted is forecast.
+            </p>
+          </div>
+        )}
         <div
           role="tablist"
           aria-label="Chart view"
           className="flex flex-wrap gap-0.5 rounded-lg bg-pmo-panel-2 p-[3px] text-xs"
         >
-          {(Object.keys(TABS) as ChartTab[]).map((key) => (
+          {(Object.keys(tabs) as ChartTab[]).map((key) => (
             <button
               key={key}
               type="button"
@@ -149,28 +196,30 @@ export function ProgressChart({
                   : "text-pmo-muted hover:text-pmo-text",
               )}
             >
-              {TABS[key].label}
+              {tabs[key]?.label}
             </button>
           ))}
         </div>
-        <div role="group" aria-label="Range" className="flex gap-0.5 text-xs">
-          {RANGES.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              aria-pressed={range === item.value}
-              onClick={() => onRangeChange(item.value)}
-              className={cn(
-                "min-h-7 rounded-md px-2",
-                range === item.value
-                  ? "bg-pmo-panel-2 text-pmo-text"
-                  : "text-pmo-muted hover:text-pmo-text",
-              )}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+        {!project && onRangeChange && (
+          <div role="group" aria-label="Range" className="flex gap-0.5 text-xs">
+            {RANGES.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                aria-pressed={range === item.value}
+                onClick={() => onRangeChange(item.value)}
+                className={cn(
+                  "min-h-7 rounded-md px-2",
+                  range === item.value
+                    ? "bg-pmo-panel-2 text-pmo-text"
+                    : "text-pmo-muted hover:text-pmo-text",
+                )}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-1.5">
@@ -270,7 +319,7 @@ export function ProgressChart({
               </text>
             ))}
           {data.points.map((point, i) =>
-            n <= 14 || i % Math.ceil(n / 12) === 0 ? (
+            i % labelEvery === 0 ? (
               <text
                 key={point.month}
                 x={x(i)}
@@ -364,8 +413,32 @@ export function ProgressChart({
               </text>
             </g>
           )}
+          {/* Project: labelled lines for start, gates, baseline and forecast finish */}
+          {projectMarks.map(({ marker, mx, row, start }, i) => (
+            <g
+              key={`${marker.label}-${i}`}
+              tabIndex={0}
+              aria-label={`${marker.label}, ${marker.date}`}
+              className="outline-none [&:focus>line]:stroke-pmo-text"
+            >
+              <title>{`${marker.label} (${marker.date.split("-").reverse().join("/")})`}</title>
+              <line
+                x1={mx}
+                x2={mx}
+                y1={pad.top - 6}
+                y2={pad.top + innerH}
+                stroke="var(--pmo-muted)"
+                strokeDasharray="1 3"
+              />
+              {row >= 0 && (
+                <text x={start} y={12 + row * 12} fontSize={10.5} fill="var(--pmo-muted)">
+                  {marker.label}
+                </text>
+              )}
+            </g>
+          ))}
           {/* Event markers along the top */}
-          {data.markers.map((marker, i) => {
+          {(project ? [] : data.markers).map((marker, i) => {
             const index = data.points.findIndex((p) => p.month === marker.month);
             if (index < 0) return null;
             const day = Number(marker.date.slice(8, 10)) / 31;
@@ -473,32 +546,47 @@ export function ProgressChart({
         )}
       </div>
 
-      <table className="sr-only">
-        <caption>Portfolio progress by month, as % of each measure's full-year plan</caption>
-        <thead>
-          <tr>
-            <th scope="col">Month</th>
-            {visible.map((key) => (
-              <th key={key} scope="col">
-                {SERIES[key].label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.points.map((point) => (
-            <tr key={point.month}>
-              <th scope="row">
-                {point.label}
-                {point.forecast ? " (forecast)" : ""}
-              </th>
+      {project && (
+        <p className="text-xs text-pmo-muted">
+          {data.gap !== null
+            ? `Spend is running ${data.gap} points ahead of delivery (milestones delivered). `
+            : ""}
+          Gates and finish dates are marked along the top.
+        </p>
+      )}
+      {/* A table can't shrink to sr-only's 1px, so the wrapper hides it (no sideways scroll). */}
+      <div className="sr-only">
+        <table>
+          <caption>
+            {project
+              ? "Project progress by month, as % of each measure's total plan"
+              : "Portfolio progress by month, as % of each measure's full-year plan"}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Month</th>
               {visible.map((key) => (
-                <td key={key}>{fmt(key, point.values[key])}</td>
+                <th key={key} scope="col">
+                  {SERIES[key].label}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.points.map((point) => (
+              <tr key={point.month}>
+                <th scope="row">
+                  {point.label}
+                  {point.forecast ? " (forecast)" : ""}
+                </th>
+                {visible.map((key) => (
+                  <td key={key}>{fmt(key, point.values[key])}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

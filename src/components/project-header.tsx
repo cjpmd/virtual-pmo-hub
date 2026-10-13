@@ -51,6 +51,8 @@ export function ProjectHeader({
   canEdit,
   tab,
   onTabChange,
+  justifyRequested,
+  onJustifyClosed,
   onHandover,
   onArchived,
 }: {
@@ -64,6 +66,9 @@ export function ProjectHeader({
   canEdit: boolean;
   tab: ProjectTab;
   onTabChange: (tab: ProjectTab) => void;
+  /** ?dialog=justify: open the Add justification form; onJustifyClosed clears the param. */
+  justifyRequested?: boolean | undefined;
+  onJustifyClosed?: (() => void) | undefined;
   onHandover: () => void;
   onArchived: () => void;
 }) {
@@ -193,7 +198,13 @@ export function ProjectHeader({
         </dl>
       </div>
 
-      <HealthBar project={project} assurance={assurance} canJustify={canEdit} />
+      <HealthBar
+        project={project}
+        assurance={assurance}
+        canJustify={canEdit}
+        justifyRequested={justifyRequested}
+        onJustifyClosed={onJustifyClosed}
+      />
 
       <div
         role="tablist"
@@ -343,12 +354,16 @@ function HealthBar({
   project,
   assurance,
   canJustify,
+  justifyRequested,
+  onJustifyClosed,
 }: {
   project: ProjectDetail;
   assurance: AssuranceRow | undefined;
   canJustify: boolean;
+  justifyRequested?: boolean | undefined;
+  onJustifyClosed?: (() => void) | undefined;
 }) {
-  const [justifying, setJustifying] = useState(false);
+  const [opened, setJustifying] = useState(false);
   const dims: Array<[string, Health]> = [
     ["Schedule", project.health.schedule],
     ["Financial", project.health.financial],
@@ -361,6 +376,7 @@ function HealthBar({
     !assurance.justified &&
     !!assurance.latestReportId &&
     canJustify;
+  const justifying = opened || (!!justifyRequested && canAdd);
   return (
     <dl
       aria-label="Project health"
@@ -403,7 +419,10 @@ function HealthBar({
               {justifying && (
                 <JustificationForm
                   row={assurance}
-                  onDone={() => setJustifying(false)}
+                  onDone={() => {
+                    setJustifying(false);
+                    if (justifyRequested) onJustifyClosed?.();
+                  }}
                   className="font-normal"
                 />
               )}

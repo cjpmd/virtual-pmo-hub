@@ -124,6 +124,49 @@ Options:
   member to impersonate, and RLS overhead comes back into every refresh.
 - Measure first with a synthetic second tenant (500-project org exists locally for this).
 
+## Stage 2 and 3: project overview (13/10/2026)
+
+- `get_project_overview(project_id)` (migration `20261013165004`): one security-invoker call with
+  the raw rows; health from `project_health_current`. ARB ~26 ms in the database.
+- Overview tab, second dark band (`components/overview/project-overview-band.tsx`): SummaryStrip,
+  ProgressChart and SignalsList with `scope="project"`, plus StatusBar `scope="project"`. The
+  builders are the shared ones (`overview.ts` getProjectSummaryMetrics, `progress-chart.ts`
+  `project` window, `overview-panels.ts` buildProjectSignals); unit tests in
+  `services/project-overview.test.ts`.
+- Project chart: project start to the later of baseline and forecast finish; plan = budget
+  phasing ÷ phased total; spend = closed-month actuals ÷ approved budget (forecast values after
+  the last closed month); milestones and tasks ÷ the whole project; capabilities and outcomes as
+  one line; closed projects draw no forecast. The spend-vs-delivery signal reads the chart's own
+  figures, so the gap callout, the signal and "Spent to date" agree.
+- Signal "Red risk not updated in N days" uses `updated_at` (no review history yet; see the RAID
+  log backlog). `?dialog=justify` opens Add justification; other signals open their tab via
+  `?tab=&sub=`.
+- MilestoneSlippage, MilestoneDeliveryProfile and HealthByDimension moved unchanged to
+  `components/overview/` (portfolio home pixel-identical before and after).
+- Seed data: several projects have no budget phasing (no Plan line, e.g. ARB), and closed
+  projects' actuals are one lump in Sep 2026 (FSC shows 0% spend inside its window).
+
+## Pre-launch security task: review signed-in RPCs and business case FK indexes
+
+Not now; do before launch. Don't change them until reviewed. The security advisor flags three
+SECURITY DEFINER functions any signed-in user can call through `/rest/v1/rpc/`:
+- `join_demo_organisation()`: can any signed-in user join the demo organisation and see its
+  data? Decide whether that is intended (demo sign-up) and, if so, that the demo org holds
+  nothing real; otherwise restrict or remove it.
+- `create_organisation(...)`: confirm it checks the caller's rights (and any limits on how many
+  organisations one user can create).
+- `submit_business_case(p_version_id)`: confirm it checks the caller's permission on that
+  version's workspace before changing status.
+The performance advisor also lists four `business_case_*` foreign keys without covering indexes
+(`business_case_benefits` category, `business_case_sections` version, `business_case_versions`
+business case and preferred option); add them in a migration with the review.
+
+## Backlog: RAID log phase
+
+- Add `last_reviewed_at` to risks and issues with a "Mark reviewed" action, then switch the
+  project signal "Red risk not updated in N days" (Stage 3, which uses `updated_at` because there
+  is no review history) to "not reviewed in N days" from `last_reviewed_at`.
+
 ## Rule: tests that write data
 
 Any test that writes data runs in a transaction that is rolled back, or on a dedicated test

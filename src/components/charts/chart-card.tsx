@@ -120,7 +120,7 @@ export interface ChartCardProps {
   table?: ReactNode;
   loading?: boolean;
   empty?: { title: string; detail: string; action?: ReactNode } | undefined;
-  className?: string;
+  className?: string | undefined;
   bodyClassName?: string;
   children: ReactNode;
 }

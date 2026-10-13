@@ -26,7 +26,7 @@ export interface OverviewRpcResult {
 
 // ---- RPC JSON row shapes -------------------------------------------------------------
 
-interface RpcProjectSnap {
+export interface RpcProjectSnap {
   project_id: string;
   snapshot_date: string;
   overall: string;
@@ -45,14 +45,14 @@ interface RpcRollupSnap {
   programme_id: string | null;
 }
 
-interface RpcMoneyRow {
+export interface RpcMoneyRow {
   project_id: string;
   month: string;
   kind: "budget" | "actual" | "forecast";
   amount: number;
 }
 
-interface RpcTaskMonth {
+export interface RpcTaskMonth {
   projectId: string;
   month: string;
   due: number;
@@ -60,7 +60,7 @@ interface RpcTaskMonth {
   done: number;
 }
 
-interface RpcRisk {
+export interface RpcRisk {
   project_id: string | null;
   score: number | null;
   created_at: string;
@@ -68,7 +68,7 @@ interface RpcRisk {
   status: string;
 }
 
-interface RpcPathwayMonth {
+export interface RpcPathwayMonth {
   snapshot_date: string;
   programme_id: string | null;
   capability_id: string | null;
@@ -81,14 +81,14 @@ interface RpcPathwayMonth {
   fy_profile_value: number | null;
 }
 
-interface RpcPathwayTarget {
+export interface RpcPathwayTarget {
   capability_id: string | null;
   outcome_id: string | null;
   target_date: string | null;
   status: string;
 }
 
-interface RpcForecast {
+export interface RpcForecast {
   project_id: string;
   month: string;
   budget: number;
@@ -140,6 +140,71 @@ function expandTasks(rows: RpcTaskMonth[]): ProgressInputs["tasks"] {
   return tasks;
 }
 
+type RagText = Parameters<typeof toHealth>[0];
+
+// Row mappers shared with the project overview (project-overview.ts), so both read the RPC
+// rows the same way.
+export const toProjectSnapshot = (row: RpcProjectSnap): ProjectSnapshot => ({
+  date: row.snapshot_date,
+  projectId: row.project_id,
+  overall: toHealth(row.overall as RagText),
+  schedule: toHealth(row.schedule as RagText),
+  financial: toHealth(row.financial as RagText),
+  effort: toHealth(row.effort as RagText),
+  issue: toHealth(row.issue as RagText),
+  benefit: toHealth(row.benefit as RagText),
+});
+
+export const toForecastPoint = (row: RpcForecast): ForecastPoint => ({
+  projectId: row.project_id,
+  month: row.month.slice(0, 7),
+  eac: Number(row.eac),
+  budget: Number(row.budget),
+});
+
+export const toMoneyRow = (row: RpcMoneyRow): ProgressInputs["money"][number] => ({
+  projectId: row.project_id,
+  month: row.month.slice(0, 7),
+  kind: row.kind,
+  amount: Number(row.amount),
+});
+
+export const toRiskRow = (row: RpcRisk): ProgressInputs["risks"][number] => ({
+  projectId: row.project_id,
+  score: Number(row.score ?? 0),
+  createdAt: row.created_at,
+  closedAt: row.closed_at,
+  status: row.status,
+});
+
+export const toPathwayRow = (row: RpcPathwayMonth): ProgressInputs["pathway"][number] => ({
+  date: row.snapshot_date,
+  programmeId: row.programme_id,
+  item: row.capability_id ?? row.outcome_id ?? row.benefit_id ?? "",
+  kind: row.capability_id
+    ? ("capability" as const)
+    : row.outcome_id
+      ? ("outcome" as const)
+      : ("benefit" as const),
+  rag: toHealth(row.rag as RagText) as Health,
+  complete: row.is_complete,
+  dueInFy: row.due_in_fy,
+  realised: row.realised_value === null ? null : Number(row.realised_value),
+  profile: row.fy_profile_value === null ? null : Number(row.fy_profile_value),
+});
+
+export const toPathwayDate = (row: RpcPathwayTarget): ProgressInputs["pathwayDates"][number] => ({
+  kind: row.capability_id ? ("capability" as const) : ("outcome" as const),
+  programmeId: "", // not needed for counting; the chart filters by date and kind
+  date: row.target_date,
+  done: row.status === "accepted" || row.status === "achieved",
+});
+
+export const toCommittee = (row: { date: string; title: string | null }) => ({
+  date: row.date,
+  title: row.title ?? "Committee",
+});
+
 /** The workspace the overview reads from (one per organisation today). */
 export async function getWorkspaceId(orgId: string): Promise<string> {
   const { data, error } = await supabase
@@ -178,7 +243,7 @@ export async function getPortfolioOverviewData(
     redRiskMinScore: rpc.redRiskMinScore,
     history: rpc.portfolioSnapshots.map((row) => ({
       date: row.snapshot_date,
-      overall: toHealth(row.overall as Parameters<typeof toHealth>[0]),
+      overall: toHealth(row.overall as RagText),
       activeProjects: metric(row.metrics, "activeProjects"),
       budget: metric(row.metrics, "budget"),
       forecast: metric(row.metrics, "forecast"),
@@ -187,62 +252,15 @@ export async function getPortfolioOverviewData(
       percentOnTrack: metric(row.metrics, "percentOnTrack"),
       milestonesDue30: metric(row.metrics, "milestonesDue30"),
     })),
-    projectHistory: rpc.projectSnapshots.map((row) => ({
-      date: row.snapshot_date,
-      projectId: row.project_id,
-      overall: toHealth(row.overall as Parameters<typeof toHealth>[0]),
-      schedule: toHealth(row.schedule as Parameters<typeof toHealth>[0]),
-      financial: toHealth(row.financial as Parameters<typeof toHealth>[0]),
-      effort: toHealth(row.effort as Parameters<typeof toHealth>[0]),
-      issue: toHealth(row.issue as Parameters<typeof toHealth>[0]),
-      benefit: toHealth(row.benefit as Parameters<typeof toHealth>[0]),
-    })),
-    forecasts: rpc.forecastHistory.map((row) => ({
-      projectId: row.project_id,
-      month: row.month.slice(0, 7),
-      eac: Number(row.eac),
-      budget: Number(row.budget),
-    })),
+    projectHistory: rpc.projectSnapshots.map(toProjectSnapshot),
+    forecasts: rpc.forecastHistory.map(toForecastPoint),
     inputs: {
-      money: rpc.moneyByMonth.map((row) => ({
-        projectId: row.project_id,
-        month: row.month.slice(0, 7),
-        kind: row.kind,
-        amount: Number(row.amount),
-      })),
+      money: rpc.moneyByMonth.map(toMoneyRow),
       tasks: expandTasks(rpc.tasksByMonth),
-      risks: rpc.risks.map((row) => ({
-        projectId: row.project_id,
-        score: Number(row.score ?? 0),
-        createdAt: row.created_at,
-        closedAt: row.closed_at,
-        status: row.status,
-      })),
-      pathway: rpc.pathwayMonthEnd.map((row) => ({
-        date: row.snapshot_date,
-        programmeId: row.programme_id,
-        item: row.capability_id ?? row.outcome_id ?? row.benefit_id ?? "",
-        kind: row.capability_id
-          ? ("capability" as const)
-          : row.outcome_id
-            ? ("outcome" as const)
-            : ("benefit" as const),
-        rag: toHealth(row.rag as Parameters<typeof toHealth>[0]) as Health,
-        complete: row.is_complete,
-        dueInFy: row.due_in_fy,
-        realised: row.realised_value === null ? null : Number(row.realised_value),
-        profile: row.fy_profile_value === null ? null : Number(row.fy_profile_value),
-      })),
-      pathwayDates: rpc.pathwayTargets.map((row) => ({
-        kind: row.capability_id ? ("capability" as const) : ("outcome" as const),
-        programmeId: "", // not needed for counting; the chart filters by date and kind
-        date: row.target_date,
-        done: row.status === "accepted" || row.status === "achieved",
-      })),
-      committees: rpc.committeeDates.map((row) => ({
-        date: row.date,
-        title: row.title ?? "Committee",
-      })),
+      risks: rpc.risks.map(toRiskRow),
+      pathway: rpc.pathwayMonthEnd.map(toPathwayRow),
+      pathwayDates: rpc.pathwayTargets.map(toPathwayDate),
+      committees: rpc.committeeDates.map(toCommittee),
     },
   };
 }

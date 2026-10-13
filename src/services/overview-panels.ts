@@ -9,6 +9,8 @@ import type { EvidencedRag } from "./forecast";
 import type { ProjectSummary, ProgrammeSummary } from "./hierarchy";
 import type { ProjectSnapshot } from "./trends";
 import type { PathwayData } from "./pathway";
+import { divergenceText } from "./assurance";
+import type { OpenRaidItem, ProjectOverviewHealth } from "./project-overview";
 
 /** Forecast movement that counts as a signal: the org default until a setting exists. */
 export const FORECAST_MOVE_THRESHOLD = { amount: 25000, percent: 5 };
@@ -257,7 +259,16 @@ export interface Signal {
     | { kind: "benefit"; id: string }
     | { kind: "pathway" }
     | { kind: "assurance" }
-    | { kind: "milestones" };
+    | { kind: "milestones" }
+    | {
+        kind: "projectTab";
+        code: string;
+        tab: "overview" | "status" | "raid" | "financials" | "plan";
+        sub?: "risks" | "milestones";
+        dialog?: "justify";
+      };
+  /** Button text for project signals ("Add justification", "Open financials"). */
+  action?: string;
 }
 
 export interface SignalInput {
@@ -425,5 +436,190 @@ export function buildSignals(input: SignalInput): Signal[] {
 
   return out
     .sort((a, b) => b.date.localeCompare(a.date) || (a.tone === "bad" ? -1 : 1))
+    .slice(0, MAX_SIGNALS);
+}
+
+// ---- Project signals (project overview, Stage 3) ----------------------------------------
+
+/** A report due within this many days is a signal. */
+export const REPORT_DUE_SOON_DAYS = 7;
+/** A red risk not updated for this many days is a signal. */
+export const RED_RISK_STALE_DAYS = 14;
+
+export interface ProjectSignalInput {
+  code: string;
+  today: string;
+  closed: boolean;
+  health: Pick<
+    ProjectOverviewHealth,
+    | "declared"
+    | "evidenced"
+    | "divergent"
+    | "divergenceKind"
+    | "divergenceDays"
+    | "divergenceAlert"
+    | "justified"
+    | "lastReportDate"
+    | "nextReportDue"
+    | "reportOverdue"
+    | "finishVsBaselineDays"
+    | "finishSlipHealth"
+    | "milestonesAfterBaselineFinish"
+  > | null;
+  openRaid: OpenRaidItem[];
+  redRiskMinScore: number;
+  /** Spent to date as % of budget, and milestones delivered as % of all milestones. */
+  spendPercent: number | undefined;
+  deliveredPercent: number | undefined;
+  date: (iso: string) => string;
+}
+
+const RAG_WORD: Record<Health, string> = {
+  "On Track": "green",
+  "At Risk": "amber",
+  "Off Track": "red",
+  "Not Set": "not set",
+};
+const daysBetween = (from: string, to: string) =>
+  Math.round(
+    (Date.UTC(+to.slice(0, 4), +to.slice(5, 7) - 1, +to.slice(8, 10)) -
+      Date.UTC(+from.slice(0, 4), +from.slice(5, 7) - 1, +from.slice(8, 10))) /
+      86_400_000,
+  );
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+/**
+ * Rule-generated signals for one project, serious first, at most five, each opening the tab or
+ * dialog that deals with it. Every RAG, due date and tolerance is read as recorded.
+ */
+export function buildProjectSignals(input: ProjectSignalInput): Signal[] {
+  const { code, today, health } = input;
+  const out: Signal[] = [];
+  const tab = (
+    to: Extract<Signal["link"], { kind: "projectTab" }>["tab"],
+    extra: { sub?: "risks" | "milestones"; dialog?: "justify" } = {},
+  ): Signal["link"] => ({ kind: "projectTab", code, tab: to, ...extra });
+
+  // 1. Report vs evidence, or Justified.
+  if (health?.divergent && health.declared && health.evidenced) {
+    const words = `Report says ${RAG_WORD[health.declared]}, evidence says ${RAG_WORD[health.evidenced]}`;
+    out.push(
+      health.justified
+        ? {
+            id: "divergence",
+            date: today,
+            tone: "warn",
+            title: `Justified: ${words.charAt(0).toLowerCase()}${words.slice(1)}`,
+            detail: "The difference has a recorded justification for the latest report.",
+            link: tab("status"),
+            action: "Open status",
+          }
+        : {
+            id: "divergence",
+            date: today,
+            tone: health.divergenceAlert || health.evidenced === "Off Track" ? "bad" : "warn",
+            title: words,
+            detail: divergenceText({
+              divergenceKind: health.divergenceKind,
+              divergenceDays: health.divergenceDays ?? 0,
+            }),
+            link: tab("overview", { dialog: "justify" }),
+            action: "Add justification",
+          },
+    );
+  }
+
+  // 2. Report due or overdue.
+  if (!input.closed && health?.nextReportDue) {
+    const days = daysBetween(today, health.nextReportDue);
+    const last = health.lastReportDate
+      ? `Last submitted ${input.date(health.lastReportDate)}.`
+      : "No report submitted yet.";
+    if (health.reportOverdue || days < 0)
+      out.push({
+        id: "report",
+        date: today,
+        tone: "bad",
+        title: `Status report overdue by ${plural(Math.max(1, -days), "day")}`,
+        detail: `Was due ${input.date(health.nextReportDue)}. ${last}`,
+        link: tab("status"),
+        action: "Start report",
+      });
+    else if (days <= REPORT_DUE_SOON_DAYS)
+      out.push({
+        id: "report",
+        date: today,
+        tone: "warn",
+        title:
+          days === 0 ? "Status report due today" : `Status report due in ${plural(days, "day")}`,
+        detail: last,
+        link: tab("status"),
+        action: "Start report",
+      });
+  }
+
+  // 3. Red risks not updated (there is no review history yet, so updated_at stands in).
+  if (!input.closed)
+    for (const risk of input.openRaid
+      .filter((r) => r.kind === "risk" && (r.score ?? 0) >= input.redRiskMinScore)
+      .map((r) => ({ ...r, days: daysBetween(r.updatedAt.slice(0, 10), today) }))
+      .filter((r) => r.days >= RED_RISK_STALE_DAYS)
+      .sort((a, b) => b.days - a.days))
+      out.push({
+        id: `risk-${risk.id}`,
+        date: today,
+        tone: "warn",
+        title: `Red risk not updated in ${plural(risk.days, "day")}`,
+        detail: `${risk.ref ? `${risk.ref} ` : ""}${risk.title}`,
+        link: tab("raid", { sub: "risks" }),
+        action: "Review risk",
+      });
+
+  // 4. Spend ahead of delivery.
+  if (!input.closed && input.spendPercent !== undefined && input.deliveredPercent !== undefined) {
+    const lead = Math.round(input.spendPercent - input.deliveredPercent);
+    if (lead > SPEND_LEAD_POINTS)
+      out.push({
+        id: "spend-lead",
+        date: today,
+        tone: "bad",
+        title: `Spend ahead of delivery by ${lead} points`,
+        detail: `${Math.round(input.spendPercent)}% of budget spent, ${Math.round(input.deliveredPercent)}% of milestones delivered.`,
+        link: tab("financials"),
+        action: "Open financials",
+      });
+  }
+
+  // 5. Forecast finish beyond baseline, within or beyond tolerance (finish_slip_health).
+  if (!input.closed && health?.finishVsBaselineDays && health.finishVsBaselineDays > 0) {
+    const beyond = health.finishSlipHealth === "Off Track";
+    out.push({
+      id: "finish",
+      date: today,
+      tone: beyond ? "bad" : "warn",
+      title: `Forecast finish ${plural(health.finishVsBaselineDays, "day")} beyond baseline`,
+      detail: beyond ? "Beyond the schedule tolerance." : "Within the schedule tolerance.",
+      link: tab("plan", { sub: "milestones" }),
+      action: "Open milestones",
+    });
+  }
+
+  // 6. Data quality: milestones baselined after the project's baseline finish.
+  const late = health?.milestonesAfterBaselineFinish ?? 0;
+  if (late > 0)
+    out.push({
+      id: "milestones-after-finish",
+      date: today,
+      tone: "warn",
+      title: `${plural(late, "milestone")} baselined after project finish`,
+      detail: "Data quality: check the baseline dates or the project's baseline finish.",
+      link: tab("plan", { sub: "milestones" }),
+      action: "Open milestones",
+    });
+
+  return out
+    .map((signal, i) => ({ signal, i }))
+    .sort((a, b) => Number(a.signal.tone !== "bad") - Number(b.signal.tone !== "bad") || a.i - b.i)
+    .map(({ signal }) => signal)
     .slice(0, MAX_SIGNALS);
 }
