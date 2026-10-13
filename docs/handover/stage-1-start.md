@@ -124,6 +124,27 @@ Options:
   member to impersonate, and RLS overhead comes back into every refresh.
 - Measure first with a synthetic second tenant (500-project org exists locally for this).
 
+## Pre-launch security task: review signed-in RPCs and business case FK indexes
+
+Not now; do before launch. Don't change them until reviewed. The security advisor flags three
+SECURITY DEFINER functions any signed-in user can call through `/rest/v1/rpc/`:
+- `join_demo_organisation()`: can any signed-in user join the demo organisation and see its
+  data? Decide whether that is intended (demo sign-up) and, if so, that the demo org holds
+  nothing real; otherwise restrict or remove it.
+- `create_organisation(...)`: confirm it checks the caller's rights (and any limits on how many
+  organisations one user can create).
+- `submit_business_case(p_version_id)`: confirm it checks the caller's permission on that
+  version's workspace before changing status.
+The performance advisor also lists four `business_case_*` foreign keys without covering indexes
+(`business_case_benefits` category, `business_case_sections` version, `business_case_versions`
+business case and preferred option); add them in a migration with the review.
+
+## Backlog: RAID log phase
+
+- Add `last_reviewed_at` to risks and issues with a "Mark reviewed" action, then switch the
+  project signal "Red risk not updated in N days" (Stage 3, which uses `updated_at` because there
+  is no review history) to "not reviewed in N days" from `last_reviewed_at`.
+
 ## Rule: tests that write data
 
 Any test that writes data runs in a transaction that is rolled back, or on a dedicated test
