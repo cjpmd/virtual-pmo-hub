@@ -139,6 +139,12 @@ export function ProjectWatchlist({
               <th scope="col" className="px-2 py-2 font-medium">
                 Report · data
               </th>
+              <th scope="col" className="hidden px-2 py-2 font-medium lg:table-cell">
+                Sponsor
+              </th>
+              <th scope="col" className="hidden px-2 py-2 font-medium lg:table-cell">
+                Project manager
+              </th>
               <th scope="col" className="px-2 py-2 text-right font-medium" title="Open risks · open issues">
                 Risks · issues
               </th>
@@ -194,6 +200,8 @@ export function ProjectWatchlist({
                       </span>
                     </button>
                   </th>
+                  <td className="hidden lg:table-cell" />
+                  <td className="hidden lg:table-cell" />
                   <td colSpan={3} />
                   <td
                     className={cn(
@@ -227,6 +235,12 @@ export function ProjectWatchlist({
                       className="cursor-pointer border-t border-pmo-line outline-none hover:bg-pmo-panel-2/40 focus-visible:bg-pmo-panel-2/60"
                     >
                       <td className="max-w-0 truncate px-4 py-2 pl-9 text-pmo-text">{row.name}</td>
+                      <td className="hidden max-w-[9rem] px-2 py-2 text-[13px] lg:table-cell">
+                        <PersonCell name={row.sponsorName} />
+                      </td>
+                      <td className="hidden max-w-[9rem] px-2 py-2 text-[13px] lg:table-cell">
+                        <PersonCell name={row.managerName} />
+                      </td>
                       <td className="px-2 py-2">
                         <ReportData declared={row.declared} evidenced={row.evidenced} />
                       </td>
