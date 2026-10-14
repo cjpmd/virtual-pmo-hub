@@ -52,6 +52,16 @@ function ReportData({ declared, evidenced }: { declared: Health; evidenced: Heal
   );
 }
 
+/** Sponsor / PM cell: full name truncated with a tooltip, "—" when not set. */
+function PersonCell({ name }: { name: string }) {
+  if (!name || name === "Unassigned") return <span className="text-pmo-muted">—</span>;
+  return (
+    <span className="block truncate text-pmo-text" title={name}>
+      {name}
+    </span>
+  );
+}
+
 function Trend({ points }: { points: Array<number | null> }) {
   const values = points.filter((v): v is number => v !== null);
   if (values.length < 2) return <span className="text-[11px] text-pmo-muted">—</span>;
