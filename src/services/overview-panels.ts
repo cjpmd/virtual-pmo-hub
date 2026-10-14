@@ -264,7 +264,7 @@ export interface Signal {
         kind: "projectTab";
         code: string;
         tab: "overview" | "status" | "raid" | "financials" | "plan";
-        sub?: "risks" | "milestones";
+        sub?: "risks" | "milestones" | "gates";
         dialog?: "justify";
       };
   /** Button text for project signals ("Add justification", "Open financials"). */
@@ -445,6 +445,8 @@ export function buildSignals(input: SignalInput): Signal[] {
 export const REPORT_DUE_SOON_DAYS = 7;
 /** A red risk not updated for this many days is a signal. */
 export const RED_RISK_STALE_DAYS = 14;
+/** A gate this many days away (or fewer) with an incomplete checklist is a signal. */
+export const GATE_SOON_DAYS = 30;
 
 export interface ProjectSignalInput {
   code: string;
@@ -476,6 +478,11 @@ export interface ProjectSignalInput {
   /** Milestones baselined on or before today, and milestones delivered. */
   milestonesBaselinedByNow: number;
   milestonesDelivered: number;
+  /**
+   * The next undelivered gate milestone (forecast on or after today) and the current phase's
+   * gate checklist: how many items are done of how many.
+   */
+  nextGate?: { title: string; date: string; passed: number; total: number } | undefined;
   date: (iso: string) => string;
 }
 
@@ -502,7 +509,7 @@ export function buildProjectSignals(input: ProjectSignalInput): Signal[] {
   const out: Signal[] = [];
   const tab = (
     to: Extract<Signal["link"], { kind: "projectTab" }>["tab"],
-    extra: { sub?: "risks" | "milestones"; dialog?: "justify" } = {},
+    extra: { sub?: "risks" | "milestones" | "gates"; dialog?: "justify" } = {},
   ): Signal["link"] => ({ kind: "projectTab", code, tab: to, ...extra });
 
   // 1. Report vs evidence, or Justified.
@@ -611,7 +618,23 @@ export function buildProjectSignals(input: ProjectSignalInput): Signal[] {
     });
   }
 
-  // 6. Data quality: milestones baselined after the project's baseline finish.
+  // 6. Next gate within 30 days with its checklist incomplete.
+  const gate = input.nextGate;
+  if (!input.closed && gate && gate.passed < gate.total) {
+    const days = daysBetween(today, gate.date);
+    if (days >= 0 && days <= GATE_SOON_DAYS)
+      out.push({
+        id: "gate",
+        date: today,
+        tone: days <= 7 ? "bad" : "warn",
+        title: `Gate ${gate.title.replace(/^gate\s*/i, "")} in ${plural(days, "day")}, ${gate.passed} of ${gate.total} checklist items done`,
+        detail: `Forecast ${input.date(gate.date)}. Complete the checklist before the gate.`,
+        link: tab("plan", { sub: "gates" }),
+        action: "Open gates",
+      });
+  }
+
+  // 7. Data quality: milestones baselined after the project's baseline finish.
   const late = health?.milestonesAfterBaselineFinish ?? 0;
   if (late > 0)
     out.push({

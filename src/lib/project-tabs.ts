@@ -20,6 +20,7 @@ export const PROJECT_SUBTABS = {
     { id: "milestones", label: "Milestones" },
     { id: "tasks", label: "Tasks" },
     { id: "dependencies", label: "Dependencies" },
+    { id: "gates", label: "Gates" },
   ],
   raid: [
     { id: "risks", label: "Risks / Issues" },
@@ -43,6 +44,7 @@ const OLD_NAMES: Record<string, { tab: ProjectTab; sub?: ProjectSubtab }> = {
   milestones: { tab: "plan", sub: "milestones" },
   tasks: { tab: "plan", sub: "tasks" },
   dependencies: { tab: "plan", sub: "dependencies" },
+  gates: { tab: "plan", sub: "gates" },
   raid: { tab: "raid", sub: "risks" },
   risks: { tab: "raid", sub: "risks" },
   issues: { tab: "raid", sub: "risks" },

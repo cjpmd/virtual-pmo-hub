@@ -25,6 +25,7 @@ describe("resolveProjectTab", () => {
   test("maps the old tab names", () => {
     expect(resolveProjectTab({ tab: "milestones" })).toEqual({ tab: "plan", sub: "milestones" });
     expect(resolveProjectTab({ tab: "tasks" })).toEqual({ tab: "plan", sub: "tasks" });
+    expect(resolveProjectTab({ tab: "plan", sub: "gates" })).toEqual({ tab: "plan", sub: "gates" });
     expect(resolveProjectTab({ tab: "dependencies" })).toEqual({
       tab: "plan",
       sub: "dependencies",

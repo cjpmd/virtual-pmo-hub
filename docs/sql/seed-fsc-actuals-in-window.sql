@@ -1,4 +1,4 @@
--- PROPOSAL (data change, not a migration; not applied). Seed fix: FSC's actuals inside its life.
+-- APPLIED 2026-10-14 (data change, not a migration; approved).  Seed fix: FSC's actuals inside its life.
 --
 -- FSC (Future Students CRM, closed) has one £712,000 actual booked in September 2026, six months
 -- after it finished (start 15/09/2024, finish 14/03/2026). Its project chart (start to the later

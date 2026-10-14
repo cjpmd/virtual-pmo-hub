@@ -23,11 +23,20 @@ const monthName = (month: string) =>
  * progress chart and assurance signals, plus the status bar. One RPC (get_project_overview)
  * feeds the shared builders and components with scope = "project".
  */
-export function ProjectOverviewBand({ project }: { project: Pick<ProjectSummary, "id"> }) {
+export function ProjectOverviewBand({
+  project,
+  gateChecklist,
+}: {
+  project: Pick<ProjectSummary, "id">;
+  /** The current phase's gate checklist (Plan › Gates), for the next-gate signal. */
+  gateChecklist?: { passed: number; total: number } | undefined;
+}) {
   const query = useProjectOverview(project.id);
   const settings = useSettings();
   const format = useFormat();
   const data = query.data;
+  const gatePassed = gateChecklist?.passed,
+    gateTotal = gateChecklist?.total;
 
   const built = useMemo(() => {
     if (!data) return null;
@@ -68,6 +77,10 @@ export function ProjectOverviewBand({ project }: { project: Pick<ProjectSummary,
     const closedPoint = progress.points.find(
       (point) => point.month === (financials?.actualsThrough ?? data.cutoffMonth)?.slice(0, 7),
     );
+    const nextGate = data.milestones
+      .filter((m) => m.type === "gate" && !m.actualDate && m.forecastDate >= today)
+      .sort((a, b) => a.forecastDate.localeCompare(b.forecastDate))
+      .map((m) => ({ title: m.title, date: m.forecastDate }))[0];
     const signals = buildProjectSignals({
       code: data.project.code,
       today,
@@ -85,6 +98,10 @@ export function ProjectOverviewBand({ project }: { project: Pick<ProjectSummary,
           : undefined,
       milestonesBaselinedByNow: data.milestones.filter((m) => m.baselineDate <= today).length,
       milestonesDelivered: data.milestones.filter((m) => m.actualDate).length,
+      nextGate:
+        nextGate && gatePassed !== undefined && gateTotal !== undefined
+          ? { ...nextGate, passed: gatePassed, total: gateTotal }
+          : undefined,
       date: (iso) => format.date(iso),
     });
     const closedMonth = data.cutoffMonth?.slice(0, 7) ?? null;
@@ -102,7 +119,7 @@ export function ProjectOverviewBand({ project }: { project: Pick<ProjectSummary,
       closedMonth: closedMonth ? monthName(closedMonth) : null,
       openMonth: monthName(closedMonth ? addMonths(closedMonth, 1) : today.slice(0, 7)),
     };
-  }, [data, settings.regional.financialYearStartMonth, format]);
+  }, [data, settings.regional.financialYearStartMonth, format, gatePassed, gateTotal]);
 
   if (query.isSuccess && !data) return null;
   return (

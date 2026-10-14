@@ -1,40 +1,14 @@
 import { CheckCircle2, CircleDashed, XCircle } from "lucide-react";
-import { useBenefits } from "@/hooks/use-benefits";
-import { benefitsForProject } from "@/services/benefits-value";
-import { getGateChecklist, phaseByName } from "@/services/gates";
-import type { ProjectSummary } from "@/services/hierarchy";
+import { useGateChecklist, type ChecklistInput } from "@/hooks/use-gate-checklist";
 import { cn } from "@/lib/utils";
 
 /** Gate criteria for the project's current phase with pass/fail indicators (Prompt H3). */
 export function GateChecklist({
-  project,
-  lessonsReviewed,
-  phaseReviewHeld,
-  manualTicks,
   onToggleManual,
-}: {
-  project: ProjectSummary;
-  lessonsReviewed: boolean;
-  phaseReviewHeld: boolean;
-  manualTicks: string[];
-  onToggleManual: (id: string) => void;
-}) {
-  const benefits = useBenefits().data;
-  const phase = phaseByName(project.phaseName);
-  const items = getGateChecklist({
-    phaseName: project.phaseName,
-    tier: project.tier,
-    benefits: benefits ? benefitsForProject(benefits, project.id) : [],
-    lessonsReviewed,
-    phaseReviewHeld,
-  });
-  const resolved = items.map((item) => ({
-    ...item,
-    passed:
-      item.status === "Pass" ||
-      (item.status === "Manual" && manualTicks.includes(item.criterion.id)),
-  }));
-  const passed = resolved.filter((item) => item.passed).length;
+  ...input
+}: ChecklistInput & { onToggleManual: (id: string) => void }) {
+  const { project, manualTicks } = input;
+  const { phase, resolved, passed } = useGateChecklist(input);
 
   return (
     <section className="rounded-lg border border-border/70 bg-card p-5 shadow-sm">

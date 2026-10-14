@@ -24,6 +24,7 @@ import { ProjectHeader } from "@/components/project-header";
 import { TopBand } from "@/components/shell-slots";
 import { ProjectOverviewBand } from "@/components/overview/project-overview-band";
 import { ProjectOverviewWork } from "@/components/overview/project-overview-work";
+import { useGateChecklist } from "@/hooks/use-gate-checklist";
 import { StatusWorkspace } from "@/components/status-workspace";
 import { TaskWorkspace } from "@/components/task-workspace";
 import {
@@ -213,6 +214,13 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
     lessonsData.data && currentPhaseId
       ? hasPhaseLessonsReview(lessonsData.data, project.id, currentPhaseId)
       : false;
+  // Shared with Plan › Gates so the Overview gate signal counts the same ticks.
+  const gateChecklist = useGateChecklist({
+    project,
+    lessonsReviewed,
+    phaseReviewHeld,
+    manualTicks,
+  });
   const projectTypeTags = Array.from(new Set(lessons.flatMap((lesson) => lesson.projectTypeTags)));
   const assurance = useProjectAssurance(project).data ?? undefined;
 
@@ -283,7 +291,12 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
           onArchived={() => void navigate({ to: "/portfolio/projects" })}
         />
       </TopBand>
-      {tab === "overview" && <ProjectOverviewBand project={project} />}
+      {tab === "overview" && (
+        <ProjectOverviewBand
+          project={project}
+          gateChecklist={{ passed: gateChecklist.passed, total: gateChecklist.total }}
+        />
+      )}
       {(tab === "plan" || tab === "raid") && (
         <SubTabs group={tab} value={sub} onChange={(next) => setTab(tab, next)} />
       )}
@@ -302,10 +315,40 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
           onOpen={(target) => setTab(target.tab, "sub" in target ? target.sub : undefined)}
         />
       )}
-      {/* Not in the overview design; kept below it until their own place is decided. */}
-      {tab === "overview" && (
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          <div className="min-w-0">
+      {tab === "plan" && sub === "milestones" && <ProjectMilestones projectId={project.id} />}
+      {tab === "plan" && sub === "gates" && (
+        <GateChecklist
+          project={project}
+          lessonsReviewed={lessonsReviewed}
+          phaseReviewHeld={phaseReviewHeld}
+          manualTicks={manualTicks}
+          onToggleManual={(id) =>
+            setManualTicks((current) =>
+              current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+            )
+          }
+        />
+      )}
+      {tab === "raid" && sub === "risks" && <ProjectRaid projectId={project.id} />}
+      {tab === "financials" && <ProjectFinancials project={project} />}
+
+      {/* Not yet on Supabase (Stage 4c): these tabs read the demo project's prototype record. */}
+      {
+        <>
+          {tab === "status" && (
+            <StatusWorkspace
+              project={project}
+              calculated={{
+                overall: project.health.overall,
+                schedule: project.health.schedule,
+                financial: project.health.financial,
+                effort: project.health.effort,
+                issue: project.health.issue,
+              }}
+            />
+          )}
+          {/* Below the report history: decisions, reports and milestones as they happened. */}
+          {tab === "status" && (
             <Section title="Activity timeline">
               <div className="mt-4 divide-y">
                 {activity.map((entry) => (
@@ -346,43 +389,6 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
                 )}
               </div>
             </Section>
-          </div>
-          <div className="min-w-0">
-            {
-              <GateChecklist
-                project={project}
-                lessonsReviewed={lessonsReviewed}
-                phaseReviewHeld={phaseReviewHeld}
-                manualTicks={manualTicks}
-                onToggleManual={(id) =>
-                  setManualTicks((current) =>
-                    current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
-                  )
-                }
-              />
-            }
-          </div>
-        </div>
-      )}
-
-      {tab === "plan" && sub === "milestones" && <ProjectMilestones projectId={project.id} />}
-      {tab === "raid" && sub === "risks" && <ProjectRaid projectId={project.id} />}
-      {tab === "financials" && <ProjectFinancials project={project} />}
-
-      {/* Not yet on Supabase (Stage 4c): these tabs read the demo project's prototype record. */}
-      {
-        <>
-          {tab === "status" && (
-            <StatusWorkspace
-              project={project}
-              calculated={{
-                overall: project.health.overall,
-                schedule: project.health.schedule,
-                financial: project.health.financial,
-                effort: project.health.effort,
-                issue: project.health.issue,
-              }}
-            />
           )}
           {tab === "plan" && sub === "tasks" && (
             <TaskWorkspace projectId={project.id} taskSource={toTaskSource(project.taskSource)} />
