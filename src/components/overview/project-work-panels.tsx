@@ -302,7 +302,12 @@ export function HighlightReport({
           </table>
         </div>
       </div>
-      <Button variant="link" size="sm" className="mt-3 h-auto self-start p-0" onClick={onOpen}>
+      <Button
+        variant="link"
+        size="sm"
+        className="mt-3 h-auto self-start p-0 text-pmo-accent"
+        onClick={onOpen}
+      >
         Open full report
       </Button>
     </Panel>
@@ -341,7 +346,12 @@ export function TopRisks({ items, onOpen }: { items: RankedRaid[]; onOpen: () =>
       ) : (
         <p className="mt-4 text-sm text-muted-foreground">No open risks or issues.</p>
       )}
-      <Button variant="link" size="sm" className="mt-3 h-auto self-start p-0" onClick={onOpen}>
+      <Button
+        variant="link"
+        size="sm"
+        className="mt-3 h-auto self-start p-0 text-pmo-accent"
+        onClick={onOpen}
+      >
         Open RAID log
       </Button>
     </Panel>

@@ -421,7 +421,7 @@ export function ProgressChart({
               key={`${marker.label}-${i}`}
               tabIndex={0}
               aria-label={`${marker.label}, ${marker.date}`}
-              className="outline-none [&:focus>line]:stroke-pmo-text"
+              className="outline-none [&:focus>line]:stroke-pmo-accent [&:focus>line]:[stroke-dasharray:none] [&:focus>line]:[stroke-width:2] [&:focus>text]:fill-pmo-text [&:focus>text]:font-semibold"
             >
               <title>{`${marker.label} (${marker.date.split("-").reverse().join("/")})`}</title>
               <line

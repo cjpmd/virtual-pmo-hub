@@ -297,7 +297,7 @@ function TimeRange({
             "rounded px-2 py-1 text-[11px] font-medium transition-colors",
             option.value === value
               ? "bg-card text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground",
+              : "text-foreground/70 hover:text-foreground",
           )}
         >
           {option.label}

@@ -71,6 +71,13 @@ const COLOUR: Record<Health, string> = {
   "Off Track": "var(--viz-critical)",
   "Not Set": "var(--viz-ink-muted)",
 };
+/** Text-safe colours for the status words (the marks keep the chart colours). */
+const TEXT: Record<Health, string> = {
+  "On Track": "var(--health-good-foreground)",
+  "At Risk": "var(--health-warn-foreground)",
+  "Off Track": "var(--health-bad-foreground)",
+  "Not Set": "var(--muted-foreground)",
+};
 const LEVEL: Record<Health, number> = {
   "On Track": 0,
   "At Risk": 1,
@@ -149,7 +156,7 @@ function ProjectHealthByDimension({
                 <span className={s.key === "overall" ? "font-semibold" : "font-medium"}>
                   {LABEL[s.key]}
                 </span>
-                <span className="text-xs font-semibold" style={{ color: COLOUR[now] }}>
+                <span className="text-xs font-semibold" style={{ color: TEXT[now] }}>
                   {WORD[now]}
                 </span>
               </figcaption>

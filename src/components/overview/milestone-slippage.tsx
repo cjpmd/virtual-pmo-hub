@@ -54,6 +54,19 @@ const BAND_COLOUR: Record<SlipBand, string> = {
   material: "var(--viz-serious)",
   severe: "var(--viz-critical)",
 };
+/** Text-safe versions of the band colours (4.5:1 on the card) for the value labels. */
+const BAND_TEXT: Record<SlipBand, string> = {
+  on_time: "var(--health-good-foreground)",
+  minor: "var(--health-warn-foreground)",
+  material: "var(--health-warn-foreground)",
+  severe: "var(--health-bad-foreground)",
+};
+const scoreText = (percent: number) =>
+  percent >= 80
+    ? "var(--health-good-foreground)"
+    : percent >= 60
+      ? "var(--health-warn-foreground)"
+      : "var(--health-bad-foreground)";
 const sorts = [
   { value: "date", label: "By date" },
   { value: "slip", label: "By slip" },
@@ -77,6 +90,7 @@ function ProjectSlippage({
     from: dayNumber(row.baselineDate),
     to: dayNumber(row.date),
     colour: BAND_COLOUR[row.band],
+    textColour: BAND_TEXT[row.band],
     fromLabel: format.date(row.baselineDate),
     toLabel: format.date(row.date),
     valueLabel: row.slip > 0 ? `+${row.slip}d` : "On time",
@@ -122,17 +136,17 @@ function ProjectSlippage({
             {
               label: "Overdue",
               value: String(stats.overdue),
-              tone: stats.overdue ? "var(--viz-critical)" : undefined,
+              tone: stats.overdue ? "var(--health-bad-foreground)" : undefined,
             },
             {
               label: "Reforecast",
               value: String(stats.reforecast),
-              tone: stats.reforecast ? "var(--viz-serious)" : undefined,
+              tone: stats.reforecast ? "var(--health-warn-foreground)" : undefined,
             },
             {
               label: "Hit baseline",
               value: stats.hitBaseline === null ? "—" : `${stats.hitBaseline}%`,
-              tone: stats.hitBaseline === null ? undefined : scoreColour(stats.hitBaseline),
+              tone: stats.hitBaseline === null ? undefined : scoreText(stats.hitBaseline),
             },
           ]}
         />

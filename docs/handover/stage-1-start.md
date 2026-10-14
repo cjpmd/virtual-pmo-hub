@@ -179,6 +179,35 @@ Options:
 - No-milestones screenshot used a test project (ZZT) in the outsider organisation, archived after;
   app users cannot hard-delete (no DELETE grant), so delete it in the SQL editor if wanted.
 
+## Stage 5: checks (14/10/2026)
+
+Spec: `docs/design/project-overview-spec.md` (components, data rules, option A changes).
+- Portfolio home vs pre-Stage-1 (`fc808a3`, same database): differences are the 1b assurance
+  figures (report vs data gaps 8 → 21, report rings / data dots in the watchlist, the
+  report-vs-data signals), the status bar as-of time (now when stored health was refreshed,
+  performance pass B), the dark "DT" logo text (contrast fix) and a 7px shorter top band (a
+  two-line signal title before). Everything else matches; residual pixel noise is anti-aliasing.
+- Keyboard: every control reachable and operable (header ⋯ menu Enter / arrows / Escape with
+  focus returned, roving tabs with arrows, sub-tabs, chart presets, legend chips with Space,
+  chart crosshair with arrows, By date / By slip, Add justification, card ⋯ menus). Fixed: the
+  project chart's marker lines now show a visible focus state.
+- Lighthouse accessibility 100 (navigation, loaded Overview light and dark), from 93–94. Fixed:
+  text-safe colours for coloured text (slippage values, hit-baseline figure, health words),
+  segmented toggle label contrast, logo text, sign-in loading text, a 24px target for the
+  collapsed rail section toggle. Left (weight 0): Search and account buttons' accessible names
+  don't include their visible text.
+- Load (ARB, member, through this container's proxy, ~340 ms per request): production build cold
+  ~7.2 s to content, warm reload ~4.6 s, back to Overview in the app ~0.2 s (cached);
+  `get_project_overview` ~26 ms in the database, 0.5–1.4 s in the browser. The wait is the app's
+  ~50 boot queries (governance, benefits, dependencies, reference data) before the project record
+  resolves at ~6 s; the overview call can only start after it. Options (not done): start
+  `get_project_overview` by code in the route loader, and trim or defer the boot queries.
+- RLS: outsider gets null from `get_project_overview` and 0 rows from the divergence and health
+  views, `project_health_current`, status reports, snapshots and milestones; a justification
+  (inserted in a rolled-back transaction) is visible to the member and not the outsider; anon 401.
+- Advisors: known items only (pre-launch RPC review, business case FK indexes, private tables
+  without policies, leaked-password protection, unused indexes).
+
 ## Pre-launch security task: review signed-in RPCs and business case FK indexes
 
 Not now; do before launch. Don't change them until reviewed. The security advisor flags three
