@@ -152,6 +152,9 @@ export interface WatchRow {
   name: string;
   programmeId: string | null;
   programmeName: string;
+  /** Sponsor and project manager, resolved by the hierarchy loader ("Unassigned" when unset). */
+  sponsorName: string;
+  managerName: string;
   declared: Health; // report ring
   evidenced: Health; // data dot
   disagree: boolean;
@@ -199,6 +202,8 @@ export function buildWatchlist(input: {
       name: p.name,
       programmeId: p.programmeId,
       programmeName: p.programmeName || "No programme",
+      sponsorName: p.sponsorName,
+      managerName: p.managerName,
       declared: assurance?.declared ?? p.health.overall,
       evidenced: assurance?.evidenced ?? p.health.overall,
       disagree: assurance?.divergent ?? false,
