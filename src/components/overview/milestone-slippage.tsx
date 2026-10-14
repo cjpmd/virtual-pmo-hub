@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
 import { ChartCard, LegendItem } from "@/components/charts/chart-card";
 import { AxisStrip, Dumbbell, StatStrip, type DumbbellDatum } from "@/components/charts/primitives";
 import { useFormat } from "@/lib/format";
@@ -13,6 +14,8 @@ import {
   slipSeverity,
   type PortfolioMilestone,
 } from "@/services/analytics";
+import type { ProjectOverviewMilestone } from "@/services/project-overview";
+import { scheduleStats, slipRows, type SlipBand } from "@/services/project-schedule";
 
 const horizons = [
   { value: "90", label: "90d" },
@@ -20,8 +23,150 @@ const horizons = [
   { value: "all", label: "All" },
 ];
 
-/** Largest reforecasts against baseline, as dumbbells (portfolio spec §4). */
-export function MilestoneSlippage({
+type Props =
+  | { scope?: "portfolio"; milestones: PortfolioMilestone[]; className?: string | undefined }
+  | {
+      scope: "project";
+      milestones: ProjectOverviewMilestone[];
+      today: string;
+      /** Closed projects show final values: no today marker. */
+      closed?: boolean | undefined;
+      /** Opens the milestones list to add one (empty state). */
+      onAddMilestone?: (() => void) | undefined;
+      className?: string | undefined;
+    };
+
+/**
+ * Milestone slippage as dumbbells (portfolio spec §4). Portfolio: the largest reforecasts in a
+ * range. Project: every milestone, by date or by slip, with today marked through every row.
+ */
+export function MilestoneSlippage(props: Props) {
+  return props.scope === "project" ? (
+    <ProjectSlippage {...props} />
+  ) : (
+    <PortfolioSlippage milestones={props.milestones} className={props.className} />
+  );
+}
+
+const BAND_COLOUR: Record<SlipBand, string> = {
+  on_time: "var(--viz-good)",
+  minor: "var(--viz-warning)",
+  material: "var(--viz-serious)",
+  severe: "var(--viz-critical)",
+};
+const sorts = [
+  { value: "date", label: "By date" },
+  { value: "slip", label: "By slip" },
+];
+
+function ProjectSlippage({
+  milestones,
+  today,
+  closed,
+  onAddMilestone,
+  className,
+}: Extract<Props, { scope: "project" }>) {
+  const format = useFormat();
+  const [sort, setSort] = useState<"date" | "slip">("date");
+  const stats = useMemo(() => scheduleStats(milestones, today), [milestones, today]);
+  const rows = useMemo(() => slipRows(milestones, today, sort), [milestones, today, sort]);
+  const data: DumbbellDatum[] = rows.map((row) => ({
+    key: row.id,
+    label: row.title,
+    sublabel: row.subtitle,
+    from: dayNumber(row.baselineDate),
+    to: dayNumber(row.date),
+    colour: BAND_COLOUR[row.band],
+    fromLabel: format.date(row.baselineDate),
+    toLabel: format.date(row.date),
+    valueLabel: row.slip > 0 ? `+${row.slip}d` : "On time",
+    dashed: !row.delivered,
+    toKind: row.delivered ? "Delivered" : "Forecast",
+    note: row.subtitle,
+  }));
+  const todayDay = dayNumber(today);
+  const days = [...data.flatMap((row) => [row.from, row.to]), ...(closed ? [] : [todayDay])];
+  const span = data.length ? [Math.min(...days), Math.max(...days)] : [];
+  return (
+    <ChartCard
+      className={className}
+      title="Milestone slippage"
+      subtitle="Every milestone on this project, baseline against actual or forecast"
+      info="The hollow dot is the baselined date and the filled dot is the actual date for delivered milestones, or the current forecast for the rest. Solid connectors are delivered, dashed are not yet delivered; the colour is the slip band. The dashed vertical line is today."
+      timeRange={{ value: sort, options: sorts, onChange: (v) => setSort(v as "date" | "slip") }}
+      legend={
+        <>
+          <LegendItem colour="var(--viz-ink-muted)" label="Baseline" shape="dot" />
+          <LegendItem colour="var(--viz-good)" label="On time" shape="dot" />
+          <LegendItem colour="var(--viz-warning)" label="Up to 14 days" shape="dot" />
+          <LegendItem colour="var(--viz-serious)" label="15–30 days" shape="dot" />
+          <LegendItem colour="var(--viz-critical)" label="Over 30 days" shape="dot" />
+          <LegendItem colour="var(--viz-ink-muted)" label="Not yet delivered" shape="dashed" />
+        </>
+      }
+      csv={{
+        name: "project-milestone-slippage",
+        columns: ["Milestone", "Status", "Baseline", "Actual or forecast", "Slip days"],
+        rows: rows.map((row) => [
+          row.title,
+          row.subtitle,
+          format.date(row.baselineDate),
+          format.date(row.date),
+          row.slip,
+        ]),
+      }}
+      footer={
+        <StatStrip
+          items={[
+            { label: "Due next 30 days", value: String(stats.dueNext30) },
+            {
+              label: "Overdue",
+              value: String(stats.overdue),
+              tone: stats.overdue ? "var(--viz-critical)" : undefined,
+            },
+            {
+              label: "Reforecast",
+              value: String(stats.reforecast),
+              tone: stats.reforecast ? "var(--viz-serious)" : undefined,
+            },
+            {
+              label: "Hit baseline",
+              value: stats.hitBaseline === null ? "—" : `${stats.hitBaseline}%`,
+              tone: stats.hitBaseline === null ? undefined : scoreColour(stats.hitBaseline),
+            },
+          ]}
+        />
+      }
+      empty={
+        data.length
+          ? undefined
+          : {
+              title: "No milestones yet",
+              detail: "Add milestones with baseline dates to track slippage here.",
+              action: onAddMilestone ? (
+                <Button size="sm" onClick={onAddMilestone}>
+                  Add milestone
+                </Button>
+              ) : undefined,
+            }
+      }
+    >
+      <Dumbbell
+        rows={data}
+        {...(span.length === 2 ? { min: span[0], max: span[1] } : {})}
+        marker={closed ? undefined : { value: todayDay, label: `Today, ${format.date(today)}` }}
+      />
+      {span.length === 2 ? (
+        <AxisStrip
+          labelWidth={190}
+          ticks={span.map((day) => format.shortDate(new Date((day as number) * 86400000)))}
+        />
+      ) : null}
+    </ChartCard>
+  );
+}
+
+function PortfolioSlippage({
   milestones: allMilestones,
   className,
 }: {

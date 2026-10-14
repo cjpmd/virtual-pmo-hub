@@ -52,6 +52,8 @@ export function ProgressChart({
   const [cursor, setCursor] = useState<number | null>(null);
   const { ref, width } = useMeasuredWidth(640);
 
+  const labelOf = (key: SeriesKey) =>
+    key === "plan" && data.evenPhasing ? "Even phasing (no budget profile)" : SERIES[key].label;
   const chips = (tabs[tab]?.chips ?? []).filter((key) => data.available.has(key));
   const visible = chips.filter((key) => on.has(key));
   const selectTab = (next: ChartTab) => {
@@ -122,7 +124,7 @@ export function ProgressChart({
     milestonesNow = data.current.milestones;
   const summary = [
     `${project ? "Project" : "Portfolio"} progress, ${data.points[0]?.label ?? ""} to ${data.points[n - 1]?.label ?? ""}.`,
-    ...visible.map((key) => `${SERIES[key].label} ${fmt(key, data.current[key])}`),
+    ...visible.map((key) => `${labelOf(key)} ${fmt(key, data.current[key])}`),
     data.gap !== null ? `Spend leads milestones by ${data.gap} points.` : "",
   ]
     .filter(Boolean)
@@ -248,7 +250,7 @@ export function ProgressChart({
                     : { height: 2, background: meta.colour }
                 }
               />
-              {meta.label}
+              {labelOf(key)}
               <span className="font-geist-mono tabular-nums">
                 {key === "plan" ? fmt(key, data.current.plan) : fmt(key, data.current[key])}
               </span>
@@ -535,7 +537,7 @@ export function ProgressChart({
                     className="size-2 rounded-full"
                     style={{ background: SERIES[key].colour }}
                   />
-                  {SERIES[key].label}
+                  {labelOf(key)}
                 </span>
                 <span className="font-geist-mono tabular-nums text-pmo-text">
                   {fmt(key, cursorPoint.values[key])}
@@ -567,7 +569,7 @@ export function ProgressChart({
               <th scope="col">Month</th>
               {visible.map((key) => (
                 <th key={key} scope="col">
-                  {SERIES[key].label}
+                  {labelOf(key)}
                 </th>
               ))}
             </tr>

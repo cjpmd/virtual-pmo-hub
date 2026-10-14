@@ -363,6 +363,8 @@ export interface ProgressChartData {
   markers: ChartMarker[];
   /** Spend minus milestones in points at the current month, when over 15. */
   gap: number | null;
+  /** Project with no budget profile: the plan line is even phasing (start to baseline finish). */
+  evenPhasing?: boolean;
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -494,6 +496,26 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
     cell[row.kind] += row.amount;
     money.set(row.month, cell);
   }
+  // A project with no budget profile gets an even plan from its start to its baseline finish,
+  // so spend still has something to be measured against.
+  const evenPhasing =
+    !!project &&
+    project.budget > 0 &&
+    !!project.startDate &&
+    !!project.baselineFinishDate &&
+    ![...money.values()].some((cell) => cell.budget);
+  if (evenPhasing && project?.startDate && project.baselineFinishDate) {
+    const span: string[] = [];
+    const last = project.baselineFinishDate.slice(0, 7);
+    for (let m = project.startDate.slice(0, 7); m <= last && span.length < 120; m = addMonths(m, 1))
+      span.push(m);
+    for (const m of span) {
+      const cell = money.get(m) ?? { budget: 0, actual: 0, forecast: 0 };
+      cell.budget += project.budget / span.length;
+      money.set(m, cell);
+    }
+  }
+
   // The plan period each value is measured against: the financial year, or for a project its
   // whole life (every month with money, plus the chart window).
   const projectPlan = project ? [...new Set([...months, ...money.keys()])].sort() : undefined;
@@ -726,5 +748,5 @@ export function buildProgressChart(input: BuildInput): ProgressChartData {
     current.spend !== undefined && current.milestones !== undefined && lead > 15
       ? Math.round(lead)
       : null;
-  return { points, currentMonth, current, available, markers, gap };
+  return { points, currentMonth, current, available, markers, gap, evenPhasing };
 }

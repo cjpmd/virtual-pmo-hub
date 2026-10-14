@@ -226,7 +226,11 @@ export interface ProjectSummaryInput {
   /** Month-end figures from financial_forecast_history; empty until the first close. */
   forecastHistory: Array<{ month: string; budget: number; eac: number; actualToDate: number }>;
   milestones: Array<
-    Pick<PortfolioMilestone, "actualDate" | "forecastDate"> & { baselineDate: string }
+    Pick<PortfolioMilestone, "actualDate" | "forecastDate"> & {
+      baselineDate: string;
+      /** v_milestones.slip_band: on_time | minor (≤14) | material (15–30) | severe (>30). */
+      slipBand: string | null;
+    }
   >;
   risks: Array<{ score: number; createdAt: string; closedAt: string | null; status: string }>;
   redRiskMinScore: number;
@@ -263,7 +267,11 @@ export function getProjectSummaryMetrics(input: ProjectSummaryInput): SummaryMet
   const onTime = delivered.filter((m) => (m.actualDate as string) <= m.baselineDate).length;
   const deliveredBefore = delivered.filter((m) => (m.actualDate as string) < monthStart).length;
   const next30 = input.milestones.filter((m) => isMilestoneDueWithin30(m, today));
-  const atRisk = next30.filter((m) => m.forecastDate > m.baselineDate).length;
+  // At risk: due in the next 30 days with a slip of 15+ days (material or severe band), plus
+  // anything overdue (not delivered, forecast date passed).
+  const atRisk =
+    next30.filter((m) => m.slipBand === "material" || m.slipBand === "severe").length +
+    input.milestones.filter((m) => !m.actualDate && dayOf(m.forecastDate) < dayOf(today)).length;
 
   const red = input.risks.filter((r) => r.score >= input.redRiskMinScore);
   const redNow = red.filter((r) => r.status === "open").length;

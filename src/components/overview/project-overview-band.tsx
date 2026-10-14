@@ -64,6 +64,10 @@ export function ProjectOverviewBand({ project }: { project: Pick<ProjectSummary,
         closed,
       },
     });
+    // Spend and plan at the last closed month, read from the chart so both show one number.
+    const closedPoint = progress.points.find(
+      (point) => point.month === (financials?.actualsThrough ?? data.cutoffMonth)?.slice(0, 7),
+    );
     const signals = buildProjectSignals({
       code: data.project.code,
       today,
@@ -71,9 +75,16 @@ export function ProjectOverviewBand({ project }: { project: Pick<ProjectSummary,
       health,
       openRaid: data.openRaid,
       redRiskMinScore: data.redRiskMinScore,
-      // The chart's own figures, so the signal and the gap callout show one number.
-      spendPercent: progress.current.spend,
-      deliveredPercent: progress.current.milestones,
+      spendVsPlan:
+        closedPoint?.values.spend !== undefined && closedPoint.values.plan !== undefined
+          ? {
+              month: monthName(closedPoint.month),
+              spend: closedPoint.values.spend,
+              plan: closedPoint.values.plan,
+            }
+          : undefined,
+      milestonesBaselinedByNow: data.milestones.filter((m) => m.baselineDate <= today).length,
+      milestonesDelivered: data.milestones.filter((m) => m.actualDate).length,
       date: (iso) => format.date(iso),
     });
     const closedMonth = data.cutoffMonth?.slice(0, 7) ?? null;

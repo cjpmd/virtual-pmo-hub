@@ -143,8 +143,37 @@ Options:
   `?tab=&sub=`.
 - MilestoneSlippage, MilestoneDeliveryProfile and HealthByDimension moved unchanged to
   `components/overview/` (portfolio home pixel-identical before and after).
-- Seed data: several projects have no budget phasing (no Plan line, e.g. ARB), and closed
-  projects' actuals are one lump in Sep 2026 (FSC shows 0% spend inside its window).
+- No budget profile: the plan line is even phasing from start to baseline finish, labelled
+  "Even phasing (no budget profile)".
+- Milestones next 30 days "at risk" = slip band 15+ days (material / severe) or overdue.
+- Spend signal: "Spending ahead of plan while delivery is behind (spend +N pts, M milestones
+  behind)", only when spend leads plan by more than 15 points at the last closed month AND fewer
+  milestones are delivered than baselined by now. The chart's gap callout is unchanged.
+- Page reads of health all come from the stored tables now, including `get_portfolio_overview`,
+  `v_roadmap_items` and `v_capability_health` (and `v_outcome_health` / `v_benefit_readiness`
+  built on it): `docs/sql/health-reads-stored.sql`. The live views stay the definition, used by
+  the refresh, the nightly check, the snapshot job and the write-time captures.
+- Seed data: closed projects' actuals are one lump in Sep 2026 (FSC, SDO, SFZ, UC2); FSC fix
+  proposed in `docs/sql/seed-fsc-actuals-in-window.sql`.
+
+## Stage 4: project overview, light working area (14/10/2026)
+
+- `components/overview/project-overview-work.tsx`, in order: schedule forecast card (replaces
+  the sprint forecast card), MilestoneSlippage, MilestoneDeliveryProfile + HealthByDimension,
+  last highlight report + top risks and issues. The three portfolio cards take
+  `scope="project"`; portfolio mode is unchanged (portfolio home pixel-identical).
+- Figures from `services/project-schedule.ts` (unit-tested): the Stage 2 rules for overdue,
+  hit baseline, average slip, reforecast and the forecast range (late = forecast + average slip,
+  at least 7 days); top risks and issues ranked by band / severity, then days since update.
+- Shared primitives gained opt-in props only: Dumbbell (dashed rows, a marker through every row,
+  "Delivered" tooltip label), CumulativeArea (coloured sign-off dots, a gap bracket at today,
+  whole-number ticks), ChartCard `className` accepts undefined.
+- Kept below the new layout because the design has no place for them yet: the gate checklist
+  and the activity timeline. Decide whether they move (e.g. to Status / Plan) or stay.
+- Empty states: no milestones, no report, no health history ("History starts …"; closed projects
+  with no snapshots say "No health history"), closed projects show final values with no forecast.
+- No-milestones screenshot used a test project (ZZT) in the outsider organisation, archived after;
+  app users cannot hard-delete (no DELETE grant), so delete it in the SQL editor if wanted.
 
 ## Pre-launch security task: review signed-in RPCs and business case FK indexes
 
@@ -160,6 +189,12 @@ SECURITY DEFINER functions any signed-in user can call through `/rest/v1/rpc/`:
 The performance advisor also lists four `business_case_*` foreign keys without covering indexes
 (`business_case_benefits` category, `business_case_sections` version, `business_case_versions`
 business case and preferred option); add them in a migration with the review.
+
+## Backlog: organisation settings
+
+- The project signal thresholds become organisation settings (today constants in
+  `services/overview-panels.ts`): report due soon `REPORT_DUE_SOON_DAYS` = 7 days, and red risk
+  not updated `RED_RISK_STALE_DAYS` = 14 days.
 
 ## Backlog: RAID log phase
 

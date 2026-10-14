@@ -338,6 +338,10 @@ export interface DumbbellDatum {
   toLabel: string;
   valueLabel?: string;
   note?: string;
+  /** Not yet delivered: the connector is dashed. */
+  dashed?: boolean;
+  /** Tooltip label for the filled dot (default "Forecast"). */
+  toKind?: string;
 }
 
 /**
@@ -350,6 +354,7 @@ export function Dumbbell({
   min,
   max,
   onSelect,
+  marker,
   className,
 }: {
   rows: DumbbellDatum[];
@@ -357,6 +362,8 @@ export function Dumbbell({
   min?: number;
   max?: number;
   onSelect?: (key: string) => void;
+  /** A vertical marker through every row (e.g. today), on the same scale as from/to. */
+  marker?: { value: number; label: string } | undefined;
   className?: string;
 }) {
   const values = rows.flatMap((row) => [row.from, row.to]);
@@ -397,13 +404,25 @@ export function Dumbbell({
                 className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2"
                 style={{ background: "var(--viz-grid)" }}
               />
+              {marker ? (
+                <span
+                  aria-hidden
+                  title={marker.label}
+                  className="absolute -bottom-1 -top-1 border-l border-dashed"
+                  style={{ left: `${at(marker.value)}%`, borderColor: "var(--viz-axis)" }}
+                />
+              ) : null}
               <span
                 className="absolute top-1/2 h-[3px] -translate-y-1/2 rounded-full"
                 style={{
                   left: `${start}%`,
                   width: `${Math.max(0.4, end - start)}%`,
-                  background: row.colour,
-                  opacity: 0.55,
+                  ...(row.dashed
+                    ? {
+                        background: `repeating-linear-gradient(90deg, ${row.colour} 0 5px, transparent 5px 9px)`,
+                        opacity: 0.85,
+                      }
+                    : { background: row.colour, opacity: 0.55 }),
                 }}
               />
               <span
@@ -439,7 +458,11 @@ export function Dumbbell({
             {...(state.data.sublabel ? { subtitle: state.data.sublabel } : {})}
             rows={[
               { label: "Baseline", value: state.data.fromLabel, colour: "var(--viz-ink-muted)" },
-              { label: "Forecast", value: state.data.toLabel, colour: state.data.colour },
+              {
+                label: state.data.toKind ?? "Forecast",
+                value: state.data.toLabel,
+                colour: state.data.colour,
+              },
             ]}
             {...(state.data.note ? { note: state.data.note } : {})}
           />
