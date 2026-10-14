@@ -230,8 +230,8 @@ Spec: `docs/design/project-overview-spec.md` (components, data rules, option A c
 - Lint: `npm run lint` checks files changed since the merge base with origin/main;
   `npm run lint:all` checks everything. GitHub Actions runs the changed-files check on pull
   requests and branch pushes (public npm install; bun.lock points at Lovable's internal
-  registry). Generated `types.ts` is excluded. Known: one `prefer-const` error in
-  `integrations/supabase/previewAuthStorage.ts` (Lovable's preview auth; a code change, not fixed).
+  registry). Generated `types.ts` is excluded. Lint is error-free (the `prefer-const` in
+  `integrations/supabase/previewAuthStorage.ts` was fixed so the PR check passes); 51 warnings remain.
 
 ## Pre-launch security task: review signed-in RPCs and business case FK indexes
 
