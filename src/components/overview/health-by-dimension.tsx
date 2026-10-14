@@ -31,6 +31,8 @@ type Props =
       startDate: string | null;
       /** Closed projects with no snapshots say so instead of "History starts". */
       closed?: boolean | undefined;
+      /** Compact (portfolio row panel): the six plots only, no captions or footnote. */
+      size?: "default" | "compact" | undefined;
       className?: string | undefined;
     };
 
@@ -92,9 +94,11 @@ function ProjectHealthByDimension({
   current,
   startDate,
   closed,
+  size,
   className,
 }: Extract<Props, { scope: "project" }>) {
   const format = useFormat();
+  const compact = size === "compact";
   const series = useMemo(() => dimensionSeries(months, HEALTH_DIMENSIONS), [months]);
   const W = 220,
     H = 56,
@@ -118,18 +122,20 @@ function ProjectHealthByDimension({
       }
       info="Evidenced health at each month-end, from health snapshots. Higher is better: green at the top, red at the bottom. A ring marks a month where the status report current at that month-end declared better than the evidence."
       footer={
-        <span className="space-y-1">
-          <span className="block">
-            Rings mark months where the status report declared better than the evidence. Overall is
-            the worst of the five dimensions.
+        compact ? undefined : (
+          <span className="space-y-1">
+            <span className="block">
+              Rings mark months where the status report declared better than the evidence. Overall
+              is the worst of the five dimensions.
+            </span>
+            {sample ? (
+              <span className="block">Earlier months are sample data (lighter dots).</span>
+            ) : null}
+            {startsLate ? (
+              <span className="block">History starts {format.date(startsLate)}.</span>
+            ) : null}
           </span>
-          {sample ? (
-            <span className="block">Earlier months are sample data (lighter dots).</span>
-          ) : null}
-          {startsLate ? (
-            <span className="block">History starts {format.date(startsLate)}.</span>
-          ) : null}
-        </span>
+        )
       }
       empty={
         n
@@ -219,11 +225,13 @@ function ProjectHealthByDimension({
                   </g>
                 ))}
               </svg>
-              <small className="mt-1 block text-[11.5px] text-muted-foreground">
-                {s.declaredBetter
-                  ? `Declared better in ${s.declaredBetter} of ${s.rated} months`
-                  : "Report matched evidence"}
-              </small>
+              {compact ? null : (
+                <small className="mt-1 block text-[11.5px] text-muted-foreground">
+                  {s.declaredBetter
+                    ? `Declared better in ${s.declaredBetter} of ${s.rated} months`
+                    : "Report matched evidence"}
+                </small>
+              )}
             </figure>
           );
         })}

@@ -133,6 +133,24 @@ amber, rest green; an issue's severity: high red, medium amber, low green), then
 longest since last updated. Each shows ref, title, band or severity word, "updated N days ago",
 kind. "Open RAID log".
 
+### Portfolio home: expandable project rows (Stage 6)
+Each row of "Projects by programme" has a chevron button (`aria-expanded`, `aria-controls`);
+clicking anywhere on the row except the project name toggles it, the name opens the project.
+Open rows are in the URL (`?open=ARB,ACA`). The first expand calls `get_project_overview` with
+the project page's query key (and the project record with its key), so opening the project
+afterwards reuses the cache. The panel (`components/overview/project-row-panel.tsx`) uses the
+same components at `size="compact"`:
+- **Summary**: tier, priority and tasks chips; compact lifecycle ("Phase N of M, name" over a
+  segmented bar); PM, project officer, sponsor; start, baseline and forecast finish with days
+  late coloured from `finish_slip_health`; report ring vs evidence dot with the divergence wording.
+- **MilestoneSlippage** compact: the next 5 open milestones by baseline date plus any other open
+  milestone that has slipped; no sort toggle, no footer.
+- **HealthByDimension** compact: the six plots without captions or footnote.
+- **Last highlight report** compact: date, author, declared / evidenced tags, summary cut at three
+  lines, decisions needed when recorded. **Top risks and issues** as on the project page.
+- "Open project" goes to the Overview. Three columns from 1024px, stacked below; below 640px only
+  the summary and the highlight report.
+
 ## 4. Data rules
 
 - **Overdue**: not delivered and the forecast date has passed. `past_baseline` (not delivered,

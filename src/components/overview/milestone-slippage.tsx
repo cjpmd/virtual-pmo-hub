@@ -33,6 +33,8 @@ type Props =
       closed?: boolean | undefined;
       /** Opens the milestones list to add one (empty state). */
       onAddMilestone?: (() => void) | undefined;
+      /** Compact (portfolio row panel): next 5 open plus any slipped, no sort or footer. */
+      size?: "default" | "compact" | undefined;
       className?: string | undefined;
     };
 
@@ -77,12 +79,21 @@ function ProjectSlippage({
   today,
   closed,
   onAddMilestone,
+  size,
   className,
 }: Extract<Props, { scope: "project" }>) {
   const format = useFormat();
+  const compact = size === "compact";
   const [sort, setSort] = useState<"date" | "slip">("date");
   const stats = useMemo(() => scheduleStats(milestones, today), [milestones, today]);
-  const rows = useMemo(() => slipRows(milestones, today, sort), [milestones, today, sort]);
+  const rows = useMemo(() => {
+    const all = slipRows(milestones, today, sort);
+    if (!compact) return all;
+    // Next five open milestones by baseline date, plus any other open one that has slipped.
+    const open = all.filter((row) => !row.delivered);
+    const next = new Set(open.slice(0, 5).map((row) => row.id));
+    return open.filter((row) => next.has(row.id) || row.slip > 0);
+  }, [milestones, today, sort, compact]);
   const data: DumbbellDatum[] = rows.map((row) => ({
     key: row.id,
     label: row.title,
@@ -105,9 +116,21 @@ function ProjectSlippage({
     <ChartCard
       className={className}
       title="Milestone slippage"
-      subtitle="Every milestone on this project, baseline against actual or forecast"
+      subtitle={
+        compact
+          ? "Next 5 open milestones and any that have slipped"
+          : "Every milestone on this project, baseline against actual or forecast"
+      }
       info="The hollow dot is the baselined date and the filled dot is the actual date for delivered milestones, or the current forecast for the rest. Solid connectors are delivered, dashed are not yet delivered; the colour is the slip band. The dashed vertical line is today."
-      timeRange={{ value: sort, options: sorts, onChange: (v) => setSort(v as "date" | "slip") }}
+      {...(compact
+        ? {}
+        : {
+            timeRange: {
+              value: sort,
+              options: sorts,
+              onChange: (v: string) => setSort(v as "date" | "slip"),
+            },
+          })}
       legend={
         <>
           <LegendItem colour="var(--viz-ink-muted)" label="Baseline" shape="dot" />
@@ -130,49 +153,54 @@ function ProjectSlippage({
         ]),
       }}
       footer={
-        <StatStrip
-          items={[
-            { label: "Due next 30 days", value: String(stats.dueNext30) },
-            {
-              label: "Overdue",
-              value: String(stats.overdue),
-              tone: stats.overdue ? "var(--health-bad-foreground)" : undefined,
-            },
-            {
-              label: "Reforecast",
-              value: String(stats.reforecast),
-              tone: stats.reforecast ? "var(--health-warn-foreground)" : undefined,
-            },
-            {
-              label: "Hit baseline",
-              value: stats.hitBaseline === null ? "—" : `${stats.hitBaseline}%`,
-              tone: stats.hitBaseline === null ? undefined : scoreText(stats.hitBaseline),
-            },
-          ]}
-        />
+        compact ? undefined : (
+          <StatStrip
+            items={[
+              { label: "Due next 30 days", value: String(stats.dueNext30) },
+              {
+                label: "Overdue",
+                value: String(stats.overdue),
+                tone: stats.overdue ? "var(--health-bad-foreground)" : undefined,
+              },
+              {
+                label: "Reforecast",
+                value: String(stats.reforecast),
+                tone: stats.reforecast ? "var(--health-warn-foreground)" : undefined,
+              },
+              {
+                label: "Hit baseline",
+                value: stats.hitBaseline === null ? "—" : `${stats.hitBaseline}%`,
+                tone: stats.hitBaseline === null ? undefined : scoreText(stats.hitBaseline),
+              },
+            ]}
+          />
+        )
       }
       empty={
         data.length
           ? undefined
-          : {
-              title: "No milestones yet",
-              detail: "Add milestones with baseline dates to track slippage here.",
-              action: onAddMilestone ? (
-                <Button size="sm" onClick={onAddMilestone}>
-                  Add milestone
-                </Button>
-              ) : undefined,
-            }
+          : compact && milestones.length
+            ? { title: "No open milestones", detail: "Every milestone has been delivered." }
+            : {
+                title: "No milestones yet",
+                detail: "Add milestones with baseline dates to track slippage here.",
+                action: onAddMilestone ? (
+                  <Button size="sm" onClick={onAddMilestone}>
+                    Add milestone
+                  </Button>
+                ) : undefined,
+              }
       }
     >
       <Dumbbell
         rows={data}
+        {...(compact ? { labelWidth: 140 } : {})}
         {...(span.length === 2 ? { min: span[0], max: span[1] } : {})}
         marker={closed ? undefined : { value: todayDay, label: `Today, ${format.date(today)}` }}
       />
       {span.length === 2 ? (
         <AxisStrip
-          labelWidth={190}
+          labelWidth={compact ? 140 : 190}
           ticks={span.map((day) => format.shortDate(new Date((day as number) * 86400000)))}
         />
       ) : null}

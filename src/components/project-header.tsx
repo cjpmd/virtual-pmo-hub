@@ -17,6 +17,7 @@ import type { Health } from "@/data/types";
 import { useFormat } from "@/lib/format";
 import {
   PROJECT_TABS,
+  TASK_SOURCE,
   phaseLabel,
   projectPanelId,
   projectTabId,
@@ -32,12 +33,6 @@ const HEALTH_WORD: Record<Health, string> = {
   "At Risk": "Amber",
   "Off Track": "Red",
   "Not Set": "Not set",
-};
-
-const TASK_SOURCE: Record<string, string> = {
-  native: "Managed in Virtual PMO",
-  planner_basic: "Planner Basic",
-  planner_premium: "Planner Premium",
 };
 
 const bandButton = "border-pmo-line bg-pmo-panel-2 text-pmo-text hover:bg-pmo-line";
@@ -257,7 +252,7 @@ function moveTab(event: KeyboardEvent, tab: ProjectTab, onTabChange: (tab: Proje
   document.getElementById(projectTabId(next))?.focus();
 }
 
-function Chip({ label, children }: { label: string; children: ReactNode }) {
+export function Chip({ label, children }: { label: string; children: ReactNode }) {
   return (
     <span className="rounded-full border border-pmo-line bg-pmo-panel-2 px-2.5 py-0.5 text-xs text-pmo-text">
       <span className="mr-1 font-medium text-pmo-muted">{label}</span>
@@ -266,7 +261,15 @@ function Chip({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Fact({ label, mono, children }: { label: string; mono?: boolean; children: ReactNode }) {
+export function Fact({
+  label,
+  mono,
+  children,
+}: {
+  label: string;
+  mono?: boolean;
+  children: ReactNode;
+}) {
   return (
     <div className="min-w-0">
       <dt className="text-xs text-pmo-muted">{label}</dt>
@@ -277,9 +280,45 @@ function Fact({ label, mono, children }: { label: string; mono?: boolean; childr
   );
 }
 
-function Lifecycle({ phases, phaseId }: { phases: Phase[]; phaseId: string | null }) {
+export function Lifecycle({
+  phases,
+  phaseId,
+  size,
+}: {
+  phases: Phase[];
+  phaseId: string | null;
+  /** Compact (portfolio row panel): the "Phase N of M" line over a thin segmented bar. */
+  size?: "default" | "compact" | undefined;
+}) {
   const current = phases.findIndex((phase) => phase.id === phaseId);
   const now = current >= 0 ? phases[current] : undefined;
+  if (size === "compact")
+    return (
+      <div className="min-w-0">
+        <p className="text-[12.5px] text-pmo-muted">
+          Lifecycle:{" "}
+          <strong className="font-medium text-pmo-text">
+            {now ? `Phase ${current + 1} of ${phases.length}, ${phaseLabel(now.name)}` : "Not set"}
+          </strong>
+        </p>
+        <div aria-hidden className="mt-1.5 flex gap-1">
+          {phases.map((phase, index) => (
+            <span
+              key={phase.id}
+              title={phaseLabel(phase.name)}
+              className={cn(
+                "h-1.5 flex-1 rounded-full",
+                index < current
+                  ? "bg-pmo-accent"
+                  : index === current
+                    ? "bg-pmo-accent/60 ring-1 ring-pmo-accent"
+                    : "bg-pmo-line",
+              )}
+            />
+          ))}
+        </div>
+      </div>
+    );
   return (
     <div className="min-w-0">
       <p className="mb-3 text-[12.5px] text-pmo-muted">
