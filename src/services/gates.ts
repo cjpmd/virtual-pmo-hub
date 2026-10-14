@@ -136,3 +136,14 @@ export const getTierDefinitions = (): TierDefinition[] => {
   const tiers = getSettings().lifecycle?.tiers;
   return tiers?.length ? tiers : defaultTierDefinitions;
 };
+
+/** The gate milestone the checklist ticks are saved against: the project's next undelivered gate
+ * (forecast on or after today, as the Overview gate signal), else its earliest overdue one. */
+export function checklistGateMilestone<
+  T extends { type: string; actualDate: string | null; forecastDate: string },
+>(milestones: T[], today: string): T | undefined {
+  const open = milestones
+    .filter((m) => m.type.toLowerCase() === "gate" && !m.actualDate)
+    .sort((a, b) => a.forecastDate.localeCompare(b.forecastDate));
+  return open.find((m) => m.forecastDate >= today) ?? open[0];
+}

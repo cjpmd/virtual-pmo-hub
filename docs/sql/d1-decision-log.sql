@@ -1,4 +1,4 @@
--- PROPOSAL (not applied): D1 decision log, database only (14/10/2026).
+-- APPLIED 14/10/2026 as migration 20261014160439_d1_decision_log. D1 decision log, database only (14/10/2026).
 -- Audit: docs/design/governance-decisions-audit.md. Decisions agreed on D0:
 --   * refs stay organisation-wide (DEC-nnn); no renumbering
 --   * recording: the decision maker (if they have a login) or workspace PMO / admin on the
@@ -9,10 +9,17 @@
 --     ways to change them
 --   * Deferred is not a status: a decision_events history (deferred, made, superseded,
 --     reversed, edited); a deferred decision stays Pending with a new needed-by
---   * Supersede: the copy starts Pending and goes through Record decision. Refinement: the
---     original stays Made until its successor is recorded, then becomes Superseded (so a
---     decision is never left with nothing standing in its place). Reverse: Reversed, with a
---     required rationale, who and when; no successor
+--   * Supersede: the copy starts Pending and goes through Record decision; the original stays
+--     Made until its successor is recorded, then becomes Superseded. v_decisions shows the
+--     proposed replacement (pending_successor_*). Reverse: Reversed, with a required rationale,
+--     who and when; no successor
+--   * Withdraw (approved 14/10): a Pending decision can be withdrawn with a required reason
+--     (status 'withdrawn', added by migration decision_status_withdrawn, and a 'withdrawn'
+--     event); same permission as editing it; frozen like Made. A withdrawn successor releases
+--     the original, which stays Made with no proposed replacement
+--   * Status report links (approved 14/10): editable while the report is a draft, frozen once
+--     it is submitted. submit_status_report saves a report and its decision links in one
+--     transaction (insert as submitted, or draft -> submitted)
 --
 -- Contents:
 --   1. decision_event_type enum, decision_events (append-only history; written only by the
@@ -24,11 +31,12 @@
 --      links of a decision that is no longer Pending are frozen (actions stay editable, so
 --      owners can progress them)
 --   4. decision_milestones link table
---   5. RPCs: record_decision, defer_decision, supersede_decision, reverse_decision
+--   5. RPCs: record_decision, defer_decision, supersede_decision, reverse_decision,
+--      withdraw_decision
 --   6. status_report_decisions (Decisions needed: links to decisions; decisions_needed text
---      stays as legacy notes)
+--      stays as legacy notes), frozen once the report is submitted; submit_status_report
 --   7. v_decisions: overdue (Pending past needed-by, organisation's today), days overdue,
---      deferral count, superseded-by
+--      deferral count, superseded-by, pending successor
 --   8. get_project_overview: adds openDecisions and latestReportDecisions
 -- Additive throughout: no DROP, no DELETE. New private functions revoke execute from public
 -- and anon. RPC errors: 42501 not allowed, 22023 invalid input, 40001 changed by someone else.
@@ -36,7 +44,7 @@
 -- ---------------------------------------------------------------------------------------
 -- 1. Decision history
 -- ---------------------------------------------------------------------------------------
-create type public.decision_event_type as enum ('edited', 'deferred', 'made', 'superseded', 'reversed');
+create type public.decision_event_type as enum ('edited', 'deferred', 'made', 'superseded', 'reversed', 'withdrawn');
 
 create table public.decision_events (
   id uuid primary key default gen_random_uuid(),
@@ -64,7 +72,7 @@ create table public.decision_events (
   foreign key (decided_by_resource_id, organisation_id) references public.resources (id, organisation_id) on delete set null (decided_by_resource_id),
   foreign key (actor_id) references public.profiles (id) on delete set null,
   check (event_type <> 'deferred' or (new_needed_by is not null and length(btrim(coalesce(reason, ''))) > 0)),
-  check (event_type <> 'reversed' or length(btrim(coalesce(reason, ''))) > 0),
+  check (event_type not in ('reversed', 'withdrawn') or length(btrim(coalesce(reason, ''))) > 0),
   check (changes is null or jsonb_typeof(changes) = 'object')
 );
 create index decision_events_workspace_idx on public.decision_events (workspace_id, organisation_id);
@@ -560,6 +568,43 @@ $$;
 revoke all on function public.reverse_decision(uuid, text, date, timestamptz) from public, anon;
 grant execute on function public.reverse_decision(uuid, text, date, timestamptz) to authenticated;
 
+-- Withdraw a Pending decision (raised in error, or a proposed replacement that isn't going
+-- ahead). Same permission as editing it. A withdrawn successor leaves the original Made.
+create function public.withdraw_decision(
+  p_decision_id uuid,
+  p_reason text,
+  p_expected_updated_at timestamptz default null
+)
+returns public.decisions
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  d public.decisions;
+begin
+  select * into d from public.decisions where id = p_decision_id for update;
+  if d.id is null or not private.can_write_decision(d) then
+    raise exception 'You can''t withdraw this decision.' using errcode = '42501';
+  end if;
+  if p_expected_updated_at is not null and d.updated_at is distinct from p_expected_updated_at then
+    raise exception 'Changed by someone else, reload to see the latest.' using errcode = '40001';
+  end if;
+  if d.status <> 'pending' then
+    raise exception 'Only a Pending decision can be withdrawn; % is %.', d.ref, d.status using errcode = '22023';
+  end if;
+  if length(btrim(coalesce(p_reason, ''))) = 0 then
+    raise exception 'Give the reason for withdrawing the decision.' using errcode = '22023';
+  end if;
+  update public.decisions set status = 'withdrawn' where id = d.id returning * into d;
+  insert into public.decision_events (decision_id, event_type, event_date, forum_id, reason, actor_id)
+  values (d.id, 'withdrawn', private.org_today(d.organisation_id), d.forum_id, btrim(p_reason), (select auth.uid()));
+  return d;
+end;
+$$;
+revoke all on function public.withdraw_decision(uuid, text, timestamptz) from public, anon;
+grant execute on function public.withdraw_decision(uuid, text, timestamptz) to authenticated;
+
 -- ---------------------------------------------------------------------------------------
 -- 6. Status report "Decisions needed"
 -- ---------------------------------------------------------------------------------------
@@ -589,6 +634,8 @@ create trigger status_report_decisions_00_tenant_guard before insert or update o
   for each row execute function private.tenant_guard('status_report_id', 'status_reports');
 
 -- A report asks for Pending decisions of its own project (or of its programme / portfolio).
+-- Links are editable while the report is a draft and frozen once it is submitted (like its
+-- evidence); submit_status_report writes the links of a report it submits (as the owner).
 create function private.status_report_decision_rules()
 returns trigger
 language plpgsql
@@ -596,7 +643,24 @@ set search_path = ''
 as $$
 declare
   d record;
+  report_status public.status_report_status;
 begin
+  select r.status into report_status from public.status_reports r
+  where r.id = coalesce(new.status_report_id, old.status_report_id);
+  if current_user = 'authenticated' and report_status = 'submitted' then
+    raise exception 'This report has been submitted; its decisions needed can''t be changed.'
+      using errcode = '42501';
+  end if;
+  if tg_op = 'DELETE' then
+    return old;
+  end if;
+  if tg_op = 'UPDATE' and (new.decision_id is distinct from old.decision_id
+    or new.status_report_id is distinct from old.status_report_id) then
+    raise exception 'Remove the link and add another instead.' using errcode = '42501';
+  end if;
+  if tg_op = 'UPDATE' then
+    return new;
+  end if;
   select dd.ref, dd.status, dd.project_id into d from public.decisions dd where dd.id = new.decision_id;
   if d.project_id is not null and d.project_id <> new.project_id then
     raise exception '% belongs to another project.', d.ref using errcode = '23514';
@@ -610,20 +674,129 @@ begin
 end;
 $$;
 revoke all on function private.status_report_decision_rules() from public, anon;
-create trigger status_report_decisions_10_rules before insert on public.status_report_decisions
+create trigger status_report_decisions_10_rules before insert or update or delete on public.status_report_decisions
   for each row execute function private.status_report_decision_rules();
 create trigger status_report_decisions_audit after insert or update or delete on public.status_report_decisions
   for each row execute function private.audit_row_change();
 
 alter table public.status_report_decisions enable row level security;
 revoke all on public.status_report_decisions from anon, authenticated;
-grant select, insert, delete on public.status_report_decisions to authenticated;
+grant select, insert, update, delete on public.status_report_decisions to authenticated;
 create policy status_report_decisions_select on public.status_report_decisions for select to authenticated
   using (workspace_id = any ((select private.my_workspace_ids())::uuid[]));
 create policy status_report_decisions_insert on public.status_report_decisions for insert to authenticated
   with check (project_id = any ((select private.my_editable_project_ids())::uuid[]));
+create policy status_report_decisions_update on public.status_report_decisions for update to authenticated
+  using (project_id = any ((select private.my_editable_project_ids())::uuid[]))
+  with check (project_id = any ((select private.my_editable_project_ids())::uuid[]));
 create policy status_report_decisions_delete on public.status_report_decisions for delete to authenticated
   using (project_id = any ((select private.my_editable_project_ids())::uuid[]));
+
+-- Saves a status report and its decision links in one transaction, then the report is
+-- submitted (and the links frozen with it).
+--   * p_report_id null: inserts a new report as submitted for p_project_id.
+--   * p_report_id set: a draft of p_project_id; its fields are updated from p_report and it
+--     becomes submitted. Its links are the draft's own (edited while it is a draft) plus any
+--     in p_decision_ids not yet linked; a draft link missing from p_decision_ids is refused
+--     ("remove it from the draft first") rather than dropped silently.
+-- p_report keys (all optional except the five health ratings): reporting_date, submitter_id,
+-- overall, schedule, financial, effort, issue, declared_benefit, accomplished, planned,
+-- comments, decisions_needed (legacy notes), override_reasons, ai_draft. Evidence and
+-- submitted_at are captured by the existing status report trigger, not sent.
+create function public.submit_status_report(
+  p_project_id uuid,
+  p_report jsonb,
+  p_decision_ids uuid[] default '{}',
+  p_report_id uuid default null,
+  p_expected_updated_at timestamptz default null
+)
+returns public.status_reports
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  r public.status_reports;
+  v_org uuid;
+  extra text;
+begin
+  if p_project_id is null or not (p_project_id = any (private.my_editable_project_ids())) then
+    raise exception 'You can''t submit a status report for this project.' using errcode = '42501';
+  end if;
+  if p_report is null or jsonb_typeof(p_report) <> 'object' then
+    raise exception 'The report is missing.' using errcode = '22023';
+  end if;
+  select organisation_id into v_org from public.projects where id = p_project_id;
+
+  if p_report_id is null then
+    insert into public.status_reports (
+      project_id, reporting_date, submitter_id, status, overall, schedule, financial, effort, issue,
+      declared_benefit, accomplished, planned, comments, decisions_needed, override_reasons, ai_draft)
+    values (
+      p_project_id,
+      coalesce(nullif(p_report ->> 'reporting_date', '')::date, private.org_today(v_org)),
+      nullif(p_report ->> 'submitter_id', '')::uuid,
+      'submitted',
+      coalesce(nullif(p_report ->> 'overall', '')::public.health, 'not_set'),
+      coalesce(nullif(p_report ->> 'schedule', '')::public.health, 'not_set'),
+      coalesce(nullif(p_report ->> 'financial', '')::public.health, 'not_set'),
+      coalesce(nullif(p_report ->> 'effort', '')::public.health, 'not_set'),
+      coalesce(nullif(p_report ->> 'issue', '')::public.health, 'not_set'),
+      coalesce(nullif(p_report ->> 'declared_benefit', '')::public.health, 'not_set'),
+      p_report ->> 'accomplished', p_report ->> 'planned', nullif(p_report ->> 'comments', ''),
+      nullif(p_report ->> 'decisions_needed', ''),
+      coalesce(p_report -> 'override_reasons', '{}'::jsonb), p_report -> 'ai_draft')
+    returning * into r;
+  else
+    select * into r from public.status_reports where id = p_report_id for update;
+    if r.id is null or r.project_id <> p_project_id then
+      raise exception 'That report isn''t on this project.' using errcode = '42501';
+    end if;
+    if p_expected_updated_at is not null and r.updated_at is distinct from p_expected_updated_at then
+      raise exception 'Changed by someone else, reload to see the latest.' using errcode = '40001';
+    end if;
+    if r.status <> 'draft' then
+      raise exception '% has already been submitted.', r.ref using errcode = '22023';
+    end if;
+    select string_agg(d.ref, ', ' order by d.ref) into extra
+    from public.status_report_decisions l join public.decisions d on d.id = l.decision_id
+    where l.status_report_id = r.id and not (l.decision_id = any (coalesce(p_decision_ids, '{}')));
+    if extra is not null then
+      raise exception 'Remove % from the draft first, or include it.', extra using errcode = '22023';
+    end if;
+  end if;
+
+  insert into public.status_report_decisions (status_report_id, decision_id, sort_order)
+  select r.id, x.id, x.ord::integer
+  from unnest(coalesce(p_decision_ids, '{}')) with ordinality as x(id, ord)
+  where not exists (
+    select 1 from public.status_report_decisions l where l.status_report_id = r.id and l.decision_id = x.id);
+
+  if p_report_id is not null then
+    update public.status_reports set
+      reporting_date = coalesce(nullif(p_report ->> 'reporting_date', '')::date, reporting_date),
+      submitter_id = coalesce(nullif(p_report ->> 'submitter_id', '')::uuid, submitter_id),
+      overall = coalesce((p_report ->> 'overall')::public.health, overall),
+      schedule = coalesce((p_report ->> 'schedule')::public.health, schedule),
+      financial = coalesce((p_report ->> 'financial')::public.health, financial),
+      effort = coalesce((p_report ->> 'effort')::public.health, effort),
+      issue = coalesce((p_report ->> 'issue')::public.health, issue),
+      declared_benefit = coalesce(nullif(p_report ->> 'declared_benefit', '')::public.health, declared_benefit),
+      accomplished = coalesce(p_report ->> 'accomplished', accomplished),
+      planned = coalesce(p_report ->> 'planned', planned),
+      comments = case when p_report ? 'comments' then nullif(p_report ->> 'comments', '') else comments end,
+      decisions_needed = case when p_report ? 'decisions_needed' then nullif(p_report ->> 'decisions_needed', '') else decisions_needed end,
+      override_reasons = coalesce(p_report -> 'override_reasons', override_reasons),
+      ai_draft = case when p_report ? 'ai_draft' then p_report -> 'ai_draft' else ai_draft end,
+      status = 'submitted'
+    where id = r.id
+    returning * into r;
+  end if;
+  return r;
+end;
+$$;
+revoke all on function public.submit_status_report(uuid, jsonb, uuid[], uuid, timestamptz) from public, anon;
+grant execute on function public.submit_status_report(uuid, jsonb, uuid[], uuid, timestamptz) to authenticated;
 
 -- ---------------------------------------------------------------------------------------
 -- 7. v_decisions: the overdue rule lives here
@@ -637,7 +810,9 @@ select d.*,
   ev.last_deferred_on,
   s.id as superseded_by_id,
   s.ref as superseded_by_ref,
-  s.status as superseded_by_status
+  s.status as superseded_by_status,
+  ps.id as pending_successor_id,
+  ps.ref as pending_successor_ref
 from public.decisions d
 cross join lateral (select private.org_today(d.organisation_id) as today) t
 left join lateral (
@@ -645,10 +820,17 @@ left join lateral (
     max(e.event_date) filter (where e.event_type = 'deferred') as last_deferred_on
   from public.decision_events e where e.decision_id = d.id
 ) ev on true
+-- The successor that replaced it (recorded), and a replacement still being proposed.
 left join lateral (
   select x.id, x.ref, x.status from public.decisions x
-  where x.supersedes_id = d.id order by x.created_at desc limit 1
-) s on true;
+  where x.supersedes_id = d.id and x.status not in ('pending', 'withdrawn')
+  order by x.decision_date desc nulls last, x.created_at desc limit 1
+) s on true
+left join lateral (
+  select x.id, x.ref from public.decisions x
+  where x.supersedes_id = d.id and x.status = 'pending'
+  order by x.created_at desc limit 1
+) ps on true;
 revoke all on public.v_decisions from anon, authenticated;
 grant select on public.v_decisions to authenticated;
 
@@ -890,47 +1072,69 @@ $$;
 revoke all on function public.get_project_overview(uuid) from public, anon;
 grant execute on function public.get_project_overview(uuid) to authenticated;
 
--- DRY RUN (14/10/2026, one transaction, rolled back). Member = the test contributor (project
--- editor); "PMO" = the same member promoted to workspace PMO inside the transaction only;
--- outsider = the other organisation's admin. All 28 checks behaved as intended:
---    0 backfill: 8 made events (7 made + 1 superseded), 1 superseded event, decided_by on 8
---      decisions; v_decisions: 3 overdue in the demo organisation (DEC-004, DEC-005, DEC-008)
---    1 member creates a Pending decision                   ok (DEC-017)
---    2 member inserts a decision as Made                   refused
---    3 member edits a Pending decision                      ok; 'edited' event with the changed
---                                                           fields (title, needed_by_date) and
---                                                           the old and new needed-by
---    4 member sets status = made directly                   refused
---    5 member records DEC-004 (not maker, not PMO)          refused
---    6 member defers DEC-004                                refused
---    7 decision maker with a login records their decision   ok; decided_by = them, recorded_by =
---                                                           their account, action created,
---                                                           'made' event
---    8 member edits a Made decision                          refused (read-only)
---    9 member adds an option to a Made decision              refused
---   10 member progresses an action of a Made decision        ok (actions stay editable)
---   11 member supersedes DEC-007                             ok: DEC-018 Pending, options copied,
---                                                           DEC-007 still Made
---   12 a second successor for DEC-007                        refused
---   13 member reverses DEC-001                               refused
---   14 member links the VDI report to DEC-004 (Pending)      ok
---   15 link the VDI report to another project's decision     refused
---   16 link a report to a Made decision                      refused
---   17 member links DEC-004 to a VDI milestone               ok
---   18 get_project_overview(VDI) as member                   openDecisions 1 (DEC-004, overdue),
---                                                           latestReportDecisions DEC-004
---   19 member inserts into decision_events                   refused (no grant)
---   20 PMO defers DEC-004 (+14 days)                          ok; still Pending, Deferred x1, no
---                                                           longer overdue
---   21 PMO records DEC-003 without saying who decided        ok; decided_by = the forum,
---                                                           recorded_by = PMO
---   22 PMO records DEC-018 (the successor)                   ok; DEC-007 Superseded, event
---                                                           logged, superseded_by DEC-018
---   23 PMO reverses DEC-001 with a blank rationale           refused
---   24 PMO reverses DEC-001 with a rationale                 ok; Reversed, event by the PMO
---   25 outsider reads decisions, v_decisions, events, links  0 rows each
---   26 outsider records DEC-004                              refused
---   27 outsider supersedes DEC-001                           refused
---   28 outsider get_project_overview(VDI)                    null
--- After the rollback: 16 decisions (8 pending, 7 made, 1 superseded), no new tables or RPCs,
--- the member is still a contributor.
+-- DRY RUN (final, 14/10/2026, one transaction, rolled back). Member = the test contributor
+-- (project editor); "PMO" = the same member promoted to workspace PMO inside the transaction
+-- only; outsider = the other organisation's admin. All checks behaved as intended:
+--    0 backfill: 8 made events, 1 superseded event, decided_by on 8; 3 overdue (DEC-004/005/008)
+--    1 member creates a Pending decision (DEC-017)               ok
+--    2 member inserts a decision as Made                          refused
+--    3 member edits a Pending decision                            ok; 'edited' event (title,
+--                                                                 needed_by_date; old -> new)
+--    4 member sets status = made directly                         refused
+--    5-6 member records / defers DEC-004 (not maker, not PMO)    refused
+--    7 decision maker with a login records their decision         ok; decided_by = them,
+--                                                                 recorded_by = their account
+--    8-9 member edits a Made decision / adds an option            refused (read-only)
+--   10 member progresses an action of a Made decision             ok
+--   11 member supersedes DEC-007                                  DEC-018 Pending, options copied,
+--                                                                 DEC-007 Made, pending_successor
+--                                                                 DEC-018
+--   12 second successor for DEC-007                               refused
+--   13 withdraw DEC-018 with a blank reason                       refused
+--   14 member withdraws DEC-018                                   Withdrawn + event; DEC-007 still
+--                                                                 Made, no pending successor, not
+--                                                                 superseded (released)
+--   15 member edits the Withdrawn DEC-018                         refused (frozen)
+--   16 member proposes a new replacement                          DEC-019, pending_successor DEC-019
+--   17 member reverses DEC-001                                    refused
+--   18 link a SUBMITTED report to DEC-004                         refused (frozen)
+--   19 draft report: link DEC-004, reorder                        ok (draft links editable)
+--   20-21 draft link to another project's / a Made decision       refused
+--   22 submit the draft without its linked DEC-004                refused ("Remove DEC-004 from
+--                                                                 the draft first, or include it")
+--   23 submit_status_report: draft -> submitted                   submitted, evidence captured,
+--                                                                 1 link, legacy note kept
+--   24-25 reorder / add links after submit                        refused (frozen)
+--   26 submit_status_report: new report inserted as submitted     first run: failed (omitted
+--                                                                 declared_benefit sent as null);
+--                                                                 fixed (omitted ratings default
+--                                                                 to not_set) and rerun: SR-003
+--                                                                 submitted, evidence captured,
+--                                                                 1 link, links then frozen;
+--                                                                 a draft submitted with text only
+--                                                                 keeps its health ratings
+--   27 member links DEC-004 to a milestone                        ok
+--   28 get_project_overview(VDI) as member                        openDecisions DEC-004 (overdue),
+--                                                                 latestReportDecisions DEC-004
+--   29 member inserts into decision_events                        refused (no grant)
+--   30 PMO defers DEC-004 (+14 days)                              Pending, Deferred x1, not overdue
+--   31 PMO records DEC-003 without saying who decided             decided_by = the forum
+--   32 PMO records DEC-019                                        DEC-007 Superseded by DEC-019, no
+--                                                                 pending successor
+--   33-34 PMO reverses DEC-001 blank / with a rationale           refused / Reversed + event
+--   35 outsider reads decisions, v_decisions, events, links       0 rows each
+--   36-39 outsider records, supersedes, withdraws, submits        refused
+--   40 outsider get_project_overview(VDI)                         null
+
+-- RLS TESTS AFTER APPLY (14/10/2026), live schema:
+--   REST as the real member and outsider logins (reads, and writes refused before anything is
+--   written): 37/37 as intended. Member reads 16 decisions and 9 events; Made DEC-001 can't be
+--   edited, recorded, deferred or withdrawn; submitted SR-001 can't take links. Outsider reads
+--   0 everywhere, get_project_overview(ARB) is null, every RPC refuses 42501.
+--   SQL, one transaction rolled back, member (contributor) then promoted to PMO in-transaction,
+--   then outsider: 22/22 as intended (create and edit Pending, Made refused on insert and plain
+--   update, record_decision refused for a contributor, draft links editable, submit freezes
+--   them, gate tick sets ticked_by/at, non-gate tick refused, withdraw then frozen; as PMO
+--   record defaults to the forum, supersede keeps the original Made with pending_successor,
+--   withdrawing the successor releases it, reverse; outsider sees 0 and is refused). Row counts
+--   unchanged afterwards.

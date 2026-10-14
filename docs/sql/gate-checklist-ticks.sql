@@ -1,4 +1,4 @@
--- PROPOSAL (not applied): save gate checklist ticks (before D1, 14/10/2026).
+-- APPLIED 14/10/2026 as migration 20261014160229_gate_checklist_ticks. save gate checklist ticks (before D1, 14/10/2026).
 --
 -- Today the manual ticks on Plan › Gates (and the "relevant lessons reviewed" tick that the
 -- lessons-reviewed criterion reads) live in page state and are lost on reload, so the Overview

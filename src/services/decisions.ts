@@ -19,7 +19,7 @@ import { parseDate } from "@/lib/format";
 import { daysFromToday, today } from "@/lib/today";
 import { listPeople, type Person, programmeRefs, projectRefs } from "./hierarchy";
 import { ServiceError, unwrap } from "./service-error";
-import { insertRow, insertRows, updateRow } from "./write";
+import { insertRow, updateRow } from "./write";
 
 type Enums = Database["public"]["Enums"];
 const invert = <K extends string, V extends string>(map: Record<K, V>) =>
@@ -30,6 +30,7 @@ export const decisionStatusLabel: Record<Enums["decision_status"], DecisionStatu
   made: "Made",
   superseded: "Superseded",
   reversed: "Reversed",
+  withdrawn: "Withdrawn",
 };
 export const decisionStatusValue = invert(decisionStatusLabel);
 const actionStatusLabel: Record<Enums["action_status"], DecisionAction["status"]> = {
@@ -275,9 +276,10 @@ export async function loadGovernance(orgId: string): Promise<GovernanceData> {
       updatedAt: row.updated_at,
     };
   });
-  // supersededById is derived: only supersedes_id is stored.
+  // supersededById is derived: only supersedes_id is stored. A Pending or Withdrawn successor
+  // hasn't replaced the original yet (as v_decisions.superseded_by_id).
   for (const decision of decisionViews)
-    if (decision.supersedesId) {
+    if (decision.supersedesId && decision.status !== "Pending" && decision.status !== "Withdrawn") {
       const older = decisionViews.find((item) => item.id === decision.supersedesId);
       if (older) older.supersededById = decision.id;
     }
@@ -410,7 +412,8 @@ export const isDecisionReadOnly = (decision: { status: DecisionStatus }) =>
 
 // ---- Writes -------------------------------------------------------------------------------
 
-/** Record the outcome of a pending decision. It becomes read-only. */
+/** Record the outcome of a pending decision (record_decision RPC: the decision maker or the
+ * PMO). It becomes read-only; a recorded successor supersedes its original. */
 export async function recordDecision(input: {
   id: string;
   optionId: string;
@@ -420,67 +423,32 @@ export async function recordDecision(input: {
 }) {
   if (!input.rationale.trim())
     throw new ServiceError("invalid", "Record why this option was chosen.");
-  return updateRow(
-    "decisions",
-    input.id,
-    {
-      status: "made",
-      chosen_option_id: input.optionId,
-      rationale: input.rationale.trim(),
-      decision_date: input.decisionDate,
-    },
-    { context: "Recording the decision", lastSeen: input.lastSeen },
+  return unwrap(
+    await supabase.rpc("record_decision", {
+      p_decision_id: input.id,
+      p_chosen_option_id: input.optionId,
+      p_rationale: input.rationale.trim(),
+      p_decision_date: input.decisionDate,
+      p_expected_updated_at: input.lastSeen,
+    }),
+    "Recording the decision",
   );
 }
 
 /**
- * Supersede a made decision: a new pending decision with the same scope, context, forum and
- * options, pointing back at the original, which becomes Superseded.
+ * Supersede a made decision (supersede_decision RPC): a new pending decision with the same
+ * scope, content, options and links, pointing back at the original. The original stays Made
+ * until the new one is recorded.
  */
 export async function supersedeDecision(decision: ResolvedDecision, neededBy: string) {
-  const written = await insertRow(
-    "decisions",
-    {
-      title: decision.title,
-      context: decision.context,
-      project_id: decision.scope.projectId,
-      programme_id: decision.scope.programmeId,
-      portfolio_id: decision.scope.portfolioId,
-      forum_id: decision.forumId,
-      decision_maker_id: decision.decisionMakerId,
-      needed_by_date: neededBy,
-      supersedes_id: decision.id,
-      status: "pending",
-      impact_scope: decision.impact.scope.impacted,
-      impact_scope_note: decision.impact.scope.note || null,
-      impact_cost: decision.impact.cost.impacted,
-      impact_cost_note: decision.impact.cost.note || null,
-      impact_time: decision.impact.time.impacted,
-      impact_time_note: decision.impact.time.note || null,
-      impact_benefits: decision.impact.benefits.impacted,
-      impact_benefits_note: decision.impact.benefits.note || null,
-    },
+  return unwrap(
+    await supabase.rpc("supersede_decision", {
+      p_decision_id: decision.id,
+      p_needed_by: neededBy,
+      p_expected_updated_at: decision.updatedAt,
+    }),
     "Creating the superseding decision",
   );
-  if (decision.options.length)
-    await insertRows(
-      "decision_options",
-      decision.options.map((option, index) => ({
-        decision_id: written.id,
-        title: option.title,
-        pros: option.pros,
-        cons: option.cons,
-        sort_order: index,
-      })),
-      "Copying the options",
-    );
-  await updateRow(
-    "decisions",
-    decision.id,
-    { status: "superseded" },
-    { context: "Marking the original as superseded", lastSeen: decision.updatedAt },
-  );
-  return written;
 }
 
 export interface DecisionInput {

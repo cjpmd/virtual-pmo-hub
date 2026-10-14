@@ -233,6 +233,28 @@ Spec: `docs/design/project-overview-spec.md` (components, data rules, option A c
   registry). Generated `types.ts` is excluded. Lint is error-free (the `prefer-const` in
   `integrations/supabase/previewAuthStorage.ts` was fixed so the PR check passes); 51 warnings remain.
 
+## Gate ticks and D1 decision log, database (14/10/2026)
+
+- Audit: `docs/design/governance-decisions-audit.md`. Proposals and dry runs:
+  `docs/sql/gate-checklist-ticks.sql`, `docs/sql/d1-decision-log.sql` (both applied).
+  Migrations `20261014155434_decision_status_withdrawn`, `20261014160229_gate_checklist_ticks`,
+  `20261014160439_d1_decision_log`.
+- Gate checklist ticks persist in `gate_checklist_ticks` against the project's next open gate
+  milestone (`checklistGateMilestone` in `services/gates.ts`); the lessons-reviewed tick is a
+  tick of that criterion. The Overview gate signal counts them.
+- Decisions:
+  - Made, Superseded, Reversed and Withdrawn are read-only in the database (`decisions_05_rules`).
+  - Status changes only through the RPCs `record_decision`, `defer_decision`,
+    `supersede_decision`, `reverse_decision` and `withdraw_decision`.
+  - History is in `decision_events`; overdue is in `v_decisions`.
+  - Status reports submit through `submit_status_report`; links in `status_report_decisions`
+    freeze on submit.
+  - `recordDecision` / `supersedeDecision` in `services/decisions.ts` now call the RPCs.
+- UI is Lovable's: `docs/design/decisions-ui-brief.md`.
+- The Governance › RAIDD board still offers a status edit, which the database now refuses
+  (brief §4 makes it read-only).
+- The Supabase MCP `execute_sql` hangs on a statement containing DELETE; dry runs avoid it.
+
 ## Pre-launch security task: review signed-in RPCs and business case FK indexes
 
 Not now; do before launch. Don't change them until reviewed. The security advisor flags three

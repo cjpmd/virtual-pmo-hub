@@ -5,8 +5,15 @@ import { cn } from "@/lib/utils";
 /** Gate criteria for the project's current phase with pass/fail indicators (Prompt H3). */
 export function GateChecklist({
   onToggleManual,
+  gateLabel,
+  readOnly = false,
   ...input
-}: ChecklistInput & { onToggleManual: (id: string) => void }) {
+}: ChecklistInput & {
+  onToggleManual: (id: string) => void;
+  /** The gate milestone the ticks are saved against. */
+  gateLabel?: string | undefined;
+  readOnly?: boolean;
+}) {
   const { project, manualTicks } = input;
   const { phase, resolved, passed } = useGateChecklist(input);
 
@@ -18,6 +25,11 @@ export function GateChecklist({
           <p className="mt-1 text-sm text-muted-foreground">
             Criteria that apply to a {project.tier.toLowerCase()} project at this phase. Benefit and
             lessons criteria are evaluated automatically.
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {gateLabel
+              ? `Ticks are saved against ${gateLabel}.`
+              : "No open gate milestone: add one on Plan › Milestones to save ticks."}
           </p>
         </div>
         <span
@@ -39,6 +51,7 @@ export function GateChecklist({
                 type="checkbox"
                 className="mt-1"
                 checked={manualTicks.includes(item.criterion.id)}
+                disabled={readOnly}
                 onChange={() => onToggleManual(item.criterion.id)}
                 aria-label={item.criterion.label}
               />
