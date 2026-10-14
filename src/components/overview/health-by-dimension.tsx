@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { ChartCard } from "@/components/charts/chart-card";
 import { SmallMultiples } from "@/components/charts/plots";
-import { getDimensionScores, scoreColour } from "@/services/analytics";
+import { getDimensionScores, scoreColour, scoreTextColour } from "@/services/analytics";
 import type { ProjectSummary } from "@/services/hierarchy";
 import type { ProjectSnapshot } from "@/services/trends";
 import type { Health } from "@/data/types";
@@ -285,7 +285,7 @@ function PortfolioHealthByDimension({
             key: dimension.key,
             label: dimension.label,
             caption: `${dimension.percent}%`,
-            captionTone: scoreColour(dimension.percent),
+            captionTone: scoreTextColour(dimension.percent),
             valueLabel: "Projects green",
             format: (value: number) => `${value}%`,
             points: dimension.trend.points.map((value, index) => ({
@@ -298,7 +298,7 @@ function PortfolioHealthByDimension({
             key: "overall",
             label: "Overall",
             caption: `${percentOnTrack}%`,
-            captionTone: scoreColour(percentOnTrack),
+            captionTone: scoreTextColour(percentOnTrack),
             valueLabel: "Projects green",
             format: (value: number) => `${value}%`,
             points: overallTrend.points.map((value, index) => ({

@@ -604,11 +604,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Button
                   variant="ghost"
                   onClick={() => setPalette(true)}
-                  aria-label="Search (Ctrl K)"
                   className="h-9 gap-2 px-2 text-[13px] font-normal text-pmo-muted lg:w-48 lg:justify-start lg:border lg:border-pmo-line lg:bg-pmo-bg"
                 >
-                  <Search className="size-4" />
-                  <span className="hidden lg:inline">Search…</span>
+                  <Search className="size-4" aria-hidden />
+                  {/* The name comes from the visible text, so it matches what sighted users see. */}
+                  <span className="sr-only lg:not-sr-only">Search…</span>
                   <kbd className="ml-auto hidden rounded border border-pmo-line px-1.5 py-0.5 font-geist-mono text-[10px] lg:inline">
                     ⌘K
                   </kbd>
@@ -678,11 +678,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="h-11 gap-2 px-1 sm:px-2"
-                      aria-label={`Account menu for ${user?.name ?? "user"}`}
-                    >
+                    <Button variant="ghost" className="h-11 gap-2 px-1 sm:px-2">
+                      <span className="sr-only">Account menu: </span>
                       <span className="hidden min-w-0 text-right sm:block">
                         <span className="block text-xs font-semibold">{user?.name}</span>
                         <span

@@ -9,9 +9,10 @@ import {
   dayNumber,
   getMilestoneMetrics,
   getSlippedMilestones,
-  scoreColour,
+  scoreTextColour,
   slipColour,
   slipSeverity,
+  slipTextColour,
   type PortfolioMilestone,
 } from "@/services/analytics";
 import type { ProjectOverviewMilestone } from "@/services/project-overview";
@@ -234,6 +235,7 @@ function PortfolioSlippage({
       from: dayNumber(item.baselineDate),
       to: dayNumber(item.forecastDate),
       colour: slipColour[severity],
+      textColour: slipTextColour[severity],
       fromLabel: format.date(item.baselineDate),
       toLabel: format.date(item.forecastDate),
       valueLabel: `+${item.slipDays}d`,
@@ -253,7 +255,7 @@ function PortfolioSlippage({
       aside={
         <Link
           to="/delivery/milestones"
-          className="text-xs font-semibold text-primary hover:underline"
+          className="text-xs font-semibold text-pmo-accent hover:underline"
         >
           View all
         </Link>
@@ -285,17 +287,17 @@ function PortfolioSlippage({
             {
               label: "Overdue",
               value: String(milestoneMetrics.overdue),
-              tone: milestoneMetrics.overdue ? "var(--viz-critical)" : undefined,
+              tone: milestoneMetrics.overdue ? "var(--health-bad-foreground)" : undefined,
             },
             {
               label: "Reforecast",
               value: String(milestoneMetrics.slipped),
-              tone: "var(--viz-serious)",
+              tone: "var(--health-warn-foreground)",
             },
             {
               label: "Hit baseline (90d)",
               value: `${milestoneMetrics.percentOnTime}%`,
-              tone: scoreColour(milestoneMetrics.percentOnTime),
+              tone: scoreTextColour(milestoneMetrics.percentOnTime),
             },
           ]}
         />

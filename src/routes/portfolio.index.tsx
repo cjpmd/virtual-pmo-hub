@@ -235,7 +235,7 @@ function PortfolioBody({
         />
       </section>
 
-      <div className="grid gap-4 xl:grid-cols-12">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <ChartCard
           className="xl:col-span-8"
           title="Budget, spend and forecast by programme"
@@ -340,7 +340,7 @@ function PortfolioBody({
         </ChartCard>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-12">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <MilestoneSlippage className="xl:col-span-7" milestones={allMilestones} />
 
         <div className="flex flex-col gap-4 xl:col-span-5">
@@ -434,7 +434,7 @@ function PortfolioBody({
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-12">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <MilestoneDeliveryProfile className="xl:col-span-8" milestones={allMilestones} />
         <HealthByDimension
           className="xl:col-span-4"
@@ -456,7 +456,7 @@ function PortfolioBody({
             <Link
               to="/portfolio/programmes/$programmeId"
               params={{ programmeId: row.id }}
-              className="text-primary hover:underline"
+              className="text-pmo-accent hover:underline"
             >
               {row.title}
             </Link>

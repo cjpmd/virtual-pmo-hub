@@ -1027,6 +1027,7 @@ function TableView({
                             <GripVertical className="size-3 text-muted-foreground" />
                             <input
                               type="checkbox"
+                              aria-label={`Select ${row.title}`}
                               checked={selected.includes(row.id)}
                               onChange={(event) =>
                                 setSelected(
