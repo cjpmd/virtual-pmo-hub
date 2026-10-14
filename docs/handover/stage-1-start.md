@@ -194,8 +194,7 @@ Spec: `docs/design/project-overview-spec.md` (components, data rules, option A c
 - Lighthouse accessibility 100 (navigation, loaded Overview light and dark), from 93–94. Fixed:
   text-safe colours for coloured text (slippage values, hit-baseline figure, health words),
   segmented toggle label contrast, logo text, sign-in loading text, a 24px target for the
-  collapsed rail section toggle. Left (weight 0): Search and account buttons' accessible names
-  don't include their visible text.
+  collapsed rail section toggle. (The Search and account button names were fixed after Stage 6.)
 - Load (ARB, member, through this container's proxy, ~340 ms per request): production build cold
   ~7.2 s to content, warm reload ~4.6 s, back to Overview in the app ~0.2 s (cached);
   `get_project_overview` ~26 ms in the database, 0.5–1.4 s in the browser. The wait is the app's
@@ -207,6 +206,32 @@ Spec: `docs/design/project-overview-spec.md` (components, data rules, option A c
   (inserted in a rolled-back transaction) is visible to the member and not the outsider; anon 401.
 - Advisors: known items only (pre-launch RPC review, business case FK indexes, private tables
   without policies, leaked-password protection, unused indexes).
+
+## Stage 6 and follow-ups (14/10/2026)
+
+- Expandable rows on "Projects by programme" (`?open=ARB,KBR`), panel in
+  `components/overview/project-row-panel.tsx` with the overview components at `size="compact"`;
+  same query keys as the project page. 20 expansions as the member (production build): RPC p50
+  342 ms / p95 753 ms, click to rendered p50 1.03 s / p95 1.12 s. Spec: project-overview-spec.md.
+- Health refresh vs readers: readers never wait (delete + insert per organisation in one
+  transaction; plain SELECTs read the previous rows under MVCC; `log_lock_waits` on, no waits
+  logged). The statement timeouts (09:16 and 12:22 on 14/10) and the two "job startup timeout"
+  cron runs were CPU starvation on this small instance (max_connections 60, 6 worker processes):
+  app boot fires ~50 queries per page load, several on live views taking 3–9 s under load.
+  Queue job, last 24 h: all runs p50 2 ms / p95 9 ms; runs that refreshed p50 99 ms / p95
+  1.37 s / max 2.2 s. Proposal (not applied): `docs/sql/health-refresh-materialise.sql` cuts a
+  refresh from ~1.85 s to ~0.41 s with identical rows.
+- Accessibility: Lighthouse 100 on the portfolio (rows closed and open) and ARB, light and dark.
+  Light `--muted-foreground` is slightly darker (L 0.53); text-safe `slipTextColour` /
+  `scoreTextColour` sit beside the chart colours in `services/analytics.ts`.
+- Projects table: responsive widths below 1024px; columns hidden below 1024px (sponsor, PM,
+  changes, 6 months) and 640px (risks · issues, change this month). No sideways page scroll at
+  375px (the chart grid now has an explicit single column below xl).
+- Lint: `npm run lint` checks files changed since the merge base with origin/main;
+  `npm run lint:all` checks everything. GitHub Actions runs the changed-files check on pull
+  requests and branch pushes (public npm install; bun.lock points at Lovable's internal
+  registry). Generated `types.ts` is excluded. Known: one `prefer-const` error in
+  `integrations/supabase/previewAuthStorage.ts` (Lovable's preview auth; a code change, not fixed).
 
 ## Pre-launch security task: review signed-in RPCs and business case FK indexes
 
