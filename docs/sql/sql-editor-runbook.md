@@ -120,7 +120,11 @@ select
   (select left(command, 12) from cron.job where jobname = 'vpmo-health-refresh-queue') as command; -- expect: do $drain$
 ```
 
-### 1F. Fallback (only if 1D1 shows 'failed' runs; before C2)
+### 1F. Fallback (only if 1D1 shows 'failed' runs, and only BEFORE C2)
+
+Never run this after 1C2: the old procedure no longer exists, so every run fails. (On
+14/10/2026 it was run after C2; every run failed from 10:53 to 10:56 UTC until the C1 cron
+command was restored. Queued refreshes then ran: 0 mismatches.)
 
 ```sql
 select cron.schedule('vpmo-health-refresh-queue', '5 seconds', 'call private.drain_health_refresh_queue()');

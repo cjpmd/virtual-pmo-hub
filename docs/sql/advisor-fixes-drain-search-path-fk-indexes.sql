@@ -1,5 +1,5 @@
--- Part 1 APPLIED 2026-10-13 (20261013183902_advisor_fk_indexes_health_current). Part 2: PROPOSAL,
--- to run in the SQL editor. Advisor fixes after Stage 2 (approved 2026-10-13: "apply without a stop if clean").
+-- Part 1 APPLIED 2026-10-13 (20261013183902_advisor_fk_indexes_health_current). Part 2: APPLIED
+-- 14/10/2026 in the SQL editor (20261014105143_drain_health_refresh_search_path). Advisor fixes after Stage 2 (approved 2026-10-13: "apply without a stop if clean").
 --
 -- Part 1  Covering indexes for the workspace foreign keys on the three *_health_current tables
 --         (performance advisor: unindexed_foreign_keys). Applied via apply_migration.
