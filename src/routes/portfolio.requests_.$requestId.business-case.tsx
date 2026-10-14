@@ -6,7 +6,8 @@ import { useCan } from "@/hooks/use-permissions";
 import { useRequests } from "@/hooks/use-requests";
 
 const title = "Request business case — Virtual PMO",
-  description = "The request's business case: Five Case Model sections, options, benefits and documents.";
+  description =
+    "The request's business case: Five Case Model sections, options, benefits and documents.";
 
 export const Route = createFileRoute("/portfolio/requests_/$requestId/business-case")({
   head: () => ({

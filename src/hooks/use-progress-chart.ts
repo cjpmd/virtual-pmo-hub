@@ -2,10 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useOrgId } from "@/components/auth/organisation-provider";
 import { loadProgressInputs } from "@/services/progress-chart";
 import { listForecastHistory } from "@/services/overview-panels";
-import {
-  getPortfolioOverviewData,
-  getWorkspaceId,
-} from "@/services/portfolio-overview-rpc";
+import { getPortfolioOverviewData, getWorkspaceId } from "@/services/portfolio-overview-rpc";
 
 /** The current organisation's workspace id (one per organisation today). */
 export function useWorkspaceId() {

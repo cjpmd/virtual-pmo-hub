@@ -41,7 +41,11 @@ export function Markdown({ source }: { source: string }) {
     if (heading) {
       const level = (heading[1] ?? "").length;
       const cls =
-        level === 1 ? "text-base font-semibold" : level === 2 ? "text-sm font-semibold" : "text-sm font-medium";
+        level === 1
+          ? "text-base font-semibold"
+          : level === 2
+            ? "text-sm font-semibold"
+            : "text-sm font-medium";
       blocks.push(
         <p key={i} className={cls}>
           {inline(heading[2] ?? "", `h${i}`)}
@@ -56,7 +60,7 @@ export function Markdown({ source }: { source: string }) {
       const ordered = numbered.test(line);
       const rule = ordered ? numbered : bullet;
       const items: ReactNode[] = [];
-      while (i < lines.length && rule.test((lines[i] ?? ""))) {
+      while (i < lines.length && rule.test(lines[i] ?? "")) {
         items.push(<li key={i}>{inline((lines[i] ?? "").replace(rule, ""), `li${i}`)}</li>);
         i++;
       }
@@ -74,8 +78,14 @@ export function Markdown({ source }: { source: string }) {
       continue;
     }
     const para: string[] = [];
-    while (i < lines.length && (lines[i] ?? "").trim() && !/^(#{1,3})\s/.test((lines[i] ?? "")) && !bullet.test((lines[i] ?? "")) && !numbered.test((lines[i] ?? ""))) {
-      para.push((lines[i] ?? ""));
+    while (
+      i < lines.length &&
+      (lines[i] ?? "").trim() &&
+      !/^(#{1,3})\s/.test(lines[i] ?? "") &&
+      !bullet.test(lines[i] ?? "") &&
+      !numbered.test(lines[i] ?? "")
+    ) {
+      para.push(lines[i] ?? "");
       i++;
     }
     blocks.push(<p key={`p${i}`}>{inline(para.join(" "), `p${i}`)}</p>);

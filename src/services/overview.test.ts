@@ -103,7 +103,9 @@ describe("summary strip", () => {
     expect(isMilestoneDueWithin30(milestone("a", "2026-10-07"), today)).toBe(true);
     expect(isMilestoneDueWithin30(milestone("a", "2026-11-06"), today)).toBe(true);
     expect(isMilestoneDueWithin30(milestone("a", "2026-11-07"), today)).toBe(false);
-    expect(isMilestoneDueWithin30(milestone("a", "2026-10-20", "Completed", "2026-10-06"), today)).toBe(false);
+    expect(
+      isMilestoneDueWithin30(milestone("a", "2026-10-20", "Completed", "2026-10-06"), today),
+    ).toBe(false);
   });
 
   it("shows overdue detail until a prior-month milestone snapshot exists", () => {
