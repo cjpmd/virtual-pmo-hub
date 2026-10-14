@@ -133,7 +133,7 @@ export function ProjectWatchlist({
         <table className="w-full min-w-[520px] text-[13px]">
           <thead>
             <tr className="text-left text-[11px] uppercase tracking-[0.05em] text-pmo-muted">
-              <th scope="col" className="px-4 py-2 font-medium">
+              <th scope="col" className="w-full px-4 py-2 font-medium">
                 Project
               </th>
               <th scope="col" className="px-2 py-2 font-medium">
