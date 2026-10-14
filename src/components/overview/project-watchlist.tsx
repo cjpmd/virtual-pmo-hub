@@ -1,9 +1,11 @@
-import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { Fragment, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { ProjectRowPanel } from "@/components/overview/project-row-panel";
 import type { Health } from "@/data/types";
 import { useFormat } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import type { ProjectSummary } from "@/services/hierarchy";
 import type { WatchGroup, WatchSort } from "@/services/overview-panels";
 
 const SORTS: Array<{ value: WatchSort; label: string }> = [
@@ -88,13 +90,20 @@ export function ProjectWatchlist({
   groups,
   sort,
   onSortChange,
+  expanded,
+  onToggle,
+  projects,
 }: {
   groups: WatchGroup[];
   sort: WatchSort;
   onSortChange: (sort: WatchSort) => void;
+  /** Codes of the rows shown expanded (?open=ARB,ACA). */
+  expanded: string[];
+  onToggle: (code: string) => void;
+  /** The portfolio's project summaries by id, for the expanded panel. */
+  projects: Map<string, ProjectSummary>;
 }) {
   const format = useFormat();
-  const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const signed = (value: number) =>
     `${value > 0 ? "+" : value < 0 ? "−" : ""}${format.compact(Math.abs(value))}`;
@@ -129,7 +138,7 @@ export function ProjectWatchlist({
           ))}
         </div>
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto @container">
         <table className="w-full min-w-[520px] table-fixed text-[13px]">
           <thead>
             <tr className="text-left text-[11px] uppercase tracking-[0.05em] text-pmo-muted">
@@ -227,78 +236,119 @@ export function ProjectWatchlist({
                   <td className="hidden sm:table-cell" />
                 </tr>
                 {open &&
-                  group.rows.map((row) => (
-                    <tr
-                      key={row.id}
-                      tabIndex={0}
-                      onClick={() =>
-                        navigate({
-                          to: "/portfolio/projects/$projectCode",
-                          params: { projectCode: row.code },
-                        })
-                      }
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter")
-                          navigate({
-                            to: "/portfolio/projects/$projectCode",
-                            params: { projectCode: row.code },
-                          });
-                      }}
-                      className="cursor-pointer border-t border-pmo-line outline-none hover:bg-pmo-panel-2/40 focus-visible:bg-pmo-panel-2/60"
-                    >
-                      <td className="max-w-0 truncate px-4 py-2 pl-9 text-pmo-text">{row.name}</td>
-                      <td className="px-2 py-2">
-                        <ReportData declared={row.declared} evidenced={row.evidenced} />
-                      </td>
-                      <td className="hidden max-w-[9rem] px-2 py-2 text-[13px] lg:table-cell">
-                        <PersonCell name={row.sponsorName} />
-                      </td>
-                      <td className="hidden max-w-[9rem] px-2 py-2 text-[13px] lg:table-cell">
-                        <PersonCell name={row.managerName} />
-                      </td>
-                      <td className="px-2 py-2 text-right font-geist-mono tabular-nums">
-                        <span className={cn(row.risks > 0 && "text-pmo-bad-text")}>{row.risks}</span>
-                        {" · "}
-                        <span className={cn(row.issues > 0 && "text-pmo-bad-text")}>{row.issues}</span>
-                        <span className="sr-only"> open risks · {row.issues} open issues</span>
-                      </td>
-                      <td className="px-2 py-2 text-right font-geist-mono tabular-nums">
-                        <span className={row.changes > 0 ? "text-pmo-text" : "text-pmo-muted"}>
-                          {row.changes}
-                        </span>
-                        <span className="sr-only"> open changes</span>
-                      </td>
-                      <td className="px-2 py-2 text-right font-geist-mono tabular-nums">
-                        {row.completion === null ? (
-                          <span className="text-pmo-muted">—</span>
-                        ) : (
-                          <>
-                            <span className="text-pmo-text">{row.completion}%</span>
-                            <span className="sr-only"> tasks complete</span>
-                          </>
+                  group.rows.map((row) => {
+                    const isOpen = expanded.includes(row.code);
+                    const panelId = `project-row-panel-${row.code}`;
+                    const summary = projects.get(row.id);
+                    return (
+                      <Fragment key={row.id}>
+                        <tr
+                          // The chevron button is the keyboard control; a click anywhere else on the
+                          // row toggles too, except the project name, which opens the project.
+                          onClick={() => onToggle(row.code)}
+                          className="cursor-pointer border-t border-pmo-line hover:bg-pmo-panel-2/40"
+                        >
+                          <td className="max-w-0 truncate px-4 py-2 pl-9 text-pmo-text">
+                            <button
+                              type="button"
+                              aria-expanded={isOpen}
+                              aria-controls={panelId}
+                              aria-label={`${isOpen ? "Hide" : "Show"} details for ${row.name}`}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                onToggle(row.code);
+                              }}
+                              className="-my-1 -ml-6 mr-1 inline-grid size-5 place-items-center rounded align-middle text-pmo-muted outline-none hover:text-pmo-text focus-visible:ring-2 focus-visible:ring-pmo-accent"
+                            >
+                              {isOpen ? (
+                                <ChevronDown className="size-3.5" aria-hidden />
+                              ) : (
+                                <ChevronRight className="size-3.5" aria-hidden />
+                              )}
+                            </button>
+                            <Link
+                              to="/portfolio/projects/$projectCode"
+                              params={{ projectCode: row.code }}
+                              onClick={(event) => event.stopPropagation()}
+                              className="rounded outline-none hover:underline focus-visible:ring-2 focus-visible:ring-pmo-accent"
+                            >
+                              {row.name}
+                            </Link>
+                          </td>
+                          <td className="px-2 py-2">
+                            <ReportData declared={row.declared} evidenced={row.evidenced} />
+                          </td>
+                          <td className="hidden max-w-[9rem] px-2 py-2 text-[13px] lg:table-cell">
+                            <PersonCell name={row.sponsorName} />
+                          </td>
+                          <td className="hidden max-w-[9rem] px-2 py-2 text-[13px] lg:table-cell">
+                            <PersonCell name={row.managerName} />
+                          </td>
+                          <td className="px-2 py-2 text-right font-geist-mono tabular-nums">
+                            <span className={cn(row.risks > 0 && "text-pmo-bad-text")}>
+                              {row.risks}
+                            </span>
+                            {" · "}
+                            <span className={cn(row.issues > 0 && "text-pmo-bad-text")}>
+                              {row.issues}
+                            </span>
+                            <span className="sr-only"> open risks · {row.issues} open issues</span>
+                          </td>
+                          <td className="px-2 py-2 text-right font-geist-mono tabular-nums">
+                            <span className={row.changes > 0 ? "text-pmo-text" : "text-pmo-muted"}>
+                              {row.changes}
+                            </span>
+                            <span className="sr-only"> open changes</span>
+                          </td>
+                          <td className="px-2 py-2 text-right font-geist-mono tabular-nums">
+                            {row.completion === null ? (
+                              <span className="text-pmo-muted">—</span>
+                            ) : (
+                              <>
+                                <span className="text-pmo-text">{row.completion}%</span>
+                                <span className="sr-only"> tasks complete</span>
+                              </>
+                            )}
+                          </td>
+                          <td
+                            className={cn(
+                              "px-2 py-2 text-right font-geist-mono tabular-nums",
+                              moneyTone(row.variance),
+                            )}
+                          >
+                            {signed(row.variance)}
+                          </td>
+                          <td
+                            className={cn(
+                              "px-2 py-2 text-right font-geist-mono tabular-nums",
+                              row.change === null ? "text-pmo-muted" : moneyTone(row.change),
+                            )}
+                          >
+                            {row.change === null ? "—" : signed(row.change)}
+                          </td>
+                          <td className="hidden px-4 py-2 sm:table-cell">
+                            <Trend points={row.trend} />
+                          </td>
+                        </tr>
+                        {isOpen && (
+                          <tr id={panelId} className="border-t border-pmo-line">
+                            <td colSpan={10} className="p-2 sm:p-3">
+                              {/* Visible width of the scroller, pinned left, when the table scrolls. */}
+                              <div className="sticky left-2 w-[calc(100cqw-1rem)] sm:left-3 sm:w-[calc(100cqw-1.5rem)]">
+                                {summary ? (
+                                  <ProjectRowPanel project={summary} />
+                                ) : (
+                                  <p className="px-2 py-3 text-sm text-pmo-muted">
+                                    This project is not in the current selection.
+                                  </p>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
                         )}
-                      </td>
-                      <td
-                        className={cn(
-                          "px-2 py-2 text-right font-geist-mono tabular-nums",
-                          moneyTone(row.variance),
-                        )}
-                      >
-                        {signed(row.variance)}
-                      </td>
-                      <td
-                        className={cn(
-                          "px-2 py-2 text-right font-geist-mono tabular-nums",
-                          row.change === null ? "text-pmo-muted" : moneyTone(row.change),
-                        )}
-                      >
-                        {row.change === null ? "—" : signed(row.change)}
-                      </td>
-                      <td className="hidden px-4 py-2 sm:table-cell">
-                        <Trend points={row.trend} />
-                      </td>
-                    </tr>
-                  ))}
+                      </Fragment>
+                    );
+                  })}
               </tbody>
             );
           })}

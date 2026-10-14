@@ -172,12 +172,19 @@ export function ScheduleForecastCard({
 }
 
 /** Lines of a free-text field as a list ("- item" or one per line), else a paragraph. */
-function Text({ value }: { value: string | null }) {
+function Text({ value, clamp }: { value: string | null; clamp?: boolean }) {
   const lines = (value ?? "")
     .split("\n")
     .map((line) => line.replace(/^\s*(?:[-•*]\s+)/, "").trim())
     .filter(Boolean);
   if (!lines.length) return <p className="text-sm text-muted-foreground">Nothing recorded.</p>;
+  // Compact: one paragraph cut at three lines.
+  if (clamp)
+    return (
+      <p className="line-clamp-3 text-sm" title={lines.join("\n")}>
+        {lines.join(" ")}
+      </p>
+    );
   if (lines.length === 1) return <p className="text-sm">{lines[0]}</p>;
   return (
     <ul className="list-disc space-y-0.5 pl-5 text-sm">
@@ -203,13 +210,17 @@ export function HighlightReport({
   nextDue,
   onOpen,
   onStart,
+  size,
 }: {
   report: LatestReport | null;
   nextDue: string | null;
   onOpen: () => void;
   onStart: () => void;
+  /** Compact (portfolio row panel): date, author, tags, summary cut at three lines, decisions. */
+  size?: "default" | "compact" | undefined;
 }) {
   const format = useFormat();
+  const compact = size === "compact";
   if (!report)
     return (
       <Panel title="Last highlight report">
@@ -230,6 +241,42 @@ export function HighlightReport({
     (report.submittedAt ? ` on ${format.date(report.submittedAt)}` : "") +
     "." +
     (nextDue ? ` Next due ${format.date(nextDue)}.` : "");
+  const tags = (
+    <>
+      <RagTag health={report.declared.overall}>Declared {WORD[report.declared.overall]}</RagTag>
+      <RagTag health={report.evidenced.overall}>
+        Evidenced {WORD[report.evidenced.overall]} at the time
+      </RagTag>
+    </>
+  );
+  const open = (
+    <Button
+      variant="link"
+      size="sm"
+      className="mt-3 h-auto self-start p-0 text-pmo-accent"
+      onClick={onOpen}
+    >
+      Open full report
+    </Button>
+  );
+  if (compact)
+    return (
+      <Panel
+        title="Last highlight report"
+        lede={`${format.date(report.reportingDate)}` + (report.author ? `, ${report.author}` : "")}
+      >
+        <div className="mt-2 flex flex-wrap gap-1.5">{tags}</div>
+        <h4 className="mb-1 mt-3 text-[13px] font-semibold">Summary</h4>
+        <Text value={report.comments} clamp />
+        {report.decisionsNeeded?.trim() ? (
+          <>
+            <h4 className="mb-1 mt-3 text-[13px] font-semibold">Decisions needed</h4>
+            <Text value={report.decisionsNeeded} clamp />
+          </>
+        ) : null}
+        {open}
+      </Panel>
+    );
   return (
     <Panel
       title="Last highlight report"
@@ -302,7 +349,12 @@ export function HighlightReport({
           </table>
         </div>
       </div>
-      <Button variant="link" size="sm" className="mt-3 h-auto self-start p-0" onClick={onOpen}>
+      <Button
+        variant="link"
+        size="sm"
+        className="mt-3 h-auto self-start p-0 text-pmo-accent"
+        onClick={onOpen}
+      >
         Open full report
       </Button>
     </Panel>
@@ -341,7 +393,12 @@ export function TopRisks({ items, onOpen }: { items: RankedRaid[]; onOpen: () =>
       ) : (
         <p className="mt-4 text-sm text-muted-foreground">No open risks or issues.</p>
       )}
-      <Button variant="link" size="sm" className="mt-3 h-auto self-start p-0" onClick={onOpen}>
+      <Button
+        variant="link"
+        size="sm"
+        className="mt-3 h-auto self-start p-0 text-pmo-accent"
+        onClick={onOpen}
+      >
         Open RAID log
       </Button>
     </Panel>

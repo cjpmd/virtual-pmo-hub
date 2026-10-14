@@ -27,7 +27,7 @@ export function Splash({ label = "Loading your workspace…" }: { label?: string
       role="status"
       aria-live="polite"
     >
-      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+      <div className="flex items-center gap-3 text-sm text-foreground/75">
         <LoaderCircle className="size-5 animate-spin" />
         {label}
       </div>

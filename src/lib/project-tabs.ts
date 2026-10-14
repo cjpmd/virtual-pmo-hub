@@ -92,3 +92,10 @@ export const phaseLabel = (name: string) => name.replace(/^Phase\s*\d+\s*[-â€“â€
 /** Element ids tying the header's tab strip to the page's tab panel. */
 export const projectTabId = (tab: ProjectTab) => `project-tab-${tab}`;
 export const projectPanelId = "project-tab-panel";
+
+/** Where a project's tasks are managed (projects.task_source), for the Tasks chip. */
+export const TASK_SOURCE: Record<string, string> = {
+  native: "Managed in Virtual PMO",
+  planner_basic: "Planner Basic",
+  planner_premium: "Planner Premium",
+};

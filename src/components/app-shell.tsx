@@ -290,7 +290,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 collapsed && "min-[900px]:justify-center min-[900px]:px-0",
               )}
             >
-              <span className="grid size-8 shrink-0 place-items-center rounded-md bg-pmo-accent text-xs font-bold text-white">
+              <span className="grid size-8 shrink-0 place-items-center rounded-md bg-pmo-accent text-xs font-bold text-pmo-bg">
                 {settings.organisation.logoDataUrl ? (
                   <img
                     src={settings.organisation.logoDataUrl}
@@ -890,7 +890,8 @@ function SidebarGroup({
         aria-expanded={open}
         className={cn(
           "flex w-full items-center gap-1 px-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-pmo-muted hover:text-pmo-text",
-          collapsed && "min-[900px]:justify-center min-[900px]:px-0",
+          // Collapsed, the toggle is a divider line: keep a 24px target (WCAG 2.5.8).
+          collapsed && "min-[900px]:min-h-6 min-[900px]:justify-center min-[900px]:px-0",
         )}
       >
         <span className={cn("flex items-center gap-1", collapsed && "min-[900px]:sr-only")}>

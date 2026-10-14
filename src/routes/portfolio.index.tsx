@@ -66,11 +66,15 @@ export const Route = createFileRoute("/portfolio/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>): { programme?: string | undefined } => ({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { programme?: string | undefined; open?: string | undefined } => ({
     programme:
       typeof search["programme"] === "string" && search["programme"]
         ? search["programme"]
         : undefined,
+    // Expanded rows of "Projects by programme", as project codes: ?open=ARB,ACA
+    open: typeof search["open"] === "string" && search["open"] ? search["open"] : undefined,
   }),
   component: PortfolioPage,
 });
@@ -526,6 +530,7 @@ function OverviewBand({
   const projectHistory = rpc.data?.projectHistory ?? data.projectHistory;
   const active = useMemo(() => activeOnly(projects), [projects]);
   const navigate = Route.useNavigate();
+  const { open: openParam } = Route.useSearch();
   const format = useFormat();
   const scopedActive = useMemo(
     () => (programmeId ? active.filter((p) => p.programmeId === programmeId) : active),
@@ -625,7 +630,10 @@ function OverviewBand({
     const counts = new Map<string, number>();
     for (const change of governance.data?.changes ?? [])
       if (change.status === "Proposed")
-        counts.set(change.scope.projectId ?? "", (counts.get(change.scope.projectId ?? "") ?? 0) + 1);
+        counts.set(
+          change.scope.projectId ?? "",
+          (counts.get(change.scope.projectId ?? "") ?? 0) + 1,
+        );
     return counts;
   }, [governance.data]);
   const declared = useMemo(() => {
@@ -690,6 +698,22 @@ function OverviewBand({
     programmeIds,
     format.compact,
   ]);
+  const expanded = useMemo(() => (openParam ?? "").split(",").filter(Boolean), [openParam]);
+  const projectsById = useMemo(
+    () => new Map(data.projects.map((project) => [project.id, project])),
+    [data.projects],
+  );
+  const toggleRow = (code: string) =>
+    navigate({
+      search: (prev) => {
+        const codes = expanded.includes(code)
+          ? expanded.filter((item) => item !== code)
+          : [...expanded, code];
+        return { ...prev, open: codes.length ? codes.join(",") : undefined };
+      },
+      replace: true,
+      resetScroll: false,
+    });
   const selectProgramme = (id: string | null) =>
     navigate({
       search: (prev) => ({ ...prev, programme: id ?? undefined }),
@@ -750,7 +774,14 @@ function OverviewBand({
         </div>
       </TopBand>
       <ProgrammeStrip cards={cards} selected={programmeId} onSelect={selectProgramme} />
-      <ProjectWatchlist groups={watch} sort={sort} onSortChange={setSort} />
+      <ProjectWatchlist
+        groups={watch}
+        sort={sort}
+        onSortChange={setSort}
+        expanded={expanded}
+        onToggle={toggleRow}
+        projects={projectsById}
+      />
       <StatusBarSlot>
         <StatusBar
           asOf={asOf}

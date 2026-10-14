@@ -342,6 +342,8 @@ export interface DumbbellDatum {
   dashed?: boolean;
   /** Tooltip label for the filled dot (default "Forecast"). */
   toKind?: string;
+  /** Colour for the value label when `colour` is too light for text (default `colour`). */
+  textColour?: string;
 }
 
 /**
@@ -444,7 +446,7 @@ export function Dumbbell({
             </span>
             <span
               className="tabular shrink-0 text-right text-xs font-semibold"
-              style={{ minWidth: 58, color: row.colour }}
+              style={{ minWidth: 58, color: row.textColour ?? row.colour }}
             >
               {row.valueLabel ?? row.toLabel}
             </span>
