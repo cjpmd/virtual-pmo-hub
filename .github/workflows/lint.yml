@@ -1,0 +1,25 @@
+name: Lint changed files
+
+# Lints only the files a pull request (or push) changes, so new problems are not buried under
+# existing ones. `npm run lint:all` lints everything locally.
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: bun install --frozen-lockfile
+      - name: Lint files changed against the base branch
+        env:
+          LINT_BASE: origin/${{ github.base_ref || 'main' }}
+        run: node scripts/lint-changed.mjs
