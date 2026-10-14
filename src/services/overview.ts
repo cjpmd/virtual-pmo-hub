@@ -125,7 +125,9 @@ export function getSummaryMetrics(input: SummaryInput): SummaryMetric[] {
   const greenBefore = [...lastMonth.values()].filter((row) => row.overall === "On Track").length;
 
   const activeMilestones = input.milestones.filter((milestone) => ids.has(milestone.projectId));
-  const due30 = activeMilestones.filter((milestone) => isMilestoneDueWithin30(milestone, today)).length;
+  const due30 = activeMilestones.filter((milestone) =>
+    isMilestoneDueWithin30(milestone, today),
+  ).length;
   const overdue = activeMilestones.filter(
     (milestone) => !milestone.actualDate && dayOf(milestone.forecastDate) < dayOf(today),
   ).length;
@@ -182,8 +184,7 @@ export function getSummaryMetrics(input: SummaryInput): SummaryMetric[] {
       label: "Milestones 30d",
       unit: "count",
       value: due30,
-      change:
-        snapshot?.milestonesDue30 === undefined ? null : due30 - snapshot.milestonesDue30,
+      change: snapshot?.milestonesDue30 === undefined ? null : due30 - snapshot.milestonesDue30,
       detail:
         snapshot?.milestonesDue30 === undefined
           ? { text: `${overdue} overdue`, tone: overdue ? "bad" : "neutral" }

@@ -57,7 +57,7 @@ export function ProgrammeCard({
           <span
             className={cn(
               "font-geist-mono text-[15px] tabular-nums",
-              over ? "text-pmo-bad-text" : "text-pmo-good",
+              over ? "text-pmo-bad-text" : "text-health-good-foreground",
             )}
           >
             {over ? "+" : card.variance < 0 ? "−" : ""}

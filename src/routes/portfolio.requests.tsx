@@ -273,7 +273,10 @@ function Requests({ requests, people }: { requests: RequestView[]; people: Perso
               Appraisal · {selected.request.title}
             </h2>
             <Button size="sm" variant="outline" asChild>
-              <Link to="/portfolio/requests/$requestId/business-case" params={{ requestId: selected.request.id }}>
+              <Link
+                to="/portfolio/requests/$requestId/business-case"
+                params={{ requestId: selected.request.id }}
+              >
                 Business case
               </Link>
             </Button>

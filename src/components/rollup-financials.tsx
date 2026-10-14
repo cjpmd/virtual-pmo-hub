@@ -13,10 +13,7 @@ import { useProjects } from "@/hooks/use-hierarchy";
 import { useFormat } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { monthLabel } from "@/services/actuals-import";
-import type {
-  ProjectFinancials,
-  RollupFinancials as Rollup,
-} from "@/services/financials";
+import type { ProjectFinancials, RollupFinancials as Rollup } from "@/services/financials";
 
 type Scope = { programmeId: string } | { portfolioId: string };
 
@@ -47,9 +44,7 @@ export function RollupFinancials({
                   data={projectIds ? sumProjects(data, rows) : data}
                   kind={"programmeId" in scope ? "programme" : "portfolio"}
                 />
-                {breakdown && (
-                  <Breakdown scope={scope} {...(projectIds ? { projectIds } : {})} />
-                )}
+                {breakdown && <Breakdown scope={scope} {...(projectIds ? { projectIds } : {})} />}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">No financials yet.</p>

@@ -237,6 +237,14 @@ export const slipColour: Record<SlipSeverity, string> = {
   Material: "var(--viz-serious)",
   Severe: "var(--viz-critical)",
 };
+/** Text-safe versions of slipColour (4.5:1 on cards, light and dark) for values written in it. */
+export const slipTextColour: Record<SlipSeverity, string> = {
+  Ahead: "var(--health-good-foreground)",
+  "On plan": "var(--health-good-foreground)",
+  Minor: "var(--health-warn-foreground)",
+  Material: "var(--health-warn-foreground)",
+  Severe: "var(--health-bad-foreground)",
+};
 
 export function getSlippedMilestones<T extends MilestoneItem>(items: T[], limit = 8): T[] {
   return items
@@ -381,6 +389,13 @@ export const scoreColour = (percent: number) =>
       : percent >= 40
         ? "var(--viz-serious)"
         : "var(--viz-critical)";
+/** Text-safe version of scoreColour, for figures written in it. */
+export const scoreTextColour = (percent: number) =>
+  percent >= 80
+    ? "var(--health-good-foreground)"
+    : percent >= 40
+      ? "var(--health-warn-foreground)"
+      : "var(--health-bad-foreground)";
 
 // ---- Programme roll-up ----------------------------------------------------------------
 

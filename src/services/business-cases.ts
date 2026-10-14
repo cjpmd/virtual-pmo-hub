@@ -123,10 +123,8 @@ type OptionRow = {
 const num = (value: number | string | null) => (value === null ? null : Number(value));
 
 export async function getBusinessCase(owner: CaseOwner): Promise<BusinessCase | null> {
-  let query = supabase
-    .from("business_cases")
-    .select(
-      `id, workspace_id, title, updated_at,
+  let query = supabase.from("business_cases").select(
+    `id, workspace_id, title, updated_at,
        business_case_versions(id, version, status, whole_life_cost, funding_requested, created_at,
          submitted_at, decided_at, updated_at, submitter:profiles!business_case_versions_submitted_by_fkey(display_name),
          business_case_sections(id, key, title, is_required, content, sort_order, updated_at,
@@ -135,7 +133,7 @@ export async function getBusinessCase(owner: CaseOwner): Promise<BusinessCase | 
            risk_summary, is_preferred, sort_order, updated_at),
          business_case_benefits(id, title, classification, category_id, measure, annual_value,
            years_counted, sort_order, updated_at))`,
-    );
+  );
   query =
     "projectId" in owner
       ? query.eq("project_id", owner.projectId)
@@ -352,7 +350,8 @@ export const DOCUMENT_MAX_BYTES = 25 * 1024 * 1024;
 export function checkDocumentFile(file: File) {
   if (!DOCUMENT_TYPES[file.type])
     throw new ServiceError("invalid", "Upload a PDF, Word, Excel or PowerPoint file.");
-  if (file.size > DOCUMENT_MAX_BYTES) throw new ServiceError("invalid", "Files can be up to 25 MB.");
+  if (file.size > DOCUMENT_MAX_BYTES)
+    throw new ServiceError("invalid", "Files can be up to 25 MB.");
   if (file.size === 0) throw new ServiceError("invalid", "That file is empty.");
 }
 

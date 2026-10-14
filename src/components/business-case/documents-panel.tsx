@@ -22,7 +22,9 @@ import {
 const ACCEPT = Object.keys(DOCUMENT_TYPES).join(",");
 
 const sizeLabel = (bytes: number) =>
-  bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  bytes >= 1024 * 1024
+    ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
+    : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 
 export function DocumentsPanel({
   owner,
@@ -42,14 +44,26 @@ export function DocumentsPanel({
   const [retrying, setRetrying] = useState<CaseDocument | null>(null);
   const [showArchived, setShowArchived] = useState(false);
 
-  const upload = useCaseAction(owner, (file: File) => uploadCaseDocument(businessCaseId, file), "Document uploaded");
+  const upload = useCaseAction(
+    owner,
+    (file: File) => uploadCaseDocument(businessCaseId, file),
+    "Document uploaded",
+  );
   const retry = useCaseAction(
     owner,
     ({ doc, file }: { doc: CaseDocument; file: File }) => uploadFile(doc.storagePath, file),
     "Upload complete",
   );
-  const archive = useCaseAction(owner, (id: string) => archiveCaseDocument(id), "Document archived");
-  const remove = useCaseAction(owner, (id: string) => removeIncompleteDocument(id), "Upload removed");
+  const archive = useCaseAction(
+    owner,
+    (id: string) => archiveCaseDocument(id),
+    "Document archived",
+  );
+  const remove = useCaseAction(
+    owner,
+    (id: string) => removeIncompleteDocument(id),
+    "Upload removed",
+  );
 
   const pick = (file: File | undefined, onFile: (file: File) => void) => {
     if (!file) return;
@@ -81,7 +95,12 @@ export function DocumentsPanel({
         </div>
         {canEdit && (
           <>
-            <Button size="sm" variant="outline" disabled={upload.isPending} onClick={() => input.current?.click()}>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={upload.isPending}
+              onClick={() => input.current?.click()}
+            >
               <Upload />
               {upload.isPending ? "Uploading…" : "Upload"}
             </Button>
@@ -113,23 +132,30 @@ export function DocumentsPanel({
       </header>
 
       <ul className="divide-y divide-pmo-line">
-        {documents.isLoading && <li className="px-4 py-3 text-xs text-pmo-muted">Loading documents…</li>}
+        {documents.isLoading && (
+          <li className="px-4 py-3 text-xs text-pmo-muted">Loading documents…</li>
+        )}
         {documents.isError && (
-          <li className="px-4 py-3 text-xs text-pmo-bad-text">{(documents.error as Error).message}</li>
+          <li className="px-4 py-3 text-xs text-pmo-bad-text">
+            {(documents.error as Error).message}
+          </li>
         )}
         {documents.isSuccess && !rows.length && (
           <li className="px-4 py-6 text-center text-xs text-pmo-muted">No documents yet.</li>
         )}
         {rows.map((doc) => (
-          <li key={doc.id} className={cn("flex items-start gap-3 px-4 py-3", doc.archivedAt && "opacity-60")}>
+          <li
+            key={doc.id}
+            className={cn("flex items-start gap-3 px-4 py-3", doc.archivedAt && "opacity-60")}
+          >
             <FileText className="mt-0.5 size-4 shrink-0 text-pmo-muted" aria-hidden />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm text-pmo-text" title={doc.fileName}>
                 {doc.fileName}
               </p>
               <p className="pmo-num text-[11px] text-pmo-muted">
-                v{doc.version} · {DOCUMENT_TYPES[doc.mimeType] ?? "File"} · {sizeLabel(doc.sizeBytes)} ·{" "}
-                {format.date(doc.createdAt)}
+                v{doc.version} · {DOCUMENT_TYPES[doc.mimeType] ?? "File"} ·{" "}
+                {sizeLabel(doc.sizeBytes)} · {format.date(doc.createdAt)}
                 {doc.uploadedBy ? ` · ${doc.uploadedBy}` : ""}
               </p>
               {doc.archivedAt && <p className="text-[11px] text-pmo-muted">Archived</p>}
@@ -139,7 +165,13 @@ export function DocumentsPanel({
             </div>
             <div className="flex shrink-0 gap-1">
               {doc.uploaded ? (
-                <Button size="icon" variant="ghost" className="size-7" aria-label={`Download ${doc.fileName}`} onClick={() => void open(doc)}>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="size-7"
+                  aria-label={`Download ${doc.fileName}`}
+                  onClick={() => void open(doc)}
+                >
                   <Download />
                 </Button>
               ) : (
@@ -171,7 +203,13 @@ export function DocumentsPanel({
                 )
               )}
               {canEdit && doc.uploaded && !doc.archivedAt && (
-                <Button size="icon" variant="ghost" className="size-7" aria-label={`Archive ${doc.fileName}`} onClick={() => archive.mutate(doc.id)}>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="size-7"
+                  aria-label={`Archive ${doc.fileName}`}
+                  onClick={() => archive.mutate(doc.id)}
+                >
                   <Archive />
                 </Button>
               )}

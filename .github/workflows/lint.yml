@@ -1,0 +1,26 @@
+name: Lint changed files
+
+# Lints only the files a pull request (or push) changes, so new problems are not buried under
+# existing ones. `npm run lint:all` lints everything locally.
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # bun.lock resolves from Lovable's internal registry, which runners can't reach; install
+      # from the public registry without writing a lockfile (as in the handover note).
+      - run: npm install --no-package-lock --no-audit --no-fund --registry https://registry.npmjs.org
+      - name: Lint files changed against the base branch
+        env:
+          LINT_BASE: origin/${{ github.base_ref || 'main' }}
+        run: node scripts/lint-changed.mjs

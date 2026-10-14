@@ -148,7 +148,10 @@ function DemoSignIn() {
         </Button>
       </form>
       {error && (
-        <p role="alert" className="mt-3 rounded-md border border-health-bad/40 bg-health-bad/10 p-3 text-sm">
+        <p
+          role="alert"
+          className="mt-3 rounded-md border border-health-bad/40 bg-health-bad/10 p-3 text-sm"
+        >
           {errorMessage(error)}
         </p>
       )}

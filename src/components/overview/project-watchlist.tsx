@@ -108,7 +108,7 @@ export function ProjectWatchlist({
   const signed = (value: number) =>
     `${value > 0 ? "+" : value < 0 ? "−" : ""}${format.compact(Math.abs(value))}`;
   const moneyTone = (value: number) =>
-    value > 0 ? "text-pmo-bad-text" : value < 0 ? "text-pmo-good" : "text-pmo-muted";
+    value > 0 ? "text-pmo-bad-text" : value < 0 ? "text-health-good-foreground" : "text-pmo-muted";
   return (
     <section
       aria-label="Projects"
@@ -139,13 +139,13 @@ export function ProjectWatchlist({
         </div>
       </div>
       <div className="overflow-x-auto @container">
-        <table className="w-full min-w-[520px] table-fixed text-[13px]">
+        <table className="w-full min-w-[320px] table-fixed text-[13px]">
           <thead>
             <tr className="text-left text-[11px] uppercase tracking-[0.05em] text-pmo-muted">
-              <th scope="col" className="w-1/3 px-4 py-2 font-medium">
+              <th scope="col" className="px-3 py-2 font-medium sm:px-4 lg:w-1/3">
                 Project
               </th>
-              <th scope="col" className="w-[7.407%] px-2 py-2 font-medium">
+              <th scope="col" className="w-14 px-2 py-2 font-medium sm:w-[72px] lg:w-[7.407%]">
                 Report · data
               </th>
               <th scope="col" className="hidden w-[7.407%] px-2 py-2 font-medium lg:table-cell">
@@ -156,32 +156,38 @@ export function ProjectWatchlist({
               </th>
               <th
                 scope="col"
-                className="w-[7.407%] px-2 py-2 text-right font-medium"
+                className="hidden w-[76px] px-2 py-2 text-right font-medium sm:table-cell lg:w-[7.407%]"
                 title="Open risks · open issues"
               >
                 Risks · issues
               </th>
               <th
                 scope="col"
-                className="w-[7.407%] px-2 py-2 text-right font-medium"
+                className="hidden w-[7.407%] px-2 py-2 text-right font-medium lg:table-cell"
                 title="Open change requests"
               >
                 Changes
               </th>
               <th
                 scope="col"
-                className="w-[7.407%] px-2 py-2 text-right font-medium"
+                className="w-14 px-2 py-2 text-right font-medium sm:w-16 lg:w-[7.407%]"
                 title="Average task completion"
               >
                 % done
               </th>
-              <th scope="col" className="w-[7.407%] px-2 py-2 text-right font-medium">
+              <th
+                scope="col"
+                className="w-[68px] px-2 py-2 text-right font-medium sm:w-[76px] lg:w-[7.407%]"
+              >
                 vs budget
               </th>
-              <th scope="col" className="w-[7.407%] px-2 py-2 text-right font-medium">
+              <th
+                scope="col"
+                className="hidden w-[84px] px-2 py-2 text-right font-medium sm:table-cell lg:w-[7.407%]"
+              >
                 Change this month
               </th>
-              <th scope="col" className="hidden w-[7.407%] px-4 py-2 font-medium sm:table-cell">
+              <th scope="col" className="hidden w-[7.407%] px-4 py-2 font-medium lg:table-cell">
                 6 months
               </th>
             </tr>
@@ -192,7 +198,7 @@ export function ProjectWatchlist({
             return (
               <tbody key={key}>
                 <tr className="border-t border-pmo-line bg-pmo-panel-2/60">
-                  <th scope="rowgroup" colSpan={2} className="px-4 py-2 text-left">
+                  <th scope="rowgroup" colSpan={2} className="px-3 py-2 text-left sm:px-4">
                     <button
                       type="button"
                       aria-expanded={open}
@@ -204,26 +210,31 @@ export function ProjectWatchlist({
                           return next;
                         })
                       }
-                      className="inline-flex items-center gap-1.5 font-semibold text-pmo-text"
+                      className="inline-flex items-center gap-1.5 text-left font-semibold text-pmo-text"
                     >
                       {open ? (
-                        <ChevronDown className="size-3.5" aria-hidden />
+                        <ChevronDown className="size-3.5 shrink-0" aria-hidden />
                       ) : (
-                        <ChevronRight className="size-3.5" aria-hidden />
+                        <ChevronRight className="size-3.5 shrink-0" aria-hidden />
                       )}
-                      {group.name}
-                      <span className="font-normal text-pmo-muted">
-                        ·{" "}
-                        <span className="font-geist-mono tabular-nums">
-                          {group.onTrack}/{group.total}
-                        </span>{" "}
-                        on track
+                      {/* One text run, so a long name wraps beside the chevron on narrow screens. */}
+                      <span className="min-w-0">
+                        {group.name}
+                        <span className="ml-1.5 font-normal text-pmo-muted">
+                          ·{" "}
+                          <span className="font-geist-mono tabular-nums">
+                            {group.onTrack}/{group.total}
+                          </span>{" "}
+                          on track
+                        </span>
                       </span>
                     </button>
                   </th>
                   <td className="hidden lg:table-cell" />
                   <td className="hidden lg:table-cell" />
-                  <td colSpan={3} />
+                  <td className="hidden sm:table-cell" />
+                  <td className="hidden lg:table-cell" />
+                  <td />
                   <td
                     className={cn(
                       "px-2 py-2 text-right font-geist-mono tabular-nums",
@@ -232,8 +243,8 @@ export function ProjectWatchlist({
                   >
                     {signed(group.variance)}
                   </td>
-                  <td />
                   <td className="hidden sm:table-cell" />
+                  <td className="hidden lg:table-cell" />
                 </tr>
                 {open &&
                   group.rows.map((row) => {
@@ -248,7 +259,7 @@ export function ProjectWatchlist({
                           onClick={() => onToggle(row.code)}
                           className="cursor-pointer border-t border-pmo-line hover:bg-pmo-panel-2/40"
                         >
-                          <td className="max-w-0 truncate px-4 py-2 pl-9 text-pmo-text">
+                          <td className="max-w-0 truncate py-2 pl-8 pr-2 text-pmo-text sm:px-4 sm:pl-9">
                             <button
                               type="button"
                               aria-expanded={isOpen}
@@ -284,7 +295,7 @@ export function ProjectWatchlist({
                           <td className="hidden max-w-[9rem] px-2 py-2 text-[13px] lg:table-cell">
                             <PersonCell name={row.managerName} />
                           </td>
-                          <td className="px-2 py-2 text-right font-geist-mono tabular-nums">
+                          <td className="hidden px-2 py-2 text-right font-geist-mono tabular-nums sm:table-cell">
                             <span className={cn(row.risks > 0 && "text-pmo-bad-text")}>
                               {row.risks}
                             </span>
@@ -294,7 +305,7 @@ export function ProjectWatchlist({
                             </span>
                             <span className="sr-only"> open risks · {row.issues} open issues</span>
                           </td>
-                          <td className="px-2 py-2 text-right font-geist-mono tabular-nums">
+                          <td className="hidden px-2 py-2 text-right font-geist-mono tabular-nums lg:table-cell">
                             <span className={row.changes > 0 ? "text-pmo-text" : "text-pmo-muted"}>
                               {row.changes}
                             </span>
@@ -320,13 +331,13 @@ export function ProjectWatchlist({
                           </td>
                           <td
                             className={cn(
-                              "px-2 py-2 text-right font-geist-mono tabular-nums",
+                              "hidden px-2 py-2 text-right font-geist-mono tabular-nums sm:table-cell",
                               row.change === null ? "text-pmo-muted" : moneyTone(row.change),
                             )}
                           >
                             {row.change === null ? "—" : signed(row.change)}
                           </td>
-                          <td className="hidden px-4 py-2 sm:table-cell">
+                          <td className="hidden px-4 py-2 lg:table-cell">
                             <Trend points={row.trend} />
                           </td>
                         </tr>

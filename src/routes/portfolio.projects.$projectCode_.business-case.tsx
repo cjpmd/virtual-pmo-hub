@@ -4,7 +4,8 @@ import { BusinessCasePage } from "@/components/business-case/business-case-page"
 import { useProject, useProjectPermissions } from "@/hooks/use-hierarchy";
 
 const title = "Business case — Virtual PMO",
-  description = "The project's business case: Five Case Model sections, options, benefits and documents.";
+  description =
+    "The project's business case: Five Case Model sections, options, benefits and documents.";
 
 export const Route = createFileRoute("/portfolio/projects/$projectCode_/business-case")({
   head: () => ({
