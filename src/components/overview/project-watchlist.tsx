@@ -235,14 +235,14 @@ export function ProjectWatchlist({
                       className="cursor-pointer border-t border-pmo-line outline-none hover:bg-pmo-panel-2/40 focus-visible:bg-pmo-panel-2/60"
                     >
                       <td className="max-w-0 truncate px-4 py-2 pl-9 text-pmo-text">{row.name}</td>
+                      <td className="px-2 py-2">
+                        <ReportData declared={row.declared} evidenced={row.evidenced} />
+                      </td>
                       <td className="hidden max-w-[9rem] px-2 py-2 text-[13px] lg:table-cell">
                         <PersonCell name={row.sponsorName} />
                       </td>
                       <td className="hidden max-w-[9rem] px-2 py-2 text-[13px] lg:table-cell">
                         <PersonCell name={row.managerName} />
-                      </td>
-                      <td className="px-2 py-2">
-                        <ReportData declared={row.declared} evidenced={row.evidenced} />
                       </td>
                       <td className="px-2 py-2 text-right font-geist-mono tabular-nums">
                         <span className={cn(row.risks > 0 && "text-pmo-bad-text")}>{row.risks}</span>
