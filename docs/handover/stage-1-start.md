@@ -168,8 +168,12 @@ Options:
 - Shared primitives gained opt-in props only: Dumbbell (dashed rows, a marker through every row,
   "Delivered" tooltip label), CumulativeArea (coloured sign-off dots, a gap bracket at today,
   whole-number ticks), ChartCard `className` accepts undefined.
-- Kept below the new layout because the design has no place for them yet: the gate checklist
-  and the activity timeline. Decide whether they move (e.g. to Status / Plan) or stay.
+- Gate checklist moved to Plan › Gates (`?tab=plan&sub=gates`); the activity timeline moved to
+  the Status tab, below the report history. Overview signal: "Gate <name> in N days, X of Y
+  checklist items done" when the next undelivered gate milestone is within 30 days and the
+  current phase's checklist is incomplete (`GATE_SOON_DAYS`). Manual checklist ticks are still
+  page state only (not saved), as before.
+- FSC seed actuals moved into its life (Sep 2024–Mar 2026), applied 14/10/2026.
 - Empty states: no milestones, no report, no health history ("History starts …"; closed projects
   with no snapshots say "No health history"), closed projects show final values with no forecast.
 - No-milestones screenshot used a test project (ZZT) in the outsider organisation, archived after;

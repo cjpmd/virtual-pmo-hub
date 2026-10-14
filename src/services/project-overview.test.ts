@@ -288,4 +288,16 @@ describe("project signals", () => {
     const onTrack = buildProjectSignals({ ...base, spendVsPlan: ahead, milestonesDelivered: 2 });
     expect(onTrack.some((s) => s.id === "spend-lead")).toBe(false);
   });
+
+  it("flags the next gate within 30 days while its checklist is incomplete", () => {
+    const gate = { title: "GATE 0 - Ready to Design", date: "2026-10-26", passed: 2, total: 7 };
+    const signals = buildProjectSignals({ ...base, nextGate: gate });
+    const signal = signals.find((s) => s.id === "gate");
+    expect(signal?.title).toBe("Gate 0 - Ready to Design in 13 days, 2 of 7 checklist items done");
+    expect(signal?.link).toEqual({ kind: "projectTab", code: "ARB", tab: "plan", sub: "gates" });
+    const done = buildProjectSignals({ ...base, nextGate: { ...gate, passed: 7 } });
+    expect(done.some((s) => s.id === "gate")).toBe(false);
+    const far = buildProjectSignals({ ...base, nextGate: { ...gate, date: "2026-11-20" } });
+    expect(far.some((s) => s.id === "gate")).toBe(false);
+  });
 });
