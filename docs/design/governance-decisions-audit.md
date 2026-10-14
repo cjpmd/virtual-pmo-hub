@@ -75,7 +75,7 @@ repo at `main` (`109cbb3`), `docs/schema.md`, `docs/data-layer.md` and
 | Status | Count | Notes |
 |---|---|---|
 | pending | 8 | 3 past needed-by today (DEC-004 VDI 02/10, DEC-005 CMI 25/09, DEC-008 SAM 30/09) |
-| made | 6 | |
+| made | 7 | |
 | superseded | 1 | DEC-013 → superseded by DEC-014 |
 | reversed | 0 | |
 
