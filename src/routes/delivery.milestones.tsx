@@ -30,7 +30,11 @@ import {
   connectorStyle,
   markerFill,
 } from "@/components/dependency-focus";
-import { milestoneInputFromBoard, milestonesToBoardRows } from "@/components/project-milestones";
+import {
+  committeeColumn,
+  milestoneInputFromBoard,
+  milestonesToBoardRows,
+} from "@/components/project-milestones";
 import { useBoardRecordSync } from "@/hooks/use-board-record-sync";
 import { useDependencies } from "@/hooks/use-dependencies";
 import {
@@ -127,6 +131,7 @@ const columns: BoardColumn[] = [
   { key: "actual", label: "Actual", type: "date" },
   { key: "number", label: "Slip", type: "number", unit: " days", summary: "average" },
   { key: "tags", label: "Reporting", type: "tags" },
+  committeeColumn,
   { key: "timeline", label: "Timeline", type: "timeline" },
 ];
 const visible = columns.map((column) => column.key);

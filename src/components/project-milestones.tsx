@@ -15,6 +15,16 @@ import type { MilestoneInput, MilestoneItem } from "@/services/project-records";
 
 const TYPES: MilestoneType[] = ["Delivery", "Gate", "Key date", "External dependency"];
 
+/** Report to committee: a Yes/No switch saved to milestones.report_to_committee. */
+export const committeeColumn: BoardColumn = {
+  key: "committee",
+  label: "Report to committee",
+  type: "status",
+  editable: true,
+  options: ["Yes", "No"],
+  width: 170,
+};
+
 export const projectMilestoneColumns: BoardColumn[] = [
   { key: "title", label: "Milestone", type: "text", editable: true, summary: "count", width: 280 },
   { key: "type", label: "Type", type: "status", editable: true, options: TYPES },
@@ -24,6 +34,7 @@ export const projectMilestoneColumns: BoardColumn[] = [
   { key: "finish", label: "Forecast", type: "date", editable: true },
   { key: "actual", label: "Actual", type: "date", editable: true },
   { key: "number", label: "Slip", type: "number", unit: " days", summary: "average" },
+  committeeColumn,
   { key: "timeline", label: "Timeline", type: "timeline" },
 ];
 
@@ -46,6 +57,7 @@ export function milestonesToBoardRows(
     timeline: "",
     complete: item.status === "Completed",
     isMilestone: true,
+    committee: item.reportToCommittee ? "Yes" : "No",
     group: item.type,
   }));
 }
@@ -69,6 +81,8 @@ export function milestoneInputFromBoard(
         `No one called “${name}” is in this organisation. Use their name as it appears in Resources.`,
       );
   }
+  if (patch["committee"] === "Yes" || patch["committee"] === "No")
+    input.reportToCommittee = patch["committee"] === "Yes";
   const date = (key: string) => (key in patch ? toIsoDate(String(patch[key] ?? "")) : undefined);
   const baseline = date("baseline"),
     forecast = date("finish");
