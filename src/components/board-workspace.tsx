@@ -460,9 +460,8 @@ export function BoardWorkspace({
   onOpenRow,
   rowEditable,
 }: BoardProps) {
-  const openRow = (row: BoardRow) => (onOpenRow ? onOpenRow(row) : setOpenItem(row));
-  const cellColumn = (row: BoardRow, column: BoardColumn) =>
-    column.editable && rowEditable && !rowEditable(row) ? { ...column, editable: false } : column;
+  const openRow = (row: BoardRow | null) =>
+    row && onOpenRow ? onOpenRow(row) : setOpenItem(row);
   const server = Boolean(onRecordChange);
   // Editing needs a server (onRecordChange): a board without one is read-only, so nothing is
   // ever "saved" only in this browser.
@@ -847,7 +846,7 @@ export function BoardWorkspace({
           selected={selected}
           setSelected={setSelected}
           update={update}
-          setOpenItem={setOpenItem}
+          setOpenItem={openRow}
           setColumns={setColumns}
           renderTitle={renderTitle}
         />
@@ -860,11 +859,11 @@ export function BoardWorkspace({
           dragged={dragged}
           setDragged={setDragged}
           update={update}
-          setOpenItem={setOpenItem}
+          setOpenItem={openRow}
         />
       )}{" "}
-      {view === "timeline" && <Timeline rows={shown} setOpenItem={setOpenItem} />}{" "}
-      {view === "calendar" && <CalendarView rows={shown} setOpenItem={setOpenItem} />}{" "}
+      {view === "timeline" && <Timeline rows={shown} setOpenItem={openRow} />}{" "}
+      {view === "calendar" && <CalendarView rows={shown} setOpenItem={openRow} />}{" "}
       {view === "chart" && <ChartView rows={shown} groupBy={groupBy || "status"} />}{" "}
       {planner && <p className="text-right text-xs text-muted-foreground">Synced with Planner</p>}
       {openItem && (
@@ -1051,7 +1050,7 @@ function TableView({
                         {columns.map((column, index) => (
                           <td
                             key={column.key}
-                            onClick={() => (cellColumn(row, column).editable ? undefined : openRow(row))}
+                            onClick={() => (cellColumn(row, column).editable ? undefined : setOpenItem(row))}
                             className={cn(
                               "h-12 border-l px-2",
                               index === 0 && "sticky left-10 z-10 bg-card font-medium",
@@ -1078,7 +1077,7 @@ function TableView({
                                   aria-label={`Open ${row.title}`}
                                   onClick={(event) => {
                                     event.stopPropagation();
-                                    openRow(row);
+                                    setOpenItem(row);
                                   }}
                                 >
                                   <ChevronRight className="size-4" />
@@ -1172,7 +1171,7 @@ function Kanban({
                   key={row.id}
                   draggable
                   onDragStart={() => setDragged(row.id)}
-                  onClick={() => openRow(row)}
+                  onClick={() => setOpenItem(row)}
                   className="mb-2 cursor-grab rounded-lg border border-border/70 bg-card p-3 shadow-sm"
                 >
                   <div className="flex gap-2">
@@ -1211,7 +1210,7 @@ function Timeline({
           {rows.map((row, index) => (
             <button
               key={row.id}
-              onClick={() => openRow(row)}
+              onClick={() => setOpenItem(row)}
               className="grid w-full grid-cols-[220px_1fr] border-b text-left"
             >
               <span className="truncate px-3 py-4 text-sm font-medium">{row.title}</span>
@@ -1282,7 +1281,7 @@ function CalendarView({
               .map((row) => (
                 <button
                   key={row.id}
-                  onClick={() => openRow(row)}
+                  onClick={() => setOpenItem(row)}
                   className={cn(
                     "mt-1 block w-full truncate rounded px-1.5 py-1 text-left text-[10px]",
                     statusTone(getDeliveryStatus(row)),
