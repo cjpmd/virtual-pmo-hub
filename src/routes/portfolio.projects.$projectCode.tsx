@@ -266,14 +266,16 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
           : `${item.forum} · needed by ${format.date(item.neededBy)}`,
       decision: item as ResolvedDecision | undefined,
     })),
-    ...reports.map((item) => ({
-      id: item.id,
-      date: item.reportingDate,
-      kind: "Status report",
-      label: `${item.overall} · ${item.submitter}`,
-      detail: item.accomplished,
-      decision: undefined,
-    })),
+    ...reports
+      .filter((item) => !item.isDraft)
+      .map((item) => ({
+        id: item.id,
+        date: item.reportingDate,
+        kind: "Status report",
+        label: `${item.overall} · ${item.submitter}`,
+        detail: item.accomplished,
+        decision: undefined,
+      })),
     ...(milestones.data ?? [])
       .filter((item) => item.actualDate)
       .map((item) => ({

@@ -78,6 +78,7 @@ Error codes:
 | `reverse_decision` | `p_decision_id`, `p_rationale` (required), `p_event_date?` | Made only; no successor |
 | `withdraw_decision` | `p_decision_id`, `p_reason` (required) | Pending only |
 | `submit_status_report` | `p_project_id`, `p_report` jsonb, `p_decision_ids uuid[]`, `p_report_id?` | See §5 |
+| `save_status_report_draft` (added 15/10) | as `submit_status_report` | Creates or updates a draft; never captures evidence. See §5 |
 
 The service already uses `record_decision` and `supersede_decision`: `recordDecision` and
 `supersedeDecision` in `src/services/decisions.ts`. Add service functions for the others in the
@@ -240,8 +241,14 @@ by DEC-0xx") or the predecessor ("Supersedes DEC-0xx").
   - inserts the report as submitted, or turns a draft (`reportId`) into submitted
 - After submit the links are frozen. The database refuses any change from the client.
 
-**Drafts:**
+**Drafts** (added 15/10/2026):
 
+- **Save draft** uses `saveStatusReportDraft` (`save_status_report_draft` RPC), already wired
+  into the form. It creates a draft, or updates one (`reportId`), with all report fields and
+  the decision links in display order. A new draft reopens as that draft.
+- A draft has no evidence (`evidenced_*`, `submitted_at` stay null). Evidence is captured only
+  when `submit_status_report` submits it. Drafts don't appear in the health trend, the activity
+  feed, the "last report" dates or committee packs.
 - Links stay editable on a draft: insert and delete `status_report_decisions` rows.
 - Only Pending decisions of the same project can be linked.
 - When a draft is submitted, a draft link missing from `p_decision_ids` is refused ("Remove
@@ -281,7 +288,7 @@ Milestones.
 | RAID log › Decisions (project) | `v_decisions` (project), `decision_options`, links, `decision_actions` | `decisions` insert/update (Pending), `decision_options`, link tables incl. `decision_milestones` |
 | Decision drawer | `v_decisions`, `decision_events`, options, actions, links | RPCs `record_decision`, `defer_decision`, `supersede_decision`, `reverse_decision`, `withdraw_decision`; `decision_actions` |
 | Governance › RAIDD › Decisions | `v_decisions` (organisation), `lookup_values` (`decision_forum`) | `decisions` update (Pending only, not status); RPCs via the drawer |
-| Status report form | `get_project_overview.openDecisions` or `v_decisions` | RPC `submit_status_report`; `status_report_decisions` (drafts only) |
+| Status report form | `get_project_overview.openDecisions` or `v_decisions` | RPCs `submit_status_report`, `save_status_report_draft`; `status_report_decisions` (drafts only) |
 | Overview highlight report | `get_project_overview.latestReportDecisions`, `openDecisions` | none |
 | Plan › Milestones / Delivery › Milestones | `milestones` | `milestones.report_to_committee` |
 | Plan › Gates, Overview gate signal | `gate_checklist_ticks` | `gate_checklist_ticks` insert/delete |

@@ -466,6 +466,7 @@ async function loadProjectContext(orgId: string, projectIds?: string[]) {
         .from("status_reports")
         .select("project_id, reporting_date")
         .eq("organisation_id", orgId)
+        .eq("status", "submitted")
         .order("reporting_date", { ascending: false }),
     ),
     programmeRefs(orgId),

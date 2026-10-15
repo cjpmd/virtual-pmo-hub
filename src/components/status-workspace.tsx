@@ -7,6 +7,7 @@ import {
   Clock3,
   FilePenLine,
   Plus,
+  Save,
   Sparkles,
   X,
 } from "lucide-react";
@@ -32,6 +33,7 @@ import {
 } from "@/hooks/use-hierarchy";
 import {
   useDraftDecisionLink,
+  useSaveStatusReportDraft,
   useStatusReports,
   useSubmitStatusReport,
 } from "@/hooks/use-status-reports";
@@ -195,6 +197,8 @@ function ReportPanel({
   pending,
   onClose,
   onSubmit,
+  onSaveDraft,
+  savingDraft,
   projectId,
   workspaceId,
   draft,
@@ -216,9 +220,16 @@ function ReportPanel({
   pending: boolean;
   onClose: () => void;
   onSubmit: (report: Omit<StatusReportInput, "projectId" | "submitterId">) => void;
+  /** Save as a draft (save_status_report_draft): nothing is required yet. */
+  onSaveDraft: (report: Omit<StatusReportInput, "projectId" | "submitterId">) => void;
+  savingDraft: boolean;
 }) {
-  const [health, setHealth] = useState<HealthSet>(calculated);
-  const [reasons, setReasons] = useState<Reasons>({});
+  const [health, setHealth] = useState<HealthSet>(
+    draft
+      ? (Object.fromEntries(dimensions.map(({ key }) => [key, draft[key]])) as HealthSet)
+      : calculated,
+  );
+  const [reasons, setReasons] = useState<Reasons>(draft?.overrideReasons ?? {});
   const [accomplished, setAccomplished] = useState(draft?.accomplished ?? "");
   const [planned, setPlanned] = useState(draft?.planned ?? "");
   const [comments, setComments] = useState(draft?.comments ?? "");
@@ -249,27 +260,28 @@ function ReportPanel({
     ({ key }) => health[key] !== calculated[key] && !reasons[key]?.trim(),
   );
 
+  const report = (): Omit<StatusReportInput, "projectId" | "submitterId"> => ({
+    health,
+    accomplished: accomplished.trim(),
+    planned: planned.trim(),
+    comments: comments.trim(),
+    aiDraft,
+    legacyNotes,
+    // Every link shown is sent, in display order (the RPC refuses a draft link left out).
+    decisionIds,
+    ...(draft && { reportId: draft.id, expectedUpdatedAt: draft.updatedAt }),
+    overrideReasons: Object.fromEntries(
+      dimensions
+        .filter(({ key }) => health[key] !== calculated[key])
+        .map(({ key }) => [key, reasons[key]?.trim()]),
+    ) as Reasons,
+  });
   const submit = () => {
     setAttempted(true);
     if (missingReasons.length || !accomplished.trim() || !planned.trim()) return;
-    onSubmit({
-      health,
-      accomplished: accomplished.trim(),
-      planned: planned.trim(),
-      comments: comments.trim(),
-      aiDraft,
-      legacyNotes,
-      // Every link shown is sent, in display order (the RPC refuses a draft link left out).
-      decisionIds,
-      ...(draft && { reportId: draft.id, expectedUpdatedAt: draft.updatedAt }),
-      overrideReasons: Object.fromEntries(
-        dimensions
-          .filter(({ key }) => health[key] !== calculated[key])
-          .map(({ key }) => [key, reasons[key]?.trim()]),
-      ) as Reasons,
-    });
+    onSubmit(report());
   };
-  const [aiDraft, setAiDraft] = useState<StatusReport["aiDraft"]>();
+  const [aiDraft, setAiDraft] = useState<StatusReport["aiDraft"]>(draft?.aiDraft);
   const draftEvidence = () => {
     if (!evidence) return;
     const text = evidenceDraft(evidence);
@@ -485,9 +497,16 @@ function ReportPanel({
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          {/* TODO: "Save draft" goes here once a create-draft RPC exists; reports must not be
-              written to status_reports directly. */}
-          <Button type="button" disabled={pending} onClick={submit}>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending || savingDraft}
+            onClick={() => onSaveDraft(report())}
+          >
+            <Save className="size-4" />
+            Save draft
+          </Button>
+          <Button type="button" disabled={pending || savingDraft} onClick={submit}>
             <Check className="size-4" />
             Submit report
           </Button>
@@ -576,10 +595,14 @@ function Status({
   }, [assurance.data, raid.data, milestones.data, benefits.data, project.id]);
   const chartData = useMemo(
     () =>
-      [...reports].reverse().map((report) => ({
-        reportingDate: fromIsoDate(report.reportingDate),
-        ...Object.fromEntries(dimensions.map(({ key }) => [key, healthValues[report[key]]])),
-      })),
+      // Drafts have no place in the trend: only submitted reports.
+      [...reports]
+        .filter((report) => !report.isDraft)
+        .reverse()
+        .map((report) => ({
+          reportingDate: fromIsoDate(report.reportingDate),
+          ...Object.fromEntries(dimensions.map(({ key }) => [key, healthValues[report[key]]])),
+        })),
     [reports],
   );
   const submit = (report: Omit<StatusReportInput, "projectId" | "submitterId">) =>
@@ -593,6 +616,16 @@ function Status({
         },
         onError: (error) => toast.error(error.message),
       },
+    );
+  const saveReportDraft = useSaveStatusReportDraft();
+  // A new draft reopens as that draft (once the reports have reloaded), so later saves update it.
+  const saveDraft = (report: Omit<StatusReportInput, "projectId" | "submitterId">) =>
+    saveReportDraft.mutateAsync({ ...report, projectId: project.id, submitterId: me }).then(
+      (row) => {
+        toast.success(`Draft ${row.ref} saved`);
+        setDraftId(row.id);
+      },
+      (error: unknown) => toast.error(errorMessage(error)),
     );
 
   return (
@@ -662,7 +695,8 @@ function Status({
           </span>
         </div>
         <div className="relative space-y-4 before:absolute before:bottom-4 before:left-4 before:top-4 before:w-px before:bg-border sm:before:left-5">
-          {reports.map((report, index) => {
+          {reports.map((report) => {
+            const latest = report.id === reports.find((item) => !item.isDraft)?.id;
             const overallOverride = report.overrideReasons?.overall;
             return (
               <article
@@ -672,7 +706,7 @@ function Status({
                 <span
                   className={cn(
                     "absolute -left-[2.1rem] top-5 grid size-7 place-items-center rounded-full border border-primary bg-background text-primary sm:-left-[2.75rem]",
-                    index === 0 && "bg-primary text-primary-foreground",
+                    latest && "bg-primary text-primary-foreground",
                   )}
                 >
                   <FilePenLine className="size-3.5" />
@@ -687,7 +721,7 @@ function Status({
                           Draft
                         </span>
                       )}
-                      {index === 0 && !report.isDraft && (
+                      {latest && (
                         <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold uppercase text-accent-foreground">
                           Latest
                         </span>
@@ -816,6 +850,8 @@ function Status({
         evidence={evidence}
         submitter={profile.displayName}
         pending={submitReport.isPending}
+        savingDraft={saveReportDraft.isPending}
+        onSaveDraft={(report) => void saveDraft(report)}
         onClose={() => {
           setPanelOpen(false);
           setDraftId(null);
