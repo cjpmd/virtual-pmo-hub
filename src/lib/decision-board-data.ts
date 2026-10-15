@@ -108,6 +108,17 @@ export const decisionViews: SavedView[] = [
     visible,
     isDefault: false,
   },
+  {
+    id: "withdrawn",
+    name: "Withdrawn",
+    type: "table",
+    groupBy: "",
+    sortKey: "reference",
+    filter: "",
+    filters: [{ key: "status", operator: "equals", value: "Withdrawn" }],
+    visible,
+    isDefault: false,
+  },
 ];
 
 export const assumptionColumns: BoardColumn[] = [
