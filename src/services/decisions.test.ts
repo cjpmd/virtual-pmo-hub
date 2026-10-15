@@ -1,12 +1,23 @@
 import { describe, expect, it } from "vitest";
 import { decisionActionsFor, recordArgs } from "./decisions";
 
-const base = { id: "d1", optionId: "o1", rationale: " Cheapest ", decisionDate: "2026-10-15", lastSeen: "t" };
+const base = {
+  id: "d1",
+  optionId: "o1",
+  rationale: " Cheapest ",
+  decisionDate: "2026-10-15",
+  lastSeen: "t",
+};
 
 describe("decision lifecycle actions", () => {
   it("Pending allows record, defer, withdraw and edit only", () => {
     expect(decisionActionsFor({ status: "Pending" })).toEqual({
-      edit: true, record: true, defer: true, withdraw: true, supersede: false, reverse: false,
+      edit: true,
+      record: true,
+      defer: true,
+      withdraw: true,
+      supersede: false,
+      reverse: false,
     });
   });
   it("Made allows supersede and reverse", () => {
@@ -14,7 +25,9 @@ describe("decision lifecycle actions", () => {
     expect([actions.supersede, actions.reverse, actions.edit]).toEqual([true, true, false]);
   });
   it("Made with a proposed replacement hides supersede", () => {
-    expect(decisionActionsFor({ status: "Made", pendingSuccessorRef: "DEC-020" }).supersede).toBe(false);
+    expect(decisionActionsFor({ status: "Made", pendingSuccessorRef: "DEC-020" }).supersede).toBe(
+      false,
+    );
   });
   it.each(["Superseded", "Reversed", "Withdrawn"] as const)("%s is read-only", (status) => {
     expect(Object.values(decisionActionsFor({ status })).some(Boolean)).toBe(false);
@@ -26,7 +39,9 @@ describe("record_decision arguments", () => {
     expect(() => recordArgs({ ...base, rationale: "  " })).toThrow();
   });
   it("refuses both a person and a forum as decider", () => {
-    expect(() => recordArgs({ ...base, decidedByResourceId: "r", decidedByForumId: "f" })).toThrow();
+    expect(() =>
+      recordArgs({ ...base, decidedByResourceId: "r", decidedByForumId: "f" }),
+    ).toThrow();
   });
   it("sends the forum decider and drops blank actions", () => {
     const args = recordArgs({

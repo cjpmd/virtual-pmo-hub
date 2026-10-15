@@ -127,7 +127,11 @@ function Decisions({ data }: { data: GovernanceData }) {
         </label>
         <label className="space-y-1 text-xs font-semibold text-muted-foreground">
           <span className="block">Status</span>
-          <select className={selectClass} value={status} onChange={(e) => setStatus(e.target.value)}>
+          <select
+            className={selectClass}
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          >
             <option value="">All statuses</option>
             {statuses.map((item) => (
               <option key={item}>{item}</option>
@@ -262,7 +266,11 @@ function ScopePicker({
         </fieldset>
         <label className="block space-y-1 text-xs font-semibold text-muted-foreground">
           <span className="block capitalize">{kind}</span>
-          <select className={`${selectClass} w-full`} value={id} onChange={(e) => setId(e.target.value)}>
+          <select
+            className={`${selectClass} w-full`}
+            value={id}
+            onChange={(e) => setId(e.target.value)}
+          >
             <option value="">Choose…</option>
             {choices.map((item) => (
               <option key={item.id} value={item.id}>
