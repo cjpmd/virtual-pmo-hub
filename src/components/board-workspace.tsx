@@ -849,6 +849,7 @@ export function BoardWorkspace({
           setOpenItem={openRow}
           setColumns={setColumns}
           renderTitle={renderTitle}
+          rowEditable={rowEditable}
         />
       )}{" "}
       {view === "kanban" && (
@@ -907,6 +908,7 @@ function TableView({
   setOpenItem,
   setColumns,
   renderTitle,
+  rowEditable,
 }: {
   rows: BoardRow[];
   columns: BoardColumn[];
@@ -920,7 +922,10 @@ function TableView({
   setOpenItem: (row: BoardRow) => void;
   setColumns: (v: BoardColumn[]) => void;
   renderTitle?: BoardProps["renderTitle"];
+  rowEditable?: BoardProps["rowEditable"];
 }) {
+  const cellColumn = (row: BoardRow, column: BoardColumn) =>
+    column.editable && rowEditable && !rowEditable(row) ? { ...column, editable: false } : column;
   const [dragRow, setDragRow] = useState<string | null>(null),
     [dragCol, setDragCol] = useState<string | null>(null);
   return (
