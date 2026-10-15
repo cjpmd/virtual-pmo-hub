@@ -2,9 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOrgId } from "@/components/auth/organisation-provider";
 import {
-  addDraftDecisionLink,
   listStatusReports,
-  removeDraftDecisionLink,
   saveStatusReportDraft,
   submitStatusReport,
 } from "@/services/status-reports";
@@ -46,30 +44,5 @@ export function useSaveStatusReportDraft() {
       queryClient.invalidateQueries({
         queryKey: qk.projects.statusReports(orgId, input.projectId),
       }),
-  });
-}
-
-/** Edit a draft report's decision links (insert/delete status_report_decisions). */
-export function useDraftDecisionLink(projectId: string) {
-  const orgId = useOrgId();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (args: {
-      reportId: string;
-      decisionId: string;
-      sortOrder: number;
-      add: boolean;
-    }) => {
-      if (args.add)
-        await addDraftDecisionLink({
-          reportId: args.reportId,
-          projectId,
-          decisionId: args.decisionId,
-          sortOrder: args.sortOrder,
-        });
-      else await removeDraftDecisionLink(args.reportId, args.decisionId);
-    },
-    onSettled: () =>
-      queryClient.invalidateQueries({ queryKey: qk.projects.statusReports(orgId, projectId) }),
   });
 }

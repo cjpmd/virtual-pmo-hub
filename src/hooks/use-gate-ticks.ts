@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOrgId } from "@/components/auth/organisation-provider";
 import {
+  getProjectGates,
   listGateTicks,
   tickGateCriterion,
   untickGateCriterion,
@@ -14,6 +15,16 @@ export function useGateTicks(projectId: string) {
   return useQuery({
     queryKey: qk.projects.gateTicks(orgId, projectId),
     queryFn: () => listGateTicks(projectId),
+  });
+}
+
+/** The project's gates by phase (v_project_gates). Keyed under the project's milestones, so a
+ * milestone edit reloads it. */
+export function useProjectGates(projectId: string) {
+  const orgId = useOrgId();
+  return useQuery({
+    queryKey: [...qk.projects.milestones(orgId, projectId), "gates"],
+    queryFn: () => getProjectGates(projectId),
   });
 }
 

@@ -14,6 +14,7 @@ export function RelevantLessons({
   requireTick = false,
   ticked,
   onTick,
+  tickDisabled = false,
   compact = false,
 }: {
   projectTypeTags?: string[];
@@ -24,6 +25,8 @@ export function RelevantLessons({
   requireTick?: boolean;
   ticked?: boolean;
   onTick?: (value: boolean) => void;
+  /** The tick can't be changed (no permission, or nowhere to save it). */
+  tickDisabled?: boolean;
   compact?: boolean;
 }) {
   const lessons = useLessons();
@@ -133,6 +136,7 @@ export function RelevantLessons({
                 type="checkbox"
                 className="mt-0.5"
                 checked={Boolean(ticked)}
+                disabled={tickDisabled}
                 onChange={(event) => onTick?.(event.target.checked)}
               />
               <span className="text-sm">

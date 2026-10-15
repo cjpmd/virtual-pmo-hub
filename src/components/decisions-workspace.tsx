@@ -164,6 +164,8 @@ function Decisions({ data }: { data: GovernanceData }) {
         canCreate={false}
         onRecordChange={onRecordChange}
         rowEditable={(row) => row.status === "Pending"}
+        // Status changes only through the decision RPCs, so cards don't drag between statuses.
+        lockedGroups={["status"]}
         onOpenRow={(row) => setSelectedId(row.id)}
         groupOptions={["group", "status", "scope"]}
         seededViews={decisionViews}

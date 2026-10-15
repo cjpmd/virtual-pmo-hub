@@ -36,6 +36,8 @@ export interface MilestoneItem {
   status: MilestoneStatus;
   slipDays: number;
   reportToCommittee: boolean;
+  /** The lifecycle phase a gate milestone closes (required for gates). */
+  phaseId: string | null;
   updatedAt: string;
 }
 
@@ -74,7 +76,7 @@ export async function listMilestones(projectIds: string[]): Promise<MilestoneIte
     await supabase
       .from("v_milestones")
       .select(
-        "id, project_id, ref, title, type, owner_id, baseline_date, forecast_date, actual_date, status, slip_days, report_to_committee, updated_at",
+        "id, project_id, ref, title, type, owner_id, baseline_date, forecast_date, actual_date, status, slip_days, report_to_committee, phase_id, updated_at",
       )
       .in("project_id", projectIds)
       .order("forecast_date"),
@@ -93,6 +95,7 @@ export async function listMilestones(projectIds: string[]): Promise<MilestoneIte
     status: milestoneStatusLabel(row.status),
     slipDays: row.slip_days ?? 0,
     reportToCommittee: row.report_to_committee ?? false,
+    phaseId: row.phase_id,
     updatedAt: row.updated_at ?? "",
   }));
 }
@@ -105,6 +108,7 @@ export interface MilestoneInput {
   forecastDate?: string;
   actualDate?: string | null;
   reportToCommittee?: boolean;
+  phaseId?: string | null;
 }
 
 const milestoneFields = (input: MilestoneInput): Update<"milestones"> => ({
@@ -115,6 +119,7 @@ const milestoneFields = (input: MilestoneInput): Update<"milestones"> => ({
   ...(input.forecastDate !== undefined && { forecast_date: input.forecastDate }),
   ...(input.actualDate !== undefined && { actual_date: input.actualDate }),
   ...(input.reportToCommittee !== undefined && { report_to_committee: input.reportToCommittee }),
+  ...(input.phaseId !== undefined && { phase_id: input.phaseId }),
 });
 
 export async function createMilestone(

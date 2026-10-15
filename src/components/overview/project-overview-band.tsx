@@ -7,6 +7,7 @@ import { SummaryStrip } from "@/components/overview/summary-strip";
 import { useProjectOverview } from "@/hooks/use-project-overview";
 import { useFormat } from "@/lib/format";
 import { dataAsOf, getProjectSummaryMetrics } from "@/services/overview";
+import type { ProjectGate } from "@/services/gate-ticks";
 import { buildProjectSignals } from "@/services/overview-panels";
 import { addMonths, buildProgressChart } from "@/services/progress-chart";
 import type { ProjectSummary } from "@/services/hierarchy";
@@ -25,18 +26,23 @@ const monthName = (month: string) =>
  */
 export function ProjectOverviewBand({
   project,
-  gateChecklist,
+  gate,
+  gatesNotPassed,
 }: {
   project: Pick<ProjectSummary, "id">;
-  /** The current phase's gate checklist (Plan › Gates), for the next-gate signal. */
-  gateChecklist?: { passed: number; total: number } | undefined;
+  /**
+   * The current phase's gate milestone (v_project_gates) with its checklist (Plan › Gates), for
+   * the gate signal.
+   */
+  gate?:
+    { title: string; date: string; delivered: boolean; passed: number; total: number } | undefined;
+  /** Earlier phases' gate milestones not yet passed (v_project_gates), for data quality. */
+  gatesNotPassed?: ProjectGate[] | undefined;
 }) {
   const query = useProjectOverview(project.id);
   const settings = useSettings();
   const format = useFormat();
   const data = query.data;
-  const gatePassed = gateChecklist?.passed,
-    gateTotal = gateChecklist?.total;
 
   const built = useMemo(() => {
     if (!data) return null;
@@ -77,10 +83,6 @@ export function ProjectOverviewBand({
     const closedPoint = progress.points.find(
       (point) => point.month === (financials?.actualsThrough ?? data.cutoffMonth)?.slice(0, 7),
     );
-    const nextGate = data.milestones
-      .filter((m) => m.type === "gate" && !m.actualDate && m.forecastDate >= today)
-      .sort((a, b) => a.forecastDate.localeCompare(b.forecastDate))
-      .map((m) => ({ title: m.title, date: m.forecastDate }))[0];
     const signals = buildProjectSignals({
       code: data.project.code,
       today,
@@ -99,9 +101,15 @@ export function ProjectOverviewBand({
       milestonesBaselinedByNow: data.milestones.filter((m) => m.baselineDate <= today).length,
       milestonesDelivered: data.milestones.filter((m) => m.actualDate).length,
       nextGate:
-        nextGate && gatePassed !== undefined && gateTotal !== undefined
-          ? { ...nextGate, passed: gatePassed, total: gateTotal }
+        gate && !gate.delivered
+          ? { title: gate.title, date: gate.date, passed: gate.passed, total: gate.total }
           : undefined,
+      gatesNotPassed: (gatesNotPassed ?? []).map((item) => ({
+        ref: item.ref,
+        title: item.title,
+        gatePhase: item.gatePhase,
+        projectPhase: item.projectPhase,
+      })),
       date: (iso) => format.date(iso),
     });
     const closedMonth = data.cutoffMonth?.slice(0, 7) ?? null;
@@ -119,7 +127,7 @@ export function ProjectOverviewBand({
       closedMonth: closedMonth ? monthName(closedMonth) : null,
       openMonth: monthName(closedMonth ? addMonths(closedMonth, 1) : today.slice(0, 7)),
     };
-  }, [data, settings.regional.financialYearStartMonth, format, gatePassed, gateTotal]);
+  }, [data, settings.regional.financialYearStartMonth, format, gate, gatesNotPassed]);
 
   if (query.isSuccess && !data) return null;
   return (

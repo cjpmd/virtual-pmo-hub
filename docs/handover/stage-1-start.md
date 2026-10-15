@@ -260,6 +260,20 @@ Spec: `docs/design/project-overview-spec.md` (components, data rules, option A c
   Client reads of the latest report (committee packs, project list last-report date, status
   trend and activity feed) now skip drafts.
 
+## Gate phases, decision fixes, UI test data (15/10/2026)
+
+- Gate milestones carry a phase (`20261015102227_gate_milestone_phases`; mapping and dry run in
+  `docs/sql/gate-milestone-phases.sql`). 37 of 87 demo gate milestones were mapped by title;
+  "Design authority approval" (34) and "GATE 1 - Ready to Deliver" (16) are unmapped until a
+  user edits them (a gate now needs a phase). `v_project_gates` drives the checklist, the
+  Overview gate signal and the "Gate N not passed" data-quality signal.
+- Awaiting approval: `docs/sql/decision-can-record.sql` (dry run done) and
+  `docs/sql/update-pending-decision.sql` (runbook: contains DELETE).
+- UI write flows run in the "UI Test" workspace of the outsider test organisation (project
+  UIT), never in the demo organisation. Setup and purge runbook: `docs/sql/ui-test-data.sql`.
+  The member test user is now also a viewer of that organisation (contributor on UI Test only),
+  so member-scoped counts include UIT records.
+
 ## Pre-launch security task: review signed-in RPCs and business case FK indexes
 
 Not now; do before launch. Don't change them until reviewed. The security advisor flags three

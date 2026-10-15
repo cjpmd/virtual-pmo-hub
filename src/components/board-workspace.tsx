@@ -149,6 +149,8 @@ interface BoardProps {
   onOpenRow?: (row: BoardRow) => void;
   /** False makes every cell of that row read-only (e.g. a recorded decision). */
   rowEditable?: (row: BoardRow) => boolean;
+  /** Group-by keys a kanban drag can't change (e.g. a status only RPCs set): cards don't drag. */
+  lockedGroups?: string[];
 }
 const views: [BoardViewType, typeof List][] = [
   ["table", List],
@@ -459,6 +461,7 @@ export function BoardWorkspace({
   canCreate = true,
   onOpenRow,
   rowEditable,
+  lockedGroups,
 }: BoardProps) {
   const openRow = (row: BoardRow | null) => (row && onOpenRow ? onOpenRow(row) : setOpenItem(row));
   const server = Boolean(onRecordChange);
@@ -855,6 +858,7 @@ export function BoardWorkspace({
         <Kanban
           rows={shown}
           groupBy={groupBy || "status"}
+          locked={lockedGroups?.includes(groupBy || "status") ?? false}
           groups={groups}
           dragged={dragged}
           setDragged={setDragged}
@@ -1137,6 +1141,7 @@ function TableView({
 function Kanban({
   rows,
   groupBy,
+  locked,
   groups,
   dragged,
   setDragged,
@@ -1145,6 +1150,8 @@ function Kanban({
 }: {
   rows: BoardRow[];
   groupBy: string;
+  /** Cards can't be moved between these columns. */
+  locked: boolean;
   groups: string[];
   dragged: string | null;
   setDragged: (id: string | null) => void;
@@ -1157,9 +1164,11 @@ function Kanban({
         {groups.map((group) => (
           <section
             key={group}
-            onDragOver={(e) => e.preventDefault()}
+            onDragOver={(e) => {
+              if (!locked) e.preventDefault();
+            }}
             onDrop={() => {
-              if (dragged) update(dragged, groupBy, group);
+              if (dragged && !locked) update(dragged, groupBy, group);
               setDragged(null);
             }}
             className="min-h-80 rounded-md border bg-muted/30 p-3"
@@ -1175,10 +1184,13 @@ function Kanban({
               .map((row) => (
                 <article
                   key={row.id}
-                  draggable
+                  draggable={!locked}
                   onDragStart={() => setDragged(row.id)}
                   onClick={() => setOpenItem(row)}
-                  className="mb-2 cursor-grab rounded-lg border border-border/70 bg-card p-3 shadow-sm"
+                  className={cn(
+                    "mb-2 rounded-lg border border-border/70 bg-card p-3 shadow-sm",
+                    locked ? "cursor-pointer" : "cursor-grab",
+                  )}
                 >
                   <div className="flex gap-2">
                     <DeliveryStatusIcon status={getDeliveryStatus(row)} />

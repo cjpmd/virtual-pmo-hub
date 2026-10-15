@@ -32,7 +32,6 @@ import {
   useRaid,
 } from "@/hooks/use-hierarchy";
 import {
-  useDraftDecisionLink,
   useSaveStatusReportDraft,
   useStatusReports,
   useSubmitStatusReport,
@@ -40,7 +39,6 @@ import {
 import { useGovernance } from "@/hooks/use-governance";
 import { DecisionPanel } from "@/components/decision-panel";
 import type { ResolvedDecision } from "@/services/decisions";
-import { errorMessage } from "@/services/service-error";
 import { useProjectTasks } from "@/hooks/use-work-items";
 import { useOrganisation } from "@/components/auth/organisation-provider";
 import { fromIsoDate } from "@/lib/format";
@@ -236,25 +234,11 @@ function ReportPanel({
   const [legacyNotes, setLegacyNotes] = useState(draft?.legacyNotes ?? "");
   const [decisionIds, setDecisionIds] = useState<string[]>(draft?.decisionIds ?? []);
   const [creatingDecision, setCreatingDecision] = useState(false);
-  const draftLink = useDraftDecisionLink(projectId);
-  const toggleDecision = async (id: string, on: boolean) => {
-    if (draft) {
-      try {
-        await draftLink.mutateAsync({
-          reportId: draft.id,
-          decisionId: id,
-          sortOrder: on ? decisionIds.length : 0,
-          add: on,
-        });
-      } catch (error) {
-        toast.error(errorMessage(error));
-        return;
-      }
-    }
+  // Picking is local: Save draft and Submit report save the links with the report.
+  const toggleDecision = (id: string, on: boolean) =>
     setDecisionIds((current) =>
       on ? [...current.filter((item) => item !== id), id] : current.filter((item) => item !== id),
     );
-  };
   const [attempted, setAttempted] = useState(false);
   const missingReasons = dimensions.filter(
     ({ key }) => health[key] !== calculated[key] && !reasons[key]?.trim(),
@@ -436,8 +420,7 @@ function ReportPanel({
                         variant="ghost"
                         size="icon"
                         aria-label={`Remove ${item?.reference ?? "decision"}`}
-                        disabled={draftLink.isPending}
-                        onClick={() => void toggleDecision(id, false)}
+                        onClick={() => toggleDecision(id, false)}
                       >
                         <X className="size-4" />
                       </Button>
@@ -455,9 +438,8 @@ function ReportPanel({
                   <input
                     type="checkbox"
                     className="mt-1"
-                    disabled={draftLink.isPending}
                     checked={decisionIds.includes(item.id)}
-                    onChange={(event) => void toggleDecision(item.id, event.target.checked)}
+                    onChange={(event) => toggleDecision(item.id, event.target.checked)}
                   />
                   <span>
                     {item.reference} · {item.title}
@@ -519,7 +501,7 @@ function ReportPanel({
           close={() => setCreatingDecision(false)}
           onCreated={(id) => {
             setCreatingDecision(false);
-            void toggleDecision(id, true);
+            toggleDecision(id, true);
           }}
         />
       )}
@@ -614,7 +596,6 @@ function Status({
           setPanelOpen(false);
           setDraftId(null);
         },
-        onError: (error) => toast.error(error.message),
       },
     );
   const saveReportDraft = useSaveStatusReportDraft();
@@ -625,7 +606,8 @@ function Status({
         toast.success(`Draft ${row.ref} saved`);
         setDraftId(row.id);
       },
-      (error: unknown) => toast.error(errorMessage(error)),
+      // A failed save is toasted by the MutationCache.
+      () => undefined,
     );
 
   return (

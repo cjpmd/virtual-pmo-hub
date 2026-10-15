@@ -7,10 +7,10 @@ import { BoardWorkspace, type BoardColumn, type BoardRow } from "@/components/bo
 import { QueryState } from "@/components/query-state";
 import type { MilestoneType } from "@/data/types";
 import { useBoardRecordSync } from "@/hooks/use-board-record-sync";
-import { useMilestones, usePeople, useProjectPermissions } from "@/hooks/use-hierarchy";
+import { useMilestones, usePeople, usePhases, useProjectPermissions } from "@/hooks/use-hierarchy";
 import { useMilestoneMutations } from "@/hooks/use-project-records";
 import { fromIsoDate, toIsoDate } from "@/lib/format";
-import type { Person } from "@/services/hierarchy";
+import type { Person, Phase } from "@/services/hierarchy";
 import type { MilestoneInput, MilestoneItem } from "@/services/project-records";
 
 const TYPES: MilestoneType[] = ["Delivery", "Gate", "Key date", "External dependency"];
@@ -25,9 +25,20 @@ export const committeeColumn: BoardColumn = {
   width: 170,
 };
 
-export const projectMilestoneColumns: BoardColumn[] = [
+/** The lifecycle phase a gate closes; required when the type is Gate (the database enforces it). */
+const phaseColumn = (phaseNames: string[]): BoardColumn => ({
+  key: "phase",
+  label: "Phase (gates)",
+  type: "status",
+  editable: true,
+  options: ["", ...phaseNames],
+  width: 230,
+});
+
+export const projectMilestoneColumns = (phaseNames: string[]): BoardColumn[] => [
   { key: "title", label: "Milestone", type: "text", editable: true, summary: "count", width: 280 },
   { key: "type", label: "Type", type: "status", editable: true, options: TYPES },
+  phaseColumn(phaseNames),
   { key: "people", label: "Owner", type: "people", editable: true },
   { key: "deliveryStatus", label: "Status", type: "status", summary: "rag" },
   { key: "baseline", label: "Baseline", type: "date", editable: true },
@@ -41,6 +52,7 @@ export const projectMilestoneColumns: BoardColumn[] = [
 export function milestonesToBoardRows(
   items: MilestoneItem[],
   people: Map<string, string>,
+  phases: Phase[] = [],
 ): BoardRow[] {
   return items.map((item) => ({
     id: item.id,
@@ -58,6 +70,7 @@ export function milestonesToBoardRows(
     complete: item.status === "Completed",
     isMilestone: true,
     committee: item.reportToCommittee ? "Yes" : "No",
+    phase: phases.find((phase) => phase.id === item.phaseId)?.name ?? "",
     group: item.type,
   }));
 }
@@ -66,6 +79,7 @@ export function milestonesToBoardRows(
 export function milestoneInputFromBoard(
   patch: Partial<BoardRow>,
   people: Person[],
+  phases: Phase[] = [],
 ): MilestoneInput | undefined {
   const input: MilestoneInput = {};
   if ("title" in patch && String(patch.title ?? "").trim()) input.title = String(patch.title);
@@ -80,6 +94,10 @@ export function milestoneInputFromBoard(
       toast.error(
         `No one called “${name}” is in this organisation. Use their name as it appears in Resources.`,
       );
+  }
+  if ("phase" in patch) {
+    const name = String(patch["phase"] ?? "").trim();
+    input.phaseId = name ? (phases.find((phase) => phase.name === name)?.id ?? null) : null;
   }
   if (patch["committee"] === "Yes" || patch["committee"] === "No")
     input.reportToCommittee = patch["committee"] === "Yes";
@@ -102,16 +120,24 @@ export function ProjectMilestones({ projectId }: { projectId: string }) {
   const permissions = useProjectPermissions(projectId);
   const mutations = useMilestoneMutations(projectId);
   const peopleList = useMemo(() => people.data ?? [], [people.data]);
+  const phases = usePhases();
+  const phaseList = useMemo(() => phases.data ?? [], [phases.data]);
+  const columns = useMemo(
+    () => projectMilestoneColumns(phaseList.map((phase) => phase.name)),
+    [phaseList],
+  );
   const names = useMemo(
     () => new Map(peopleList.map((person) => [person.id, person.name])),
     [peopleList],
   );
 
   const onRecordChange = useBoardRecordSync<MilestoneInput>({
-    toInput: (patch) => milestoneInputFromBoard(patch, peopleList),
+    toInput: (patch) => milestoneInputFromBoard(patch, peopleList, phaseList),
     create: (input) => {
       if (!input.title || !input.forecastDate)
         return void toast.error("A milestone needs a title and a forecast date (DD/MM/YYYY).");
+      if (input.type === "Gate" && !input.phaseId)
+        return void toast.error("Choose the lifecycle phase this gate closes.");
       mutations.create.mutate({
         projectId,
         input: { ...input, title: input.title, forecastDate: input.forecastDate },
@@ -126,15 +152,15 @@ export function ProjectMilestones({ projectId }: { projectId: string }) {
     <QueryState query={milestones}>
       {(items) => (
         <BoardWorkspace
-          // The board copies its columns on mount; remount once permissions are known.
-          key={String(permissions.canEdit)}
+          // The board copies its columns on mount; remount once permissions and phases are known.
+          key={`${permissions.canEdit}-${phaseList.length}`}
           title="Milestones"
           itemLabel="milestone"
-          rows={milestonesToBoardRows(items, names)}
+          rows={milestonesToBoardRows(items, names, phaseList)}
           columns={
             permissions.canEdit
-              ? projectMilestoneColumns
-              : projectMilestoneColumns.map((column) => ({ ...column, editable: false }))
+              ? columns
+              : columns.map((column) => ({ ...column, editable: false }))
           }
           groupOptions={["group", "deliveryStatus"]}
           manage={permissions.canEdit}

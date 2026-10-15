@@ -57,6 +57,16 @@ There is no client-side permission helper for "can record" yet. Show Record, Def
 to users with `useProjectPermissions(...).canEdit`, or PMO/admin, and let the RPC refuse with its
 message (42501). Don't hide the buttons on a guess.
 
+**Proposed (15/10, awaiting approval):** `v_decisions.can_record` and `can_write`
+(`docs/sql/decision-can-record.sql`). Once applied, show Record, Defer and Reverse only when
+`can_record`, and Withdraw, Supersede and Edit only when `can_write`. Editing a Pending decision
+then goes through `update_pending_decision` (`docs/sql/update-pending-decision.sql`, one
+transaction for the decision, its options and links) instead of the separate writes in
+`savePendingDecision`.
+
+Failed writes are toasted once, by the MutationCache in `src/router.tsx`. Don't add an error
+toast in a component as well.
+
 ### RPCs (all `supabase.rpc(...)`, SECURITY DEFINER, explicit permission checks)
 
 Every RPC takes an optional `p_expected_updated_at`. Pass the row's `updated_at` so a stale
@@ -249,7 +259,9 @@ by DEC-0xx") or the predecessor ("Supersedes DEC-0xx").
 - A draft has no evidence (`evidenced_*`, `submitted_at` stay null). Evidence is captured only
   when `submit_status_report` submits it. Drafts don't appear in the health trend, the activity
   feed, the "last report" dates or committee packs.
-- Links stay editable on a draft: insert and delete `status_report_decisions` rows.
+- Picking decisions in the form is local state. Save draft and Submit report save the links
+  with the report; a link removed from a draft is deleted just before the save (allowed while it
+  is a draft).
 - Only Pending decisions of the same project can be linked.
 - When a draft is submitted, a draft link missing from `p_decision_ids` is refused ("Remove
   DEC-0xx from the draft first, or include it"). Send every link you show.
@@ -275,11 +287,15 @@ Milestones.
 
 - Plan › Gates ticks and the "relevant lessons reviewed" tick now save to
   `gate_checklist_ticks`:
-  - one row per criterion per gate milestone, against the next open gate milestone
+  - one row per criterion, against the gate milestone of the project's current phase
+    (`v_project_gates.is_current`; 15/10/2026). With none, the checklist says "No gate milestone
+    for this phase" with an Add milestone link, and ticking is disabled.
   - `src/services/gate-ticks.ts`, `src/hooks/use-gate-ticks.ts`
-- The Overview gate signal counts the saved ticks.
-- No UI work is needed beyond styling. The checklist header names the gate milestone the ticks
-  are saved against.
+- Gate milestones carry a phase (required for gates: the Milestones board has a "Phase (gates)"
+  column). Gate n closes Phase n.
+- The Overview gate signal uses the same gate and counts the saved ticks. A data-quality signal
+  says "Gate N not passed but project is in Phase M" (`v_project_gates.not_passed`).
+- The decision kanban doesn't let cards move between status columns (`lockedGroups`).
 
 ## 8. Screen → data map
 

@@ -1,0 +1,88 @@
+-- UI TEST DATA (15/10/2026; setup run 15/10, workspace 9fed1a44-66d0-48fa-b439-d9a027d6e313, project UIT f92c86b4-df33-47a5-b7f8-e1344395eea2). Write flows in the browser run here, never in the demo organisation.
+--
+-- Lives in the existing outsider test organisation "VPMO Test Outsider Org"
+-- (a98e388d-97fb-4a5a-a83e-f9ee88dbaaaf), whose admin is the outsider test user:
+--   * workspace "UI Test" with a "UI Test portfolio" and one project, UIT "UI Test project"
+--     (Phase 2, active)
+--   * the member test user: organisation member (viewer) and contributor on the UI Test
+--     workspace only, so the UIT project is the only thing they can see or edit there
+--   * a resource for the member in that organisation (submitter, owners)
+--   * milestones on UIT: a Phase 2 gate milestone (MS for "GATE 2 - Ready to design") and one
+--     delivery milestone
+-- The outsider (organisation admin) is the "PMO test user": admin is above PMO, so they can
+-- record decisions there.
+-- The member's profile remembers the last organisation they switched to; the UI test switches
+-- them to this organisation and back to the demo organisation at the end.
+--
+-- Everything the write flows create (decisions, reports, ticks, events) hangs off the UIT
+-- project, so the purge below removes it with the project.
+
+-- ===== Setup (run once; inserts only) =======================================================
+-- with ws as (
+--   insert into public.workspaces (organisation_id, name)
+--   values ('a98e388d-97fb-4a5a-a83e-f9ee88dbaaaf', 'UI Test') returning id
+-- ), om as (
+--   insert into public.organisation_members (organisation_id, profile_id, role)
+--   values ('a98e388d-97fb-4a5a-a83e-f9ee88dbaaaf', 'ee64bf2e-7bd1-4756-a2df-9dbc5b5e5ede', 'viewer')
+--   on conflict do nothing returning profile_id
+-- ), wm as (
+--   insert into public.workspace_members (workspace_id, organisation_id, profile_id, role)
+--   select id, 'a98e388d-97fb-4a5a-a83e-f9ee88dbaaaf', 'ee64bf2e-7bd1-4756-a2df-9dbc5b5e5ede', 'contributor' from ws
+--   returning workspace_id
+-- ), res as (
+--   insert into public.resources (organisation_id, name, profile_id)
+--   values ('a98e388d-97fb-4a5a-a83e-f9ee88dbaaaf', 'Test member (non-admin)', 'ee64bf2e-7bd1-4756-a2df-9dbc5b5e5ede')
+--   returning id
+-- ), pf as (
+--   insert into public.portfolios (organisation_id, workspace_id, name)
+--   select 'a98e388d-97fb-4a5a-a83e-f9ee88dbaaaf', ws.id, 'UI Test portfolio' from ws returning id
+-- ), prj as (
+--   insert into public.projects (organisation_id, workspace_id, portfolio_id, name, code, state, tier, phase_id,
+--     start_date, finish_date, baseline_finish_date, budget, forecast, manager_id)
+--   select 'a98e388d-97fb-4a5a-a83e-f9ee88dbaaaf', ws.id, pf.id, 'UI Test project', 'UIT', 'active', 'medium',
+--     '187e7d1b-c81e-4331-8a5e-77c2e8e3b29f', '2026-09-01', '2027-03-31', '2027-03-31', 100000, 100000, res.id
+--   from ws, pf, res returning id
+-- )
+-- insert into public.milestones (project_id, title, type, phase_id, baseline_date, forecast_date)
+-- select prj.id, x.title, x.type::public.milestone_type, x.phase_id, x.d::date, x.d::date
+-- from prj, (values
+--   ('GATE 2 - Ready to design', 'gate', '187e7d1b-c81e-4331-8a5e-77c2e8e3b29f'::uuid, '2026-11-20'),
+--   ('Options appraisal complete', 'delivery', null::uuid, '2026-11-06')) x(title, type, phase_id, d);
+
+-- ===== Purge runbook (yours to run; contains DELETE) =========================================
+-- Removes what the setup and the UI write flows created. Check the counts in step 1 first;
+-- step 2 deletes in one transaction (as postgres, so the client-side rules triggers don't apply).
+-- Rows that reference the project without cascading (health snapshots, milestone forecast
+-- history) go first. The empty "UI Test" workspace stays: its audit_log rows reference it and
+-- this runbook doesn't delete audit history (step 3 is optional if you want it gone too).
+--
+-- 1. What will go:
+-- with p as (select id from public.projects where code = 'UIT' and organisation_id = 'a98e388d-97fb-4a5a-a83e-f9ee88dbaaaf')
+-- select (select count(*) from p) as projects,
+--   (select count(*) from public.decisions where project_id in (select id from p)) as decisions,
+--   (select count(*) from public.status_reports where project_id in (select id from p)) as reports,
+--   (select count(*) from public.gate_checklist_ticks where project_id in (select id from p)) as ticks,
+--   (select count(*) from public.health_snapshots where project_id in (select id from p)) as snapshots,
+--   (select count(*) from public.milestone_forecast_history where project_id in (select id from p)) as forecast_history;
+--
+-- 2. Delete (projects are archivable; this is test data in the test organisation, removed
+--    outright on purpose):
+-- begin;
+-- create temp table uit as select id from public.projects where code = 'UIT' and organisation_id = 'a98e388d-97fb-4a5a-a83e-f9ee88dbaaaf';
+-- delete from public.health_snapshots where project_id in (select id from uit);
+-- delete from public.milestone_forecast_history where project_id in (select id from uit);
+-- delete from public.decisions where project_id in (select id from uit);
+-- delete from public.projects where id in (select id from uit);
+-- delete from public.portfolios where organisation_id = 'a98e388d-97fb-4a5a-a83e-f9ee88dbaaaf' and name = 'UI Test portfolio';
+-- delete from public.workspace_members where profile_id = 'ee64bf2e-7bd1-4756-a2df-9dbc5b5e5ede'
+--   and organisation_id = 'a98e388d-97fb-4a5a-a83e-f9ee88dbaaaf';
+-- delete from public.resources where organisation_id = 'a98e388d-97fb-4a5a-a83e-f9ee88dbaaaf' and profile_id = 'ee64bf2e-7bd1-4756-a2df-9dbc5b5e5ede';
+-- delete from public.organisation_members where organisation_id = 'a98e388d-97fb-4a5a-a83e-f9ee88dbaaaf' and profile_id = 'ee64bf2e-7bd1-4756-a2df-9dbc5b5e5ede';
+-- update public.profiles set last_organisation_id = '98e086a1-6b01-521a-92e9-21dac759c8f4' where id = 'ee64bf2e-7bd1-4756-a2df-9dbc5b5e5ede';
+-- commit;
+--
+-- 3. Optional, removes the workspace and its audit history:
+-- begin;
+-- delete from public.audit_log where workspace_id in (select id from public.workspaces where organisation_id = 'a98e388d-97fb-4a5a-a83e-f9ee88dbaaaf' and name = 'UI Test');
+-- delete from public.workspaces where organisation_id = 'a98e388d-97fb-4a5a-a83e-f9ee88dbaaaf' and name = 'UI Test';
+-- commit;
