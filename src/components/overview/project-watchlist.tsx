@@ -1,5 +1,4 @@
 import { Fragment, useState } from "react";
-import { Link } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { ProjectRowPanel } from "@/components/overview/project-row-panel";
 import type { Health } from "@/data/types";
@@ -255,7 +254,7 @@ export function ProjectWatchlist({
                       <Fragment key={row.id}>
                         <tr
                           // The chevron button is the keyboard control; a click anywhere else on the
-                          // row toggles too, except the project name, which opens the project.
+                          // row toggles too, including the project name; only "Open project" navigates.
                           onClick={() => onToggle(row.code)}
                           className="cursor-pointer border-t border-pmo-line hover:bg-pmo-panel-2/40"
                         >
