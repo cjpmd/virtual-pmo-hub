@@ -13,13 +13,13 @@ import type {
   DecisionAction,
   DecisionStatus,
 } from "@/data/types";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { parseDate } from "@/lib/format";
 import { daysFromToday, today } from "@/lib/today";
 import { listPeople, type Person, programmeRefs, projectRefs } from "./hierarchy";
 import { ServiceError, unwrap } from "./service-error";
-import { insertRow, updateRow } from "./write";
+import { deleteRows, deleteWhere, insertRow, insertRows, updateRow } from "./write";
 
 type Enums = Database["public"]["Enums"];
 const invert = <K extends string, V extends string>(map: Record<K, V>) =>
@@ -454,18 +454,370 @@ export async function recordDecision(input: {
   rationale: string;
   decisionDate: string;
   lastSeen: string;
+  decidedByResourceId?: string | null | undefined;
+  decidedByForumId?: string | null | undefined;
+  actions?: Array<{ description: string; ownerId?: string | null; dueDate?: string | null }>;
 }) {
+  return unwrap(await supabase.rpc("record_decision", recordArgs(input)), "Recording the decision");
+}
+
+/** record_decision arguments: at most one decider, blank actions dropped. */
+export function recordArgs(input: Parameters<typeof recordDecision>[0]) {
   if (!input.rationale.trim())
     throw new ServiceError("invalid", "Record why this option was chosen.");
+  if (input.decidedByResourceId && input.decidedByForumId)
+    throw new ServiceError("invalid", "Choose either a person or a forum as the decider.");
+  const actions = (input.actions ?? [])
+    .filter((action) => action.description.trim())
+    .map((action) => ({
+      description: action.description.trim(),
+      ...(action.ownerId && { owner_id: action.ownerId }),
+      ...(action.dueDate && { due_date: action.dueDate }),
+    }));
+  return {
+    p_decision_id: input.id,
+    p_chosen_option_id: input.optionId,
+    p_rationale: input.rationale.trim(),
+    p_decision_date: input.decisionDate,
+    p_expected_updated_at: input.lastSeen,
+    ...(input.decidedByResourceId && { p_decided_by_resource_id: input.decidedByResourceId }),
+    ...(input.decidedByForumId && { p_decided_by_forum_id: input.decidedByForumId }),
+    p_actions: actions as unknown as Json,
+  };
+}
+
+const requireText = (value: string, message: string) => {
+  if (!value.trim()) throw new ServiceError("invalid", message);
+  return value.trim();
+};
+
+/** Defer a Pending decision (defer_decision RPC): it stays Pending with a new needed-by. */
+export async function deferDecision(input: {
+  id: string;
+  newNeededBy: string;
+  reason: string;
+  eventDate?: string | undefined;
+  forumId?: string | null | undefined;
+  lastSeen: string;
+}) {
   return unwrap(
-    await supabase.rpc("record_decision", {
+    await supabase.rpc("defer_decision", {
       p_decision_id: input.id,
-      p_chosen_option_id: input.optionId,
-      p_rationale: input.rationale.trim(),
-      p_decision_date: input.decisionDate,
+      p_new_needed_by: input.newNeededBy,
+      p_reason: requireText(input.reason, "Give a reason for deferring."),
+      ...(input.eventDate && { p_event_date: input.eventDate }),
+      ...(input.forumId && { p_forum_id: input.forumId }),
       p_expected_updated_at: input.lastSeen,
     }),
-    "Recording the decision",
+    "Deferring the decision",
+  );
+}
+
+/** Reverse a Made decision (reverse_decision RPC). */
+export async function reverseDecision(input: {
+  id: string;
+  rationale: string;
+  eventDate?: string | undefined;
+  lastSeen: string;
+}) {
+  return unwrap(
+    await supabase.rpc("reverse_decision", {
+      p_decision_id: input.id,
+      p_rationale: requireText(input.rationale, "Give the rationale for reversing."),
+      ...(input.eventDate && { p_event_date: input.eventDate }),
+      p_expected_updated_at: input.lastSeen,
+    }),
+    "Reversing the decision",
+  );
+}
+
+/** Withdraw a Pending decision (withdraw_decision RPC). The record is kept. */
+export async function withdrawDecision(input: { id: string; reason: string; lastSeen: string }) {
+  return unwrap(
+    await supabase.rpc("withdraw_decision", {
+      p_decision_id: input.id,
+      p_reason: requireText(input.reason, "Give a reason for withdrawing."),
+      p_expected_updated_at: input.lastSeen,
+    }),
+    "Withdrawing the decision",
+  );
+}
+
+/** Which lifecycle actions a status allows (the database enforces the same). */
+export function decisionActionsFor(decision: {
+  status: DecisionStatus;
+  pendingSuccessorRef?: string | null;
+}) {
+  const pending = decision.status === "Pending";
+  const made = decision.status === "Made";
+  return {
+    edit: pending,
+    record: pending,
+    defer: pending,
+    withdraw: pending,
+    supersede: made && !decision.pendingSuccessorRef,
+    reverse: made,
+  };
+}
+
+// ---- History ------------------------------------------------------------------------------
+
+export interface DecisionEventView {
+  id: string;
+  type: Enums["decision_event_type"];
+  eventDate: string;
+  createdAt: string;
+  reason: string | null;
+  actor: string;
+  forum: string;
+  decidedBy: string;
+  previousNeededBy: string | null;
+  newNeededBy: string | null;
+  changedFields: string[];
+}
+
+export async function listDecisionEvents(
+  orgId: string,
+  decisionId: string,
+): Promise<DecisionEventView[]> {
+  const [events, people, forums] = await Promise.all([
+    supabase
+      .from("decision_events")
+      .select(
+        "id, event_type, event_date, created_at, reason, actor_id, forum_id, decided_by_resource_id, previous_needed_by, new_needed_by, changes",
+      )
+      .eq("decision_id", decisionId)
+      .order("created_at", { ascending: false }),
+    listPeople(orgId),
+    supabase
+      .from("lookup_values")
+      .select("id, label")
+      .eq("organisation_id", orgId)
+      .eq("list_key", "decision_forum"),
+  ]);
+  const rows = unwrap(events, "Loading the decision history");
+  const actorIds = [...new Set(rows.map((row) => row.actor_id).filter(Boolean))] as string[];
+  const profiles = actorIds.length
+    ? await supabase.from("profiles").select("id, display_name").in("id", actorIds)
+    : { data: [] };
+  const actor = new Map((profiles.data ?? []).map((row) => [row.id, row.display_name]));
+  const person = new Map(people.map((row) => [row.id, row.name]));
+  const forum = new Map((forums.data ?? []).map((row) => [row.id, row.label]));
+  return rows.map((row) => ({
+    id: row.id,
+    type: row.event_type,
+    eventDate: row.event_date,
+    createdAt: row.created_at,
+    reason: row.reason,
+    actor: (row.actor_id && actor.get(row.actor_id)) || "Unknown",
+    forum: (row.forum_id && forum.get(row.forum_id)) || "",
+    decidedBy: (row.decided_by_resource_id && person.get(row.decided_by_resource_id)) || "",
+    previousNeededBy: row.previous_needed_by,
+    newNeededBy: row.new_needed_by,
+    changedFields: Object.keys((row.changes as Record<string, unknown> | null) ?? {}),
+  }));
+}
+
+// ---- Create and links ---------------------------------------------------------------------
+
+export type DecisionLinkKind = "risk" | "issue" | "change" | "dependency" | "benefit" | "milestone";
+const linkTable = {
+  risk: ["decision_risks", "risk_id"],
+  issue: ["decision_issues", "issue_id"],
+  change: ["decision_change_requests", "change_request_id"],
+  dependency: ["decision_dependencies", "dependency_id"],
+  benefit: ["decision_benefits", "benefit_id"],
+  milestone: ["decision_milestones", "milestone_id"],
+} as const;
+
+export interface LinkTarget {
+  id: string;
+  label: string;
+}
+export type LinkTargets = Record<DecisionLinkKind, LinkTarget[]>;
+
+/** Records on a project a decision can link to. */
+export async function listDecisionLinkTargets(projectId: string): Promise<LinkTargets> {
+  const [risks, issues, changes, deps, benefits, milestones] = await Promise.all([
+    supabase.from("risks").select("id, ref, title").eq("project_id", projectId).order("ref"),
+    supabase.from("issues").select("id, ref, title").eq("project_id", projectId).order("ref"),
+    supabase
+      .from("change_requests")
+      .select("id, ref, title")
+      .eq("project_id", projectId)
+      .order("ref"),
+    supabase
+      .from("dependencies")
+      .select("id, ref, description")
+      .or(`giver_project_id.eq.${projectId},receiver_project_id.eq.${projectId}`)
+      .order("ref"),
+    supabase
+      .from("benefit_projects")
+      .select("benefit_id, benefits(ref, title)")
+      .eq("project_id", projectId),
+    supabase.from("milestones").select("id, ref, title").eq("project_id", projectId).order("ref"),
+  ]);
+  const titled = (rows: Array<{ id: string; ref: string; title: string }>) =>
+    rows.map((row) => ({ id: row.id, label: `${row.ref} · ${row.title}` }));
+  return {
+    risk: titled(unwrap(risks, "Loading risks")),
+    issue: titled(unwrap(issues, "Loading issues")),
+    change: titled(unwrap(changes, "Loading change requests")),
+    dependency: unwrap(deps, "Loading dependencies").map((row) => ({
+      id: row.id,
+      label: `${row.ref} · ${row.description ?? ""}`,
+    })),
+    benefit: unwrap(benefits, "Loading benefits").map((row) => ({
+      id: row.benefit_id,
+      label: row.benefits ? `${row.benefits.ref} · ${row.benefits.title}` : row.benefit_id,
+    })),
+    milestone: titled(unwrap(milestones, "Loading milestones")),
+  };
+}
+
+export interface DecisionOptionInput {
+  title: string;
+  pros: string[];
+  cons: string[];
+}
+
+export interface NewDecisionInput {
+  scope: { projectId?: string | null; programmeId?: string | null; portfolioId?: string | null };
+  title: string;
+  context: string;
+  options: DecisionOptionInput[];
+  decisionMakerId: string | null;
+  forumId: string | null;
+  neededBy: string;
+  impact: Record<"scope" | "cost" | "time" | "benefits", { impacted: boolean; note: string }>;
+  evidenceLink: string;
+  links: Partial<Record<DecisionLinkKind, string[]>>;
+}
+
+const cleanList = (items: string[]) => items.map((item) => item.trim()).filter(Boolean);
+
+/** New Pending decision with its options and links (status is always pending on insert). */
+export async function createDecision(input: NewDecisionInput) {
+  const title = requireText(input.title, "Give the decision a title.");
+  const options = input.options.filter((option) => option.title.trim());
+  if (options.length < 2) throw new ServiceError("invalid", "Add at least two options.");
+  if (!input.neededBy) throw new ServiceError("invalid", "Set a needed-by date.");
+  const written = await insertRow(
+    "decisions",
+    {
+      ...(input.scope.projectId && { project_id: input.scope.projectId }),
+      ...(input.scope.programmeId && { programme_id: input.scope.programmeId }),
+      ...(input.scope.portfolioId && { portfolio_id: input.scope.portfolioId }),
+      title,
+      context: input.context.trim() || null,
+      decision_maker_id: input.decisionMakerId,
+      forum_id: input.forumId,
+      needed_by_date: input.neededBy,
+      ...impactFields(input.impact),
+      evidence_link: input.evidenceLink.trim() || null,
+    },
+    "Creating the decision",
+  );
+  await insertRows(
+    "decision_options",
+    options.map((option, index) => ({
+      decision_id: written.id,
+      title: option.title.trim(),
+      pros: cleanList(option.pros),
+      cons: cleanList(option.cons),
+      sort_order: index,
+    })),
+    "Saving the options",
+  );
+  for (const kind of Object.keys(linkTable) as DecisionLinkKind[])
+    for (const targetId of input.links[kind] ?? []) await addDecisionLink(written.id, kind, targetId);
+  return written;
+}
+
+const impactFields = (impact: NewDecisionInput["impact"]) => ({
+  impact_scope: impact.scope.impacted,
+  impact_scope_note: impact.scope.note.trim() || null,
+  impact_cost: impact.cost.impacted,
+  impact_cost_note: impact.cost.note.trim() || null,
+  impact_time: impact.time.impacted,
+  impact_time_note: impact.time.note.trim() || null,
+  impact_benefits: impact.benefits.impacted,
+  impact_benefits_note: impact.benefits.note.trim() || null,
+});
+
+/** Edit a Pending decision's content and replace its options. */
+export async function savePendingDecision(
+  id: string,
+  input: Omit<NewDecisionInput, "scope" | "links">,
+  existingOptionIds: string[],
+  lastSeen: string,
+) {
+  const title = requireText(input.title, "Give the decision a title.");
+  const options = input.options.filter((option) => option.title.trim());
+  if (options.length < 2) throw new ServiceError("invalid", "Add at least two options.");
+  await updateRow(
+    "decisions",
+    id,
+    {
+      title,
+      context: input.context.trim() || null,
+      decision_maker_id: input.decisionMakerId,
+      forum_id: input.forumId,
+      needed_by_date: input.neededBy,
+      ...impactFields(input.impact),
+      evidence_link: input.evidenceLink.trim() || null,
+    },
+    { context: "Saving the decision", lastSeen },
+  );
+  await deleteRows("decision_options", existingOptionIds, "Replacing the options");
+  await insertRows(
+    "decision_options",
+    options.map((option, index) => ({
+      decision_id: id,
+      title: option.title.trim(),
+      pros: cleanList(option.pros),
+      cons: cleanList(option.cons),
+      sort_order: index,
+    })),
+    "Saving the options",
+  );
+}
+
+/** Link a record to a Pending decision (the database refuses once it isn't Pending). */
+export async function addDecisionLink(decisionId: string, kind: DecisionLinkKind, targetId: string) {
+  const [name, column] = linkTable[kind];
+  return insertRow(
+    name,
+    { decision_id: decisionId, [column]: targetId } as never,
+    "Linking the record",
+  );
+}
+
+export async function removeDecisionLink(
+  decisionId: string,
+  kind: DecisionLinkKind,
+  targetId: string,
+) {
+  const [name, column] = linkTable[kind];
+  return deleteWhere(name, { decision_id: decisionId, [column]: targetId }, "Removing the link");
+}
+
+/** Update a resulting action (editable in every status). */
+export async function updateDecisionAction(
+  id: string,
+  input: { status?: DecisionAction["status"]; ownerId?: string | null; dueDate?: string | null },
+  lastSeen?: string | null,
+) {
+  const value = { Open: "open", "In progress": "in_progress", Done: "done" } as const;
+  return updateRow(
+    "decision_actions",
+    id,
+    {
+      ...(input.status && { status: value[input.status] }),
+      ...(input.ownerId !== undefined && { owner_id: input.ownerId }),
+      ...(input.dueDate !== undefined && { due_date: input.dueDate }),
+    },
+    { context: "Saving the action", lastSeen },
   );
 }
 
@@ -488,7 +840,6 @@ export async function supersedeDecision(decision: ResolvedDecision, neededBy: st
 export interface DecisionInput {
   forumId?: string | null;
   neededBy?: string;
-  status?: DecisionStatus;
   title?: string;
   decisionMakerId?: string | null;
 }
@@ -498,7 +849,6 @@ export async function updateDecision(id: string, input: DecisionInput, lastSeen?
     ...(input.title !== undefined && { title: input.title.trim() }),
     ...(input.forumId !== undefined && { forum_id: input.forumId }),
     ...(input.neededBy !== undefined && { needed_by_date: input.neededBy }),
-    ...(input.status !== undefined && { status: decisionStatusValue[input.status] }),
     ...(input.decisionMakerId !== undefined && { decision_maker_id: input.decisionMakerId }),
   };
   if (!Object.keys(fields).length) return;
