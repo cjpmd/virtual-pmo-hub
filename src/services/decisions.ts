@@ -30,6 +30,7 @@ export const decisionStatusLabel: Record<Enums["decision_status"], DecisionStatu
   made: "Made",
   superseded: "Superseded",
   reversed: "Reversed",
+  withdrawn: "Withdrawn",
 };
 export const decisionStatusValue = invert(decisionStatusLabel);
 const actionStatusLabel: Record<Enums["action_status"], DecisionAction["status"]> = {

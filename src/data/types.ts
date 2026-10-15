@@ -516,7 +516,12 @@ export type DecisionForum =
   | "Digital Committee"
   | "Architecture Review Board"
   | "Change Advisory Board";
-export type DecisionStatus = "Pending" | "Made" | "Superseded" | "Reversed";
+export type DecisionStatus =
+  | "Pending"
+  | "Made"
+  | "Superseded"
+  | "Reversed"
+  | "Withdrawn";
 export interface DecisionOption {
   id: string;
   title: string;
