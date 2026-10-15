@@ -86,3 +86,13 @@
 -- delete from public.audit_log where workspace_id in (select id from public.workspaces where organisation_id = 'a98e388d-97fb-4a5a-a83e-f9ee88dbaaaf' and name = 'UI Test');
 -- delete from public.workspaces where organisation_id = 'a98e388d-97fb-4a5a-a83e-f9ee88dbaaaf' and name = 'UI Test';
 -- commit;
+
+-- UI WRITE FLOWS RUN (15/10/2026), all in UIT:
+--   member: created DEC-001 (Pending, two options, forum Project Board); Record decision refused
+--   (contributor, not the decision maker; one error toast); saved draft SR-001 with DEC-001
+--   linked; finished and submitted it (submitted, evidence captured, 1 link); ticked "Options
+--   appraisal completed" on MS-001 GATE 2 and it was still ticked after a reload (1 of 6 met).
+--   outsider (organisation admin, acting as PMO): recorded DEC-001 -> Made, chosen "Library",
+--   decided by forum Project Board, recorded by Test outsider; one 'made' event.
+--   Demo organisation afterwards: 16 decisions, 9 events, 0 ticks, no new reports; the member's
+--   profile is back on the demo organisation.
