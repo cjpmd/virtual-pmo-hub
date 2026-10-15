@@ -236,6 +236,26 @@ describe("project signals", () => {
     });
   });
 
+  it("flags an earlier phase's gate not passed as data quality, not when closed", () => {
+    const gatesNotPassed = [
+      { ref: "MS-002", title: "GATE 0 - Ready to Design", gatePhase: 2, projectPhase: 3 },
+    ];
+    const signals = buildProjectSignals({ ...base, gatesNotPassed });
+    const signal = signals.find((s) => s.id === "gate-not-passed");
+    expect(signal?.title).toBe("Gate 2 not passed but project is in Phase 3");
+    expect(signal?.link).toEqual({
+      kind: "projectTab",
+      code: "ARB",
+      tab: "plan",
+      sub: "milestones",
+    });
+    expect(
+      buildProjectSignals({ ...base, gatesNotPassed, closed: true }).some(
+        (s) => s.id === "gate-not-passed",
+      ),
+    ).toBe(false);
+  });
+
   it("words stale red risks, finish slip and late baselines", () => {
     const signals = buildProjectSignals({
       ...base,

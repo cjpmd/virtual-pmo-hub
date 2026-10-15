@@ -91,7 +91,9 @@ export interface DecisionCreateScope {
   workspaceId?: string | null;
 }
 
-const report = (error: unknown) => toast.error(errorMessage(error));
+// Failed writes are already toasted once by the MutationCache (src/router.tsx); this only stops
+// the rejected promise going unhandled.
+const report = (_error?: unknown) => undefined;
 
 export function DecisionPanel({
   decision,

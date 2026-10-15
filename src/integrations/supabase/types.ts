@@ -3683,6 +3683,13 @@ export type Database = {
             referencedColumns: ["id", "workspace_id"]
           },
           {
+            foreignKeyName: "decision_milestones_milestone_id_workspace_id_fkey"
+            columns: ["milestone_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_gates"
+            referencedColumns: ["milestone_id", "workspace_id"]
+          },
+          {
             foreignKeyName: "decision_milestones_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
@@ -4394,6 +4401,13 @@ export type Database = {
             referencedColumns: ["id", "workspace_id"]
           },
           {
+            foreignKeyName: "dependencies_giver_milestone_id_workspace_id_fkey"
+            columns: ["giver_milestone_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_gates"
+            referencedColumns: ["milestone_id", "workspace_id"]
+          },
+          {
             foreignKeyName: "dependencies_giver_owner_id_organisation_id_fkey"
             columns: ["giver_owner_id", "organisation_id"]
             isOneToOne: false
@@ -4490,6 +4504,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_milestones"
             referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "dependencies_receiver_milestone_id_workspace_id_fkey"
+            columns: ["receiver_milestone_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_gates"
+            referencedColumns: ["milestone_id", "workspace_id"]
           },
           {
             foreignKeyName: "dependencies_receiver_owner_id_organisation_id_fkey"
@@ -5323,6 +5344,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_milestones"
             referencedColumns: ["id", "project_id"]
+          },
+          {
+            foreignKeyName: "gate_checklist_ticks_milestone_id_project_id_fkey"
+            columns: ["milestone_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_gates"
+            referencedColumns: ["milestone_id", "project_id"]
           },
           {
             foreignKeyName: "gate_checklist_ticks_project_id_workspace_id_fkey"
@@ -6438,6 +6466,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_milestones"
             referencedColumns: ["id", "project_id"]
+          },
+          {
+            foreignKeyName: "milestone_forecast_history_milestone_id_project_id_fkey"
+            columns: ["milestone_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_gates"
+            referencedColumns: ["milestone_id", "project_id"]
           },
           {
             foreignKeyName: "milestone_forecast_history_project_id_workspace_id_fkey"
@@ -9787,6 +9822,13 @@ export type Database = {
             referencedColumns: ["id", "workspace_id"]
           },
           {
+            foreignKeyName: "roadmap_key_dates_milestone_fkey"
+            columns: ["milestone_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_gates"
+            referencedColumns: ["milestone_id", "workspace_id"]
+          },
+          {
             foreignKeyName: "roadmap_key_dates_owner_id_organisation_id_fkey"
             columns: ["owner_id", "organisation_id"]
             isOneToOne: false
@@ -11719,6 +11761,13 @@ export type Database = {
             referencedColumns: ["id", "project_id"]
           },
           {
+            foreignKeyName: "work_items_milestone_id_project_id_fkey"
+            columns: ["milestone_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_gates"
+            referencedColumns: ["milestone_id", "project_id"]
+          },
+          {
             foreignKeyName: "work_items_parent_id_project_id_fkey"
             columns: ["parent_id", "project_id"]
             isOneToOne: false
@@ -12168,14 +12217,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "decisions_chosen_option_fkey"
-            columns: ["chosen_option_id", "pending_successor_id"]
+            columns: ["chosen_option_id", "id"]
             isOneToOne: false
             referencedRelation: "decision_options"
             referencedColumns: ["id", "decision_id"]
           },
           {
             foreignKeyName: "decisions_chosen_option_fkey"
-            columns: ["chosen_option_id", "id"]
+            columns: ["chosen_option_id", "pending_successor_id"]
             isOneToOne: false
             referencedRelation: "decision_options"
             referencedColumns: ["id", "decision_id"]
@@ -12456,6 +12505,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_milestones"
             referencedColumns: ["id", "project_id"]
+          },
+          {
+            foreignKeyName: "work_items_milestone_id_project_id_fkey"
+            columns: ["milestone_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_gates"
+            referencedColumns: ["milestone_id", "project_id"]
           },
           {
             foreignKeyName: "work_items_parent_id_project_id_fkey"
@@ -13090,6 +13146,92 @@ export type Database = {
           },
         ]
       }
+      v_project_gates: {
+        Row: {
+          actual_date: string | null
+          forecast_date: string | null
+          gate_name: string | null
+          gate_phase: number | null
+          gate_phase_name: string | null
+          is_current: boolean | null
+          milestone_id: string | null
+          not_passed: boolean | null
+          organisation_id: string | null
+          phase_id: string | null
+          project_id: string | null
+          project_phase: number | null
+          project_phase_id: string | null
+          project_phase_name: string | null
+          ref: string | null
+          title: string | null
+          workspace_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "milestones_phase_id_fkey"
+            columns: ["phase_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "lifecycle_phases"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "milestones_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "milestones_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "milestones_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "milestones_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_financials"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "milestones_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "milestones_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_task_stats"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "milestones_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "milestones_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       v_project_health: {
         Row: {
           benefit: Database["public"]["Enums"]["health"] | null
@@ -13455,6 +13597,13 @@ export type Database = {
             referencedColumns: ["id", "workspace_id"]
           },
           {
+            foreignKeyName: "roadmap_key_dates_milestone_fkey"
+            columns: ["milestone_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_gates"
+            referencedColumns: ["milestone_id", "workspace_id"]
+          },
+          {
             foreignKeyName: "roadmap_key_dates_owner_id_organisation_id_fkey"
             columns: ["owner_id", "organisation_id"]
             isOneToOne: false
@@ -13542,6 +13691,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_milestones"
             referencedColumns: ["id", "project_id"]
+          },
+          {
+            foreignKeyName: "work_items_milestone_id_project_id_fkey"
+            columns: ["milestone_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_gates"
+            referencedColumns: ["milestone_id", "project_id"]
           },
           {
             foreignKeyName: "work_items_parent_id_project_id_fkey"

@@ -26,9 +26,8 @@ import { TopBand } from "@/components/shell-slots";
 import { ProjectOverviewBand } from "@/components/overview/project-overview-band";
 import { ProjectOverviewWork } from "@/components/overview/project-overview-work";
 import { useGateChecklist } from "@/hooks/use-gate-checklist";
-import { useGateTicks, useToggleGateTick } from "@/hooks/use-gate-ticks";
-import { checklistGateMilestone, phaseByName } from "@/services/gates";
-import { todayIso } from "@/lib/today";
+import { useGateTicks, useProjectGates, useToggleGateTick } from "@/hooks/use-gate-ticks";
+import { phaseByName } from "@/services/gates";
 import { toast } from "sonner";
 import { StatusWorkspace } from "@/components/status-workspace";
 import { TaskWorkspace } from "@/components/task-workspace";
@@ -220,17 +219,18 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
     lessonsData.data && currentPhaseId
       ? hasPhaseLessonsReview(lessonsData.data, project.id, currentPhaseId)
       : false;
-  // Checklist ticks are saved against the next gate milestone (gate_checklist_ticks); the
-  // lessons-reviewed criterion passes when its tick is saved.
+  // Checklist ticks are saved against the gate milestone of the project's current phase
+  // (v_project_gates); the lessons-reviewed criterion passes when its tick is saved.
   const gateTicks = useGateTicks(project.id);
   const toggleGateTick = useToggleGateTick(project.id);
-  const gateMilestone = checklistGateMilestone(milestones.data ?? [], todayIso());
+  const projectGates = useProjectGates(project.id);
+  const gateMilestone = projectGates.data?.current;
   const manualTicks = useMemo(
     () =>
       (gateTicks.data ?? [])
-        .filter((tick) => tick.milestoneId === gateMilestone?.id)
+        .filter((tick) => tick.milestoneId === gateMilestone?.milestoneId)
         .map((tick) => tick.criterionId),
-    [gateTicks.data, gateMilestone?.id],
+    [gateTicks.data, gateMilestone?.milestoneId],
   );
   const lessonsCriterion = phaseByName(project.phaseName)?.criteria.find(
     (item) => item.check === "lessons-reviewed" && item.tiers.includes(project.tier),
@@ -238,11 +238,16 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
   const lessonsReviewed = !!lessonsCriterion && manualTicks.includes(lessonsCriterion.id);
   const toggleTick = (criterionId: string, ticked: boolean) => {
     if (!gateMilestone)
-      return void toast.error("Add a gate milestone on Plan › Milestones before ticking criteria.");
-    toggleGateTick.mutate(
-      { projectId: project.id, milestoneId: gateMilestone.id, criterionId, ticked },
-      { onError: (error) => toast.error(error.message) },
-    );
+      return void toast.error(
+        "No gate milestone for this phase. Add one on Plan › Milestones before ticking criteria.",
+      );
+    // A refused tick is toasted by the MutationCache.
+    toggleGateTick.mutate({
+      projectId: project.id,
+      milestoneId: gateMilestone.milestoneId,
+      criterionId,
+      ticked,
+    });
   };
   // Shared with Plan › Gates so the Overview gate signal counts the same ticks.
   const gateChecklist = useGateChecklist({
@@ -326,7 +331,16 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
       {tab === "overview" && (
         <ProjectOverviewBand
           project={project}
-          gateChecklist={{ passed: gateChecklist.passed, total: gateChecklist.total }}
+          gate={
+            gateMilestone && {
+              title: gateMilestone.title,
+              date: gateMilestone.forecastDate,
+              delivered: Boolean(gateMilestone.actualDate),
+              passed: gateChecklist.passed,
+              total: gateChecklist.total,
+            }
+          }
+          gatesNotPassed={projectGates.data?.notPassed}
         />
       )}
       {(tab === "plan" || tab === "raid") && (
@@ -355,7 +369,9 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
           phaseReviewHeld={phaseReviewHeld}
           manualTicks={manualTicks}
           gateLabel={gateMilestone ? `${gateMilestone.ref} · ${gateMilestone.title}` : undefined}
-          readOnly={!permissions.canEdit || toggleGateTick.isPending}
+          gateLoading={projectGates.isPending}
+          onAddMilestone={() => setTab("plan", "milestones")}
+          readOnly={!permissions.canEdit || !gateMilestone || toggleGateTick.isPending}
           onToggleManual={(id) => toggleTick(id, !manualTicks.includes(id))}
         />
       )}
@@ -491,6 +507,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
                 requireTick
                 ticked={lessonsReviewed}
                 onTick={(ticked) => lessonsCriterion && toggleTick(lessonsCriterion.id, ticked)}
+                tickDisabled={!permissions.canEdit || !gateMilestone || toggleGateTick.isPending}
               />
             </div>
           )}

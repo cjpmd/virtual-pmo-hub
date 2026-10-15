@@ -6,12 +6,16 @@ import { cn } from "@/lib/utils";
 export function GateChecklist({
   onToggleManual,
   gateLabel,
+  gateLoading = false,
+  onAddMilestone,
   readOnly = false,
   ...input
 }: ChecklistInput & {
   onToggleManual: (id: string) => void;
-  /** The gate milestone the ticks are saved against. */
+  /** The current phase's gate milestone, which the ticks are saved against. */
   gateLabel?: string | undefined;
+  gateLoading?: boolean;
+  onAddMilestone?: () => void;
   readOnly?: boolean;
 }) {
   const { project, manualTicks } = input;
@@ -26,11 +30,26 @@ export function GateChecklist({
             Criteria that apply to a {project.tier.toLowerCase()} project at this phase. Benefit and
             lessons criteria are evaluated automatically.
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {gateLabel
-              ? `Ticks are saved against ${gateLabel}.`
-              : "No open gate milestone: add one on Plan › Milestones to save ticks."}
-          </p>
+          {gateLabel ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Ticks are saved against {gateLabel}.
+            </p>
+          ) : (
+            !gateLoading && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                No gate milestone for this phase, so items can't be ticked.{" "}
+                {onAddMilestone && (
+                  <button
+                    type="button"
+                    onClick={onAddMilestone}
+                    className="font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    Add milestone
+                  </button>
+                )}
+              </p>
+            )
+          )}
         </div>
         <span
           className={cn(

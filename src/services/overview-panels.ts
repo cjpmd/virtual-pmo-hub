@@ -488,6 +488,10 @@ export interface ProjectSignalInput {
    * gate checklist: how many items are done of how many.
    */
   nextGate?: { title: string; date: string; passed: number; total: number } | undefined;
+  /** Earlier phases' gate milestones with no actual date (v_project_gates.not_passed). */
+  gatesNotPassed?:
+    | Array<{ ref: string; title: string; gatePhase: number; projectPhase: number | null }>
+    | undefined;
   date: (iso: string) => string;
 }
 
@@ -648,6 +652,22 @@ export function buildProjectSignals(input: ProjectSignalInput): Signal[] {
       tone: "warn",
       title: `${plural(late, "milestone")} baselined after project finish`,
       detail: "Data quality: check the baseline dates or the project's baseline finish.",
+      link: tab("plan", { sub: "milestones" }),
+      action: "Open milestones",
+    });
+
+  // 8. Data quality: an earlier phase's gate not passed while the project has moved on.
+  const missed = input.gatesNotPassed ?? [];
+  const first = missed[0];
+  if (!input.closed && first?.projectPhase)
+    out.push({
+      id: "gate-not-passed",
+      date: today,
+      tone: "warn",
+      title: `Gate ${first.gatePhase} not passed but project is in Phase ${first.projectPhase}`,
+      detail: `Data quality: ${first.ref} · ${first.title} has no actual date.${
+        missed.length > 1 ? ` ${plural(missed.length - 1, "other earlier gate")} also open.` : ""
+      } Record the gate's actual date or check the project's phase.`,
       link: tab("plan", { sub: "milestones" }),
       action: "Open milestones",
     });
