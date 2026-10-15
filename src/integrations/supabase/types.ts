@@ -1855,6 +1855,27 @@ export type Database = {
             referencedColumns: ["id", "workspace_id"]
           },
           {
+            foreignKeyName: "business_case_versions_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "business_case_versions_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["pending_successor_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "business_case_versions_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["superseded_by_id", "workspace_id"]
+          },
+          {
             foreignKeyName: "business_case_versions_preferred_option_id_id_fkey"
             columns: ["preferred_option_id", "id"]
             isOneToOne: false
@@ -2856,6 +2877,27 @@ export type Database = {
             referencedColumns: ["id", "workspace_id"]
           },
           {
+            foreignKeyName: "decision_actions_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_actions_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["pending_successor_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_actions_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["superseded_by_id", "workspace_id"]
+          },
+          {
             foreignKeyName: "decision_actions_owner_id_organisation_id_fkey"
             columns: ["owner_id", "organisation_id"]
             isOneToOne: false
@@ -2979,6 +3021,27 @@ export type Database = {
             referencedColumns: ["id", "workspace_id"]
           },
           {
+            foreignKeyName: "decision_benefits_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_benefits_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["pending_successor_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_benefits_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["superseded_by_id", "workspace_id"]
+          },
+          {
             foreignKeyName: "decision_benefits_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
@@ -3074,6 +3137,27 @@ export type Database = {
             referencedColumns: ["id", "workspace_id"]
           },
           {
+            foreignKeyName: "decision_change_requests_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_change_requests_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["pending_successor_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_change_requests_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["superseded_by_id", "workspace_id"]
+          },
+          {
             foreignKeyName: "decision_change_requests_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
@@ -3162,6 +3246,27 @@ export type Database = {
             referencedColumns: ["id", "workspace_id"]
           },
           {
+            foreignKeyName: "decision_dependencies_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_dependencies_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["pending_successor_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_dependencies_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["superseded_by_id", "workspace_id"]
+          },
+          {
             foreignKeyName: "decision_dependencies_dependency_id_workspace_id_fkey"
             columns: ["dependency_id", "workspace_id"]
             isOneToOne: false
@@ -3233,6 +3338,169 @@ export type Database = {
           },
         ]
       }
+      decision_events: {
+        Row: {
+          actor_id: string | null
+          changes: Json | null
+          created_at: string
+          decided_by_resource_id: string | null
+          decision_id: string
+          event_date: string
+          event_type: Database["public"]["Enums"]["decision_event_type"]
+          forum_id: string | null
+          forum_list: string | null
+          id: string
+          new_needed_by: string | null
+          organisation_id: string
+          previous_needed_by: string | null
+          project_id: string | null
+          reason: string | null
+          workspace_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          changes?: Json | null
+          created_at?: string
+          decided_by_resource_id?: string | null
+          decision_id: string
+          event_date: string
+          event_type: Database["public"]["Enums"]["decision_event_type"]
+          forum_id?: string | null
+          forum_list?: string | null
+          id?: string
+          new_needed_by?: string | null
+          organisation_id: string
+          previous_needed_by?: string | null
+          project_id?: string | null
+          reason?: string | null
+          workspace_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          changes?: Json | null
+          created_at?: string
+          decided_by_resource_id?: string | null
+          decision_id?: string
+          event_date?: string
+          event_type?: Database["public"]["Enums"]["decision_event_type"]
+          forum_id?: string | null
+          forum_list?: string | null
+          id?: string
+          new_needed_by?: string | null
+          organisation_id?: string
+          previous_needed_by?: string | null
+          project_id?: string | null
+          reason?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decision_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decision_events_decided_by_resource_id_organisation_id_fkey"
+            columns: ["decided_by_resource_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "decision_events_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "decisions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_events_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_events_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["pending_successor_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_events_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["superseded_by_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_events_forum_id_organisation_id_forum_list_fkey"
+            columns: ["forum_id", "organisation_id", "forum_list"]
+            isOneToOne: false
+            referencedRelation: "lookup_values"
+            referencedColumns: ["id", "organisation_id", "list_key"]
+          },
+          {
+            foreignKeyName: "decision_events_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_events_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_events_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_events_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_financials"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_events_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_events_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_task_stats"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_events_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_events_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       decision_issues: {
         Row: {
           decision_id: string
@@ -3262,6 +3530,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "decisions"
             referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_issues_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_issues_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["pending_successor_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_issues_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["superseded_by_id", "workspace_id"]
           },
           {
             foreignKeyName: "decision_issues_issue_id_workspace_id_fkey"
@@ -3328,6 +3617,129 @@ export type Database = {
           },
         ]
       }
+      decision_milestones: {
+        Row: {
+          decision_id: string
+          milestone_id: string
+          organisation_id: string
+          project_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          decision_id: string
+          milestone_id: string
+          organisation_id: string
+          project_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          decision_id?: string
+          milestone_id?: string
+          organisation_id?: string
+          project_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decision_milestones_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "decisions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_milestones_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_milestones_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["pending_successor_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_milestones_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["superseded_by_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_milestones_milestone_id_workspace_id_fkey"
+            columns: ["milestone_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "milestones"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_milestones_milestone_id_workspace_id_fkey"
+            columns: ["milestone_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_milestones"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_milestones_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_milestones_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_milestones_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_milestones_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_financials"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_milestones_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_milestones_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_task_stats"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_milestones_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_milestones_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       decision_options: {
         Row: {
           cons: string[]
@@ -3385,6 +3797,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "decisions"
             referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_options_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_options_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["pending_successor_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_options_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["superseded_by_id", "workspace_id"]
           },
           {
             foreignKeyName: "decision_options_project_id_workspace_id_fkey"
@@ -3475,6 +3908,27 @@ export type Database = {
             referencedColumns: ["id", "workspace_id"]
           },
           {
+            foreignKeyName: "decision_risks_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_risks_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["pending_successor_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decision_risks_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["superseded_by_id", "workspace_id"]
+          },
+          {
             foreignKeyName: "decision_risks_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
@@ -3545,6 +3999,8 @@ export type Database = {
           context: string | null
           created_at: string
           created_by: string | null
+          decided_by_forum_id: string | null
+          decided_by_resource_id: string | null
           decision_date: string | null
           decision_maker_id: string | null
           evidence_link: string | null
@@ -3565,6 +4021,8 @@ export type Database = {
           programme_id: string | null
           project_id: string | null
           rationale: string | null
+          recorded_at: string | null
+          recorded_by: string | null
           ref: string
           status: Database["public"]["Enums"]["decision_status"]
           supersedes_id: string | null
@@ -3577,6 +4035,8 @@ export type Database = {
           context?: string | null
           created_at?: string
           created_by?: string | null
+          decided_by_forum_id?: string | null
+          decided_by_resource_id?: string | null
           decision_date?: string | null
           decision_maker_id?: string | null
           evidence_link?: string | null
@@ -3597,6 +4057,8 @@ export type Database = {
           programme_id?: string | null
           project_id?: string | null
           rationale?: string | null
+          recorded_at?: string | null
+          recorded_by?: string | null
           ref: string
           status?: Database["public"]["Enums"]["decision_status"]
           supersedes_id?: string | null
@@ -3609,6 +4071,8 @@ export type Database = {
           context?: string | null
           created_at?: string
           created_by?: string | null
+          decided_by_forum_id?: string | null
+          decided_by_resource_id?: string | null
           decision_date?: string | null
           decision_maker_id?: string | null
           evidence_link?: string | null
@@ -3629,6 +4093,8 @@ export type Database = {
           programme_id?: string | null
           project_id?: string | null
           rationale?: string | null
+          recorded_at?: string | null
+          recorded_by?: string | null
           ref?: string
           status?: Database["public"]["Enums"]["decision_status"]
           supersedes_id?: string | null
@@ -3650,6 +4116,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decisions_decided_by_forum_fkey"
+            columns: ["decided_by_forum_id", "organisation_id", "forum_list"]
+            isOneToOne: false
+            referencedRelation: "lookup_values"
+            referencedColumns: ["id", "organisation_id", "list_key"]
+          },
+          {
+            foreignKeyName: "decisions_decided_by_resource_fkey"
+            columns: ["decided_by_resource_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id", "organisation_id"]
           },
           {
             foreignKeyName: "decisions_decision_maker_id_organisation_id_fkey"
@@ -3757,11 +4237,39 @@ export type Database = {
             referencedColumns: ["id", "workspace_id"]
           },
           {
+            foreignKeyName: "decisions_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "decisions_supersedes_id_workspace_id_fkey"
             columns: ["supersedes_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "decisions"
             referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_supersedes_id_workspace_id_fkey"
+            columns: ["supersedes_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_supersedes_id_workspace_id_fkey"
+            columns: ["supersedes_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["pending_successor_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_supersedes_id_workspace_id_fkey"
+            columns: ["supersedes_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["superseded_by_id", "workspace_id"]
           },
           {
             foreignKeyName: "decisions_workspace_id_organisation_id_fkey"
@@ -4756,6 +5264,124 @@ export type Database = {
           },
           {
             foreignKeyName: "financial_values_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      gate_checklist_ticks: {
+        Row: {
+          criterion_id: string
+          id: string
+          milestone_id: string
+          organisation_id: string
+          project_id: string
+          ticked_at: string
+          ticked_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          criterion_id: string
+          id?: string
+          milestone_id: string
+          organisation_id: string
+          project_id: string
+          ticked_at?: string
+          ticked_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          criterion_id?: string
+          id?: string
+          milestone_id?: string
+          organisation_id?: string
+          project_id?: string
+          ticked_at?: string
+          ticked_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gate_checklist_ticks_criterion_id_organisation_id_fkey"
+            columns: ["criterion_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "gate_criteria"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "gate_checklist_ticks_milestone_id_project_id_fkey"
+            columns: ["milestone_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "milestones"
+            referencedColumns: ["id", "project_id"]
+          },
+          {
+            foreignKeyName: "gate_checklist_ticks_milestone_id_project_id_fkey"
+            columns: ["milestone_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "v_milestones"
+            referencedColumns: ["id", "project_id"]
+          },
+          {
+            foreignKeyName: "gate_checklist_ticks_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "gate_checklist_ticks_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "gate_checklist_ticks_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "gate_checklist_ticks_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_financials"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "gate_checklist_ticks_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "gate_checklist_ticks_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_task_stats"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "gate_checklist_ticks_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "gate_checklist_ticks_ticked_by_fkey"
+            columns: ["ticked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gate_checklist_ticks_workspace_id_organisation_id_fkey"
             columns: ["workspace_id", "organisation_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -9357,6 +9983,138 @@ export type Database = {
           },
         ]
       }
+      status_report_decisions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          decision_id: string
+          organisation_id: string
+          project_id: string
+          sort_order: number
+          status_report_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          decision_id: string
+          organisation_id: string
+          project_id: string
+          sort_order?: number
+          status_report_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          decision_id?: string
+          organisation_id?: string
+          project_id?: string
+          sort_order?: number
+          status_report_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "status_report_decisions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "status_report_decisions_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "decisions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "status_report_decisions_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "status_report_decisions_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["pending_successor_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "status_report_decisions_decision_id_workspace_id_fkey"
+            columns: ["decision_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["superseded_by_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "status_report_decisions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "status_report_decisions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "status_report_decisions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "status_report_decisions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_financials"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "status_report_decisions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "status_report_decisions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_task_stats"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "status_report_decisions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "status_report_decisions_status_report_id_project_id_fkey"
+            columns: ["status_report_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "status_reports"
+            referencedColumns: ["id", "project_id"]
+          },
+          {
+            foreignKeyName: "status_report_decisions_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       status_reports: {
         Row: {
           accomplished: string | null
@@ -11358,6 +12116,247 @@ export type Database = {
           },
         ]
       }
+      v_decisions: {
+        Row: {
+          chosen_option_id: string | null
+          context: string | null
+          created_at: string | null
+          created_by: string | null
+          days_overdue: number | null
+          decided_by_forum_id: string | null
+          decided_by_resource_id: string | null
+          decision_date: string | null
+          decision_maker_id: string | null
+          deferral_count: number | null
+          evidence_link: string | null
+          forum_id: string | null
+          forum_list: string | null
+          id: string | null
+          impact_benefits: boolean | null
+          impact_benefits_note: string | null
+          impact_cost: boolean | null
+          impact_cost_note: string | null
+          impact_scope: boolean | null
+          impact_scope_note: string | null
+          impact_time: boolean | null
+          impact_time_note: string | null
+          last_deferred_on: string | null
+          needed_by_date: string | null
+          organisation_id: string | null
+          overdue: boolean | null
+          pending_successor_id: string | null
+          pending_successor_ref: string | null
+          portfolio_id: string | null
+          programme_id: string | null
+          project_id: string | null
+          rationale: string | null
+          recorded_at: string | null
+          recorded_by: string | null
+          ref: string | null
+          status: Database["public"]["Enums"]["decision_status"] | null
+          superseded_by_id: string | null
+          superseded_by_ref: string | null
+          superseded_by_status:
+            | Database["public"]["Enums"]["decision_status"]
+            | null
+          supersedes_id: string | null
+          title: string | null
+          today: string | null
+          updated_at: string | null
+          workspace_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decisions_chosen_option_fkey"
+            columns: ["chosen_option_id", "pending_successor_id"]
+            isOneToOne: false
+            referencedRelation: "decision_options"
+            referencedColumns: ["id", "decision_id"]
+          },
+          {
+            foreignKeyName: "decisions_chosen_option_fkey"
+            columns: ["chosen_option_id", "id"]
+            isOneToOne: false
+            referencedRelation: "decision_options"
+            referencedColumns: ["id", "decision_id"]
+          },
+          {
+            foreignKeyName: "decisions_chosen_option_fkey"
+            columns: ["chosen_option_id", "superseded_by_id"]
+            isOneToOne: false
+            referencedRelation: "decision_options"
+            referencedColumns: ["id", "decision_id"]
+          },
+          {
+            foreignKeyName: "decisions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decisions_decided_by_forum_fkey"
+            columns: ["decided_by_forum_id", "organisation_id", "forum_list"]
+            isOneToOne: false
+            referencedRelation: "lookup_values"
+            referencedColumns: ["id", "organisation_id", "list_key"]
+          },
+          {
+            foreignKeyName: "decisions_decided_by_resource_fkey"
+            columns: ["decided_by_resource_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "decisions_decision_maker_id_organisation_id_fkey"
+            columns: ["decision_maker_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "decisions_forum_id_organisation_id_forum_list_fkey"
+            columns: ["forum_id", "organisation_id", "forum_list"]
+            isOneToOne: false
+            referencedRelation: "lookup_values"
+            referencedColumns: ["id", "organisation_id", "list_key"]
+          },
+          {
+            foreignKeyName: "decisions_portfolio_id_workspace_id_fkey"
+            columns: ["portfolio_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "portfolios"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_portfolio_id_workspace_id_fkey"
+            columns: ["portfolio_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_portfolio_financials"
+            referencedColumns: ["portfolio_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_portfolio_id_workspace_id_fkey"
+            columns: ["portfolio_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_portfolio_health"
+            referencedColumns: ["portfolio_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "programmes"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_financials"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_health"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_financials"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_task_stats"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decisions_supersedes_id_workspace_id_fkey"
+            columns: ["supersedes_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "decisions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_supersedes_id_workspace_id_fkey"
+            columns: ["supersedes_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_supersedes_id_workspace_id_fkey"
+            columns: ["supersedes_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["pending_successor_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_supersedes_id_workspace_id_fkey"
+            columns: ["supersedes_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_decisions"
+            referencedColumns: ["superseded_by_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       v_dependency_health: {
         Row: {
           acceptance_state: string | null
@@ -12665,6 +13664,58 @@ export type Database = {
         }
         Returns: string
       }
+      defer_decision: {
+        Args: {
+          p_decision_id: string
+          p_event_date?: string
+          p_expected_updated_at?: string
+          p_forum_id?: string
+          p_new_needed_by: string
+          p_reason: string
+        }
+        Returns: {
+          chosen_option_id: string | null
+          context: string | null
+          created_at: string
+          created_by: string | null
+          decided_by_forum_id: string | null
+          decided_by_resource_id: string | null
+          decision_date: string | null
+          decision_maker_id: string | null
+          evidence_link: string | null
+          forum_id: string | null
+          forum_list: string
+          id: string
+          impact_benefits: boolean
+          impact_benefits_note: string | null
+          impact_cost: boolean
+          impact_cost_note: string | null
+          impact_scope: boolean
+          impact_scope_note: string | null
+          impact_time: boolean
+          impact_time_note: string | null
+          needed_by_date: string | null
+          organisation_id: string
+          portfolio_id: string | null
+          programme_id: string | null
+          project_id: string | null
+          rationale: string | null
+          recorded_at: string | null
+          recorded_by: string | null
+          ref: string
+          status: Database["public"]["Enums"]["decision_status"]
+          supersedes_id: string | null
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "decisions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_portfolio_overview: {
         Args: {
           p_portfolio?: string
@@ -12700,6 +13751,60 @@ export type Database = {
           can_manage_project: boolean
         }[]
       }
+      record_decision: {
+        Args: {
+          p_actions?: Json
+          p_chosen_option_id: string
+          p_decided_by_forum_id?: string
+          p_decided_by_resource_id?: string
+          p_decision_date: string
+          p_decision_id: string
+          p_expected_updated_at?: string
+          p_rationale: string
+        }
+        Returns: {
+          chosen_option_id: string | null
+          context: string | null
+          created_at: string
+          created_by: string | null
+          decided_by_forum_id: string | null
+          decided_by_resource_id: string | null
+          decision_date: string | null
+          decision_maker_id: string | null
+          evidence_link: string | null
+          forum_id: string | null
+          forum_list: string
+          id: string
+          impact_benefits: boolean
+          impact_benefits_note: string | null
+          impact_cost: boolean
+          impact_cost_note: string | null
+          impact_scope: boolean
+          impact_scope_note: string | null
+          impact_time: boolean
+          impact_time_note: string | null
+          needed_by_date: string | null
+          organisation_id: string
+          portfolio_id: string | null
+          programme_id: string | null
+          project_id: string | null
+          rationale: string | null
+          recorded_at: string | null
+          recorded_by: string | null
+          ref: string
+          status: Database["public"]["Enums"]["decision_status"]
+          supersedes_id: string | null
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "decisions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       reopen_financial_period: {
         Args: { p_month: string; p_organisation_id: string; p_reason: string }
         Returns: {
@@ -12716,6 +13821,56 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "financial_periods"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      reverse_decision: {
+        Args: {
+          p_decision_id: string
+          p_event_date?: string
+          p_expected_updated_at?: string
+          p_rationale: string
+        }
+        Returns: {
+          chosen_option_id: string | null
+          context: string | null
+          created_at: string
+          created_by: string | null
+          decided_by_forum_id: string | null
+          decided_by_resource_id: string | null
+          decision_date: string | null
+          decision_maker_id: string | null
+          evidence_link: string | null
+          forum_id: string | null
+          forum_list: string
+          id: string
+          impact_benefits: boolean
+          impact_benefits_note: string | null
+          impact_cost: boolean
+          impact_cost_note: string | null
+          impact_scope: boolean
+          impact_scope_note: string | null
+          impact_time: boolean
+          impact_time_note: string | null
+          needed_by_date: string | null
+          organisation_id: string
+          portfolio_id: string | null
+          programme_id: string | null
+          project_id: string | null
+          rationale: string | null
+          recorded_at: string | null
+          recorded_by: string | null
+          ref: string
+          status: Database["public"]["Enums"]["decision_status"]
+          supersedes_id: string | null
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "decisions"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -12748,6 +13903,152 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "business_case_versions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      submit_status_report: {
+        Args: {
+          p_decision_ids?: string[]
+          p_expected_updated_at?: string
+          p_project_id: string
+          p_report: Json
+          p_report_id?: string
+        }
+        Returns: {
+          accomplished: string | null
+          ai_draft: Json | null
+          comments: string | null
+          created_at: string
+          created_by: string | null
+          decisions_needed: string | null
+          declared_benefit: Database["public"]["Enums"]["health"]
+          effort: Database["public"]["Enums"]["health"]
+          evidenced_benefit: Database["public"]["Enums"]["health"] | null
+          evidenced_effort: Database["public"]["Enums"]["health"] | null
+          evidenced_financial: Database["public"]["Enums"]["health"] | null
+          evidenced_issue: Database["public"]["Enums"]["health"] | null
+          evidenced_overall: Database["public"]["Enums"]["health"] | null
+          evidenced_schedule: Database["public"]["Enums"]["health"] | null
+          financial: Database["public"]["Enums"]["health"]
+          id: string
+          issue: Database["public"]["Enums"]["health"]
+          organisation_id: string
+          overall: Database["public"]["Enums"]["health"]
+          override_reasons: Json
+          planned: string | null
+          project_id: string
+          ref: string
+          reporting_date: string
+          schedule: Database["public"]["Enums"]["health"]
+          source: string
+          status: Database["public"]["Enums"]["status_report_status"]
+          submitted_at: string | null
+          submitter_id: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "status_reports"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      supersede_decision: {
+        Args: {
+          p_decision_id: string
+          p_expected_updated_at?: string
+          p_needed_by: string
+        }
+        Returns: {
+          chosen_option_id: string | null
+          context: string | null
+          created_at: string
+          created_by: string | null
+          decided_by_forum_id: string | null
+          decided_by_resource_id: string | null
+          decision_date: string | null
+          decision_maker_id: string | null
+          evidence_link: string | null
+          forum_id: string | null
+          forum_list: string
+          id: string
+          impact_benefits: boolean
+          impact_benefits_note: string | null
+          impact_cost: boolean
+          impact_cost_note: string | null
+          impact_scope: boolean
+          impact_scope_note: string | null
+          impact_time: boolean
+          impact_time_note: string | null
+          needed_by_date: string | null
+          organisation_id: string
+          portfolio_id: string | null
+          programme_id: string | null
+          project_id: string | null
+          rationale: string | null
+          recorded_at: string | null
+          recorded_by: string | null
+          ref: string
+          status: Database["public"]["Enums"]["decision_status"]
+          supersedes_id: string | null
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "decisions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      withdraw_decision: {
+        Args: {
+          p_decision_id: string
+          p_expected_updated_at?: string
+          p_reason: string
+        }
+        Returns: {
+          chosen_option_id: string | null
+          context: string | null
+          created_at: string
+          created_by: string | null
+          decided_by_forum_id: string | null
+          decided_by_resource_id: string | null
+          decision_date: string | null
+          decision_maker_id: string | null
+          evidence_link: string | null
+          forum_id: string | null
+          forum_list: string
+          id: string
+          impact_benefits: boolean
+          impact_benefits_note: string | null
+          impact_cost: boolean
+          impact_cost_note: string | null
+          impact_scope: boolean
+          impact_scope_note: string | null
+          impact_time: boolean
+          impact_time_note: string | null
+          needed_by_date: string | null
+          organisation_id: string
+          portfolio_id: string | null
+          programme_id: string | null
+          project_id: string | null
+          rationale: string | null
+          recorded_at: string | null
+          recorded_by: string | null
+          ref: string
+          status: Database["public"]["Enums"]["decision_status"]
+          supersedes_id: string | null
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "decisions"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -12792,7 +14093,19 @@ export type Database = {
       confidence: "low" | "medium" | "high"
       conflict_resolution: "kept_planner" | "reapplied"
       criticality: "low" | "medium" | "high"
-      decision_status: "pending" | "made" | "superseded" | "reversed"
+      decision_event_type:
+        | "edited"
+        | "deferred"
+        | "made"
+        | "superseded"
+        | "reversed"
+        | "withdrawn"
+      decision_status:
+        | "pending"
+        | "made"
+        | "superseded"
+        | "reversed"
+        | "withdrawn"
       delivery_status: "on_track" | "future" | "late" | "overdue" | "completed"
       dependency_type:
         | "sequencing"
@@ -13038,7 +14351,21 @@ export const Constants = {
       confidence: ["low", "medium", "high"],
       conflict_resolution: ["kept_planner", "reapplied"],
       criticality: ["low", "medium", "high"],
-      decision_status: ["pending", "made", "superseded", "reversed"],
+      decision_event_type: [
+        "edited",
+        "deferred",
+        "made",
+        "superseded",
+        "reversed",
+        "withdrawn",
+      ],
+      decision_status: [
+        "pending",
+        "made",
+        "superseded",
+        "reversed",
+        "withdrawn",
+      ],
       delivery_status: ["on_track", "future", "late", "overdue", "completed"],
       dependency_type: [
         "sequencing",
