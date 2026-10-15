@@ -57,7 +57,8 @@ export interface ScopeRef {
   workspaceId: string;
 }
 
-export interface ResolvedDecision extends Omit<Decision, "forum" | "projectId" | "programmeId"> {
+export interface ResolvedDecision extends Omit<Decision, "forum" | "projectId" | "programmeId" | "actions"> {
+  actions: Array<DecisionAction & { ownerId: string | null; updatedAt: string }>;
   forum: string;
   forumId: string | null;
   projectId?: string;
@@ -141,7 +142,7 @@ export async function loadGovernance(orgId: string): Promise<GovernanceData> {
            impact_time_note, impact_benefits, impact_benefits_note, evidence_link, supersedes_id,
            decision_maker_id, forum_id, updated_at,
            decision_options!decision_options_decision_id_workspace_id_fkey(id, title, pros, cons, sort_order),
-           decision_actions(id, description, due_date, status, owner_id),
+           decision_actions(id, description, due_date, status, owner_id, updated_at),
            decision_risks(risk_id), decision_issues(issue_id),
            decision_change_requests(change_request_id), decision_dependencies(dependency_id),
            decision_benefits(benefit_id), decision_milestones(milestone_id),
@@ -245,6 +246,8 @@ export async function loadGovernance(orgId: string): Promise<GovernanceData> {
       owner: nameOf(action.owner_id),
       dueDate: action.due_date ?? "",
       status: actionStatusLabel[action.status],
+      ownerId: action.owner_id,
+      updatedAt: action.updated_at,
     }));
     const neededBy = row.needed_by_date ?? "";
     const toNeededBy = daysFromToday(neededBy) ?? 0;
