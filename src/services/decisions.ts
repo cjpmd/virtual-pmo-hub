@@ -68,7 +68,20 @@ export interface ResolvedDecision extends Omit<Decision, "forum" | "projectId" |
   ownerLabel: string;
   scopeName: string;
   programmeName: string;
+  /** From v_decisions: Pending past needed-by, in the organisation's today. */
   overdue: boolean;
+  daysOverdue: number;
+  deferralCount: number;
+  pendingSuccessorId: string | null;
+  pendingSuccessorRef: string | null;
+  supersededByRef: string | null;
+  milestoneIds: string[];
+  decidedByResourceId: string | null;
+  decidedByForumId: string | null;
+  /** "Forum: X" or the person's name, for a recorded decision. */
+  decidedBy: string;
+  recordedBy: string;
+  recordedAt: string | null;
   daysToNeededBy: number;
   latencyDays: number | undefined;
   chosenOption: string;
@@ -117,7 +130,7 @@ export interface GovernanceData {
 }
 
 export async function loadGovernance(orgId: string): Promise<GovernanceData> {
-  const [decisions, assumptions, changes, lookups, projects, programmes, people] =
+  const [decisions, assumptions, changes, lookups, projects, programmes, people, view, profiles] =
     await Promise.all([
       supabase
         .from("decisions")
@@ -131,7 +144,8 @@ export async function loadGovernance(orgId: string): Promise<GovernanceData> {
            decision_actions(id, description, due_date, status, owner_id),
            decision_risks(risk_id), decision_issues(issue_id),
            decision_change_requests(change_request_id), decision_dependencies(dependency_id),
-           decision_benefits(benefit_id)`,
+           decision_benefits(benefit_id), decision_milestones(milestone_id),
+           decided_by_resource_id, decided_by_forum_id, recorded_by, recorded_at`,
         )
         .eq("organisation_id", orgId)
         .order("ref"),
@@ -158,8 +172,20 @@ export async function loadGovernance(orgId: string): Promise<GovernanceData> {
       projectRefs(orgId),
       programmeRefs(orgId),
       listPeople(orgId),
+      supabase
+        .from("v_decisions")
+        .select(
+          "id, overdue, days_overdue, deferral_count, pending_successor_id, pending_successor_ref, superseded_by_id, superseded_by_ref",
+        )
+        .eq("organisation_id", orgId),
+      supabase.from("profiles").select("id, display_name"),
     ]);
 
+  const viewById = new Map(
+    unwrap(view, "Loading decision status").map((row) => [row.id ?? "", row]),
+  );
+  // Profiles outside the user's reach simply don't resolve; the name falls back to "Unknown".
+  const profileName = new Map((profiles.data ?? []).map((row) => [row.id, row.display_name]));
   const names = new Map(people.map((person) => [person.id, person.name]));
   const nameOf = (id: string | null | undefined) => (id && names.get(id)) || "";
   const lookupRows = unwrap(lookups, "Loading lists");
@@ -234,6 +260,8 @@ export async function loadGovernance(orgId: string): Promise<GovernanceData> {
       (key) => impact[key].impacted,
     );
     const status = decisionStatusLabel[row.status];
+    const extra = viewById.get(row.id);
+    const forumName = label.get(row.decided_by_forum_id ?? "");
     return {
       id: row.id,
       reference: row.ref,
@@ -265,7 +293,21 @@ export async function loadGovernance(orgId: string): Promise<GovernanceData> {
       ownerLabel: nameOf(row.decision_maker_id),
       scopeName: scope.scopeName,
       programmeName: scope.programmeName,
-      overdue: status === "Pending" && toNeededBy < 0,
+      overdue: Boolean(extra?.overdue),
+      daysOverdue: extra?.days_overdue ?? 0,
+      deferralCount: extra?.deferral_count ?? 0,
+      pendingSuccessorId: extra?.pending_successor_id ?? null,
+      pendingSuccessorRef: extra?.pending_successor_ref ?? null,
+      supersededByRef: extra?.superseded_by_ref ?? null,
+      ...(extra?.superseded_by_id && { supersededById: extra.superseded_by_id }),
+      milestoneIds: (row.decision_milestones ?? []).map((link) => link.milestone_id),
+      decidedByResourceId: row.decided_by_resource_id,
+      decidedByForumId: row.decided_by_forum_id,
+      decidedBy: forumName
+        ? `Forum: ${forumName}`
+        : nameOf(row.decided_by_resource_id) || "",
+      recordedBy: (row.recorded_by && profileName.get(row.recorded_by)) || "",
+      recordedAt: row.recorded_at,
       daysToNeededBy: toNeededBy,
       latencyDays: latency,
       chosenOption: options.find((option) => option.id === row.chosen_option_id)?.title ?? "—",
@@ -276,14 +318,6 @@ export async function loadGovernance(orgId: string): Promise<GovernanceData> {
       updatedAt: row.updated_at,
     };
   });
-  // supersededById is derived: only supersedes_id is stored. A Pending or Withdrawn successor
-  // hasn't replaced the original yet (as v_decisions.superseded_by_id).
-  for (const decision of decisionViews)
-    if (decision.supersedesId && decision.status !== "Pending" && decision.status !== "Withdrawn") {
-      const older = decisionViews.find((item) => item.id === decision.supersedesId);
-      if (older) older.supersededById = decision.id;
-    }
-
   return {
     decisions: decisionViews,
     assumptions: unwrap(assumptions, "Loading assumptions").map((row): ResolvedAssumption => {
