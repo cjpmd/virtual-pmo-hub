@@ -127,7 +127,7 @@ export interface GovernanceData {
     workspaceId: string;
     portfolioId: string | null;
   }>;
-  programmes: Array<{ id: string; name: string }>;
+  programmes: Array<{ id: string; name: string; workspace_id: string }>;
 }
 
 export async function loadGovernance(orgId: string): Promise<GovernanceData> {
