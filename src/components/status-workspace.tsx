@@ -493,7 +493,7 @@ function ReportPanel({
             </div>
           )}
         </div>
-        <div className="flex justify-end gap-2 border-t border-border px-5 py-4 sm:px-7">
+        <div className="flex flex-wrap justify-end gap-2 border-t border-border px-5 py-4 sm:px-7">
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel
           </Button>
