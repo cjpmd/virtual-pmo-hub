@@ -1,5 +1,4 @@
 import { Fragment, useState } from "react";
-import { Link } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { ProjectRowPanel } from "@/components/overview/project-row-panel";
 import type { Health } from "@/data/types";
@@ -255,7 +254,7 @@ export function ProjectWatchlist({
                       <Fragment key={row.id}>
                         <tr
                           // The chevron button is the keyboard control; a click anywhere else on the
-                          // row toggles too, except the project name, which opens the project.
+                          // row toggles too, including the project name; only "Open project" navigates.
                           onClick={() => onToggle(row.code)}
                           className="cursor-pointer border-t border-pmo-line hover:bg-pmo-panel-2/40"
                         >
@@ -277,14 +276,18 @@ export function ProjectWatchlist({
                                 <ChevronRight className="size-3.5" aria-hidden />
                               )}
                             </button>
-                            <Link
-                              to="/portfolio/projects/$projectCode"
-                              params={{ projectCode: row.code }}
-                              onClick={(event) => event.stopPropagation()}
-                              className="rounded outline-none hover:underline focus-visible:ring-2 focus-visible:ring-pmo-accent"
+                            <button
+                              type="button"
+                              aria-expanded={isOpen}
+                              aria-controls={panelId}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                onToggle(row.code);
+                              }}
+                              className="rounded text-left outline-none hover:underline focus-visible:ring-2 focus-visible:ring-pmo-accent"
                             >
                               {row.name}
-                            </Link>
+                            </button>
                           </td>
                           <td className="px-2 py-2">
                             <ReportData declared={row.declared} evidenced={row.evidenced} />
