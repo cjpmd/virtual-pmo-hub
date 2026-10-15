@@ -927,4 +927,10 @@ export const assumptions: Assumption[] = assumptionSeeds.map((seed, index) => ({
   ...(seed.notes ? { notes: seed.notes } : {}),
 }));
 
-export const decisionStatuses: DecisionStatus[] = ["Pending", "Made", "Superseded", "Reversed"];
+export const decisionStatuses: DecisionStatus[] = [
+  "Pending",
+  "Made",
+  "Superseded",
+  "Reversed",
+  "Withdrawn",
+];
