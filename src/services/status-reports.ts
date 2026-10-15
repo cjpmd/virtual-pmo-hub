@@ -117,33 +117,48 @@ export interface StatusReportInput {
   expectedUpdatedAt?: string | undefined;
 }
 
+// The report fields both RPCs take (submit_status_report, save_status_report_draft).
+const reportPayload = (input: StatusReportInput): Json => ({
+  reporting_date: todayIso(),
+  submitter_id: input.submitterId,
+  overall: healthValue[input.health.overall],
+  schedule: healthValue[input.health.schedule],
+  financial: healthValue[input.health.financial],
+  effort: healthValue[input.health.effort],
+  issue: healthValue[input.health.issue],
+  accomplished: input.accomplished,
+  planned: input.planned,
+  comments: input.comments || null,
+  decisions_needed: input.legacyNotes?.trim() || null,
+  override_reasons: input.overrideReasons as Json,
+  ai_draft: (input.aiDraft ?? null) as Json,
+});
+
+const reportArgs = (input: StatusReportInput) => ({
+  p_project_id: input.projectId,
+  p_report: reportPayload(input),
+  p_decision_ids: input.decisionIds ?? [],
+  ...(input.reportId ? { p_report_id: input.reportId } : {}),
+  ...(input.expectedUpdatedAt ? { p_expected_updated_at: input.expectedUpdatedAt } : {}),
+});
+
 /** Submits a report and its decision links in one transaction (submit_status_report RPC): a new
  * report is inserted as submitted, a draft (reportId) moves to submitted. Links are frozen once
  * the report is submitted. */
 export async function submitStatusReport(input: StatusReportInput) {
   return unwrap(
-    await supabase.rpc("submit_status_report", {
-      p_project_id: input.projectId,
-      p_report: {
-        reporting_date: todayIso(),
-        submitter_id: input.submitterId,
-        overall: healthValue[input.health.overall],
-        schedule: healthValue[input.health.schedule],
-        financial: healthValue[input.health.financial],
-        effort: healthValue[input.health.effort],
-        issue: healthValue[input.health.issue],
-        accomplished: input.accomplished,
-        planned: input.planned,
-        comments: input.comments || null,
-        decisions_needed: input.legacyNotes?.trim() || null,
-        override_reasons: input.overrideReasons as Json,
-        ai_draft: (input.aiDraft ?? null) as Json,
-      },
-      p_decision_ids: input.decisionIds ?? [],
-      ...(input.reportId ? { p_report_id: input.reportId } : {}),
-      ...(input.expectedUpdatedAt ? { p_expected_updated_at: input.expectedUpdatedAt } : {}),
-    }),
+    await supabase.rpc("submit_status_report", reportArgs(input)),
     "Submitting the status report",
+  );
+}
+
+/** Saves a draft report and its decision links (save_status_report_draft RPC): a new draft is
+ * inserted, an existing one (reportId) is updated and stays a draft. No evidence is captured
+ * until the draft is submitted. */
+export async function saveStatusReportDraft(input: StatusReportInput) {
+  return unwrap(
+    await supabase.rpc("save_status_report_draft", reportArgs(input)),
+    "Saving the draft",
   );
 }
 

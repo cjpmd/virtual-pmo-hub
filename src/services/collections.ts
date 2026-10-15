@@ -94,6 +94,7 @@ export async function loadPackProjects(
       .from("status_reports")
       .select("project_id, reporting_date, accomplished, planned, comments, created_at")
       .in("project_id", projectIds)
+      .eq("status", "submitted")
       .order("reporting_date", { ascending: false })
       .order("created_at", { ascending: false }),
   ]);

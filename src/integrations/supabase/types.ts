@@ -13875,6 +13875,54 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      save_status_report_draft: {
+        Args: {
+          p_decision_ids?: string[]
+          p_expected_updated_at?: string
+          p_project_id: string
+          p_report: Json
+          p_report_id?: string
+        }
+        Returns: {
+          accomplished: string | null
+          ai_draft: Json | null
+          comments: string | null
+          created_at: string
+          created_by: string | null
+          decisions_needed: string | null
+          declared_benefit: Database["public"]["Enums"]["health"]
+          effort: Database["public"]["Enums"]["health"]
+          evidenced_benefit: Database["public"]["Enums"]["health"] | null
+          evidenced_effort: Database["public"]["Enums"]["health"] | null
+          evidenced_financial: Database["public"]["Enums"]["health"] | null
+          evidenced_issue: Database["public"]["Enums"]["health"] | null
+          evidenced_overall: Database["public"]["Enums"]["health"] | null
+          evidenced_schedule: Database["public"]["Enums"]["health"] | null
+          financial: Database["public"]["Enums"]["health"]
+          id: string
+          issue: Database["public"]["Enums"]["health"]
+          organisation_id: string
+          overall: Database["public"]["Enums"]["health"]
+          override_reasons: Json
+          planned: string | null
+          project_id: string
+          ref: string
+          reporting_date: string
+          schedule: Database["public"]["Enums"]["health"]
+          source: string
+          status: Database["public"]["Enums"]["status_report_status"]
+          submitted_at: string | null
+          submitter_id: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "status_reports"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       start_business_case_version: {
         Args: { p_business_case_id: string }
         Returns: string

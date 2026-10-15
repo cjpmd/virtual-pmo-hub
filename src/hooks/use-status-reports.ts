@@ -5,6 +5,7 @@ import {
   addDraftDecisionLink,
   listStatusReports,
   removeDraftDecisionLink,
+  saveStatusReportDraft,
   submitStatusReport,
 } from "@/services/status-reports";
 import { qk } from "@/services/query-keys";
@@ -32,6 +33,19 @@ export function useSubmitStatusReport() {
           queryKey: qk.projects.statusReports(orgId, input.projectId),
         }),
       ]),
+  });
+}
+
+/** Save a draft report (save_status_report_draft); reloads the project's reports. */
+export function useSaveStatusReportDraft() {
+  const orgId = useOrgId();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: saveStatusReportDraft,
+    onSettled: (_data, _error, input) =>
+      queryClient.invalidateQueries({
+        queryKey: qk.projects.statusReports(orgId, input.projectId),
+      }),
   });
 }
 

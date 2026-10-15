@@ -254,6 +254,11 @@ Spec: `docs/design/project-overview-spec.md` (components, data rules, option A c
 - The Governance › RAIDD board still offers a status edit, which the database now refuses
   (brief §4 makes it read-only).
 - The Supabase MCP `execute_sql` hangs on a statement containing DELETE; dry runs avoid it.
+- 15/10/2026: Lovable built the decision log UI (reviewed against the brief). Added
+  `save_status_report_draft` (migration `20261015091539`, proposal and dry run in
+  `docs/sql/save-status-report-draft.sql`) and a Save draft button on the status report form.
+  Client reads of the latest report (committee packs, project list last-report date, status
+  trend and activity feed) now skip drafts.
 
 ## Pre-launch security task: review signed-in RPCs and business case FK indexes
 
