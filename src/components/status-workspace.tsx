@@ -30,7 +30,15 @@ import {
   useProjectPermissions,
   useRaid,
 } from "@/hooks/use-hierarchy";
-import { useStatusReports, useSubmitStatusReport } from "@/hooks/use-status-reports";
+import {
+  useDraftDecisionLink,
+  useStatusReports,
+  useSubmitStatusReport,
+} from "@/hooks/use-status-reports";
+import { useGovernance } from "@/hooks/use-governance";
+import { DecisionPanel } from "@/components/decision-panel";
+import type { ResolvedDecision } from "@/services/decisions";
+import { errorMessage } from "@/services/service-error";
 import { useProjectTasks } from "@/hooks/use-work-items";
 import { useOrganisation } from "@/components/auth/organisation-provider";
 import { fromIsoDate } from "@/lib/format";
@@ -187,7 +195,19 @@ function ReportPanel({
   pending,
   onClose,
   onSubmit,
+  projectId,
+  workspaceId,
+  draft,
+  pendingDecisions,
+  allDecisions,
 }: {
+  projectId: string;
+  workspaceId: string;
+  /** An existing draft being finished; its decision links save as they change. */
+  draft?: StatusReport | undefined;
+  /** Pending decisions on this project (pickable). */
+  pendingDecisions: ResolvedDecision[];
+  allDecisions: ResolvedDecision[];
   open: boolean;
   calculated: HealthSet;
   tasks: Task[];
@@ -199,9 +219,31 @@ function ReportPanel({
 }) {
   const [health, setHealth] = useState<HealthSet>(calculated);
   const [reasons, setReasons] = useState<Reasons>({});
-  const [accomplished, setAccomplished] = useState("");
-  const [planned, setPlanned] = useState("");
-  const [comments, setComments] = useState("");
+  const [accomplished, setAccomplished] = useState(draft?.accomplished ?? "");
+  const [planned, setPlanned] = useState(draft?.planned ?? "");
+  const [comments, setComments] = useState(draft?.comments ?? "");
+  const [legacyNotes, setLegacyNotes] = useState(draft?.legacyNotes ?? "");
+  const [decisionIds, setDecisionIds] = useState<string[]>(draft?.decisionIds ?? []);
+  const [creatingDecision, setCreatingDecision] = useState(false);
+  const draftLink = useDraftDecisionLink(projectId);
+  const toggleDecision = async (id: string, on: boolean) => {
+    if (draft) {
+      try {
+        await draftLink.mutateAsync({
+          reportId: draft.id,
+          decisionId: id,
+          sortOrder: on ? decisionIds.length : 0,
+          add: on,
+        });
+      } catch (error) {
+        toast.error(errorMessage(error));
+        return;
+      }
+    }
+    setDecisionIds((current) =>
+      on ? [...current.filter((item) => item !== id), id] : current.filter((item) => item !== id),
+    );
+  };
   const [attempted, setAttempted] = useState(false);
   const missingReasons = dimensions.filter(
     ({ key }) => health[key] !== calculated[key] && !reasons[key]?.trim(),
@@ -216,6 +258,10 @@ function ReportPanel({
       planned: planned.trim(),
       comments: comments.trim(),
       aiDraft,
+      legacyNotes,
+      // Every link shown is sent, in display order (the RPC refuses a draft link left out).
+      decisionIds,
+      ...(draft && { reportId: draft.id, expectedUpdatedAt: draft.updatedAt }),
       overrideReasons: Object.fromEntries(
         dimensions
           .filter(({ key }) => health[key] !== calculated[key])
@@ -255,7 +301,7 @@ function ReportPanel({
         <div className="flex items-start justify-between border-b border-border px-5 py-4 sm:px-7">
           <div>
             <h2 id="new-report-title" className="font-display text-xl font-semibold">
-              New status report
+              {draft ? `Finish draft ${draft.ref}` : "New status report"}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Reporting date {formatDate(todayIso())} · {submitter}
@@ -337,6 +383,80 @@ function ReportPanel({
               />
             </div>
           </section>
+          <section className="space-y-3 border-t border-border pt-6" aria-labelledby="decisions-needed">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 id="decisions-needed" className="text-sm font-semibold">
+                  Decisions needed
+                </h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Pick the project's Pending decisions this report asks for, in order.
+                </p>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={() => setCreatingDecision(true)}>
+                <Plus className="size-4" />
+                New decision
+              </Button>
+            </div>
+            {decisionIds.length > 0 && (
+              <ol className="space-y-1.5 text-sm">
+                {decisionIds.map((id, index) => {
+                  const item = allDecisions.find((decision) => decision.id === id);
+                  return (
+                    <li key={id} className="flex items-center justify-between gap-2 rounded-md border px-3 py-2">
+                      <span>
+                        {index + 1}. {item ? `${item.reference} · ${item.title}` : "Decision"}
+                        {item?.overdue ? " · overdue" : ""}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Remove ${item?.reference ?? "decision"}`}
+                        disabled={draftLink.isPending}
+                        onClick={() => void toggleDecision(id, false)}
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+            <fieldset className="space-y-1">
+              <legend className="text-xs font-semibold text-muted-foreground">Pending decisions</legend>
+              {pendingDecisions.map((item) => (
+                <label key={item.id} className="flex items-start gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    disabled={draftLink.isPending}
+                    checked={decisionIds.includes(item.id)}
+                    onChange={(event) => void toggleDecision(item.id, event.target.checked)}
+                  />
+                  <span>
+                    {item.reference} · {item.title}
+                    <span className="block text-xs text-muted-foreground">
+                      Needed by {formatDate(item.neededBy)}
+                      {item.overdue ? ` · overdue ${item.daysOverdue} days` : ""}
+                    </span>
+                  </span>
+                </label>
+              ))}
+              {!pendingDecisions.length && (
+                <p className="text-sm text-muted-foreground">No Pending decisions on this project.</p>
+              )}
+            </fieldset>
+            <div className="space-y-2">
+              <Label htmlFor="legacy-notes">Legacy notes (optional)</Label>
+              <Textarea
+                id="legacy-notes"
+                rows={2}
+                value={legacyNotes}
+                onChange={(event) => setLegacyNotes(event.target.value)}
+              />
+            </div>
+          </section>
           {attempted && (missingReasons.length > 0 || !accomplished.trim() || !planned.trim()) && (
             <div
               role="alert"
@@ -350,12 +470,25 @@ function ReportPanel({
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel
           </Button>
+          {/* TODO: "Save draft" goes here once a create-draft RPC exists; reports must not be
+              written to status_reports directly. */}
           <Button type="button" disabled={pending} onClick={submit}>
             <Check className="size-4" />
             Submit report
           </Button>
         </div>
       </aside>
+      {creatingDecision && (
+        <DecisionPanel
+          all={allDecisions}
+          createScope={{ projectId, workspaceId }}
+          close={() => setCreatingDecision(false)}
+          onCreated={(id) => {
+            setCreatingDecision(false);
+            void toggleDecision(id, true);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -385,6 +518,13 @@ function Status({
   calculated: HealthSet;
 }) {
   const [panelOpen, setPanelOpen] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const draft = reports.find((report) => report.id === draftId && report.isDraft);
+  const governance = useGovernance();
+  const allDecisions = governance.data?.decisions ?? [];
+  const pendingDecisions = allDecisions.filter(
+    (item) => item.projectId === project.id && item.status === "Pending",
+  );
   const { canEdit } = useProjectPermissions(project.id);
   const { profile } = useOrganisation();
   const me = useMyResourceId();
@@ -434,6 +574,7 @@ function Status({
         onSuccess: () => {
           toast.success("Status report submitted");
           setPanelOpen(false);
+          setDraftId(null);
         },
         onError: (error) => toast.error(error.message),
       },
@@ -449,7 +590,12 @@ function Status({
           </p>
         </div>
         {canEdit && (
-          <Button onClick={() => setPanelOpen(true)}>
+          <Button
+            onClick={() => {
+              setDraftId(null);
+              setPanelOpen(true);
+            }}
+          >
             <Plus className="size-4" />
             New status report
           </Button>
@@ -496,7 +642,9 @@ function Status({
         <div className="mb-4 flex items-center gap-2">
           <Clock3 className="size-4 text-primary" />
           <h3 className="font-display text-lg font-semibold">Report timeline</h3>
-          <span className="text-sm text-muted-foreground">{reports.length} submitted</span>
+          <span className="text-sm text-muted-foreground">
+            {reports.filter((report) => !report.isDraft).length} submitted
+          </span>
         </div>
         <div className="relative space-y-4 before:absolute before:bottom-4 before:left-4 before:top-4 before:w-px before:bg-border sm:before:left-5">
           {reports.map((report, index) => {
@@ -519,7 +667,12 @@ function Status({
                     <div className="flex items-center gap-2">
                       <CalendarDays className="size-4 text-muted-foreground" />
                       <h4 className="font-semibold">{formatDate(report.reportingDate)}</h4>
-                      {index === 0 && (
+                      {report.isDraft && (
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground">
+                          Draft
+                        </span>
+                      )}
+                      {index === 0 && !report.isDraft && (
                         <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold uppercase text-accent-foreground">
                           Latest
                         </span>
@@ -591,6 +744,37 @@ function Status({
                     </p>
                   </details>
                 )}
+                {(report.decisionIds.length > 0 || report.legacyNotes) && (
+                  <div className="mt-4 border-t border-border pt-4">
+                    <p className="text-xs font-semibold">Decisions needed</p>
+                    <ul className="mt-1 space-y-1 text-sm text-muted-foreground">
+                      {report.decisionIds.map((id) => {
+                        const item = allDecisions.find((decision) => decision.id === id);
+                        return (
+                          <li key={id}>
+                            {item ? `${item.reference} · ${item.title} · ${item.status}` : "Decision"}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    {report.legacyNotes && (
+                      <p className="mt-1 text-sm text-muted-foreground">{report.legacyNotes}</p>
+                    )}
+                  </div>
+                )}
+                {report.isDraft && canEdit && (
+                  <Button
+                    className="mt-4"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setDraftId(report.id);
+                      setPanelOpen(true);
+                    }}
+                  >
+                    Finish draft
+                  </Button>
+                )}
                 {report.comments && (
                   <div className="mt-4 border-t border-border pt-4">
                     <p className="text-xs font-semibold">Comments</p>
@@ -603,14 +787,22 @@ function Status({
         </div>
       </section>
       <ReportPanel
-        key={panelOpen ? "open" : "closed"}
+        key={panelOpen ? `open-${draftId ?? "new"}` : "closed"}
         open={panelOpen}
+        projectId={project.id}
+        workspaceId={project.workspaceId}
+        draft={draft}
+        pendingDecisions={pendingDecisions}
+        allDecisions={allDecisions}
         calculated={calculated}
         tasks={tasks.data?.tasks ?? []}
         evidence={evidence}
         submitter={profile.displayName}
         pending={submitReport.isPending}
-        onClose={() => setPanelOpen(false)}
+        onClose={() => {
+          setPanelOpen(false);
+          setDraftId(null);
+        }}
         onSubmit={submit}
       />
     </div>

@@ -109,6 +109,19 @@ export interface LatestReport {
   declared: Record<HealthDimension, Health>;
   /** Evidence captured when the report was submitted. */
   evidenced: Record<HealthDimension, Health>;
+  /** Project code, for links into the project page. */
+  projectCode: string;
+  /** Decisions linked to this report (status_report_decisions), in report order. */
+  decisions: LinkedReportDecision[];
+}
+
+export interface LinkedReportDecision {
+  id: string;
+  ref: string;
+  title: string;
+  status: string;
+  neededBy: string | null;
+  overdue: boolean;
 }
 
 export interface RiskBand {
@@ -232,6 +245,14 @@ interface RpcPayload {
       declared_benefit: string | null;
     }
   >;
+  latestReportDecisions?: Array<{
+    id: string;
+    ref: string;
+    title: string;
+    status: string;
+    needed_by_date: string | null;
+    overdue: boolean | null;
+  }>;
   latestReport: {
     id: string;
     reporting_date: string;
@@ -413,6 +434,15 @@ export async function getProjectOverviewData(
       decisionsNeeded: rpc.latestReport.decisions_needed,
       declared: dims((d) => rpc.latestReport?.[`declared_${d}`] ?? null),
       evidenced: dims((d) => rpc.latestReport?.[`evidenced_${d}`] ?? null),
+      projectCode: rpc.project.code,
+      decisions: (rpc.latestReportDecisions ?? []).map((row) => ({
+        id: row.id,
+        ref: row.ref,
+        title: row.title,
+        status: row.status.charAt(0).toUpperCase() + row.status.slice(1),
+        neededBy: row.needed_by_date,
+        overdue: Boolean(row.overdue),
+      })),
     },
     riskBands: rpc.riskBands
       .map((band) => ({ label: band.label ?? "", minScore: Number(band.minScore) }))

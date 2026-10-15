@@ -145,6 +145,10 @@ interface BoardProps {
   onRecordChange?: (change: BoardRecordChange) => void;
   /** False hides Delete (e.g. the user may edit but not delete). Defaults to true. */ canDelete?: boolean;
   /** False hides New (records created elsewhere). Defaults to true. */ canCreate?: boolean;
+  /** Open a row in the caller's own detail view instead of the built-in item panel. */
+  onOpenRow?: (row: BoardRow) => void;
+  /** False makes every cell of that row read-only (e.g. a recorded decision). */
+  rowEditable?: (row: BoardRow) => boolean;
 }
 const views: [BoardViewType, typeof List][] = [
   ["table", List],
@@ -453,7 +457,11 @@ export function BoardWorkspace({
   onRecordChange,
   canDelete = true,
   canCreate = true,
+  onOpenRow,
+  rowEditable,
 }: BoardProps) {
+  const openRow = (row: BoardRow | null) =>
+    row && onOpenRow ? onOpenRow(row) : setOpenItem(row);
   const server = Boolean(onRecordChange);
   // Editing needs a server (onRecordChange): a board without one is read-only, so nothing is
   // ever "saved" only in this browser.
@@ -838,9 +846,10 @@ export function BoardWorkspace({
           selected={selected}
           setSelected={setSelected}
           update={update}
-          setOpenItem={setOpenItem}
+          setOpenItem={openRow}
           setColumns={setColumns}
           renderTitle={renderTitle}
+          rowEditable={rowEditable}
         />
       )}{" "}
       {view === "kanban" && (
@@ -851,11 +860,11 @@ export function BoardWorkspace({
           dragged={dragged}
           setDragged={setDragged}
           update={update}
-          setOpenItem={setOpenItem}
+          setOpenItem={openRow}
         />
       )}{" "}
-      {view === "timeline" && <Timeline rows={shown} setOpenItem={setOpenItem} />}{" "}
-      {view === "calendar" && <CalendarView rows={shown} setOpenItem={setOpenItem} />}{" "}
+      {view === "timeline" && <Timeline rows={shown} setOpenItem={openRow} />}{" "}
+      {view === "calendar" && <CalendarView rows={shown} setOpenItem={openRow} />}{" "}
       {view === "chart" && <ChartView rows={shown} groupBy={groupBy || "status"} />}{" "}
       {planner && <p className="text-right text-xs text-muted-foreground">Synced with Planner</p>}
       {openItem && (
@@ -899,6 +908,7 @@ function TableView({
   setOpenItem,
   setColumns,
   renderTitle,
+  rowEditable,
 }: {
   rows: BoardRow[];
   columns: BoardColumn[];
@@ -912,7 +922,10 @@ function TableView({
   setOpenItem: (row: BoardRow) => void;
   setColumns: (v: BoardColumn[]) => void;
   renderTitle?: BoardProps["renderTitle"];
+  rowEditable?: BoardProps["rowEditable"];
 }) {
+  const cellColumn = (row: BoardRow, column: BoardColumn) =>
+    column.editable && rowEditable && !rowEditable(row) ? { ...column, editable: false } : column;
   const [dragRow, setDragRow] = useState<string | null>(null),
     [dragCol, setDragCol] = useState<string | null>(null);
   return (
@@ -1042,7 +1055,7 @@ function TableView({
                         {columns.map((column, index) => (
                           <td
                             key={column.key}
-                            onClick={() => (column.editable ? undefined : setOpenItem(row))}
+                            onClick={() => (cellColumn(row, column).editable ? undefined : setOpenItem(row))}
                             className={cn(
                               "h-12 border-l px-2",
                               index === 0 && "sticky left-10 z-10 bg-card font-medium",
@@ -1057,7 +1070,7 @@ function TableView({
                                   ) : (
                                     <CellValue
                                       row={row}
-                                      column={column}
+                                      column={cellColumn(row, column)}
                                       edit={(value) => update(row.id, column.key, value)}
                                     />
                                   )}
@@ -1080,7 +1093,7 @@ function TableView({
                             ) : (
                               <CellValue
                                 row={row}
-                                column={column}
+                                column={cellColumn(row, column)}
                                 edit={(value) => update(row.id, column.key, value)}
                               />
                             )}

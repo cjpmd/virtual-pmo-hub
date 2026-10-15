@@ -6,6 +6,7 @@ import { BenefitSummary } from "@/components/benefit-summary";
 import { BenefitsHandoverWizard } from "@/components/benefits-handover";
 import { ProjectAppraisal, ProjectBenefits } from "@/components/project-benefits";
 import { DecisionPanel } from "@/components/decision-panel";
+import { DecisionLog } from "@/components/decision-log";
 import { DeliveryWorkspace } from "@/components/delivery-workspace";
 import { DependencyTab } from "@/components/dependency-tab";
 import { ChangeBaselineAction } from "@/components/change-baseline";
@@ -75,6 +76,8 @@ export const Route = createFileRoute("/portfolio/projects/$projectCode")({
     task?: string | undefined;
     /** ?dialog=justify opens the Add justification form (overview signals link to it). */
     dialog?: "justify" | undefined;
+    /** ?decision=<id> opens that decision on RAID log › Decisions. */
+    decision?: string | undefined;
   } => {
     const text = (key: string) =>
       typeof search[key] === "string" && search[key] ? (search[key] as string) : undefined;
@@ -83,6 +86,7 @@ export const Route = createFileRoute("/portfolio/projects/$projectCode")({
       sub: text("sub"),
       task: text("task"),
       dialog: text("dialog") === "justify" ? "justify" : undefined,
+      decision: text("decision"),
     };
   },
   component: ProjectPage,
@@ -422,50 +426,12 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
           {tab === "benefits" && <ProjectBenefits projectId={project.id} />}
           {tab === "plan" && sub === "dependencies" && <DependencyTab projectId={project.id} />}
           {tab === "raid" && sub === "decisions" && (
-            <div className="space-y-4">
-              {decisions.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => setOpenDecisionId(item.id)}
-                  className="block w-full rounded-lg border border-border/70 bg-card p-4 text-left shadow-sm hover:bg-accent/30"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <p className="text-sm font-semibold">
-                      {item.reference} · {item.title}
-                    </p>
-                    <span
-                      className={cn(
-                        "rounded-full px-2.5 py-1 text-xs font-semibold",
-                        item.status === "Made"
-                          ? "bg-health-good/20 text-health-good-foreground"
-                          : item.overdue
-                            ? "bg-health-bad/20 text-health-bad-foreground"
-                            : item.status === "Pending"
-                              ? "bg-health-warn/25 text-health-warn-foreground"
-                              : "bg-muted text-muted-foreground",
-                      )}
-                    >
-                      {item.status}
-                      {item.overdue ? " · overdue" : ""}
-                    </span>
-                  </div>
-                  <p className="mt-1.5 text-xs text-muted-foreground">
-                    {item.forum} · {item.decisionMaker} · needed by {format.date(item.neededBy)}
-                    {item.decisionDate ? ` · decided ${format.date(item.decisionDate)}` : ""}
-                  </p>
-                  <p className="mt-2 text-sm text-muted-foreground">{item.context}</p>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Impact on: {item.impactSummary} · {item.openActions} open action
-                    {item.openActions === 1 ? "" : "s"}
-                  </p>
-                </button>
-              ))}
-              {!decisions.length && (
-                <p className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-                  No decisions recorded for this project.
-                </p>
-              )}
-            </div>
+            <DecisionLog
+              scope={{ projectId: project.id }}
+              createScope={{ projectId: project.id, workspaceId: project.workspaceId }}
+              canCreate={permissions.canEdit}
+              initialOpenId={search.decision}
+            />
           )}
           {tab === "raid" && sub === "assumptions" && (
             <AssumptionsWorkspace scope={{ projectId: project.id }} compact />
@@ -543,6 +509,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
           decision={openDecision}
           all={governance.data?.decisions ?? decisions}
           close={() => setOpenDecisionId(null)}
+          onOpen={setOpenDecisionId}
         />
       )}
     </div>
