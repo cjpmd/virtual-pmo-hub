@@ -460,8 +460,7 @@ export function BoardWorkspace({
   onOpenRow,
   rowEditable,
 }: BoardProps) {
-  const openRow = (row: BoardRow | null) =>
-    row && onOpenRow ? onOpenRow(row) : setOpenItem(row);
+  const openRow = (row: BoardRow | null) => (row && onOpenRow ? onOpenRow(row) : setOpenItem(row));
   const server = Boolean(onRecordChange);
   // Editing needs a server (onRecordChange): a board without one is read-only, so nothing is
   // ever "saved" only in this browser.
@@ -1055,7 +1054,9 @@ function TableView({
                         {columns.map((column, index) => (
                           <td
                             key={column.key}
-                            onClick={() => (cellColumn(row, column).editable ? undefined : setOpenItem(row))}
+                            onClick={() =>
+                              cellColumn(row, column).editable ? undefined : setOpenItem(row)
+                            }
                             className={cn(
                               "h-12 border-l px-2",
                               index === 0 && "sticky left-10 z-10 bg-card font-medium",
