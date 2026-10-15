@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
 import { HealthMark } from "@/components/overview/project-watchlist";
 import { Button } from "@/components/ui/button";
 import type { Health } from "@/data/types";
@@ -204,6 +205,35 @@ const DIMENSION_ROWS: Array<[HealthDimension, string]> = [
   ["overall", "Overall"],
 ];
 
+/** Decisions linked to the report, each opening the decision drawer on RAID log › Decisions. */
+function ReportDecisions({ report, limit }: { report: LatestReport; limit?: number }) {
+  const format = useFormat();
+  const shown = limit ? report.decisions.slice(0, limit) : report.decisions;
+  const more = report.decisions.length - shown.length;
+  return (
+    <ul className="space-y-1.5 text-sm">
+      {shown.map((decision) => (
+        <li key={decision.id}>
+          <Link
+            to="/portfolio/projects/$projectCode"
+            params={{ projectCode: report.projectCode }}
+            search={{ tab: "raid", sub: "decisions", decision: decision.id }}
+            className="font-medium text-pmo-accent hover:underline"
+          >
+            {decision.ref} · {decision.title}
+          </Link>
+          <span className="block text-xs text-muted-foreground">
+            {decision.status}
+            {decision.neededBy ? ` · needed by ${format.date(decision.neededBy)}` : ""}
+            {decision.overdue ? " · overdue" : ""}
+          </span>
+        </li>
+      ))}
+      {more > 0 && <li className="text-xs text-muted-foreground">+{more} more</li>}
+    </ul>
+  );
+}
+
 /** Last submitted highlight (status) report: what the project said, against the evidence then. */
 export function HighlightReport({
   report,
@@ -268,7 +298,12 @@ export function HighlightReport({
         <div className="mt-2 flex flex-wrap gap-1.5">{tags}</div>
         <h4 className="mb-1 mt-3 text-[13px] font-semibold">Summary</h4>
         <Text value={report.comments} clamp />
-        {report.decisionsNeeded?.trim() ? (
+        {report.decisions.length ? (
+          <>
+            <h4 className="mb-1 mt-3 text-[13px] font-semibold">Decisions needed</h4>
+            <ReportDecisions report={report} limit={2} />
+          </>
+        ) : report.decisionsNeeded?.trim() ? (
           <>
             <h4 className="mb-1 mt-3 text-[13px] font-semibold">Decisions needed</h4>
             <Text value={report.decisionsNeeded} clamp />
@@ -301,7 +336,10 @@ export function HighlightReport({
         </div>
         <div>
           <h4 className="mb-1 mt-3 text-[13px] font-semibold">Decisions needed</h4>
-          <Text value={report.decisionsNeeded} />
+          {report.decisions.length > 0 && <ReportDecisions report={report} />}
+          {(!report.decisions.length || report.decisionsNeeded?.trim()) && (
+            <Text value={report.decisionsNeeded} />
+          )}
           <h4 className="mb-1 mt-3 text-[13px] font-semibold">Declared in this report</h4>
           <table className="w-full text-sm">
             <caption className="sr-only">

@@ -75,6 +75,8 @@ export const Route = createFileRoute("/portfolio/projects/$projectCode")({
     task?: string | undefined;
     /** ?dialog=justify opens the Add justification form (overview signals link to it). */
     dialog?: "justify" | undefined;
+    /** ?decision=<id> opens that decision on RAID log › Decisions. */
+    decision?: string | undefined;
   } => {
     const text = (key: string) =>
       typeof search[key] === "string" && search[key] ? (search[key] as string) : undefined;
@@ -83,6 +85,7 @@ export const Route = createFileRoute("/portfolio/projects/$projectCode")({
       sub: text("sub"),
       task: text("task"),
       dialog: text("dialog") === "justify" ? "justify" : undefined,
+      decision: text("decision"),
     };
   },
   component: ProjectPage,
