@@ -278,7 +278,7 @@ function ReportPanel({
     setComments(text.comments);
     setAiDraft(text);
   };
-  const draft = () => {
+  const draftFromActivity = () => {
     const text = activityDraft(tasks);
     setAccomplished(text.accomplished);
     setPlanned(text.planned);
@@ -343,7 +343,7 @@ function ReportPanel({
                   Use recent task activity as a starting point, then refine it.
                 </p>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={draft}>
+              <Button type="button" variant="outline" size="sm" onClick={draftFromActivity}>
                 <Sparkles className="size-4" />
                 Draft from activity
               </Button>
