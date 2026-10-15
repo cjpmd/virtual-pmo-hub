@@ -9,6 +9,7 @@ import { todayIso } from "@/lib/today";
 import { listPeople } from "./hierarchy";
 import { healthLabel, toHealth } from "./labels";
 import { unwrap } from "./service-error";
+import { deleteWhere, insertRow } from "./write";
 
 type Enums = Database["public"]["Enums"];
 const healthValue = Object.fromEntries(
@@ -39,6 +40,12 @@ export interface StatusReportView {
   comments: string;
   overrideReasons: Partial<Record<HealthDimension, string>>;
   aiDraft?: AiDraft;
+  isDraft: boolean;
+  updatedAt: string;
+  /** Legacy free-text decisions_needed. */
+  legacyNotes: string;
+  /** Linked decisions (status_report_decisions), in report order. */
+  decisionIds: string[];
 }
 
 export async function listStatusReports(
@@ -49,7 +56,7 @@ export async function listStatusReports(
     supabase
       .from("status_reports")
       .select(
-        "id, ref, reporting_date, submitter_id, overall, schedule, financial, effort, issue, evidenced_overall, accomplished, planned, comments, override_reasons, ai_draft, created_at",
+        "id, ref, status, updated_at, reporting_date, submitter_id, overall, schedule, financial, effort, issue, evidenced_overall, accomplished, planned, comments, decisions_needed, override_reasons, ai_draft, created_at, status_report_decisions(decision_id, sort_order)",
       )
       .eq("project_id", projectId)
       .order("reporting_date", { ascending: false })
@@ -74,6 +81,12 @@ export async function listStatusReports(
       planned: row.planned ?? "",
       comments: row.comments ?? "",
       overrideReasons: (row.override_reasons ?? {}) as Partial<Record<HealthDimension, string>>,
+      isDraft: row.status === "draft",
+      updatedAt: row.updated_at,
+      legacyNotes: row.decisions_needed ?? "",
+      decisionIds: [...(row.status_report_decisions ?? [])]
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((link) => link.decision_id),
       ...(draft?.accomplished !== undefined && {
         aiDraft: {
           accomplished: draft.accomplished ?? "",
@@ -95,6 +108,8 @@ export interface StatusReportInput {
   comments: string;
   overrideReasons: Partial<Record<HealthDimension, string>>;
   aiDraft?: AiDraft | undefined;
+  /** Legacy free-text notes, sent as decisions_needed. */
+  legacyNotes?: string | undefined;
   /** Decisions the report asks for, in order (pending decisions on this project). */
   decisionIds?: string[] | undefined;
   /** Submit an existing draft instead of inserting a new report. */
@@ -120,6 +135,7 @@ export async function submitStatusReport(input: StatusReportInput) {
         accomplished: input.accomplished,
         planned: input.planned,
         comments: input.comments || null,
+        decisions_needed: input.legacyNotes?.trim() || null,
         override_reasons: input.overrideReasons as Json,
         ai_draft: (input.aiDraft ?? null) as Json,
       },
@@ -128,5 +144,32 @@ export async function submitStatusReport(input: StatusReportInput) {
       ...(input.expectedUpdatedAt ? { p_expected_updated_at: input.expectedUpdatedAt } : {}),
     }),
     "Submitting the status report",
+  );
+}
+
+/** Link a Pending decision to a draft report (the database refuses once submitted). */
+export async function addDraftDecisionLink(input: {
+  reportId: string;
+  projectId: string;
+  decisionId: string;
+  sortOrder: number;
+}) {
+  return insertRow(
+    "status_report_decisions",
+    {
+      status_report_id: input.reportId,
+      project_id: input.projectId,
+      decision_id: input.decisionId,
+      sort_order: input.sortOrder,
+    },
+    "Linking the decision to the draft",
+  );
+}
+
+export async function removeDraftDecisionLink(reportId: string, decisionId: string) {
+  return deleteWhere(
+    "status_report_decisions",
+    { status_report_id: reportId, decision_id: decisionId },
+    "Removing the decision from the draft",
   );
 }
