@@ -96,10 +96,15 @@ export function useGovernanceMutations() {
       onSettled,
     }),
     link: useMutation({
-      mutationFn: (args: { id: string; kind: DecisionLinkKind; targetId: string; add: boolean }) =>
-        args.add
-          ? addDecisionLink(args.id, args.kind, args.targetId)
-          : removeDecisionLink(args.id, args.kind, args.targetId),
+      mutationFn: async (args: {
+        id: string;
+        kind: DecisionLinkKind;
+        targetId: string;
+        add: boolean;
+      }) => {
+        if (args.add) await addDecisionLink(args.id, args.kind, args.targetId);
+        else await removeDecisionLink(args.id, args.kind, args.targetId);
+      },
       onSettled,
     }),
     updateAction: useMutation({
