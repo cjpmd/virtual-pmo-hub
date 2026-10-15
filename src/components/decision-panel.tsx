@@ -4,13 +4,28 @@
 import { formatDate } from "@/lib/format";
 import { useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { CheckCircle2, CircleDot, FileText, Lock, Plus, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
+import {
+  CheckCircle2,
+  CircleDot,
+  FileText,
+  Lock,
+  Plus,
+  ThumbsDown,
+  ThumbsUp,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -189,7 +204,9 @@ function CreateDecision({
     <>
       <SheetHeader className="text-left">
         <SheetTitle className="font-display text-xl">New decision</SheetTitle>
-        <SheetDescription>It starts as Pending. Record it once the forum has decided.</SheetDescription>
+        <SheetDescription>
+          It starts as Pending. Record it once the forum has decided.
+        </SheetDescription>
       </SheetHeader>
       <DecisionEditor
         initial={blankValues()}
@@ -390,7 +407,10 @@ function DecisionEditor({
                   checked={values.impact[key].impacted}
                   onCheckedChange={(checked) =>
                     set({
-                      impact: { ...values.impact, [key]: { ...values.impact[key], impacted: checked } },
+                      impact: {
+                        ...values.impact,
+                        [key]: { ...values.impact[key], impacted: checked },
+                      },
                     })
                   }
                   aria-label={`${impactLabels[key]} impacted`}
@@ -513,11 +533,16 @@ function DecisionDetail({
   const [editing, setEditing] = useState(false);
   const readOnly = decision.status !== "Pending";
   const chosenId = decision.chosenOptionId;
-  const byId = (id: string | undefined | null) => (id ? all.find((item) => item.id === id) : undefined);
+  const byId = (id: string | undefined | null) =>
+    id ? all.find((item) => item.id === id) : undefined;
   const supersedes = byId(decision.supersedesId);
   const refLink = (id: string | null | undefined, ref: string | null | undefined) =>
     id && onOpen ? (
-      <button type="button" className="font-semibold text-primary hover:underline" onClick={() => onOpen(id)}>
+      <button
+        type="button"
+        className="font-semibold text-primary hover:underline"
+        onClick={() => onOpen(id)}
+      >
         {ref}
       </button>
     ) : (
@@ -547,7 +572,9 @@ function DecisionDetail({
         />
         <span className="text-muted-foreground">Needed by {formatDate(decision.neededBy)}</span>
         {decision.decisionDate && (
-          <span className="text-muted-foreground">· Decided {formatDate(decision.decisionDate)}</span>
+          <span className="text-muted-foreground">
+            · Decided {formatDate(decision.decisionDate)}
+          </span>
         )}
         {readOnly && (
           <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 font-semibold text-muted-foreground">
@@ -569,8 +596,8 @@ function DecisionDetail({
       )}
       {decision.pendingSuccessorRef && (
         <p className="mt-3 rounded-md border border-primary/40 bg-primary/5 p-3 text-xs">
-          Replacement proposed: {refLink(decision.pendingSuccessorId, decision.pendingSuccessorRef)}.{" "}
-          {decision.reference} stays Made until the replacement is recorded.
+          Replacement proposed: {refLink(decision.pendingSuccessorId, decision.pendingSuccessorRef)}
+          . {decision.reference} stays Made until the replacement is recorded.
         </p>
       )}
 
@@ -628,7 +655,10 @@ function DecisionDetail({
               {decision.options.map((option) => (
                 <div
                   key={option.id}
-                  className={cn("rounded-md border p-4", chosenId === option.id && "border-primary bg-primary/5")}
+                  className={cn(
+                    "rounded-md border p-4",
+                    chosenId === option.id && "border-primary bg-primary/5",
+                  )}
                 >
                   <p className="flex items-start gap-2 text-sm font-semibold">
                     <CircleDot
@@ -647,8 +677,18 @@ function DecisionDetail({
                     </span>
                   </p>
                   <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                    <ProsCons icon={<ThumbsUp className="size-3.5" />} label="Pros" items={option.pros} tone="text-health-good-foreground" />
-                    <ProsCons icon={<ThumbsDown className="size-3.5" />} label="Cons" items={option.cons} tone="text-health-bad-foreground" />
+                    <ProsCons
+                      icon={<ThumbsUp className="size-3.5" />}
+                      label="Pros"
+                      items={option.pros}
+                      tone="text-health-good-foreground"
+                    />
+                    <ProsCons
+                      icon={<ThumbsDown className="size-3.5" />}
+                      label="Cons"
+                      items={option.cons}
+                      tone="text-health-bad-foreground"
+                    />
                   </div>
                 </div>
               ))}
@@ -683,7 +723,9 @@ function DecisionDetail({
                     </span>
                   </p>
                   {decision.impact[key].note && (
-                    <p className="mt-1 text-xs text-muted-foreground">{decision.impact[key].note}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {decision.impact[key].note}
+                    </p>
                   )}
                 </div>
               ))}
@@ -692,9 +734,7 @@ function DecisionDetail({
         </>
       )}
 
-      {allowed.record && canRecord && !editing && (
-        <RecordForm decision={decision} isPmo={isPmo} />
-      )}
+      {allowed.record && canRecord && !editing && <RecordForm decision={decision} isPmo={isPmo} />}
       {allowed.defer && canRecord && !editing && <DeferForm decision={decision} />}
       {allowed.withdraw && canEdit && !editing && <WithdrawForm decision={decision} />}
       {decision.status === "Made" && canEdit && allowed.supersede && (
@@ -773,7 +813,9 @@ function RecordForm({ decision, isPmo }: { decision: ResolvedDecision; isPmo: bo
   const [by, setBy] = useState<"forum" | "person">(
     isPmo && decision.forumId ? "forum" : decision.decisionMakerId ? "person" : "forum",
   );
-  const [actions, setActions] = useState<Array<{ description: string; ownerId: string; dueDate: string }>>([]);
+  const [actions, setActions] = useState<
+    Array<{ description: string; ownerId: string; dueDate: string }>
+  >([]);
   const future = date > todayIso();
   return (
     <ActionBox title="Record decision">
@@ -794,24 +836,43 @@ function RecordForm({ decision, isPmo }: { decision: ResolvedDecision; isPmo: bo
         </div>
       </fieldset>
       <Field label="Rationale (required)">
-        <Textarea rows={3} value={rationale} onChange={(event) => setRationale(event.target.value)} />
+        <Textarea
+          rows={3}
+          value={rationale}
+          onChange={(event) => setRationale(event.target.value)}
+        />
       </Field>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Decision date">
-          <Input type="date" max={todayIso()} value={date} onChange={(event) => setDate(event.target.value)} />
+          <Input
+            type="date"
+            max={todayIso()}
+            value={date}
+            onChange={(event) => setDate(event.target.value)}
+          />
         </Field>
         <fieldset>
           <legend className="text-xs font-semibold text-muted-foreground">Decided by</legend>
           <div className="mt-1 space-y-1 text-sm">
             {decision.forumId && (
               <label className="flex items-center gap-2">
-                <input type="radio" name={`by-${decision.id}`} checked={by === "forum"} onChange={() => setBy("forum")} />
+                <input
+                  type="radio"
+                  name={`by-${decision.id}`}
+                  checked={by === "forum"}
+                  onChange={() => setBy("forum")}
+                />
                 Forum: {decision.forum}
               </label>
             )}
             {decision.decisionMakerId && (
               <label className="flex items-center gap-2">
-                <input type="radio" name={`by-${decision.id}`} checked={by === "person"} onChange={() => setBy("person")} />
+                <input
+                  type="radio"
+                  name={`by-${decision.id}`}
+                  checked={by === "person"}
+                  onChange={() => setBy("person")}
+                />
                 Person: {decision.decisionMaker}
               </label>
             )}
@@ -826,13 +887,20 @@ function RecordForm({ decision, isPmo }: { decision: ResolvedDecision; isPmo: bo
       <fieldset className="space-y-2">
         <legend className="text-xs font-semibold text-muted-foreground">Follow-up actions</legend>
         {actions.map((action, index) => (
-          <div key={index} className="grid gap-2 rounded-md border p-2 sm:grid-cols-[1fr_10rem_9rem_auto]">
+          <div
+            key={index}
+            className="grid gap-2 rounded-md border p-2 sm:grid-cols-[1fr_10rem_9rem_auto]"
+          >
             <Input
               aria-label={`Action ${index + 1} description`}
               placeholder="Description"
               value={action.description}
               onChange={(event) =>
-                setActions(actions.map((item, i) => (i === index ? { ...item, description: event.target.value } : item)))
+                setActions(
+                  actions.map((item, i) =>
+                    i === index ? { ...item, description: event.target.value } : item,
+                  ),
+                )
               }
             />
             <select
@@ -840,7 +908,11 @@ function RecordForm({ decision, isPmo }: { decision: ResolvedDecision; isPmo: bo
               className={selectClass}
               value={action.ownerId}
               onChange={(event) =>
-                setActions(actions.map((item, i) => (i === index ? { ...item, ownerId: event.target.value } : item)))
+                setActions(
+                  actions.map((item, i) =>
+                    i === index ? { ...item, ownerId: event.target.value } : item,
+                  ),
+                )
               }
             >
               <option value="">No owner</option>
@@ -855,7 +927,11 @@ function RecordForm({ decision, isPmo }: { decision: ResolvedDecision; isPmo: bo
               type="date"
               value={action.dueDate}
               onChange={(event) =>
-                setActions(actions.map((item, i) => (i === index ? { ...item, dueDate: event.target.value } : item)))
+                setActions(
+                  actions.map((item, i) =>
+                    i === index ? { ...item, dueDate: event.target.value } : item,
+                  ),
+                )
               }
             />
             <Button
@@ -880,7 +956,9 @@ function RecordForm({ decision, isPmo }: { decision: ResolvedDecision; isPmo: bo
         </Button>
       </fieldset>
       <Button
-        disabled={!optionId || !rationale.trim() || !date || future || mutations.recordDecision.isPending}
+        disabled={
+          !optionId || !rationale.trim() || !date || future || mutations.recordDecision.isPending
+        }
         onClick={() =>
           mutations.recordDecision
             .mutateAsync({
@@ -921,13 +999,27 @@ function DeferForm({ decision }: { decision: ResolvedDecision }) {
     <ActionBox title="Defer">
       <div className="grid gap-3 sm:grid-cols-3">
         <Field label="New needed-by">
-          <Input type="date" min={todayIso()} value={neededBy} onChange={(event) => setNeededBy(event.target.value)} />
+          <Input
+            type="date"
+            min={todayIso()}
+            value={neededBy}
+            onChange={(event) => setNeededBy(event.target.value)}
+          />
         </Field>
         <Field label="Meeting date">
-          <Input type="date" max={todayIso()} value={meeting} onChange={(event) => setMeeting(event.target.value)} />
+          <Input
+            type="date"
+            max={todayIso()}
+            value={meeting}
+            onChange={(event) => setMeeting(event.target.value)}
+          />
         </Field>
         <Field label="Forum">
-          <select className={selectClass} value={forumId} onChange={(event) => setForumId(event.target.value)}>
+          <select
+            className={selectClass}
+            value={forumId}
+            onChange={(event) => setForumId(event.target.value)}
+          >
             <option value="">Not set</option>
             {forums.map((forum) => (
               <option key={forum.id} value={forum.id}>
@@ -1044,7 +1136,13 @@ function SupersedeForm({
         stays Made until the replacement is recorded.
       </p>
       <Field label="Replacement needed by">
-        <Input type="date" min={todayIso()} value={neededBy} onChange={(event) => setNeededBy(event.target.value)} className="sm:w-44" />
+        <Input
+          type="date"
+          min={todayIso()}
+          value={neededBy}
+          onChange={(event) => setNeededBy(event.target.value)}
+          className="sm:w-44"
+        />
       </Field>
       <Button
         variant="outline"
@@ -1073,10 +1171,20 @@ function ReverseForm({ decision }: { decision: ResolvedDecision }) {
         Undo this decision without a replacement. It becomes Reversed and read-only.
       </p>
       <Field label="Rationale (required)">
-        <Textarea rows={2} value={rationale} onChange={(event) => setRationale(event.target.value)} />
+        <Textarea
+          rows={2}
+          value={rationale}
+          onChange={(event) => setRationale(event.target.value)}
+        />
       </Field>
       <Field label="Date">
-        <Input type="date" max={todayIso()} value={date} onChange={(event) => setDate(event.target.value)} className="sm:w-44" />
+        <Input
+          type="date"
+          max={todayIso()}
+          value={date}
+          onChange={(event) => setDate(event.target.value)}
+          className="sm:w-44"
+        />
       </Field>
       <ConfirmButton
         label="Reverse decision"
@@ -1085,7 +1193,12 @@ function ReverseForm({ decision }: { decision: ResolvedDecision }) {
         disabled={!rationale.trim() || mutations.reverse.isPending}
         onConfirm={() =>
           mutations.reverse
-            .mutateAsync({ id: decision.id, rationale, eventDate: date, lastSeen: decision.updatedAt })
+            .mutateAsync({
+              id: decision.id,
+              rationale,
+              eventDate: date,
+              lastSeen: decision.updatedAt,
+            })
             .then(() => toast.success("Decision reversed"), report)
         }
       />
@@ -1138,8 +1251,11 @@ function ActionsSection({ decision, editable }: { decision: ResolvedDecision; ed
   const mutations = useGovernanceMutations();
   const people = useGovernance().data?.people ?? [];
   if (!decision.actions.length) return null;
-  const save = (id: string, lastSeen: string, input: Parameters<typeof mutations.updateAction.mutate>[0]["input"]) =>
-    mutations.updateAction.mutateAsync({ id, input, lastSeen }).catch(report);
+  const save = (
+    id: string,
+    lastSeen: string,
+    input: Parameters<typeof mutations.updateAction.mutate>[0]["input"],
+  ) => mutations.updateAction.mutateAsync({ id, input, lastSeen }).catch(report);
   return (
     <section className="mt-5">
       <h3 className="text-sm font-semibold">Resulting actions</h3>
@@ -1154,7 +1270,9 @@ function ActionsSection({ decision, editable }: { decision: ResolvedDecision; ed
                   className={selectClass}
                   value={action.status}
                   onChange={(event) =>
-                    save(action.id, action.updatedAt, { status: event.target.value as DecisionAction["status"] })
+                    save(action.id, action.updatedAt, {
+                      status: event.target.value as DecisionAction["status"],
+                    })
                   }
                 >
                   {(["Open", "In progress", "Done"] as const).map((status) => (
@@ -1165,7 +1283,9 @@ function ActionsSection({ decision, editable }: { decision: ResolvedDecision; ed
                   aria-label="Action owner"
                   className={selectClass}
                   value={action.ownerId ?? ""}
-                  onChange={(event) => save(action.id, action.updatedAt, { ownerId: event.target.value || null })}
+                  onChange={(event) =>
+                    save(action.id, action.updatedAt, { ownerId: event.target.value || null })
+                  }
                 >
                   <option value="">No owner</option>
                   {people.map((person) => (
@@ -1213,7 +1333,9 @@ function History({ decisionId }: { decisionId: string }) {
     <section className="mt-6 border-t pt-5">
       <h3 className="text-sm font-semibold">History</h3>
       {events.isLoading && <p className="mt-2 text-sm text-muted-foreground">Loading…</p>}
-      {events.error && <p className="mt-2 text-sm text-health-bad-foreground">{errorMessage(events.error)}</p>}
+      {events.error && (
+        <p className="mt-2 text-sm text-health-bad-foreground">{errorMessage(events.error)}</p>
+      )}
       <ol className="mt-3 space-y-3">
         {(events.data ?? []).map((event) => (
           <li key={event.id} className="border-l-2 border-border pl-3">
@@ -1221,7 +1343,8 @@ function History({ decisionId }: { decisionId: string }) {
               {eventLabel[event.type]}
               {event.type === "deferred" &&
                 ` from ${short(event.previousNeededBy)} to ${short(event.newNeededBy)}`}
-              {event.type === "edited" && event.changedFields.length > 0 &&
+              {event.type === "edited" &&
+                event.changedFields.length > 0 &&
                 `: ${event.changedFields.map((field) => field.replace(/_/g, " ")).join(", ")}`}
             </p>
             {event.reason && <p className="mt-0.5 text-sm text-muted-foreground">{event.reason}</p>}

@@ -278,7 +278,7 @@ function ReportPanel({
     setComments(text.comments);
     setAiDraft(text);
   };
-  const draft = () => {
+  const draftFromActivity = () => {
     const text = activityDraft(tasks);
     setAccomplished(text.accomplished);
     setPlanned(text.planned);
@@ -343,7 +343,7 @@ function ReportPanel({
                   Use recent task activity as a starting point, then refine it.
                 </p>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={draft}>
+              <Button type="button" variant="outline" size="sm" onClick={draftFromActivity}>
                 <Sparkles className="size-4" />
                 Draft from activity
               </Button>
@@ -383,7 +383,10 @@ function ReportPanel({
               />
             </div>
           </section>
-          <section className="space-y-3 border-t border-border pt-6" aria-labelledby="decisions-needed">
+          <section
+            className="space-y-3 border-t border-border pt-6"
+            aria-labelledby="decisions-needed"
+          >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 id="decisions-needed" className="text-sm font-semibold">
@@ -393,7 +396,12 @@ function ReportPanel({
                   Pick the project's Pending decisions this report asks for, in order.
                 </p>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={() => setCreatingDecision(true)}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setCreatingDecision(true)}
+              >
                 <Plus className="size-4" />
                 New decision
               </Button>
@@ -403,7 +411,10 @@ function ReportPanel({
                 {decisionIds.map((id, index) => {
                   const item = allDecisions.find((decision) => decision.id === id);
                   return (
-                    <li key={id} className="flex items-center justify-between gap-2 rounded-md border px-3 py-2">
+                    <li
+                      key={id}
+                      className="flex items-center justify-between gap-2 rounded-md border px-3 py-2"
+                    >
                       <span>
                         {index + 1}. {item ? `${item.reference} · ${item.title}` : "Decision"}
                         {item?.overdue ? " · overdue" : ""}
@@ -424,7 +435,9 @@ function ReportPanel({
               </ol>
             )}
             <fieldset className="space-y-1">
-              <legend className="text-xs font-semibold text-muted-foreground">Pending decisions</legend>
+              <legend className="text-xs font-semibold text-muted-foreground">
+                Pending decisions
+              </legend>
               {pendingDecisions.map((item) => (
                 <label key={item.id} className="flex items-start gap-2 text-sm">
                   <input
@@ -444,7 +457,9 @@ function ReportPanel({
                 </label>
               ))}
               {!pendingDecisions.length && (
-                <p className="text-sm text-muted-foreground">No Pending decisions on this project.</p>
+                <p className="text-sm text-muted-foreground">
+                  No Pending decisions on this project.
+                </p>
               )}
             </fieldset>
             <div className="space-y-2">
@@ -752,7 +767,9 @@ function Status({
                         const item = allDecisions.find((decision) => decision.id === id);
                         return (
                           <li key={id}>
-                            {item ? `${item.reference} · ${item.title} · ${item.status}` : "Decision"}
+                            {item
+                              ? `${item.reference} · ${item.title} · ${item.status}`
+                              : "Decision"}
                           </li>
                         );
                       })}

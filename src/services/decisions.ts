@@ -57,7 +57,10 @@ export interface ScopeRef {
   workspaceId: string;
 }
 
-export interface ResolvedDecision extends Omit<Decision, "forum" | "projectId" | "programmeId" | "actions"> {
+export interface ResolvedDecision extends Omit<
+  Decision,
+  "forum" | "projectId" | "programmeId" | "actions"
+> {
   actions: Array<DecisionAction & { ownerId: string | null; updatedAt: string }>;
   forum: string;
   forumId: string | null;
@@ -306,9 +309,7 @@ export async function loadGovernance(orgId: string): Promise<GovernanceData> {
       milestoneIds: (row.decision_milestones ?? []).map((link) => link.milestone_id),
       decidedByResourceId: row.decided_by_resource_id,
       decidedByForumId: row.decided_by_forum_id,
-      decidedBy: forumName
-        ? `Forum: ${forumName}`
-        : nameOf(row.decided_by_resource_id) || "",
+      decidedBy: forumName ? `Forum: ${forumName}` : nameOf(row.decided_by_resource_id) || "",
       recordedBy: (row.recorded_by && profileName.get(row.recorded_by)) || "",
       recordedAt: row.recorded_at,
       daysToNeededBy: toNeededBy,
@@ -733,7 +734,8 @@ export async function createDecision(input: NewDecisionInput) {
     "Saving the options",
   );
   for (const kind of Object.keys(linkTable) as DecisionLinkKind[])
-    for (const targetId of input.links[kind] ?? []) await addDecisionLink(written.id, kind, targetId);
+    for (const targetId of input.links[kind] ?? [])
+      await addDecisionLink(written.id, kind, targetId);
   return written;
 }
 
@@ -787,7 +789,11 @@ export async function savePendingDecision(
 }
 
 /** Link a record to a Pending decision (the database refuses once it isn't Pending). */
-export async function addDecisionLink(decisionId: string, kind: DecisionLinkKind, targetId: string) {
+export async function addDecisionLink(
+  decisionId: string,
+  kind: DecisionLinkKind,
+  targetId: string,
+) {
   const [name, column] = linkTable[kind];
   return insertRow(
     name,
