@@ -145,6 +145,10 @@ interface BoardProps {
   onRecordChange?: (change: BoardRecordChange) => void;
   /** False hides Delete (e.g. the user may edit but not delete). Defaults to true. */ canDelete?: boolean;
   /** False hides New (records created elsewhere). Defaults to true. */ canCreate?: boolean;
+  /** Open a row in the caller's own detail view instead of the built-in item panel. */
+  onOpenRow?: (row: BoardRow) => void;
+  /** False makes every cell of that row read-only (e.g. a recorded decision). */
+  rowEditable?: (row: BoardRow) => boolean;
 }
 const views: [BoardViewType, typeof List][] = [
   ["table", List],
@@ -453,7 +457,12 @@ export function BoardWorkspace({
   onRecordChange,
   canDelete = true,
   canCreate = true,
+  onOpenRow,
+  rowEditable,
 }: BoardProps) {
+  const openRow = (row: BoardRow) => (onOpenRow ? onOpenRow(row) : setOpenItem(row));
+  const cellColumn = (row: BoardRow, column: BoardColumn) =>
+    column.editable && rowEditable && !rowEditable(row) ? { ...column, editable: false } : column;
   const server = Boolean(onRecordChange);
   // Editing needs a server (onRecordChange): a board without one is read-only, so nothing is
   // ever "saved" only in this browser.
@@ -1042,7 +1051,7 @@ function TableView({
                         {columns.map((column, index) => (
                           <td
                             key={column.key}
-                            onClick={() => (column.editable ? undefined : setOpenItem(row))}
+                            onClick={() => (cellColumn(row, column).editable ? undefined : openRow(row))}
                             className={cn(
                               "h-12 border-l px-2",
                               index === 0 && "sticky left-10 z-10 bg-card font-medium",
@@ -1057,7 +1066,7 @@ function TableView({
                                   ) : (
                                     <CellValue
                                       row={row}
-                                      column={column}
+                                      column={cellColumn(row, column)}
                                       edit={(value) => update(row.id, column.key, value)}
                                     />
                                   )}
@@ -1069,7 +1078,7 @@ function TableView({
                                   aria-label={`Open ${row.title}`}
                                   onClick={(event) => {
                                     event.stopPropagation();
-                                    setOpenItem(row);
+                                    openRow(row);
                                   }}
                                 >
                                   <ChevronRight className="size-4" />
@@ -1080,7 +1089,7 @@ function TableView({
                             ) : (
                               <CellValue
                                 row={row}
-                                column={column}
+                                column={cellColumn(row, column)}
                                 edit={(value) => update(row.id, column.key, value)}
                               />
                             )}
@@ -1163,7 +1172,7 @@ function Kanban({
                   key={row.id}
                   draggable
                   onDragStart={() => setDragged(row.id)}
-                  onClick={() => setOpenItem(row)}
+                  onClick={() => openRow(row)}
                   className="mb-2 cursor-grab rounded-lg border border-border/70 bg-card p-3 shadow-sm"
                 >
                   <div className="flex gap-2">
@@ -1202,7 +1211,7 @@ function Timeline({
           {rows.map((row, index) => (
             <button
               key={row.id}
-              onClick={() => setOpenItem(row)}
+              onClick={() => openRow(row)}
               className="grid w-full grid-cols-[220px_1fr] border-b text-left"
             >
               <span className="truncate px-3 py-4 text-sm font-medium">{row.title}</span>
@@ -1273,7 +1282,7 @@ function CalendarView({
               .map((row) => (
                 <button
                   key={row.id}
-                  onClick={() => setOpenItem(row)}
+                  onClick={() => openRow(row)}
                   className={cn(
                     "mt-1 block w-full truncate rounded px-1.5 py-1 text-left text-[10px]",
                     statusTone(getDeliveryStatus(row)),
