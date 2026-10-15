@@ -68,7 +68,8 @@ export function fromPostgrest(
     kind = "timeout";
   else if (code === "42501" || code === "PGRST301") kind = "forbidden";
   else if (code === "PGRST116") kind = "not_found";
-  else if (code === "23505") kind = "conflict";
+  else if (code === "23505" || code === "40001")
+    kind = "conflict"; // 40001: an RPC's stale check
   else if (
     code === "23503" ||
     code === "23514" ||
@@ -88,6 +89,7 @@ export function fromPostgrest(
       ? error.message
       : messages[kind];
   if (kind === "conflict" && error.details) message = `${messages.conflict} ${error.details}`;
+  if (code === "40001" && error.message) message = error.message;
   return new ServiceError(kind, context ? `${context}: ${message}` : message, {
     code,
     detail: [error.message, error.details, error.hint].filter(Boolean).join(" — "),

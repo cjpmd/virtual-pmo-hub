@@ -25,6 +25,10 @@ import { TopBand } from "@/components/shell-slots";
 import { ProjectOverviewBand } from "@/components/overview/project-overview-band";
 import { ProjectOverviewWork } from "@/components/overview/project-overview-work";
 import { useGateChecklist } from "@/hooks/use-gate-checklist";
+import { useGateTicks, useToggleGateTick } from "@/hooks/use-gate-ticks";
+import { checklistGateMilestone, phaseByName } from "@/services/gates";
+import { todayIso } from "@/lib/today";
+import { toast } from "sonner";
 import { StatusWorkspace } from "@/components/status-workspace";
 import { TaskWorkspace } from "@/components/task-workspace";
 import {
@@ -172,8 +176,6 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
       }),
       replace: true,
     });
-  const [lessonsReviewed, setLessonsReviewed] = useState(false);
-  const [manualTicks, setManualTicks] = useState<string[]>([]);
   const [handover, setHandover] = useState(false);
   const [handedOver, setHandedOver] = useState<number | null>(null);
   const [openDecisionId, setOpenDecisionId] = useState<string | null>(null);
@@ -214,6 +216,30 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
     lessonsData.data && currentPhaseId
       ? hasPhaseLessonsReview(lessonsData.data, project.id, currentPhaseId)
       : false;
+  // Checklist ticks are saved against the next gate milestone (gate_checklist_ticks); the
+  // lessons-reviewed criterion passes when its tick is saved.
+  const gateTicks = useGateTicks(project.id);
+  const toggleGateTick = useToggleGateTick(project.id);
+  const gateMilestone = checklistGateMilestone(milestones.data ?? [], todayIso());
+  const manualTicks = useMemo(
+    () =>
+      (gateTicks.data ?? [])
+        .filter((tick) => tick.milestoneId === gateMilestone?.id)
+        .map((tick) => tick.criterionId),
+    [gateTicks.data, gateMilestone?.id],
+  );
+  const lessonsCriterion = phaseByName(project.phaseName)?.criteria.find(
+    (item) => item.check === "lessons-reviewed" && item.tiers.includes(project.tier),
+  );
+  const lessonsReviewed = !!lessonsCriterion && manualTicks.includes(lessonsCriterion.id);
+  const toggleTick = (criterionId: string, ticked: boolean) => {
+    if (!gateMilestone)
+      return void toast.error("Add a gate milestone on Plan › Milestones before ticking criteria.");
+    toggleGateTick.mutate(
+      { projectId: project.id, milestoneId: gateMilestone.id, criterionId, ticked },
+      { onError: (error) => toast.error(error.message) },
+    );
+  };
   // Shared with Plan › Gates so the Overview gate signal counts the same ticks.
   const gateChecklist = useGateChecklist({
     project,
@@ -322,11 +348,9 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
           lessonsReviewed={lessonsReviewed}
           phaseReviewHeld={phaseReviewHeld}
           manualTicks={manualTicks}
-          onToggleManual={(id) =>
-            setManualTicks((current) =>
-              current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
-            )
-          }
+          gateLabel={gateMilestone ? `${gateMilestone.ref} · ${gateMilestone.title}` : undefined}
+          readOnly={!permissions.canEdit || toggleGateTick.isPending}
+          onToggleManual={(id) => toggleTick(id, !manualTicks.includes(id))}
         />
       )}
       {tab === "raid" && sub === "risks" && <ProjectRaid projectId={project.id} />}
@@ -498,7 +522,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
                 excludeProjectId={project.id}
                 requireTick
                 ticked={lessonsReviewed}
-                onTick={setLessonsReviewed}
+                onTick={(ticked) => lessonsCriterion && toggleTick(lessonsCriterion.id, ticked)}
               />
             </div>
           )}

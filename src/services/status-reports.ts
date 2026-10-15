@@ -1,7 +1,7 @@
 // Project status reports. A submitted report is a point-in-time judgement: the declared RAGs,
 // override reasons and narrative are stored as submitted, and the database copies the
-// evidenced RAGs from v_project_health at insert (submit_status_report trigger), then freezes
-// them. Nothing here edits a report after submission.
+// evidenced RAGs from v_project_health on submit (status_reports_20_evidenced trigger), then
+// freezes them. Nothing here edits a report after submission.
 import type { Database, Json } from "@/integrations/supabase/types";
 import type { Health, HealthDimension } from "@/data/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,6 @@ import { todayIso } from "@/lib/today";
 import { listPeople } from "./hierarchy";
 import { healthLabel, toHealth } from "./labels";
 import { unwrap } from "./service-error";
-import { insertRow } from "./write";
 
 type Enums = Database["public"]["Enums"];
 const healthValue = Object.fromEntries(
@@ -96,26 +95,38 @@ export interface StatusReportInput {
   comments: string;
   overrideReasons: Partial<Record<HealthDimension, string>>;
   aiDraft?: AiDraft | undefined;
+  /** Decisions the report asks for, in order (pending decisions on this project). */
+  decisionIds?: string[] | undefined;
+  /** Submit an existing draft instead of inserting a new report. */
+  reportId?: string | undefined;
+  expectedUpdatedAt?: string | undefined;
 }
 
+/** Submits a report and its decision links in one transaction (submit_status_report RPC): a new
+ * report is inserted as submitted, a draft (reportId) moves to submitted. Links are frozen once
+ * the report is submitted. */
 export async function submitStatusReport(input: StatusReportInput) {
-  return insertRow(
-    "status_reports",
-    {
-      project_id: input.projectId,
-      reporting_date: todayIso(),
-      submitter_id: input.submitterId,
-      overall: healthValue[input.health.overall],
-      schedule: healthValue[input.health.schedule],
-      financial: healthValue[input.health.financial],
-      effort: healthValue[input.health.effort],
-      issue: healthValue[input.health.issue],
-      accomplished: input.accomplished,
-      planned: input.planned,
-      comments: input.comments || null,
-      override_reasons: input.overrideReasons as Json,
-      ai_draft: (input.aiDraft ?? null) as Json,
-    },
+  return unwrap(
+    await supabase.rpc("submit_status_report", {
+      p_project_id: input.projectId,
+      p_report: {
+        reporting_date: todayIso(),
+        submitter_id: input.submitterId,
+        overall: healthValue[input.health.overall],
+        schedule: healthValue[input.health.schedule],
+        financial: healthValue[input.health.financial],
+        effort: healthValue[input.health.effort],
+        issue: healthValue[input.health.issue],
+        accomplished: input.accomplished,
+        planned: input.planned,
+        comments: input.comments || null,
+        override_reasons: input.overrideReasons as Json,
+        ai_draft: (input.aiDraft ?? null) as Json,
+      },
+      p_decision_ids: input.decisionIds ?? [],
+      ...(input.reportId ? { p_report_id: input.reportId } : {}),
+      ...(input.expectedUpdatedAt ? { p_expected_updated_at: input.expectedUpdatedAt } : {}),
+    }),
     "Submitting the status report",
   );
 }
