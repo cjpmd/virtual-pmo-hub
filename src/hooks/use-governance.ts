@@ -2,7 +2,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOrgId } from "@/components/auth/organisation-provider";
 import {
+  addDecisionLink,
+  createDecision,
+  deferDecision,
+  listDecisionEvents,
+  listDecisionLinkTargets,
   loadGovernance,
+  removeDecisionLink,
+  reverseDecision,
+  savePendingDecision,
+  updateDecisionAction,
+  withdrawDecision,
+  type DecisionLinkKind,
+  type NewDecisionInput,
   raiseIssueFromAssumption,
   recordDecision,
   supersedeDecision,
@@ -20,6 +32,26 @@ import { invalidateRollups } from "./use-project-records";
 export function useGovernance() {
   const orgId = useOrgId();
   return useQuery({ queryKey: qk.governance(orgId), queryFn: () => loadGovernance(orgId) });
+}
+
+/** History of one decision (decision_events, newest first). Under the governance key, so every
+ * decision write refreshes it. */
+export function useDecisionEvents(decisionId: string) {
+  const orgId = useOrgId();
+  return useQuery({
+    queryKey: [...qk.governance(orgId), "events", decisionId],
+    queryFn: () => listDecisionEvents(orgId, decisionId),
+  });
+}
+
+/** Records on a project that a decision can link to. */
+export function useDecisionLinkTargets(projectId: string | null | undefined) {
+  const orgId = useOrgId();
+  return useQuery({
+    queryKey: [...qk.governance(orgId), "link-targets", projectId ?? ""],
+    queryFn: () => listDecisionLinkTargets(projectId ?? ""),
+    enabled: Boolean(projectId),
+  });
 }
 
 export function useGovernanceMutations() {
@@ -45,6 +77,37 @@ export function useGovernanceMutations() {
         input: DecisionInput;
         lastSeen?: string | null;
       }) => updateDecision(id, input, lastSeen),
+      onSettled,
+    }),
+    defer: useMutation({ mutationFn: deferDecision, onSettled }),
+    reverse: useMutation({ mutationFn: reverseDecision, onSettled }),
+    withdraw: useMutation({ mutationFn: withdrawDecision, onSettled }),
+    create: useMutation({
+      mutationFn: (input: NewDecisionInput) => createDecision(input),
+      onSettled,
+    }),
+    savePending: useMutation({
+      mutationFn: (args: {
+        id: string;
+        input: Omit<NewDecisionInput, "scope" | "links">;
+        optionIds: string[];
+        lastSeen: string;
+      }) => savePendingDecision(args.id, args.input, args.optionIds, args.lastSeen),
+      onSettled,
+    }),
+    link: useMutation({
+      mutationFn: (args: { id: string; kind: DecisionLinkKind; targetId: string; add: boolean }) =>
+        args.add
+          ? addDecisionLink(args.id, args.kind, args.targetId)
+          : removeDecisionLink(args.id, args.kind, args.targetId),
+      onSettled,
+    }),
+    updateAction: useMutation({
+      mutationFn: (args: {
+        id: string;
+        input: Parameters<typeof updateDecisionAction>[1];
+        lastSeen: string;
+      }) => updateDecisionAction(args.id, args.input, args.lastSeen),
       onSettled,
     }),
     updateAssumption: useMutation({
