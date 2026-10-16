@@ -86,6 +86,10 @@ export interface ResolvedDecision extends Omit<
   decidedBy: string;
   recordedBy: string;
   recordedAt: string | null;
+  /** From v_decisions, for the signed-in user: may record, defer and reverse (the RPCs' rule). */
+  canRecord: boolean;
+  /** May edit, withdraw and supersede (the RPCs' rule). */
+  canWrite: boolean;
   daysToNeededBy: number;
   latencyDays: number | undefined;
   chosenOption: string;
@@ -179,7 +183,7 @@ export async function loadGovernance(orgId: string): Promise<GovernanceData> {
       supabase
         .from("v_decisions")
         .select(
-          "id, overdue, days_overdue, deferral_count, pending_successor_id, pending_successor_ref, superseded_by_id, superseded_by_ref",
+          "id, overdue, days_overdue, deferral_count, pending_successor_id, pending_successor_ref, superseded_by_id, superseded_by_ref, can_record, can_write",
         )
         .eq("organisation_id", orgId),
       supabase.from("profiles").select("id, display_name"),
@@ -312,6 +316,8 @@ export async function loadGovernance(orgId: string): Promise<GovernanceData> {
       decidedBy: forumName ? `Forum: ${forumName}` : nameOf(row.decided_by_resource_id) || "",
       recordedBy: (row.recorded_by && profileName.get(row.recorded_by)) || "",
       recordedAt: row.recorded_at,
+      canRecord: Boolean(extra?.can_record),
+      canWrite: Boolean(extra?.can_write),
       daysToNeededBy: toNeededBy,
       latencyDays: latency,
       chosenOption: options.find((option) => option.id === row.chosen_option_id)?.title ?? "—",

@@ -114,12 +114,8 @@ export function DecisionPanel({
 }) {
   const projectId = decision?.projectId ?? createScope?.projectId ?? undefined;
   const workspaceId = decision?.scope.workspaceId ?? createScope?.workspaceId ?? undefined;
-  const permissions = useProjectPermissions(projectId);
-  const contributor = useCan("contributor", workspaceId);
+  // PMO / admin default "decided by" to the forum when recording.
   const isPmo = useCan("pmo", workspaceId);
-  const canEdit = projectId ? permissions.canEdit : contributor;
-  // No client-side "can record" helper yet: show to editors and PMO, let the RPC refuse.
-  const canRecord = canEdit || isPmo;
 
   return (
     <Sheet open onOpenChange={(open) => !open && close()}>
@@ -129,8 +125,10 @@ export function DecisionPanel({
             key={decision.id + decision.updatedAt}
             decision={decision}
             all={all}
-            canEdit={canEdit}
-            canRecord={canRecord}
+            // What this user may do with this decision comes from v_decisions (can_write,
+            // can_record), the same rules the RPCs check.
+            canEdit={decision.canWrite}
+            canRecord={decision.canRecord}
             isPmo={isPmo}
             onOpen={onOpen}
           />

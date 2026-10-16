@@ -1,3 +1,5 @@
+-- SUPERSEDED as the thing to run: the approved runbook is docs/sql/runbook-decision-edit-and-draft-links.sql
+-- (it contains this function plus the draft-link changes). Kept for the design notes and local checks.
 -- RUNBOOK (15/10/2026): update_pending_decision. Not applied; contains DELETE, so it is yours
 -- to run (block A is the dry run, block B applies it).
 --

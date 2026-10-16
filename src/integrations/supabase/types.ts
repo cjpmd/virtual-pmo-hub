@@ -12167,6 +12167,8 @@ export type Database = {
       }
       v_decisions: {
         Row: {
+          can_record: boolean | null
+          can_write: boolean | null
           chosen_option_id: string | null
           context: string | null
           created_at: string | null
@@ -12217,14 +12219,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "decisions_chosen_option_fkey"
-            columns: ["chosen_option_id", "id"]
+            columns: ["chosen_option_id", "pending_successor_id"]
             isOneToOne: false
             referencedRelation: "decision_options"
             referencedColumns: ["id", "decision_id"]
           },
           {
             foreignKeyName: "decisions_chosen_option_fkey"
-            columns: ["chosen_option_id", "pending_successor_id"]
+            columns: ["chosen_option_id", "id"]
             isOneToOne: false
             referencedRelation: "decision_options"
             referencedColumns: ["id", "decision_id"]
