@@ -76,6 +76,7 @@ export const milestoneTypeLabel: Record<Enums["milestone_type"], MilestoneType> 
   gate: "Gate",
   key_date: "Key date",
   external_dependency: "External dependency",
+  approval: "Approval",
 };
 export const milestoneTypeValue = invert(milestoneTypeLabel);
 

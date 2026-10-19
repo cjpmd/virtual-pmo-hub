@@ -1,3 +1,5 @@
+-- APPLIED by the user (Block B; Block C checked 19/10/2026: 3 functions security definer,
+-- authenticated execute, no anon or public execute; migration 20261016170000 recorded).
 -- RUNBOOK (16/10/2026): decision edit and draft links in one transaction. Approved 16/10 as a
 -- runbook; yours to run (contains DELETE, which the MCP tools can't run). Tell me when it's done.
 --

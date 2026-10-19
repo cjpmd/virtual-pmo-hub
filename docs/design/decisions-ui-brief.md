@@ -57,12 +57,10 @@ There is no client-side permission helper for "can record" yet. Show Record, Def
 to users with `useProjectPermissions(...).canEdit`, or PMO/admin, and let the RPC refuse with its
 message (42501). Don't hide the buttons on a guess.
 
-**Proposed (15/10, awaiting approval):** `v_decisions.can_record` and `can_write`
-(`docs/sql/decision-can-record.sql`). Once applied, show Record, Defer and Reverse only when
-`can_record`, and Withdraw, Supersede and Edit only when `can_write`. Editing a Pending decision
-then goes through `update_pending_decision` (`docs/sql/update-pending-decision.sql`, one
-transaction for the decision, its options and links) instead of the separate writes in
-`savePendingDecision`.
+**Done (16-19/10):** `v_decisions.can_record` and `can_write` drive the drawer (Record, Defer and
+Reverse need `can_record`; Edit, Withdraw and Supersede need `can_write`). Editing a Pending
+decision, its options (ids kept) and its links goes through `update_pending_decision` in one
+transaction (`updatePendingDecision` in `src/services/decisions.ts`).
 
 Failed writes are toasted once, by the MutationCache in `src/router.tsx`. Don't add an error
 toast in a component as well.
@@ -260,8 +258,7 @@ by DEC-0xx") or the predecessor ("Supersedes DEC-0xx").
   when `submit_status_report` submits it. Drafts don't appear in the health trend, the activity
   feed, the "last report" dates or committee packs.
 - Picking decisions in the form is local state. Save draft and Submit report save the links
-  with the report; a link removed from a draft is deleted just before the save (allowed while it
-  is a draft).
+  with the report: the RPCs set the draft's links to exactly the list sent, in one transaction.
 - Only Pending decisions of the same project can be linked.
 - When a draft is submitted, a draft link missing from `p_decision_ids` is refused ("Remove
   DEC-0xx from the draft first, or include it"). Send every link you show.

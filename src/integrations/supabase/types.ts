@@ -3437,11 +3437,18 @@ export type Database = {
             referencedColumns: ["superseded_by_id", "workspace_id"]
           },
           {
-            foreignKeyName: "decision_events_forum_id_organisation_id_forum_list_fkey"
-            columns: ["forum_id", "organisation_id", "forum_list"]
+            foreignKeyName: "decision_events_forum_id_forums_fkey"
+            columns: ["forum_id", "organisation_id"]
             isOneToOne: false
-            referencedRelation: "lookup_values"
-            referencedColumns: ["id", "organisation_id", "list_key"]
+            referencedRelation: "forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "decision_events_forum_id_forums_fkey"
+            columns: ["forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_forums"
+            referencedColumns: ["id", "organisation_id"]
           },
           {
             foreignKeyName: "decision_events_project_id_workspace_id_fkey"
@@ -4033,6 +4040,7 @@ export type Database = {
           ref: string
           status: Database["public"]["Enums"]["decision_status"]
           supersedes_id: string | null
+          target_meeting_id: string | null
           title: string
           updated_at: string
           workspace_id: string
@@ -4069,6 +4077,7 @@ export type Database = {
           ref: string
           status?: Database["public"]["Enums"]["decision_status"]
           supersedes_id?: string | null
+          target_meeting_id?: string | null
           title: string
           updated_at?: string
           workspace_id: string
@@ -4105,6 +4114,7 @@ export type Database = {
           ref?: string
           status?: Database["public"]["Enums"]["decision_status"]
           supersedes_id?: string | null
+          target_meeting_id?: string | null
           title?: string
           updated_at?: string
           workspace_id?: string
@@ -4125,11 +4135,18 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "decisions_decided_by_forum_fkey"
-            columns: ["decided_by_forum_id", "organisation_id", "forum_list"]
+            foreignKeyName: "decisions_decided_by_forum_id_forums_fkey"
+            columns: ["decided_by_forum_id", "organisation_id"]
             isOneToOne: false
-            referencedRelation: "lookup_values"
-            referencedColumns: ["id", "organisation_id", "list_key"]
+            referencedRelation: "forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "decisions_decided_by_forum_id_forums_fkey"
+            columns: ["decided_by_forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_forums"
+            referencedColumns: ["id", "organisation_id"]
           },
           {
             foreignKeyName: "decisions_decided_by_resource_fkey"
@@ -4146,11 +4163,18 @@ export type Database = {
             referencedColumns: ["id", "organisation_id"]
           },
           {
-            foreignKeyName: "decisions_forum_id_organisation_id_forum_list_fkey"
-            columns: ["forum_id", "organisation_id", "forum_list"]
+            foreignKeyName: "decisions_forum_id_forums_fkey"
+            columns: ["forum_id", "organisation_id"]
             isOneToOne: false
-            referencedRelation: "lookup_values"
-            referencedColumns: ["id", "organisation_id", "list_key"]
+            referencedRelation: "forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "decisions_forum_id_forums_fkey"
+            columns: ["forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_forums"
+            referencedColumns: ["id", "organisation_id"]
           },
           {
             foreignKeyName: "decisions_portfolio_id_workspace_id_fkey"
@@ -4277,6 +4301,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_decisions"
             referencedColumns: ["superseded_by_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "decisions_target_meeting_fkey"
+            columns: ["target_meeting_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "decisions_target_meeting_fkey"
+            columns: ["target_meeting_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_meetings"
+            referencedColumns: ["id", "organisation_id"]
           },
           {
             foreignKeyName: "decisions_workspace_id_organisation_id_fkey"
@@ -5285,6 +5323,146 @@ export type Database = {
           },
           {
             foreignKeyName: "financial_values_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      forum_members: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          forum_id: string
+          organisation_id: string
+          resource_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          forum_id: string
+          organisation_id: string
+          resource_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          forum_id?: string
+          organisation_id?: string
+          resource_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_members_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_members_forum_id_organisation_id_fkey"
+            columns: ["forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "forum_members_forum_id_organisation_id_fkey"
+            columns: ["forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "forum_members_resource_id_organisation_id_fkey"
+            columns: ["resource_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "forum_members_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      forums: {
+        Row: {
+          active: boolean
+          cadence: Database["public"]["Enums"]["forum_cadence"] | null
+          chair_resource_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          level: Database["public"]["Enums"]["forum_level"]
+          name: string
+          organisation_id: string
+          papers_deadline_days: number
+          sort_order: number
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          cadence?: Database["public"]["Enums"]["forum_cadence"] | null
+          chair_resource_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          level?: Database["public"]["Enums"]["forum_level"]
+          name: string
+          organisation_id: string
+          papers_deadline_days?: number
+          sort_order?: number
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          cadence?: Database["public"]["Enums"]["forum_cadence"] | null
+          chair_resource_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          level?: Database["public"]["Enums"]["forum_level"]
+          name?: string
+          organisation_id?: string
+          papers_deadline_days?: number
+          sort_order?: number
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forums_chair_resource_id_organisation_id_fkey"
+            columns: ["chair_resource_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "forums_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forums_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forums_workspace_id_organisation_id_fkey"
             columns: ["workspace_id", "organisation_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -6411,6 +6589,80 @@ export type Database = {
           },
         ]
       }
+      meetings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          forum_id: string
+          id: string
+          meeting_date: string
+          minutes_link: string | null
+          notes: string | null
+          organisation_id: string
+          papers_deadline: string | null
+          status: Database["public"]["Enums"]["meeting_status"]
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          forum_id: string
+          id?: string
+          meeting_date: string
+          minutes_link?: string | null
+          notes?: string | null
+          organisation_id: string
+          papers_deadline?: string | null
+          status?: Database["public"]["Enums"]["meeting_status"]
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          forum_id?: string
+          id?: string
+          meeting_date?: string
+          minutes_link?: string | null
+          notes?: string | null
+          organisation_id?: string
+          papers_deadline?: string | null
+          status?: Database["public"]["Enums"]["meeting_status"]
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetings_forum_id_organisation_id_fkey"
+            columns: ["forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "meetings_forum_id_organisation_id_fkey"
+            columns: ["forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "meetings_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       milestone_forecast_history: {
         Row: {
           created_at: string
@@ -6539,6 +6791,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           forecast_date: string
+          forum_id: string | null
           id: string
           organisation_id: string
           owner_id: string | null
@@ -6557,6 +6810,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           forecast_date: string
+          forum_id?: string | null
           id?: string
           organisation_id: string
           owner_id?: string | null
@@ -6575,6 +6829,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           forecast_date?: string
+          forum_id?: string | null
           id?: string
           organisation_id?: string
           owner_id?: string | null
@@ -6594,6 +6849,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "milestones_forum_fkey"
+            columns: ["forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "milestones_forum_fkey"
+            columns: ["forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_forums"
+            referencedColumns: ["id", "organisation_id"]
           },
           {
             foreignKeyName: "milestones_owner_id_organisation_id_fkey"
@@ -12192,9 +12461,11 @@ export type Database = {
           impact_time: boolean | null
           impact_time_note: string | null
           last_deferred_on: string | null
+          needed_by_before_papers_deadline: boolean | null
           needed_by_date: string | null
           organisation_id: string | null
           overdue: boolean | null
+          papers_deadline_passed: boolean | null
           pending_successor_id: string | null
           pending_successor_ref: string | null
           portfolio_id: string | null
@@ -12211,6 +12482,13 @@ export type Database = {
             | Database["public"]["Enums"]["decision_status"]
             | null
           supersedes_id: string | null
+          target_meeting_after_needed_by: boolean | null
+          target_meeting_date: string | null
+          target_meeting_id: string | null
+          target_meeting_status:
+            | Database["public"]["Enums"]["meeting_status"]
+            | null
+          target_papers_deadline: string | null
           title: string | null
           today: string | null
           updated_at: string | null
@@ -12219,14 +12497,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "decisions_chosen_option_fkey"
-            columns: ["chosen_option_id", "pending_successor_id"]
+            columns: ["chosen_option_id", "id"]
             isOneToOne: false
             referencedRelation: "decision_options"
             referencedColumns: ["id", "decision_id"]
           },
           {
             foreignKeyName: "decisions_chosen_option_fkey"
-            columns: ["chosen_option_id", "id"]
+            columns: ["chosen_option_id", "pending_successor_id"]
             isOneToOne: false
             referencedRelation: "decision_options"
             referencedColumns: ["id", "decision_id"]
@@ -12246,11 +12524,18 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "decisions_decided_by_forum_fkey"
-            columns: ["decided_by_forum_id", "organisation_id", "forum_list"]
+            foreignKeyName: "decisions_decided_by_forum_id_forums_fkey"
+            columns: ["decided_by_forum_id", "organisation_id"]
             isOneToOne: false
-            referencedRelation: "lookup_values"
-            referencedColumns: ["id", "organisation_id", "list_key"]
+            referencedRelation: "forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "decisions_decided_by_forum_id_forums_fkey"
+            columns: ["decided_by_forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_forums"
+            referencedColumns: ["id", "organisation_id"]
           },
           {
             foreignKeyName: "decisions_decided_by_resource_fkey"
@@ -12267,11 +12552,18 @@ export type Database = {
             referencedColumns: ["id", "organisation_id"]
           },
           {
-            foreignKeyName: "decisions_forum_id_organisation_id_forum_list_fkey"
-            columns: ["forum_id", "organisation_id", "forum_list"]
+            foreignKeyName: "decisions_forum_id_forums_fkey"
+            columns: ["forum_id", "organisation_id"]
             isOneToOne: false
-            referencedRelation: "lookup_values"
-            referencedColumns: ["id", "organisation_id", "list_key"]
+            referencedRelation: "forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "decisions_forum_id_forums_fkey"
+            columns: ["forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_forums"
+            referencedColumns: ["id", "organisation_id"]
           },
           {
             foreignKeyName: "decisions_portfolio_id_workspace_id_fkey"
@@ -12400,6 +12692,20 @@ export type Database = {
             referencedColumns: ["superseded_by_id", "workspace_id"]
           },
           {
+            foreignKeyName: "decisions_target_meeting_fkey"
+            columns: ["target_meeting_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "decisions_target_meeting_fkey"
+            columns: ["target_meeting_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_meetings"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
             foreignKeyName: "decisions_workspace_id_organisation_id_fkey"
             columns: ["workspace_id", "organisation_id"]
             isOneToOne: false
@@ -12423,6 +12729,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "dependencies_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      v_forums: {
+        Row: {
+          active: boolean | null
+          cadence: Database["public"]["Enums"]["forum_cadence"] | null
+          chair_name: string | null
+          chair_resource_id: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string | null
+          level: Database["public"]["Enums"]["forum_level"] | null
+          member_count: number | null
+          name: string | null
+          next_meeting_date: string | null
+          next_meeting_id: string | null
+          next_papers_deadline: string | null
+          organisation_id: string | null
+          papers_deadline_days: number | null
+          pending_decisions: number | null
+          sort_order: number | null
+          updated_at: string | null
+          workspace_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forums_chair_resource_id_organisation_id_fkey"
+            columns: ["chair_resource_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "forums_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forums_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forums_workspace_id_organisation_id_fkey"
             columns: ["workspace_id", "organisation_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -12587,6 +12946,58 @@ export type Database = {
           },
           {
             foreignKeyName: "work_items_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      v_meetings: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          decisions_pending: number | null
+          decisions_targeted: number | null
+          forum_id: string | null
+          forum_name: string | null
+          id: string | null
+          is_past: boolean | null
+          meeting_date: string | null
+          minutes_link: string | null
+          notes: string | null
+          organisation_id: string | null
+          papers_deadline: string | null
+          papers_deadline_passed: boolean | null
+          status: Database["public"]["Enums"]["meeting_status"] | null
+          today: string | null
+          updated_at: string | null
+          workspace_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetings_forum_id_organisation_id_fkey"
+            columns: ["forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "meetings_forum_id_organisation_id_fkey"
+            columns: ["forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "meetings_workspace_id_organisation_id_fkey"
             columns: ["workspace_id", "organisation_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -13863,6 +14274,7 @@ export type Database = {
           ref: string
           status: Database["public"]["Enums"]["decision_status"]
           supersedes_id: string | null
+          target_meeting_id: string | null
           title: string
           updated_at: string
           workspace_id: string
@@ -13952,6 +14364,7 @@ export type Database = {
           ref: string
           status: Database["public"]["Enums"]["decision_status"]
           supersedes_id: string | null
+          target_meeting_id: string | null
           title: string
           updated_at: string
           workspace_id: string
@@ -14022,6 +14435,7 @@ export type Database = {
           ref: string
           status: Database["public"]["Enums"]["decision_status"]
           supersedes_id: string | null
+          target_meeting_id: string | null
           title: string
           updated_at: string
           workspace_id: string
@@ -14199,6 +14613,59 @@ export type Database = {
           ref: string
           status: Database["public"]["Enums"]["decision_status"]
           supersedes_id: string | null
+          target_meeting_id: string | null
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "decisions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_pending_decision: {
+        Args: {
+          p_decision?: Json
+          p_decision_id: string
+          p_expected_updated_at?: string
+          p_links?: Json
+          p_options?: Json
+        }
+        Returns: {
+          chosen_option_id: string | null
+          context: string | null
+          created_at: string
+          created_by: string | null
+          decided_by_forum_id: string | null
+          decided_by_resource_id: string | null
+          decision_date: string | null
+          decision_maker_id: string | null
+          evidence_link: string | null
+          forum_id: string | null
+          forum_list: string
+          id: string
+          impact_benefits: boolean
+          impact_benefits_note: string | null
+          impact_cost: boolean
+          impact_cost_note: string | null
+          impact_scope: boolean
+          impact_scope_note: string | null
+          impact_time: boolean
+          impact_time_note: string | null
+          needed_by_date: string | null
+          organisation_id: string
+          portfolio_id: string | null
+          programme_id: string | null
+          project_id: string | null
+          rationale: string | null
+          recorded_at: string | null
+          recorded_by: string | null
+          ref: string
+          status: Database["public"]["Enums"]["decision_status"]
+          supersedes_id: string | null
+          target_meeting_id: string | null
           title: string
           updated_at: string
           workspace_id: string
@@ -14248,6 +14715,7 @@ export type Database = {
           ref: string
           status: Database["public"]["Enums"]["decision_status"]
           supersedes_id: string | null
+          target_meeting_id: string | null
           title: string
           updated_at: string
           workspace_id: string
@@ -14330,6 +14798,13 @@ export type Database = {
       external_source: "planner_basic" | "planner_premium" | "import"
       financial_kind: "budget" | "actual" | "forecast"
       forecast_capture_source: "close" | "scheduled"
+      forum_cadence:
+        | "weekly"
+        | "fortnightly"
+        | "monthly"
+        | "quarterly"
+        | "ad_hoc"
+      forum_level: "project" | "programme" | "portfolio" | "organisation"
       gate_check_key:
         | "benefit_profiles_owned"
         | "benefit_baselines"
@@ -14344,7 +14819,13 @@ export type Database = {
       lesson_type: "success" | "problem"
       measure_frequency: "monthly" | "quarterly" | "annually"
       measurement_status: "submitted" | "validated" | "queried"
-      milestone_type: "delivery" | "gate" | "key_date" | "external_dependency"
+      meeting_status: "planned" | "held" | "cancelled"
+      milestone_type:
+        | "delivery"
+        | "gate"
+        | "key_date"
+        | "external_dependency"
+        | "approval"
       ms_connection_status:
         | "not_connected"
         | "pending_approval"
@@ -14592,6 +15073,14 @@ export const Constants = {
       external_source: ["planner_basic", "planner_premium", "import"],
       financial_kind: ["budget", "actual", "forecast"],
       forecast_capture_source: ["close", "scheduled"],
+      forum_cadence: [
+        "weekly",
+        "fortnightly",
+        "monthly",
+        "quarterly",
+        "ad_hoc",
+      ],
+      forum_level: ["project", "programme", "portfolio", "organisation"],
       gate_check_key: [
         "benefit_profiles_owned",
         "benefit_baselines",
@@ -14611,7 +15100,14 @@ export const Constants = {
       lesson_type: ["success", "problem"],
       measure_frequency: ["monthly", "quarterly", "annually"],
       measurement_status: ["submitted", "validated", "queried"],
-      milestone_type: ["delivery", "gate", "key_date", "external_dependency"],
+      meeting_status: ["planned", "held", "cancelled"],
+      milestone_type: [
+        "delivery",
+        "gate",
+        "key_date",
+        "external_dependency",
+        "approval",
+      ],
       ms_connection_status: [
         "not_connected",
         "pending_approval",

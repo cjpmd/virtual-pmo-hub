@@ -270,13 +270,36 @@ Spec: `docs/design/project-overview-spec.md` (components, data rules, option A c
 - 16/10: "GATE 1 - Ready to Deliver" mapped to Phase 3; "Design authority approval" is now a
   key-date milestone reported to committee (`20261016154517_gate_mapping_2`). `v_decisions`
   has `can_record` / `can_write` (`20261016154523_decision_can_record`); the drawer uses them.
-- Waiting for the user to run `docs/sql/runbook-decision-edit-and-draft-links.sql`
-  (update_pending_decision; draft save and submit replace links atomically). After that: wire
-  both into the drawer and form, drop the client-side link delete, rerun the UIT flows.
+- The user applied `docs/sql/runbook-decision-edit-and-draft-links.sql`
+  (`20261016170000_decision_edit_and_draft_links`): the drawer edits Pending decisions and their
+  links through `update_pending_decision`; draft save and submit replace a draft's links in the
+  same transaction (no client-side delete). UIT round 2 run 19/10 (`docs/sql/ui-test-data.sql`).
 - UI write flows run in the "UI Test" workspace of the outsider test organisation (project
   UIT), never in the demo organisation. Setup and purge runbook: `docs/sql/ui-test-data.sql`.
   The member test user is now also a viewer of that organisation (contributor on UI Test only),
   so member-scoped counts include UIT records.
+
+## D2 forums and meetings (19/10/2026)
+
+- Applied: `20261019160254_d2_0_milestone_type_approval`, `20261019160405_d2_forums_meetings`
+  (record and dry run 26/26: `docs/sql/d2-forums-meetings.sql`). Forums are organisation-level
+  (workspace_id null; the five former lookups, ids kept) or workspace forums. Organisation
+  admins manage organisation-level forums, workspace PMO/admin their workspace's, chairs their
+  forum's meetings; everyone in the organisation reads forums and meetings; decisions keep their
+  workspace RLS. 34 Design authority approvals are now `approval` milestones of the ARB.
+- App: forum names come from `forums` (`src/services/decisions.ts`); `Approval` milestone label
+  added; types regenerated. Screens: `docs/design/forums-ui-brief.md` (Lovable).
+- Runbook `docs/sql/runbook-d2.sql` (user): drops the forum lookup FKs/indexes, deletes the 10
+  decision_forum lookups, seeds organisation-level forums for new organisations,
+  update_pending_decision with option history by title and target_meeting_id. Migration version
+  20261019170000. Run by the user 19/10 (Block A 7/7; Block B2; verified: 0 forum lookups,
+  0 lookup FKs, new seed and update_pending_decision, no anon execute); types regenerated.
+- Settings › Lists still shows "Decision forums" (lookup list); after the runbook it is empty.
+  Lovable replaces it with a link to Governance › Boards (brief section 5).
+- Demo gate seed (`docs/sql/seed-gate-consistency.sql`) applied 19/10 for Phase 4-6 projects
+  except NRDC: 28 milestones. Remaining "Gate N not passed": ARB, CYB, EBB GATE 0; NRDC GATE 0
+  and GATE 1 (kept as real-slip examples).
+- UI test data (UI Test workspace) stays until D2's screens are tested.
 
 ## Pre-launch security task: review signed-in RPCs and business case FK indexes
 
