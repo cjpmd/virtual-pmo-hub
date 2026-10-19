@@ -30,15 +30,42 @@ interface Outcome {
 
 export function DecisionForumView() {
   const governance = useGovernance();
-  return <QueryState query={governance}>{(data) => <BoardsWorkspace renderAgenda={(forum, meeting, targetedOnly) => <Forum key={forum.id + (meeting?.id ?? "")} data={data} selectedForum={forum} selectedMeeting={meeting} targetedOnly={targetedOnly} />} />}</QueryState>;
+  return (
+    <QueryState query={governance}>
+      {(data) => (
+        <BoardsWorkspace
+          renderAgenda={(forum, meeting, targetedOnly) => (
+            <Forum
+              key={forum.id + (meeting?.id ?? "")}
+              data={data}
+              selectedForum={forum}
+              selectedMeeting={meeting}
+              targetedOnly={targetedOnly}
+            />
+          )}
+        />
+      )}
+    </QueryState>
+  );
 }
 
-function Forum({ data, selectedForum, selectedMeeting, targetedOnly }: { data: GovernanceData; selectedForum: ForumItem; selectedMeeting?: MeetingItem; targetedOnly?: boolean }) {
+function Forum({
+  data,
+  selectedForum,
+  selectedMeeting,
+  targetedOnly,
+}: {
+  data: GovernanceData;
+  selectedForum: ForumItem;
+  selectedMeeting?: MeetingItem;
+  targetedOnly?: boolean;
+}) {
   const forum = selectedForum.name;
   const meetings = useMeetings(selectedForum.id);
   const planned = (meetings.data ?? []).filter((item) => item.status === "Planned");
   const [meetingId, setMeetingId] = useState(selectedMeeting?.id ?? "");
-  const chosenMeeting = selectedMeeting ?? planned.find((item) => item.id === meetingId) ?? planned[0];
+  const chosenMeeting =
+    selectedMeeting ?? planned.find((item) => item.id === meetingId) ?? planned[0];
   const [meetingDate, setMeetingDate] = useState(todayIso());
   const [meetingMode, setMeetingMode] = useState(false);
   const [outcomes, setOutcomes] = useState<Record<string, Outcome>>({});
@@ -46,7 +73,15 @@ function Forum({ data, selectedForum, selectedMeeting, targetedOnly }: { data: G
   const date = chosenMeeting?.meetingDate ?? meetingDate;
   const agenda = useMemo(() => {
     const result = getForumAgenda(forum, all);
-    const pending = targetedOnly ? result.pending.filter((item) => item.targetMeetingId === chosenMeeting?.id) : result.pending.slice().sort((a, b) => Number(b.targetMeetingId === chosenMeeting?.id) - Number(a.targetMeetingId === chosenMeeting?.id));
+    const pending = targetedOnly
+      ? result.pending.filter((item) => item.targetMeetingId === chosenMeeting?.id)
+      : result.pending
+          .slice()
+          .sort(
+            (a, b) =>
+              Number(b.targetMeetingId === chosenMeeting?.id) -
+              Number(a.targetMeetingId === chosenMeeting?.id),
+          );
     return { ...result, pending };
   }, [forum, all, targetedOnly, chosenMeeting?.id]);
   // Keep items recorded in this meeting on screen (they leave the pending list once saved).
@@ -66,7 +101,34 @@ function Forum({ data, selectedForum, selectedMeeting, targetedOnly }: { data: G
       <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border/70 bg-card p-4 shadow-sm">
         <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-muted-foreground">
           Meeting date
-          {selectedMeeting ? <span className="text-sm">{formatDate(selectedMeeting.meetingDate)}</span> : planned.length ? <select aria-label="Agenda meeting" value={chosenMeeting?.id ?? ""} onChange={(event) => { setMeetingId(event.target.value); setMeetingMode(false); setOutcomes({}); setRecorded([]); }} className="h-9 max-w-full rounded-md border border-input bg-background px-2 text-sm text-foreground">{planned.map((item) => <option key={item.id} value={item.id}>{formatDate(item.meetingDate)} · papers due {formatDate(item.papersDeadline)}</option>)}</select> : <Input type="date" value={meetingDate} onChange={(event) => setMeetingDate(event.target.value)} className="h-9 w-44" />}
+          {selectedMeeting ? (
+            <span className="text-sm">{formatDate(selectedMeeting.meetingDate)}</span>
+          ) : planned.length ? (
+            <select
+              aria-label="Agenda meeting"
+              value={chosenMeeting?.id ?? ""}
+              onChange={(event) => {
+                setMeetingId(event.target.value);
+                setMeetingMode(false);
+                setOutcomes({});
+                setRecorded([]);
+              }}
+              className="h-9 max-w-full rounded-md border border-input bg-background px-2 text-sm text-foreground"
+            >
+              {planned.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {formatDate(item.meetingDate)} · papers due {formatDate(item.papersDeadline)}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <Input
+              type="date"
+              value={meetingDate}
+              onChange={(event) => setMeetingDate(event.target.value)}
+              className="h-9 w-44"
+            />
+          )}
         </label>
         <div className="ml-auto flex gap-2">
           <Button
@@ -113,12 +175,7 @@ function Forum({ data, selectedForum, selectedMeeting, targetedOnly }: { data: G
           onRecorded={(id) => setRecorded((current) => [...current, id])}
         />
       ) : (
-        <Agenda
-          items={agenda.pending}
-          recent={agenda.recent}
-          forum={forum}
-          meetingDate={date}
-        />
+        <Agenda items={agenda.pending} recent={agenda.recent} forum={forum} meetingDate={date} />
       )}
     </div>
   );
@@ -401,7 +458,11 @@ function MeetingMode({
             </span>
           )}
         </div>
-        {recordDecision.error && <p role="alert" className="mt-3 text-sm text-health-bad-foreground">{recordDecision.error.message}</p>}
+        {recordDecision.error && (
+          <p role="alert" className="mt-3 text-sm text-health-bad-foreground">
+            {recordDecision.error.message}
+          </p>
+        )}
       </section>
     </div>
   );

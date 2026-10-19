@@ -20,7 +20,12 @@ import type { MilestoneInput, MilestoneItem } from "@/services/project-records";
 
 const TYPES: MilestoneType[] = ["Delivery", "Gate", "Key date", "External dependency", "Approval"];
 
-export const approvingForumColumn: BoardColumn = { key: "approvingForum", label: "Approving forum", type: "text", width: 240 };
+export const approvingForumColumn: BoardColumn = {
+  key: "approvingForum",
+  label: "Approving forum",
+  type: "text",
+  width: 240,
+};
 
 /** Report to committee: a Yes/No switch saved to milestones.report_to_committee. */
 export const committeeColumn: BoardColumn = {
@@ -140,7 +145,10 @@ export function ProjectMilestones({ projectId }: { projectId: string }) {
   const phases = usePhases();
   const phaseList = useMemo(() => phases.data ?? [], [phases.data]);
   const columns = useMemo(
-    () => [...projectMilestoneColumns(phaseList.map((phase) => phase.name)), ...(hasApproval ? [approvingForumColumn] : [])],
+    () => [
+      ...projectMilestoneColumns(phaseList.map((phase) => phase.name)),
+      ...(hasApproval ? [approvingForumColumn] : []),
+    ],
     [phaseList, hasApproval],
   );
   const names = useMemo(
@@ -169,27 +177,58 @@ export function ProjectMilestones({ projectId }: { projectId: string }) {
     <QueryState query={milestones}>
       {(items) => (
         <>
-        <BoardWorkspace
-          // The board copies its columns on mount; remount once permissions and phases are known.
-          key={`${permissions.canEdit}-${phaseList.length}-${hasApproval}`}
-          title="Milestones"
-          itemLabel="milestone"
-          rows={milestonesToBoardRows(items, names, phaseList, forums.data ?? [])}
-          canCreate={false}
-          actions={permissions.canEdit && <Button onClick={() => setOpenId("new")}><Plus />New milestone</Button>}
-          onOpenRow={(row) => setOpenId(row.id)}
-          renderTitle={(row) => <div><Button variant="link" className="h-auto justify-start whitespace-normal p-0 text-left" onClick={(event) => { event.stopPropagation(); setOpenId(row.id); }}>{row.title}</Button>{row["type"] === "Approval" && <p className="text-xs text-muted-foreground">{String(row["approvingForum"] || "No approving forum")}</p>}</div>}
-          columns={
-            permissions.canEdit
-              ? columns
-              : columns.map((column) => ({ ...column, editable: false }))
-          }
-          groupOptions={["group", "deliveryStatus"]}
-          manage={permissions.canEdit}
-          canDelete={permissions.canDelete}
-          onRecordChange={onRecordChange}
-        />
-        {openId && <MilestoneForm projectId={projectId} item={openId === "new" ? undefined : items.find((item) => item.id === openId)} close={() => setOpenId(null)} />}
+          <BoardWorkspace
+            // The board copies its columns on mount; remount once permissions and phases are known.
+            key={`${permissions.canEdit}-${phaseList.length}-${hasApproval}`}
+            title="Milestones"
+            itemLabel="milestone"
+            rows={milestonesToBoardRows(items, names, phaseList, forums.data ?? [])}
+            canCreate={false}
+            actions={
+              permissions.canEdit && (
+                <Button onClick={() => setOpenId("new")}>
+                  <Plus />
+                  New milestone
+                </Button>
+              )
+            }
+            onOpenRow={(row) => setOpenId(row.id)}
+            renderTitle={(row) => (
+              <div>
+                <Button
+                  variant="link"
+                  className="h-auto justify-start whitespace-normal p-0 text-left"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setOpenId(row.id);
+                  }}
+                >
+                  {row.title}
+                </Button>
+                {row["type"] === "Approval" && (
+                  <p className="text-xs text-muted-foreground">
+                    {String(row["approvingForum"] || "No approving forum")}
+                  </p>
+                )}
+              </div>
+            )}
+            columns={
+              permissions.canEdit
+                ? columns
+                : columns.map((column) => ({ ...column, editable: false }))
+            }
+            groupOptions={["group", "deliveryStatus"]}
+            manage={permissions.canEdit}
+            canDelete={permissions.canDelete}
+            onRecordChange={onRecordChange}
+          />
+          {openId && (
+            <MilestoneForm
+              projectId={projectId}
+              item={openId === "new" ? undefined : items.find((item) => item.id === openId)}
+              close={() => setOpenId(null)}
+            />
+          )}
         </>
       )}
     </QueryState>

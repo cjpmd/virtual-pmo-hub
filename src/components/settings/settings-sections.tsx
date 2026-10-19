@@ -1217,7 +1217,11 @@ export function RiskSettings() {
           <FixedList label="Issue severity" values={lists.issueSeverities} />
           <div className="space-y-2">
             <p className="text-sm font-semibold">Decision forums</p>
-            <Button asChild variant="outline"><Link to="/governance/forum" search={{}}>Governance › Boards</Link></Button>
+            <Button asChild variant="outline">
+              <Link to="/governance/forum" search={{}}>
+                Governance › Boards
+              </Link>
+            </Button>
           </div>
           <FixedList label="Dependency types" values={lists.dependencyTypes} />
           <ListEditor

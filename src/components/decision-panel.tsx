@@ -268,7 +268,9 @@ function DecisionEditor({
   const people = governance.data?.people ?? [];
   const [values, setValues] = useState(initial);
   const meetings = useMeetings(values.forumId);
-  const plannedMeetings = (meetings.data ?? []).filter((meeting) => meeting.forumId === values.forumId && meeting.status === "Planned");
+  const plannedMeetings = (meetings.data ?? []).filter(
+    (meeting) => meeting.forumId === values.forumId && meeting.status === "Planned",
+  );
   const [attempted, setAttempted] = useState(false);
   const set = (patch: Partial<EditorValues>) => setValues((current) => ({ ...current, ...patch }));
   const namedOptions = values.options.filter((option) => option.title.trim()).length;
@@ -384,7 +386,9 @@ function DecisionEditor({
           <select
             className={selectClass}
             value={values.forumId ?? ""}
-            onChange={(event) => set({ forumId: event.target.value || null, targetMeetingId: null })}
+            onChange={(event) =>
+              set({ forumId: event.target.value || null, targetMeetingId: null })
+            }
           >
             <option value="">Not set</option>
             {forums.map((forum) => (
@@ -404,11 +408,24 @@ function DecisionEditor({
       </div>
 
       <Field label="Target meeting">
-        <select className={selectClass} disabled={!values.forumId || meetings.isLoading} value={values.targetMeetingId ?? ""} onChange={(event) => set({ targetMeetingId: event.target.value || null })}>
+        <select
+          className={selectClass}
+          disabled={!values.forumId || meetings.isLoading}
+          value={values.targetMeetingId ?? ""}
+          onChange={(event) => set({ targetMeetingId: event.target.value || null })}
+        >
           <option value="">None</option>
-          {plannedMeetings.map((meeting) => <option key={meeting.id} value={meeting.id}>{formatDate(meeting.meetingDate)} · papers due {formatDate(meeting.papersDeadline)}</option>)}
+          {plannedMeetings.map((meeting) => (
+            <option key={meeting.id} value={meeting.id}>
+              {formatDate(meeting.meetingDate)} · papers due {formatDate(meeting.papersDeadline)}
+            </option>
+          ))}
         </select>
-        {meetings.error && <p role="alert" className="text-xs text-health-bad-foreground">{errorMessage(meetings.error)}</p>}
+        {meetings.error && (
+          <p role="alert" className="text-xs text-health-bad-foreground">
+            {errorMessage(meetings.error)}
+          </p>
+        )}
       </Field>
 
       <fieldset className="space-y-2">
@@ -599,8 +616,15 @@ function DecisionDetail({
         )}
       </div>
 
-      {decision.targetMeetingDate && <p className="mt-3 text-sm text-muted-foreground">Target meeting: {decision.forum} {formatDate(decision.targetMeetingDate)} (papers due {formatDate(decision.targetPapersDeadline)})</p>}
-      <div className="mt-3"><DecisionMeetingSignals decision={decision} /></div>
+      {decision.targetMeetingDate && (
+        <p className="mt-3 text-sm text-muted-foreground">
+          Target meeting: {decision.forum} {formatDate(decision.targetMeetingDate)} (papers due{" "}
+          {formatDate(decision.targetPapersDeadline)})
+        </p>
+      )}
+      <div className="mt-3">
+        <DecisionMeetingSignals decision={decision} />
+      </div>
 
       {supersedes && (
         <p className="mt-3 rounded-md border bg-muted/40 p-3 text-xs">
@@ -1356,7 +1380,8 @@ const short = (iso: string | null) => (iso ? formatDate(iso).slice(0, 5) : "—"
 function History({ decisionId }: { decisionId: string }) {
   const events = useDecisionEvents(decisionId);
   const meetings = useMeetings();
-  const meetingDate = (id: string | null) => id ? formatDate(meetings.data?.find((meeting) => meeting.id === id)?.meetingDate) : "None";
+  const meetingDate = (id: string | null) =>
+    id ? formatDate(meetings.data?.find((meeting) => meeting.id === id)?.meetingDate) : "None";
   return (
     <section className="mt-6 border-t pt-5">
       <h3 className="text-sm font-semibold">History</h3>
@@ -1376,11 +1401,32 @@ function History({ decisionId }: { decisionId: string }) {
                 `: ${event.changedFields.map((field) => field.replace(/_/g, " ")).join(", ")}`}
             </p>
             {event.reason && <p className="mt-0.5 text-sm text-muted-foreground">{event.reason}</p>}
-            {event.optionChanges?.renamed?.map(([old, next], index) => <p key={`rename-${index}`} className="text-sm text-muted-foreground">Renamed option {old} → {next}</p>)}
-            {event.optionChanges?.added?.map((title) => <p key={`add-${title}`} className="text-sm text-muted-foreground">Added option {title}</p>)}
-            {event.optionChanges?.removed?.map((title) => <p key={`remove-${title}`} className="text-sm text-muted-foreground">Removed option {title}</p>)}
-            {event.optionChanges?.prosConsChanged?.map((title) => <p key={`pros-${title}`} className="text-sm text-muted-foreground">Changed pros/cons of {title}</p>)}
-            {event.targetMeetingChange && <p className="text-sm text-muted-foreground">Target meeting: {meetingDate(event.targetMeetingChange[0])} → {meetingDate(event.targetMeetingChange[1])}</p>}
+            {event.optionChanges?.renamed?.map(([old, next], index) => (
+              <p key={`rename-${index}`} className="text-sm text-muted-foreground">
+                Renamed option {old} → {next}
+              </p>
+            ))}
+            {event.optionChanges?.added?.map((title) => (
+              <p key={`add-${title}`} className="text-sm text-muted-foreground">
+                Added option {title}
+              </p>
+            ))}
+            {event.optionChanges?.removed?.map((title) => (
+              <p key={`remove-${title}`} className="text-sm text-muted-foreground">
+                Removed option {title}
+              </p>
+            ))}
+            {event.optionChanges?.prosConsChanged?.map((title) => (
+              <p key={`pros-${title}`} className="text-sm text-muted-foreground">
+                Changed pros/cons of {title}
+              </p>
+            ))}
+            {event.targetMeetingChange && (
+              <p className="text-sm text-muted-foreground">
+                Target meeting: {meetingDate(event.targetMeetingChange[0])} →{" "}
+                {meetingDate(event.targetMeetingChange[1])}
+              </p>
+            )}
             <p className="mt-0.5 text-xs text-muted-foreground">
               {formatDate(event.eventDate)} · {event.actor}
               {event.forum ? ` · ${event.forum}` : ""}

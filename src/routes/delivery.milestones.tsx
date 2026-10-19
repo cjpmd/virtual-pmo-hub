@@ -344,7 +344,21 @@ function Milestones({
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" unit="d" />
                 <YAxis dataKey="name" type="category" width={145} tick={{ fontSize: 10 }} />
-                <Tooltip content={({ active, payload }) => active && payload?.[0] ? <div className="rounded-md border bg-popover p-3 text-sm text-popover-foreground"><p>{payload[0].payload.name}</p>{payload[0].payload.forum && <p className="text-xs text-muted-foreground">{payload[0].payload.forum}</p>}<p className="font-mono">{payload[0].payload.days} days</p></div> : null} />
+                <Tooltip
+                  content={({ active, payload }) =>
+                    active && payload?.[0] ? (
+                      <div className="rounded-md border bg-popover p-3 text-sm text-popover-foreground">
+                        <p>{payload[0].payload.name}</p>
+                        {payload[0].payload.forum && (
+                          <p className="text-xs text-muted-foreground">
+                            {payload[0].payload.forum}
+                          </p>
+                        )}
+                        <p className="font-mono">{payload[0].payload.days} days</p>
+                      </div>
+                    ) : null
+                  }
+                />
                 <Bar dataKey="days" fill="var(--viz-warning)" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -470,19 +484,48 @@ function Register({ items }: { items: PortfolioMilestone[] }) {
         title="Milestones"
         itemLabel="milestone"
         rows={rows}
-        columns={canEdit ? registerColumns : registerColumns.map((column) => ({ ...column, editable: false }))}
+        columns={
+          canEdit
+            ? registerColumns
+            : registerColumns.map((column) => ({ ...column, editable: false }))
+        }
         onOpenRow={(row) => setOpenId(row.id)}
         manage={canEdit}
         canDelete={canDelete}
         canCreate={false}
         onRecordChange={onRecordChange}
         groupOptions={["programme", "project", "type", "deliveryStatus", "people"]}
-        seededViews={views.map((view) => ({ ...view, visible: [...view.visible, ...(hasApproval ? ["approvingForum"] : [])] }))}
+        seededViews={views.map((view) => ({
+          ...view,
+          visible: [...view.visible, ...(hasApproval ? ["approvingForum"] : [])],
+        }))}
         renderTitle={(row) => (
-          <div><Button variant="link" className="h-auto justify-start whitespace-normal p-0 text-left" onClick={(event) => { event.stopPropagation(); setOpenId(row.id); }}>{row.title}</Button>{row["type"] === "Approval" && <p className="text-xs text-muted-foreground">{String(row["approvingForum"] || "No approving forum")}</p>}</div>
+          <div>
+            <Button
+              variant="link"
+              className="h-auto justify-start whitespace-normal p-0 text-left"
+              onClick={(event) => {
+                event.stopPropagation();
+                setOpenId(row.id);
+              }}
+            >
+              {row.title}
+            </Button>
+            {row["type"] === "Approval" && (
+              <p className="text-xs text-muted-foreground">
+                {String(row["approvingForum"] || "No approving forum")}
+              </p>
+            )}
+          </div>
         )}
       />
-      {openId && byId.get(openId) && <MilestoneForm projectId={byId.get(openId)?.projectId ?? ""} item={byId.get(openId)} close={() => setOpenId(null)} />}
+      {openId && byId.get(openId) && (
+        <MilestoneForm
+          projectId={byId.get(openId)?.projectId ?? ""}
+          item={byId.get(openId)}
+          close={() => setOpenId(null)}
+        />
+      )}
     </section>
   );
 }
@@ -503,7 +546,11 @@ function MilestoneList({ title, items }: { title: string; items: PortfolioMilest
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{item.title}</p>
               <p className="truncate text-xs text-muted-foreground">{item.projectName}</p>
-              {item.type === "Approval" && <p className="text-xs text-muted-foreground">{item.forumName || "No approving forum"}</p>}
+              {item.type === "Approval" && (
+                <p className="text-xs text-muted-foreground">
+                  {item.forumName || "No approving forum"}
+                </p>
+              )}
             </div>
             <span className="shrink-0 text-xs text-muted-foreground">
               {formatDate(item.actualDate ?? item.forecastDate)}

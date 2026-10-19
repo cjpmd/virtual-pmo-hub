@@ -69,7 +69,14 @@ describe("issueInputFromBoard", () => {
 
 describe("milestoneInputFromBoard", () => {
   it("maps Approval and its approving forum to the existing milestone fields", () => {
-    expect(milestoneInputFromBoard({ type: "Approval", approvingForum: "Architecture Review Board" }, people, [], [{ id: "arb", name: "Architecture Review Board" }])).toEqual({ type: "Approval", forumId: "arb" });
+    expect(
+      milestoneInputFromBoard(
+        { type: "Approval", approvingForum: "Architecture Review Board" },
+        people,
+        [],
+        [{ id: "arb", name: "Architecture Review Board" }],
+      ),
+    ).toEqual({ type: "Approval", forumId: "arb" });
   });
   it("maps forecast, baseline and actual dates", () => {
     expect(
