@@ -1,5 +1,11 @@
 # Virtual PMO prototype
 
+## Forums and meetings D2
+- [ ] Build Boards list, forum details, meeting details and retain agenda/meeting mode.
+- [ ] Add decision target-meeting pickers, signals and detailed history.
+- [ ] Add approval milestone forum pickers and forum names; replace retired Settings list.
+- [ ] Verify focused tests and preview; authenticated checks depend on external Supabase access.
+
 - [x] Align header controls to the right and add an account menu with personal settings and prototype log out
 
 - [x] Create the typed mock data and calculated health services
