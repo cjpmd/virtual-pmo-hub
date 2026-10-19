@@ -479,6 +479,9 @@ rollback;
 
 -- ===== Block B: apply ========================================================================
 -- Run only after Block A shows 7 of 7. Expected: COMMIT, no errors.
+-- 19/10: the chat copy of Block B was an outline, so only the schema_migrations insert ran
+-- (Block A 7/7; Block C then showed 10 | 3 | ... | false | true). Run Block B2 (this block
+-- without the insert at the end, which is already recorded); it was printed in full in chat.
 
 begin;
 
