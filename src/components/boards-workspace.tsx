@@ -139,7 +139,9 @@ export function BoardsWorkspace({ renderAgenda }: { renderAgenda: AgendaRenderer
                                   to="/governance/forum"
                                   search={{
                                     forum: forum.id,
-                                    meeting: forum.nextMeetingId ?? undefined,
+                                    ...(forum.nextMeetingId
+                                      ? { meeting: forum.nextMeetingId }
+                                      : {}),
                                   }}
                                   className="inline-flex items-center gap-2 text-primary hover:underline"
                                 >
@@ -147,7 +149,7 @@ export function BoardsWorkspace({ renderAgenda }: { renderAgenda: AgendaRenderer
                                   {formatDate(forum.nextMeetingDate)}
                                 </Link>
                                 <p className="mt-2 text-xs text-muted-foreground">
-                                  Papers due {formatDate(forum.nextPapersDeadline)}
+                                  Papers due {formatDate(forum.nextPapersDeadline ?? undefined)}
                                 </p>
                                 <PapersWarning date={forum.nextPapersDeadline} />
                               </>
@@ -225,7 +227,7 @@ function ForumDetail({
   onEdit,
 }: {
   forum: ForumItem;
-  meetingId?: string;
+  meetingId?: string | undefined;
   renderAgenda: AgendaRenderer;
   onEdit: () => void;
 }) {
@@ -237,7 +239,7 @@ function ForumDetail({
   const navigate = useNavigate();
   const [memberId, setMemberId] = useState("");
   const [form, setForm] = useState<{
-    meeting?: MeetingItem;
+    meeting?: MeetingItem | undefined;
     mode: "edit" | "held" | "cancel";
   } | null>(null);
   const meeting = meetings.data?.find((item) => item.id === meetingId);
@@ -490,32 +492,35 @@ function MeetingDecisions({ meeting }: { meeting: MeetingItem }) {
   return (
     <section className="space-y-3">
       <h3 className="text-lg font-semibold">Decisions targeted at this meeting</h3>
-      <QueryState query={decisions}>
-        {(items) => (
-          <div className="divide-y border-y">
-            {items.map((decision) => (
-              <div key={decision.id} className="space-y-2 py-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <Button
-                    variant="link"
-                    className="h-auto min-w-0 justify-start whitespace-normal p-0 text-left"
-                    onClick={() => setOpenId(decision.id)}
-                  >
-                    {decision.reference} · {decision.title}
-                  </Button>
-                  <DecisionStatusPill status={decision.status} />
+      <QueryState query={governance}>
+        {() => {
+          const items = decisions.data;
+          return (
+            <div className="divide-y border-y">
+              {items.map((decision) => (
+                <div key={decision.id} className="space-y-2 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <Button
+                      variant="link"
+                      className="h-auto min-w-0 justify-start whitespace-normal p-0 text-left"
+                      onClick={() => setOpenId(decision.id)}
+                    >
+                      {decision.reference} · {decision.title}
+                    </Button>
+                    <DecisionStatusPill status={decision.status} />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {decision.scopeName} · Needed by {formatDate(decision.neededBy)}
+                  </p>
+                  <DecisionMeetingSignals decision={decision} />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {decision.scopeName} · Needed by {formatDate(decision.neededBy)}
-                </p>
-                <DecisionMeetingSignals decision={decision} />
-              </div>
-            ))}
-            {!items.length && (
-              <p className="py-4 text-sm text-muted-foreground">No targeted decisions.</p>
-            )}
-          </div>
-        )}
+              ))}
+              {!items.length && (
+                <p className="py-4 text-sm text-muted-foreground">No targeted decisions.</p>
+              )}
+            </div>
+          );
+        }}
       </QueryState>
       {open && (
         <DecisionPanel

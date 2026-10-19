@@ -618,8 +618,8 @@ function DecisionDetail({
 
       {decision.targetMeetingDate && (
         <p className="mt-3 text-sm text-muted-foreground">
-          Target meeting: {decision.forum} {formatDate(decision.targetMeetingDate)} (papers due{" "}
-          {formatDate(decision.targetPapersDeadline)})
+          Target meeting: {decision.forum} {formatDate(decision.targetMeetingDate ?? undefined)}{" "}
+          (papers due {formatDate(decision.targetPapersDeadline ?? undefined)})
         </p>
       )}
       <div className="mt-3">

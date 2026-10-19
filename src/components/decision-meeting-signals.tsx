@@ -4,9 +4,9 @@ import type { ResolvedDecision } from "@/services/decisions";
 export function DecisionMeetingSignals({ decision }: { decision: ResolvedDecision }) {
   const signals = [
     decision.papersDeadlinePassed &&
-      `Papers deadline missed for ${decision.forum} ${formatDate(decision.targetMeetingDate)}`,
+      `Papers deadline missed for ${decision.forum} ${formatDate(decision.targetMeetingDate ?? undefined)}`,
     decision.neededByBeforePapersDeadline &&
-      `Needed by ${formatDate(decision.neededBy)}, before the papers deadline ${formatDate(decision.targetPapersDeadline)}`,
+      `Needed by ${formatDate(decision.neededBy)}, before the papers deadline ${formatDate(decision.targetPapersDeadline ?? undefined)}`,
     decision.targetMeetingAfterNeededBy && "Target meeting is after the needed-by date",
   ].filter(Boolean);
   if (!signals.length) return null;

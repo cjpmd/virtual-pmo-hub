@@ -24,7 +24,7 @@ export function MilestoneForm({
   close,
 }: {
   projectId: string;
-  item?: MilestoneItem;
+  item?: MilestoneItem | undefined;
   close: () => void;
 }) {
   const permissions = useProjectPermissions(projectId);

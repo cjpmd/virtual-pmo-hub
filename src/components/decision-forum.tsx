@@ -57,8 +57,8 @@ function Forum({
 }: {
   data: GovernanceData;
   selectedForum: ForumItem;
-  selectedMeeting?: MeetingItem;
-  targetedOnly?: boolean;
+  selectedMeeting?: MeetingItem | undefined;
+  targetedOnly?: boolean | undefined;
 }) {
   const forum = selectedForum.name;
   const meetings = useMeetings(selectedForum.id);

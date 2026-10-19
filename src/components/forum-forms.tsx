@@ -58,7 +58,7 @@ export function ForumForm({
   workspaces,
   close,
 }: {
-  forum?: ForumItem;
+  forum?: ForumItem | undefined;
   workspaces: { id: string; name: string }[];
   close: () => void;
 }) {
@@ -210,7 +210,7 @@ export function MeetingForm({
   close,
 }: {
   forum: ForumItem;
-  meeting?: MeetingItem;
+  meeting?: MeetingItem | undefined;
   mode?: "edit" | "held" | "cancel";
   close: () => void;
 }) {
