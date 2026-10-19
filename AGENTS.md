@@ -11,6 +11,9 @@
 
 ## Project rules
 
+- Boards, forum details and meeting details share the existing governance/forum route and forum hooks; this preserves one source of forum data and access rules.
+- Milestone approval edits use the shared MilestoneForm so type and required forum are saved together through the existing write helper.
+
 - Read the relevant specification in `docs/design/` or `docs/*.md` before implementing a change — the written specification is authoritative.
 - Read and write application records only through `src/services/`; components and routes must never query Supabase directly.
 - Persist real records in Supabase only; do not add localStorage or mock-data persistence paths.
