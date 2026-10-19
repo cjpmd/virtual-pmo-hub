@@ -279,6 +279,33 @@ Spec: `docs/design/project-overview-spec.md` (components, data rules, option A c
   The member test user is now also a viewer of that organisation (contributor on UI Test only),
   so member-scoped counts include UIT records.
 
+## D2 forums and meetings, proposed (19/10/2026), NOT applied
+
+- `docs/sql/d2-forums-meetings.sql`: migrations `d2_0_milestone_type_approval` (enum value,
+  on its own) and `d2_forums_meetings`.
+  - The migration adds the forums, forum_members and meetings tables (forum ids are kept from
+    the lookups).
+  - It adds decisions.target_meeting_id, approval milestones with a forum, and the chair in
+    can_record.
+  - It adds three signal columns on v_decisions, plus v_forums and v_meetings.
+  - Dry run: 18/18. The 34-milestone approval move was counted, not run: an enum value can't be
+    used in the transaction that adds it.
+- `docs/sql/runbook-d2.sql`: the user's runbook. It contains:
+  - the drop of the lookup FKs and indexes
+  - the delete of the 10 decision_forum lookups
+  - a seed_org_defaults that seeds forums
+  - update_pending_decision with option history by title and target_meeting_id
+
+  Run it after the migrations and after the services read `forums`. The migration version in
+  Block B is a placeholder to move after the D2 versions.
+- `docs/design/forums-ui-brief.md`: the brief for Lovable (Governance › Boards, the drawer
+  pickers, the approval milestone type).
+- `docs/sql/block-a2.sql`: Block A of the 16/10 runbook with `create or replace`, for the user
+  to run (rolled back).
+- `docs/sql/seed-gate-consistency.sql`: a demo seed proposal, not applied. It records the
+  earlier gates as passed for projects in Phases 3–6 (34 milestones; dry run clears all 19
+  "Gate N not passed" rows).
+
 ## Pre-launch security task: review signed-in RPCs and business case FK indexes
 
 Not now; do before launch. Don't change them until reviewed. The security advisor flags three
