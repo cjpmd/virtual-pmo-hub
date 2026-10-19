@@ -686,6 +686,8 @@ export async function listDecisionLinkTargets(projectId: string): Promise<LinkTa
 }
 
 export interface DecisionOptionInput {
+  /** Set for an existing option, so editing keeps its id. */
+  id?: string | undefined;
   title: string;
   pros: string[];
   cons: string[];
@@ -756,20 +758,25 @@ const impactFields = (impact: NewDecisionInput["impact"]) => ({
   impact_benefits_note: impact.benefits.note.trim() || null,
 });
 
-/** Edit a Pending decision's content and replace its options. */
-export async function savePendingDecision(
+/**
+ * Edit a Pending decision in one transaction (update_pending_decision RPC): its content, its
+ * options (an option with an id is updated in place, one without is added, an unlisted one is
+ * removed) and, when given, whole link lists by kind.
+ */
+export async function updatePendingDecision(
   id: string,
-  input: Omit<NewDecisionInput, "scope" | "links">,
-  existingOptionIds: string[],
+  input: Omit<NewDecisionInput, "scope" | "links"> | null,
+  links: Partial<Record<DecisionLinkKind, string[]>> | null,
   lastSeen: string,
 ) {
-  const title = requireText(input.title, "Give the decision a title.");
-  const options = input.options.filter((option) => option.title.trim());
-  if (options.length < 2) throw new ServiceError("invalid", "Add at least two options.");
-  await updateRow(
-    "decisions",
-    id,
-    {
+  let fields: Json = {};
+  let options: Json | null = null;
+  if (input) {
+    const title = requireText(input.title, "Give the decision a title.");
+    const kept = input.options.filter((option) => option.title.trim());
+    if (kept.length < 2) throw new ServiceError("invalid", "Add at least two options.");
+    if (!input.neededBy) throw new ServiceError("invalid", "Set a needed-by date.");
+    fields = {
       title,
       context: input.context.trim() || null,
       decision_maker_id: input.decisionMakerId,
@@ -777,20 +784,23 @@ export async function savePendingDecision(
       needed_by_date: input.neededBy,
       ...impactFields(input.impact),
       evidence_link: input.evidenceLink.trim() || null,
-    },
-    { context: "Saving the decision", lastSeen },
-  );
-  await deleteRows("decision_options", existingOptionIds, "Replacing the options");
-  await insertRows(
-    "decision_options",
-    options.map((option, index) => ({
-      decision_id: id,
+    };
+    options = kept.map((option) => ({
+      ...(option.id && { id: option.id }),
       title: option.title.trim(),
       pros: cleanList(option.pros),
       cons: cleanList(option.cons),
-      sort_order: index,
-    })),
-    "Saving the options",
+    }));
+  }
+  return unwrap(
+    await supabase.rpc("update_pending_decision", {
+      p_decision_id: id,
+      p_decision: fields,
+      ...(options && { p_options: options }),
+      ...(links && { p_links: links as Json }),
+      p_expected_updated_at: lastSeen,
+    }),
+    "Saving the decision",
   );
 }
 
@@ -806,15 +816,6 @@ export async function addDecisionLink(
     { decision_id: decisionId, [column]: targetId } as never,
     "Linking the record",
   );
-}
-
-export async function removeDecisionLink(
-  decisionId: string,
-  kind: DecisionLinkKind,
-  targetId: string,
-) {
-  const [name, column] = linkTable[kind];
-  return deleteWhere(name, { decision_id: decisionId, [column]: targetId }, "Removing the link");
 }
 
 /** Update a resulting action (editable in every status). */

@@ -9,7 +9,6 @@ import { todayIso } from "@/lib/today";
 import { listPeople } from "./hierarchy";
 import { healthLabel, toHealth } from "./labels";
 import { unwrap } from "./service-error";
-import { deleteWhere } from "./write";
 
 type Enums = Database["public"]["Enums"];
 const healthValue = Object.fromEntries(
@@ -143,10 +142,9 @@ const reportArgs = (input: StatusReportInput) => ({
 });
 
 /** Submits a report and its decision links in one transaction (submit_status_report RPC): a new
- * report is inserted as submitted, a draft (reportId) moves to submitted. Links are frozen once
- * the report is submitted. */
+ * report is inserted as submitted, a draft (reportId) moves to submitted with exactly the listed
+ * links. Links are frozen once the report is submitted. */
 export async function submitStatusReport(input: StatusReportInput) {
-  if (input.reportId) await dropUnlistedDraftLinks(input.reportId, input.decisionIds ?? []);
   return unwrap(
     await supabase.rpc("submit_status_report", reportArgs(input)),
     "Submitting the status report",
@@ -154,31 +152,11 @@ export async function submitStatusReport(input: StatusReportInput) {
 }
 
 /** Saves a draft report and its decision links (save_status_report_draft RPC): a new draft is
- * inserted, an existing one (reportId) is updated and stays a draft. No evidence is captured
- * until the draft is submitted. */
+ * inserted, an existing one (reportId) is updated and stays a draft, with exactly the listed
+ * links (one transaction). No evidence is captured until the draft is submitted. */
 export async function saveStatusReportDraft(input: StatusReportInput) {
-  if (input.reportId) await dropUnlistedDraftLinks(input.reportId, input.decisionIds ?? []);
   return unwrap(
     await supabase.rpc("save_status_report_draft", reportArgs(input)),
     "Saving the draft",
   );
-}
-
-/** Before a draft is saved or submitted, its links the form no longer lists are removed (the
- * RPCs refuse a draft link left out of the list). Allowed while the report is a draft. */
-async function dropUnlistedDraftLinks(reportId: string, keep: string[]) {
-  const rows = unwrap(
-    await supabase
-      .from("status_report_decisions")
-      .select("decision_id")
-      .eq("status_report_id", reportId),
-    "Loading the draft's decisions",
-  );
-  for (const row of rows)
-    if (!keep.includes(row.decision_id))
-      await deleteWhere(
-        "status_report_decisions",
-        { status_report_id: reportId, decision_id: row.decision_id },
-        "Removing the decision from the draft",
-      );
 }

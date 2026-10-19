@@ -14210,6 +14210,57 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      update_pending_decision: {
+        Args: {
+          p_decision?: Json
+          p_decision_id: string
+          p_expected_updated_at?: string
+          p_links?: Json
+          p_options?: Json
+        }
+        Returns: {
+          chosen_option_id: string | null
+          context: string | null
+          created_at: string
+          created_by: string | null
+          decided_by_forum_id: string | null
+          decided_by_resource_id: string | null
+          decision_date: string | null
+          decision_maker_id: string | null
+          evidence_link: string | null
+          forum_id: string | null
+          forum_list: string
+          id: string
+          impact_benefits: boolean
+          impact_benefits_note: string | null
+          impact_cost: boolean
+          impact_cost_note: string | null
+          impact_scope: boolean
+          impact_scope_note: string | null
+          impact_time: boolean
+          impact_time_note: string | null
+          needed_by_date: string | null
+          organisation_id: string
+          portfolio_id: string | null
+          programme_id: string | null
+          project_id: string | null
+          rationale: string | null
+          recorded_at: string | null
+          recorded_by: string | null
+          ref: string
+          status: Database["public"]["Enums"]["decision_status"]
+          supersedes_id: string | null
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "decisions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       withdraw_decision: {
         Args: {
           p_decision_id: string

@@ -172,6 +172,7 @@ const valuesOf = (decision: ResolvedDecision): EditorValues => ({
   title: decision.title,
   context: decision.context,
   options: decision.options.map((option) => ({
+    id: option.id,
     title: option.title,
     pros: option.pros,
     cons: option.cons,
@@ -612,7 +613,6 @@ function DecisionDetail({
               await mutations.savePending.mutateAsync({
                 id: decision.id,
                 input: values,
-                optionIds: decision.options.map((option) => option.id),
                 lastSeen: decision.updatedAt,
               });
               toast.success("Decision saved");
@@ -1217,9 +1217,18 @@ function LinksSection({ decision, editable }: { decision: ResolvedDecision; edit
         <LinkPicker
           targets={targets.data}
           selected={selected}
-          disabled={mutations.link.isPending}
+          disabled={mutations.links.isPending}
           onToggle={(kind, targetId, add) =>
-            mutations.link.mutateAsync({ id: decision.id, kind, targetId, add }).catch(report)
+            mutations.links
+              .mutateAsync({
+                id: decision.id,
+                kind,
+                ids: add
+                  ? [...selected[kind].filter((item) => item !== targetId), targetId]
+                  : selected[kind].filter((item) => item !== targetId),
+                lastSeen: decision.updatedAt,
+              })
+              .catch(report)
           }
         />
       </section>

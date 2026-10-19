@@ -2,15 +2,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOrgId } from "@/components/auth/organisation-provider";
 import {
-  addDecisionLink,
   createDecision,
   deferDecision,
   listDecisionEvents,
   listDecisionLinkTargets,
   loadGovernance,
-  removeDecisionLink,
   reverseDecision,
-  savePendingDecision,
+  updatePendingDecision,
   updateDecisionAction,
   withdrawDecision,
   type DecisionLinkKind,
@@ -90,21 +88,14 @@ export function useGovernanceMutations() {
       mutationFn: (args: {
         id: string;
         input: Omit<NewDecisionInput, "scope" | "links">;
-        optionIds: string[];
         lastSeen: string;
-      }) => savePendingDecision(args.id, args.input, args.optionIds, args.lastSeen),
+      }) => updatePendingDecision(args.id, args.input, null, args.lastSeen),
       onSettled,
     }),
-    link: useMutation({
-      mutationFn: async (args: {
-        id: string;
-        kind: DecisionLinkKind;
-        targetId: string;
-        add: boolean;
-      }) => {
-        if (args.add) await addDecisionLink(args.id, args.kind, args.targetId);
-        else await removeDecisionLink(args.id, args.kind, args.targetId);
-      },
+    /** Set one kind of link to exactly this list (update_pending_decision). */
+    links: useMutation({
+      mutationFn: (args: { id: string; kind: DecisionLinkKind; ids: string[]; lastSeen: string }) =>
+        updatePendingDecision(args.id, null, { [args.kind]: args.ids }, args.lastSeen),
       onSettled,
     }),
     updateAction: useMutation({
