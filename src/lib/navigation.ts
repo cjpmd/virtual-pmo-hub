@@ -135,7 +135,7 @@ export const sections: Section[] = [
     description: "RAIDD, change, lessons and committee reporting.",
     pages: [
       { to: "/governance/raidd", label: "RAIDD", icon: ShieldAlert },
-      { to: "/governance/forum", label: "Decision forum", icon: Landmark },
+      { to: "/governance/forum", label: "Boards", icon: Landmark },
       { to: "/governance/changes", label: "Changes", icon: GitFork },
       { to: "/governance/lessons", label: "Lessons", icon: BookOpenCheck, termKey: "lesson" },
       { to: "/governance/improvement-actions", label: "Improvement actions", icon: ListChecks },
