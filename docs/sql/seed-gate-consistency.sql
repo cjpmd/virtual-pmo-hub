@@ -1,4 +1,12 @@
--- PROPOSAL (19/10/2026): make the demo seed's gate dates agree with project phases. Not applied.
+-- APPLIED 19/10/2026 (execute_sql, data change, not a migration; approved as option B for the
+-- Phase 4-6 projects only). 28 milestones on 14 projects: ACA ASS BCMF BCT BMF CAIG CMI DOC DSA
+-- IOFTC IRS KBR VDI W11 (Design authority approval and GATE 1 recorded as passed on past dates).
+-- ARB, CYB, EBB and NRDC left unchanged on purpose: they are the real-slip examples (ARB's open
+-- GATE 0 drives its red schedule). NRDC is in Phase 4 but was excluded with them.
+-- Remaining "Gate N not passed" (5): ARB, CYB, EBB GATE 0; NRDC GATE 0 and GATE 1.
+-- The statement as applied is at the end of this file; the original proposal follows.
+--
+-- ORIGINAL PROPOSAL (19/10/2026): make the demo seed's gate dates agree with project phases. Not applied.
 --
 -- What the data shows (demo organisation): the seed gives every project the same milestone
 -- schedule whatever its phase - GATE 0 - Ready to Design (Phase 2 gate) Aug-Nov 2026, Design
@@ -93,4 +101,26 @@ from plan
 where m.id = plan.id;
 
 -- DRY RUN (19/10/2026, one transaction, rolled back): 34 milestones updated, no errors;
--- "Gate N not passed" rows in the demo organisation 19 -> 0. Not applied (proposal only).
+-- "Gate N not passed" rows in the demo organisation 19 -> 0. Superseded by the version below.
+
+-- AS APPLIED (19/10/2026): Phase 4-6 projects except NRDC; GATE 0 untouched. Dry run (rolled
+-- back) then apply: 28 rows. "Gate N not passed" 19 -> 5.
+with t as (select o.id as organisation_id, private.org_today(o.id) as today from public.organisations o
+           where o.id = '98e086a1-6b01-521a-92e9-21dac759c8f4'),
+p as (
+  select p.id from public.projects p join public.lifecycle_phases lp on lp.id = p.phase_id
+  join t on t.organisation_id = p.organisation_id
+  where p.archived_at is null and lp.sort_order between 4 and 6 and p.code <> 'NRDC'
+),
+g0 as (select m.project_id, m.actual_date, m.forecast_date from public.milestones m where m.title = 'GATE 0 - Ready to Design'),
+plan as (
+  select m.id, least(coalesce(g0.actual_date, least(g0.forecast_date, t.today - 7)) + 28, t.today - 14) as d
+  from p join public.milestones m on m.project_id = p.id and m.title = 'Design authority approval' and m.actual_date is null
+  join g0 on g0.project_id = p.id, t
+  union all
+  select m.id, least(coalesce(g0.actual_date, least(g0.forecast_date, t.today - 7)) + 49, t.today - 7)
+  from p join public.milestones m on m.project_id = p.id and m.title = 'GATE 1 - Ready to Deliver' and m.actual_date is null
+  join g0 on g0.project_id = p.id, t
+)
+update public.milestones m set baseline_date = plan.d, forecast_date = plan.d, actual_date = plan.d
+from plan where m.id = plan.id;

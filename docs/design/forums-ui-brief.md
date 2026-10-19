@@ -1,9 +1,9 @@
 # Forums and meetings UI brief for Lovable (D2, 19/10/2026)
 
-**Status: database proposed, not applied.** The SQL is in `docs/sql/d2-forums-meetings.sql`
-(migrations `d2_0_milestone_type_approval` and `d2_forums_meetings`) and `docs/sql/runbook-d2.sql`
-(the parts with DROP and DELETE, plus option history). Build against this brief once the
-handover says D2 is applied and `src/integrations/supabase/types.ts` has been regenerated.
+**Status: database applied 19/10/2026** (migrations `20261019160254_d2_0_milestone_type_approval`
+and `20261019160405_d2_forums_meetings`; record in `docs/sql/d2-forums-meetings.sql`). Types are
+regenerated. `docs/sql/runbook-d2.sql` (retiring the forum lookups, option history by title) is
+run by the user; check the handover says it has been run before testing option history.
 
 **Split:** the database, the services and the hooks are done on our side (see section 5).
 Lovable builds the screens in sections 2 to 4.
@@ -21,13 +21,20 @@ Lovable builds the screens in sections 2 to 4.
 
 ### Forums (`forums`, read through `v_forums`)
 
-The five forum lookups become real records and keep their ids, so existing decisions don't
+The five forum lookups became real records and kept their ids, so existing decisions didn't
 change. These are Project Board, Programme Board, Digital Committee, Architecture Review Board
-and Change Advisory Board.
+and Change Advisory Board, all **organisation-level**.
+
+A forum is either:
+
+- **organisation-level** (`workspace_id` null), such as the Digital Committee or the
+  Architecture Review Board, or
+- **a workspace's own forum** (`workspace_id` set), such as one PMO's Project Board.
 
 | Column | Meaning |
 |---|---|
-| `name` | Unique in the organisation |
+| `workspace_id` | Null for an organisation-level forum; the workspace for a workspace forum. Set on create, never changed |
+| `name` | Unique per organisation and workspace |
 | `level` | `project`, `programme`, `portfolio` or `organisation` |
 | `chair_resource_id` | A resource (person). `v_forums.chair_name` gives the name |
 | `cadence` | `weekly`, `fortnightly`, `monthly`, `quarterly`, `ad_hoc` or null |
@@ -96,14 +103,16 @@ Show these signals as they come from the view. Don't recompute them in the brows
 
 | Action | Who |
 |---|---|
-| Read forums, members, meetings | Any member of the organisation's workspaces |
-| Create, edit and deactivate forums; add and remove members | Workspace PMO or admin (the forum's workspace) |
-| Create and edit meetings (date, papers deadline, status, minutes) | PMO or admin, **or the forum's chair** for that forum's meetings |
+| Read forums, members, meetings | Everyone in the organisation (all forums, both kinds) |
+| Create, edit and deactivate an organisation-level forum; its members | Organisation admins |
+| Create, edit and deactivate a workspace forum; its members | That workspace's PMO or admin |
+| Create and edit meetings (date, papers deadline, status, minutes) | Whoever manages the forum, **or the forum's chair** |
+| See decisions on a meeting page | Only decisions the viewer can already see (decisions keep their workspace access); counts in `v_meetings` / `v_forums` follow the same rule |
 | Record, defer and reverse a decision | As before (PMO/admin or the decision maker), **plus the forum's chair** for decisions of their forum. `v_decisions.can_record` already includes this |
 | Set a decision's forum or target meeting | Whoever can edit the Pending decision (`v_decisions.can_write`) |
 
-The services expose `canManageForums` (PMO/admin) and, per forum, `canManageMeetings`
-(PMO/admin or chair), so the screens don't have to work out roles.
+The services will expose, per forum, `canManage` and `canManageMeetings`, so the screens don't
+have to work out roles.
 
 ## 2. Governance › Boards (grown from the Decision forum page)
 
@@ -126,11 +135,13 @@ Show one row or card per forum, sorted by `sort_order`. Each one shows:
   is within 3 days or has passed
 - the pending decisions count
 
+Group the list as "Organisation" and then one group per workspace forum's workspace.
 Inactive forums are hidden behind a "Show inactive" toggle.
 
-PMO/admin also see:
+Users who can manage forums also see:
 
-- **Add forum**: name, level, chair, cadence and papers deadline days
+- **Add forum**: name, level, chair, cadence, papers deadline days, and "Organisation-wide"
+  or a workspace (organisation admins get both; a workspace PMO gets their workspaces only)
 - **Edit** and **Deactivate**/**Reactivate** on each forum
 
 At 375px, rows collapse to cards (the same pattern as the watchlist table).
@@ -206,8 +217,10 @@ In the decision form (create and edit Pending):
 - Settings: the "Decision forums" list in Settings › Lists (`decisionForums`,
   `src/services/org-settings.ts`) is removed and replaced by a link to Governance › Boards. Forums
   are now managed there.
-- Runbook `docs/sql/runbook-d2.sql` (you run it): it retires the forum lookups, seeds forums for
-  new organisations and adds option history by title.
+- Runbook `docs/sql/runbook-d2.sql` (the user runs it): it retires the forum lookups, seeds
+  organisation-level forums for new organisations and adds option history by title.
+- Done 19/10: `loadGovernance` and `listDecisionEvents` read forum names from `forums`; the
+  `Approval` milestone type label exists (the form option and forum picker are Lovable's).
 
 ## 6. Checks before handing back
 

@@ -1,11 +1,11 @@
 -- RUNBOOK (19/10/2026): D2 follow-up - forum lookups retired, forums seeded for new
--- organisations, option history by title. NOT YET APPROVED. Yours to run (contains DROP and
--- DELETE, which the MCP tools can't run).
+-- organisations, option history by title. Approved 19/10 as part of D2. Yours to run (contains
+-- DROP and DELETE, which the MCP tools can't run).
 --
--- When: after migrations d2_0_milestone_type_approval and d2_forums_meetings
--- (docs/sql/d2-forums-meetings.sql) are applied AND the app reads forums from the forums table
--- (services switch-over, done by me straight after those migrations). Until then the app still
--- reads the forum names from lookup_values, so deleting the rows first would blank them.
+-- When: now. Migrations 20261019160254_d2_0_milestone_type_approval and
+-- 20261019160405_d2_forums_meetings are applied, and the app reads forum names from the forums
+-- table (src/services/decisions.ts, pushed with this file) - so the lookup rows are no longer
+-- read. Run Block A, send me the output; run Block B only if Block A shows 7 of 7.
 --
 -- What it changes (one transaction):
 --   1. Drops the three foreign keys from decisions / decision_events to lookup_values
@@ -15,9 +15,8 @@
 --      rebuilding v_decisions). The app ignores them.
 --   2. Deletes the 10 'decision_forum' lookup_values rows (5 per organisation). Their ids live
 --      on as forums.id, so no decision changes.
---   3. private.seed_org_defaults: no decision_forum lookups; seeds the same five forums in the
---      new organisation's first workspace instead (create_organisation makes the workspace
---      before it calls this).
+--   3. private.seed_org_defaults: no decision_forum lookups; seeds the same five forums as
+--      organisation-level forums (workspace_id null) instead.
 --   4. update_pending_decision (item 2 of 19/10): 'edited' events record option changes by
 --      title - {"options": {"renamed": [[old, new]], "added": [...], "removed": [...],
 --      "pros_cons_changed": [...]}} with only the non-empty keys (before: [n_before, n_after]
@@ -26,14 +25,10 @@
 --      PGlite against stub tables (rename/remove/add, identical save = no event, pros-only
 --      change, own-forum meeting, other forum's meeting = 22023, clearing).
 --
--- Already dry-run by me (MCP, rolled back): the new seed_org_defaults on a minimal forums table
--- -> create_organisation as the outsider gives 5 forums (Project Board project, Programme Board
--- programme, the other three organisation, all in the first workspace), 0 decision_forum
--- lookups, 54 other lookups, 6 phases / 39 criteria / 4 benefit periods. Block A below repeats
--- that against the real D2 tables, plus the parts I can't run (DROP, DELETE).
---
--- Migration version: 20261019170000 is a placeholder; I'll move it after the versions the D2
--- migrations get when applied, before you run Block B.
+-- Already dry-run by me (MCP, rolled back), before the organisation-level change: the seed on a
+-- minimal forums table gave 5 forums, 0 decision_forum lookups, 54 other lookups, 6 phases /
+-- 39 criteria / 4 benefit periods. Block A repeats it against the real D2 tables, plus the parts
+-- I can't run (DROP, DELETE).
 --
 -- Test data: Block A uses only the outsider test organisation (UI Test DEC-003, Project Board
 -- and ARB of that organisation) and a throwaway organisation, all rolled back.
@@ -126,15 +121,14 @@ begin
     (p_org, 'cost_category', 'Other', 'Other', 5)
   on conflict (organisation_id, list_key, value) do nothing;
 
-  -- Decision forums (D2): forums in the organisation's first workspace, replacing the old
+  -- Decision forums (D2): organisation-level forums (no workspace), replacing the old
   -- decision_forum lookup list.
   insert into public.forums (organisation_id, workspace_id, name, level, sort_order)
-  select p_org, w.id, x.name, x.level::public.forum_level, x.ord
-  from (select id from public.workspaces where organisation_id = p_org order by created_at, id limit 1) w,
-    (values ('Project Board', 'project', 1), ('Programme Board', 'programme', 2),
+  select p_org, null, x.name, x.level::public.forum_level, x.ord
+  from (values ('Project Board', 'project', 1), ('Programme Board', 'programme', 2),
       ('Digital Committee', 'organisation', 3), ('Architecture Review Board', 'organisation', 4),
       ('Change Advisory Board', 'organisation', 5)) x(name, level, ord)
-  on conflict (organisation_id, name) do nothing;
+  on conflict (organisation_id, workspace_id, name) do nothing;
 
   insert into public.lifecycle_phases (organisation_id, name, short_name, description, gate_name, sort_order)
     values (p_org, 'Phase 1 - Pre-Project / Idea', 'Phase 1', 'Capture the idea, confirm the problem statement and agree whether it is worth exploring.', 'GATE 1 - Idea approved to explore', 1) returning id into v_phase;
@@ -414,10 +408,10 @@ select set_config('role', 'authenticated', true),
 do $$ declare o uuid; begin
   o := public.create_organisation('Runbook dry-run org');
   insert into r (chk, expected, got, ok)
-  select '1 new organisation: forums / decision_forum lookups', '5 / 0',
-    (select count(*) from public.forums where organisation_id = o) || ' / ' ||
+  select '1 new organisation: organisation-level forums / decision_forum lookups', '5 / 0',
+    (select count(*) from public.forums where organisation_id = o and workspace_id is null) || ' / ' ||
     (select count(*) from public.lookup_values where organisation_id = o and list_key = 'decision_forum'),
-    (select count(*) from public.forums where organisation_id = o) = 5
+    (select count(*) from public.forums where organisation_id = o and workspace_id is null) = 5
     and (select count(*) from public.lookup_values where organisation_id = o and list_key = 'decision_forum') = 0;
 exception when others then insert into r (chk, expected, got, ok) values ('1 new organisation', '5 / 0', sqlstate || ' ' || sqlerrm, false); end $$;
 
@@ -571,15 +565,14 @@ begin
     (p_org, 'cost_category', 'Other', 'Other', 5)
   on conflict (organisation_id, list_key, value) do nothing;
 
-  -- Decision forums (D2): forums in the organisation's first workspace, replacing the old
+  -- Decision forums (D2): organisation-level forums (no workspace), replacing the old
   -- decision_forum lookup list.
   insert into public.forums (organisation_id, workspace_id, name, level, sort_order)
-  select p_org, w.id, x.name, x.level::public.forum_level, x.ord
-  from (select id from public.workspaces where organisation_id = p_org order by created_at, id limit 1) w,
-    (values ('Project Board', 'project', 1), ('Programme Board', 'programme', 2),
+  select p_org, null, x.name, x.level::public.forum_level, x.ord
+  from (values ('Project Board', 'project', 1), ('Programme Board', 'programme', 2),
       ('Digital Committee', 'organisation', 3), ('Architecture Review Board', 'organisation', 4),
       ('Change Advisory Board', 'organisation', 5)) x(name, level, ord)
-  on conflict (organisation_id, name) do nothing;
+  on conflict (organisation_id, workspace_id, name) do nothing;
 
   insert into public.lifecycle_phases (organisation_id, name, short_name, description, gate_name, sort_order)
     values (p_org, 'Phase 1 - Pre-Project / Idea', 'Phase 1', 'Capture the idea, confirm the problem statement and agree whether it is worth exploring.', 'GATE 1 - Idea approved to explore', 1) returning id into v_phase;

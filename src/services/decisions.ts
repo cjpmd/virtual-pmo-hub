@@ -4,7 +4,7 @@
 // Decisions embed their options, actions and link tables. decision_options is related to
 // decisions twice (options.decision_id, and decisions.chosen_option_id), so that embed names its
 // FK explicitly; the rest are single-FK one-to-many embeds. People resolve through one parallel
-// resources query, forums and change types through lookup_values.
+// resources query, forums through the forums table and change types through lookup_values.
 import type {
   Assumption,
   AssumptionStatus,
@@ -138,6 +138,14 @@ export interface GovernanceData {
 }
 
 export async function loadGovernance(orgId: string): Promise<GovernanceData> {
+  // Started now so it runs alongside the queries below.
+  const forumRequest = supabase
+    .from("forums")
+    .select("id, name, active, sort_order")
+    .eq("organisation_id", orgId)
+    .order("sort_order")
+    .order("name")
+    .then((result) => result);
   const [decisions, assumptions, changes, lookups, projects, programmes, people, view, profiles] =
     await Promise.all([
       supabase
@@ -175,7 +183,7 @@ export async function loadGovernance(orgId: string): Promise<GovernanceData> {
         .from("lookup_values")
         .select("id, list_key, label, sort_order, is_active")
         .eq("organisation_id", orgId)
-        .in("list_key", ["decision_forum", "change_type"])
+        .eq("list_key", "change_type")
         .order("sort_order"),
       projectRefs(orgId),
       programmeRefs(orgId),
@@ -197,7 +205,9 @@ export async function loadGovernance(orgId: string): Promise<GovernanceData> {
   const names = new Map(people.map((person) => [person.id, person.name]));
   const nameOf = (id: string | null | undefined) => (id && names.get(id)) || "";
   const lookupRows = unwrap(lookups, "Loading lists");
-  const label = new Map(lookupRows.map((row) => [row.id, row.label]));
+  const changeType = new Map(lookupRows.map((row) => [row.id, row.label]));
+  const forumList = unwrap(await forumRequest, "Loading forums");
+  const label = new Map(forumList.map((row) => [row.id, row.name]));
   const projectRows = unwrap(projects, "Loading projects").map((row) => ({
     id: row.id ?? "",
     code: row.code ?? "",
@@ -361,7 +371,7 @@ export async function loadGovernance(orgId: string): Promise<GovernanceData> {
         ref: row.ref,
         scope: scope.ref,
         title: row.title,
-        type: (label.get(row.type_id ?? "") ?? "Scope") as ChangeRequest["type"],
+        type: (changeType.get(row.type_id ?? "") ?? "Scope") as ChangeRequest["type"],
         costImpact: Number(row.cost_impact ?? 0),
         scheduleImpactDays: row.schedule_impact_days ?? 0,
         status: changeStatusLabel[row.status],
@@ -373,11 +383,9 @@ export async function loadGovernance(orgId: string): Promise<GovernanceData> {
         updatedAt: row.updated_at,
       };
     }),
-    forums: lookupRows
-      .filter((row) => row.list_key === "decision_forum" && row.is_active)
-      .map((row) => ({ id: row.id, label: row.label })),
+    forums: forumList.filter((row) => row.active).map((row) => ({ id: row.id, label: row.name })),
     changeTypes: lookupRows
-      .filter((row) => row.list_key === "change_type" && row.is_active)
+      .filter((row) => row.is_active)
       .map((row) => ({ id: row.id, label: row.label })),
     people,
     projects: projectRows,
@@ -599,11 +607,7 @@ export async function listDecisionEvents(
       .eq("decision_id", decisionId)
       .order("created_at", { ascending: false }),
     listPeople(orgId),
-    supabase
-      .from("lookup_values")
-      .select("id, label")
-      .eq("organisation_id", orgId)
-      .eq("list_key", "decision_forum"),
+    supabase.from("forums").select("id, name").eq("organisation_id", orgId),
   ]);
   const rows = unwrap(events, "Loading the decision history");
   const actorIds = [...new Set(rows.map((row) => row.actor_id).filter(Boolean))] as string[];
@@ -612,7 +616,7 @@ export async function listDecisionEvents(
     : { data: [] };
   const actor = new Map((profiles.data ?? []).map((row) => [row.id, row.display_name]));
   const person = new Map(people.map((row) => [row.id, row.name]));
-  const forum = new Map((forums.data ?? []).map((row) => [row.id, row.label]));
+  const forum = new Map((forums.data ?? []).map((row) => [row.id, row.name]));
   return rows.map((row) => ({
     id: row.id,
     type: row.event_type,

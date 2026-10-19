@@ -1,55 +1,45 @@
--- PROPOSAL (19/10/2026): D2 forums and meetings, database. Not applied.
+-- APPLIED 19/10/2026: migrations 20261019160254_d2_0_milestone_type_approval and
+-- 20261019160405_d2_forums_meetings (approved with one change: forums are organisation-level or
+-- workspace-level). The DROP / DELETE switch-over and option history by title are in
+-- docs/sql/runbook-d2.sql (the user runs it).
 --
--- Two migrations (a new enum value can't be used in the transaction that adds it):
---   d2_0_milestone_type_approval  alter type milestone_type add value 'approval'
---   d2_forums_meetings            everything below
--- Additive throughout: no DROP, no DELETE. The switch-over that needs them (dropping the
--- decisions / decision_events foreign keys to lookup_values, the forum_list columns, the five
--- 'decision_forum' lookup rows, seeding forums for new organisations) and the option-history
--- change to update_pending_decision are in docs/sql/runbook-d2.sql, to run after these two.
---
--- Decisions taken here (say if you want them different):
---   * Forums keep the 5 lookup ids per organisation. Every tenant table needs a workspace, so a
---     forum belongs to its organisation's first workspace (demo: its only one; outsider test org:
---     "Test workspace"). Read access is organisation-wide: a member of any workspace in the
---     organisation reads its forums and meetings (the Digital Committee serves every workspace;
---     reading only the owning workspace would hide forum names on UI Test's decisions). Still
---     built on private.my_workspace_ids(). Managing stays per workspace (PMO / admin of the
---     forum's workspace).
---   * Chair: a resource. "The chair" means the signed-in user is that resource (profile_id).
---   * Members: forum_members (forum, resource). PMO / admin add and remove them.
---   * Cadence: weekly / fortnightly / monthly / quarterly / ad hoc. Papers deadline: whole days
---     before the meeting (default 5).
---   * Meetings: planned / held / cancelled; papers deadline defaults to meeting date minus the
---     forum's days and stays editable. No delete grant: a meeting is cancelled, not removed.
---     Forums are deactivated (active = false), not removed.
---   * A decision's target meeting must be a meeting of the decision's forum (database rule).
---   * Approval milestones (new type) need a forum (rule for signed-in users, like gates and
---     their phase). The 34 "Design authority approval" milestones become approval milestones
---     with forum = Architecture Review Board.
---   * The forum chair can record, defer and reverse decisions of their forum (can_record), and
---     records for the forum by default.
---   * Signal rule, in v_decisions, for Pending decisions with a planned target meeting:
---       papers_deadline_passed            today is after the meeting's papers deadline
---       needed_by_before_papers_deadline  needed-by falls before the papers deadline
---       target_meeting_after_needed_by    the meeting itself is after the needed-by
---     ("decision needed-by before the target meeting's papers deadline" is the second; the
---     first and third are there for the screens to say why.)
+-- Decisions taken:
+--   * forums.workspace_id is nullable: null = an organisation-level forum (the five existing
+--     forums, ids kept from the lookup labels); set = that workspace's own forum. Name is unique
+--     per (organisation, workspace) with nulls not distinct.
+--   * Read: everyone in the organisation reads all forums, members and meetings
+--     (private.my_org_ids()). Decisions keep their own workspace RLS, so meeting pages and the
+--     counts in v_meetings / v_forums only include decisions the viewer can see.
+--   * Manage (private.can_manage_forum): organisation admins for organisation-level forums;
+--     the workspace's PMO / admin for a workspace forum. Meetings: the same, or the forum's chair.
+--   * Chair: a resource; the signed-in user is the chair when that resource is theirs.
+--   * Cadence weekly / fortnightly / monthly / quarterly / ad hoc; papers deadline in days
+--     (default 5) defaults each meeting's papers deadline (editable, not after the meeting).
+--   * Meetings are cancelled, not deleted (no delete grant); forums are deactivated.
+--   * A decision's target meeting must be a planned meeting of its forum (trigger).
+--   * Approval milestones need a forum (signed-in users); the 34 "Design authority approval"
+--     milestones became approvals of the Architecture Review Board.
+--   * The forum chair can record, defer and reverse their forum's decisions, and records for
+--     the forum by default.
+--   * Signals on v_decisions (Pending, planned target meeting): papers_deadline_passed,
+--     needed_by_before_papers_deadline, target_meeting_after_needed_by.
+-- Not enforced (say if wanted): a workspace forum can be set on a decision of another
+-- workspace in the same organisation.
 
 -- ===== Migration d2_0_milestone_type_approval ================================================
 alter type public.milestone_type add value if not exists 'approval';
 
--- ===== Migration d2_forums_meetings ===========================================================
+-- ===== Migration d2_forums_meetings (as applied) =============================================
 -- 1. Types
 create type public.forum_level as enum ('project', 'programme', 'portfolio', 'organisation');
 create type public.forum_cadence as enum ('weekly', 'fortnightly', 'monthly', 'quarterly', 'ad_hoc');
 create type public.meeting_status as enum ('planned', 'held', 'cancelled');
 
--- 2. Forums
+-- 2. Forums: organisation-level (workspace_id null) or a workspace's own forum.
 create table public.forums (
   id uuid primary key default gen_random_uuid(),
   organisation_id uuid not null,
-  workspace_id uuid not null,
+  workspace_id uuid,
   name text not null check (length(btrim(name)) > 0),
   level public.forum_level not null default 'organisation',
   chair_resource_id uuid,
@@ -60,16 +50,17 @@ create table public.forums (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   created_by uuid default auth.uid(),
+  foreign key (organisation_id) references public.organisations (id),
   foreign key (workspace_id, organisation_id) references public.workspaces (id, organisation_id),
   foreign key (chair_resource_id, organisation_id) references public.resources (id, organisation_id) on delete set null (chair_resource_id),
   foreign key (created_by) references public.profiles (id) on delete set null,
   unique (id, organisation_id),
-  unique (id, workspace_id),
-  unique (organisation_id, name)
+  unique nulls not distinct (organisation_id, workspace_id, name)
 );
 create index forums_workspace_idx on public.forums (workspace_id, organisation_id);
 create index forums_chair_idx on public.forums (chair_resource_id, organisation_id);
 create index forums_created_by_idx on public.forums (created_by);
+-- A workspace forum takes its organisation from the workspace; an organisation-level one gives it.
 create trigger forums_00_tenant_guard before insert or update on public.forums
   for each row execute function private.tenant_guard('workspace_id', 'workspaces');
 create trigger forums_updated_at before update on public.forums
@@ -77,18 +68,14 @@ create trigger forums_updated_at before update on public.forums
 create trigger forums_audit after insert or update or delete on public.forums
   for each row execute function private.audit_row_change();
 
--- The five lookup labels become forums with the same ids, in each organisation's first workspace.
+-- The five lookup labels become organisation-level forums with the same ids.
 insert into public.forums (id, organisation_id, workspace_id, name, level, sort_order, active, created_at)
-select l.id, l.organisation_id, w.id, l.label,
+select l.id, l.organisation_id, null, l.label,
   case l.value when 'Project Board' then 'project'::public.forum_level
                when 'Programme Board' then 'programme'::public.forum_level
                else 'organisation'::public.forum_level end,
   l.sort_order, l.is_active, l.created_at
 from public.lookup_values l
-cross join lateral (
-  select w.id from public.workspaces w where w.organisation_id = l.organisation_id
-  order by w.created_at, w.id limit 1
-) w
 where l.list_key = 'decision_forum';
 
 -- Is the signed-in user the chair of this (active) forum?
@@ -108,47 +95,49 @@ $$;
 revoke all on function private.is_forum_chair(uuid) from public, anon;
 grant execute on function private.is_forum_chair(uuid) to authenticated;
 
--- Organisations whose workspaces I belong to (forums and meetings are read organisation-wide).
-create function private.my_organisation_ids()
-returns uuid[]
+-- Who manages a forum (and its members): organisation admins for an organisation-level forum,
+-- the workspace's PMO / admin for a workspace forum.
+create function private.can_manage_forum(p_org uuid, p_ws uuid)
+returns boolean
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select coalesce(array_agg(distinct w.organisation_id), '{}')
-  from public.workspaces w where w.id = any (private.my_workspace_ids());
+  select case when p_ws is null then private.has_org_role(p_org, 'admin')
+              else p_ws = any (private.my_workspace_ids('pmo')) end;
 $$;
-revoke all on function private.my_organisation_ids() from public, anon;
-grant execute on function private.my_organisation_ids() to authenticated;
+revoke all on function private.can_manage_forum(uuid, uuid) from public, anon;
+grant execute on function private.can_manage_forum(uuid, uuid) to authenticated;
 
 alter table public.forums enable row level security;
 revoke all on public.forums from anon, authenticated;
 grant select, insert, update on public.forums to authenticated;
+-- Everyone in the organisation reads all its forums.
 create policy forums_select on public.forums for select to authenticated
-  using (organisation_id = any ((select private.my_organisation_ids())::uuid[]));
+  using (organisation_id = any ((select private.my_org_ids())::uuid[]));
 create policy forums_insert on public.forums for insert to authenticated
-  with check (workspace_id = any ((select private.my_workspace_ids('pmo'))::uuid[]));
+  with check ((select private.can_manage_forum(organisation_id, workspace_id)));
 create policy forums_update on public.forums for update to authenticated
-  using (workspace_id = any ((select private.my_workspace_ids('pmo'))::uuid[]))
-  with check (workspace_id = any ((select private.my_workspace_ids('pmo'))::uuid[]));
+  using ((select private.can_manage_forum(organisation_id, workspace_id)))
+  with check ((select private.can_manage_forum(organisation_id, workspace_id)));
 
 -- 3. Members
 create table public.forum_members (
   organisation_id uuid not null,
-  workspace_id uuid not null,
+  workspace_id uuid,
   forum_id uuid not null,
   resource_id uuid not null,
   created_at timestamptz not null default now(),
   created_by uuid default auth.uid(),
   foreign key (workspace_id, organisation_id) references public.workspaces (id, organisation_id),
-  foreign key (forum_id, workspace_id) references public.forums (id, workspace_id) on delete cascade,
+  foreign key (forum_id, organisation_id) references public.forums (id, organisation_id) on delete cascade,
   foreign key (resource_id, organisation_id) references public.resources (id, organisation_id) on delete cascade,
   foreign key (created_by) references public.profiles (id) on delete set null,
   primary key (forum_id, resource_id)
 );
 create index forum_members_workspace_idx on public.forum_members (workspace_id, organisation_id);
-create index forum_members_forum_idx on public.forum_members (forum_id, workspace_id);
+create index forum_members_forum_idx on public.forum_members (forum_id, organisation_id);
 create index forum_members_resource_idx on public.forum_members (resource_id, organisation_id);
 create index forum_members_created_by_idx on public.forum_members (created_by);
 create trigger forum_members_00_tenant_guard before insert or update on public.forum_members
@@ -159,17 +148,17 @@ alter table public.forum_members enable row level security;
 revoke all on public.forum_members from anon, authenticated;
 grant select, insert, delete on public.forum_members to authenticated;
 create policy forum_members_select on public.forum_members for select to authenticated
-  using (organisation_id = any ((select private.my_organisation_ids())::uuid[]));
+  using (organisation_id = any ((select private.my_org_ids())::uuid[]));
 create policy forum_members_insert on public.forum_members for insert to authenticated
-  with check (workspace_id = any ((select private.my_workspace_ids('pmo'))::uuid[]));
+  with check ((select private.can_manage_forum(organisation_id, workspace_id)));
 create policy forum_members_delete on public.forum_members for delete to authenticated
-  using (workspace_id = any ((select private.my_workspace_ids('pmo'))::uuid[]));
+  using ((select private.can_manage_forum(organisation_id, workspace_id)));
 
--- 4. Meetings
+-- 4. Meetings (organisation and workspace copied from the forum)
 create table public.meetings (
   id uuid primary key default gen_random_uuid(),
   organisation_id uuid not null,
-  workspace_id uuid not null,
+  workspace_id uuid,
   forum_id uuid not null,
   meeting_date date not null,
   papers_deadline date,
@@ -180,14 +169,13 @@ create table public.meetings (
   updated_at timestamptz not null default now(),
   created_by uuid default auth.uid(),
   foreign key (workspace_id, organisation_id) references public.workspaces (id, organisation_id),
-  foreign key (forum_id, workspace_id) references public.forums (id, workspace_id),
+  foreign key (forum_id, organisation_id) references public.forums (id, organisation_id),
   foreign key (created_by) references public.profiles (id) on delete set null,
   unique (id, organisation_id),
-  unique (id, workspace_id),
   check (papers_deadline is null or papers_deadline <= meeting_date)
 );
 create index meetings_workspace_idx on public.meetings (workspace_id, organisation_id);
-create index meetings_forum_idx on public.meetings (forum_id, workspace_id);
+create index meetings_forum_idx on public.meetings (forum_id, organisation_id);
 create index meetings_forum_date_idx on public.meetings (forum_id, meeting_date);
 create index meetings_created_by_idx on public.meetings (created_by);
 create trigger meetings_00_tenant_guard before insert or update on public.meetings
@@ -221,14 +209,14 @@ alter table public.meetings enable row level security;
 revoke all on public.meetings from anon, authenticated;
 grant select, insert, update on public.meetings to authenticated;
 create policy meetings_select on public.meetings for select to authenticated
-  using (organisation_id = any ((select private.my_organisation_ids())::uuid[]));
+  using (organisation_id = any ((select private.my_org_ids())::uuid[]));
 create policy meetings_insert on public.meetings for insert to authenticated
-  with check (workspace_id = any ((select private.my_workspace_ids('pmo'))::uuid[])
+  with check ((select private.can_manage_forum(organisation_id, workspace_id))
     or (select private.is_forum_chair(forum_id)));
 create policy meetings_update on public.meetings for update to authenticated
-  using (workspace_id = any ((select private.my_workspace_ids('pmo'))::uuid[])
+  using ((select private.can_manage_forum(organisation_id, workspace_id))
     or (select private.is_forum_chair(forum_id)))
-  with check (workspace_id = any ((select private.my_workspace_ids('pmo'))::uuid[])
+  with check ((select private.can_manage_forum(organisation_id, workspace_id))
     or (select private.is_forum_chair(forum_id)));
 
 -- 5. Decisions: forum ids also reference forums (the lookup_values keys go in the runbook);
@@ -305,7 +293,7 @@ create trigger milestones_06_approval_forum before insert or update on public.mi
 update public.milestones m
 set type = 'approval', forum_id = f.id, report_to_committee = true
 from public.forums f
-where f.organisation_id = m.organisation_id and f.name = 'Architecture Review Board'
+where f.organisation_id = m.organisation_id and f.workspace_id is null and f.name = 'Architecture Review Board'
   and regexp_replace(btrim(m.title), '\s+', ' ', 'g') = 'Design authority approval';
 
 -- 7. The chair records for their forum.
@@ -331,7 +319,6 @@ $$;
 revoke all on function private.can_record_decision(public.decisions) from public, anon;
 grant execute on function private.can_record_decision(public.decisions) to authenticated;
 
--- 7b. record_decision: the chair records for the forum by default.
 create or replace function public.record_decision(
   p_decision_id uuid,
   p_chosen_option_id uuid,
@@ -522,31 +509,28 @@ cross join lateral (select private.org_today(mt.organisation_id) as today) t;
 revoke all on public.v_meetings from anon, authenticated;
 grant select on public.v_meetings to authenticated;
 
--- DRY RUN (19/10/2026, one transaction, rolled back; d2_forums_meetings only - the 'approval'
--- enum value can't be used before its own migration commits, so the 34-milestone move was
--- counted, not run). Member = contributor in the demo organisation; promoted to PMO and back
--- inside the transaction; made chair of the Architecture Review Board (ARB) there.
---   1  forums from the 5 lookup labels per organisation   10 forums, all 10 ids kept, demo 5
---   1b Design authority approvals that would move          34
---   2  member reads forums (demo + UI Test org)            10
---   3  contributor creates a forum                         refused 42501
---   4  contributor (not chair) adds a meeting              refused 42501
---   5  as PMO: ARB chair = member, add a member, add a     ok; Project Board 05/11 papers 31/10
---      Project Board meeting                               (forum default 5 days)
---   6  as ARB chair: add ARB meetings 29/10 and 20/10      ok; 29/10 papers 24/10
---   7  chair adds a meeting to another forum               refused 42501
---   8  move a meeting to another forum                     refused 23514
---   9  DEC-003 (ARB, needed 23/10) targets ARB 29/10       papers passed false; needed-by before
---                                                          papers deadline true; meeting after
---                                                          needed-by true; can_record true
---   10 retarget to ARB 20/10 (papers 15/10, today 19/10)   papers deadline passed true
---   11 target a meeting of another forum                   refused 23514
---   12 can_record as ARB chair                             both pending ARB decisions true,
---                                                          every other decision false
---   13 chair records DEC-008 (ARB)                         made, decided by forum ARB
---   14 chair records DEC-004 (Project Board)               refused 42501
---   15 outsider reads forums / demo meetings               5 (own) / 0
---   16 outsider adds a meeting to demo ARB                 refused (23503, forum not visible)
---   17 anon execute on the 5 new private functions         false x5
--- 18 of 18 as intended. Afterwards: no forums or meetings tables, member back to contributor,
--- DEC-008 still Pending.
+-- DRY RUN (19/10/2026, one transaction, rolled back, before applying): 26 of 26 ok.
+--   1   10 forums from the lookups, ids kept, all organisation-level      ok
+--   1b  34 Design authority approvals to move (counted; applied: 34)      ok
+--   2   member reads 10 forums (demo + outsider org)                      ok
+--   3/3b contributor creates an organisation / workspace forum            refused 42501
+--   4   contributor (not chair) adds an ARB meeting                       refused 42501
+--   5   workspace PMO creates a workspace forum, member, meeting; edits   ok, papers 31/10
+--   5b  workspace PMO creates an organisation-level forum                 refused 42501
+--   5c  workspace PMO edits ARB (organisation-level)                      0 rows
+--   5d  workspace PMO (not chair) adds an ARB meeting                     refused 42501
+--   6-8 ARB chair adds ARB meetings (papers default -5 days); another
+--       forum's meeting refused; moving a meeting refused                 ok
+--   9-11 target meeting + three signals; papers deadline passed; another
+--       forum's meeting refused                                           ok
+--   12-14 chair can_record for ARB only; records DEC-008 as the forum;
+--       DEC-004 (Project Board) refused                                   ok
+--   15-17 outsider reads only its 5 forums, no demo meetings; can't add a
+--       demo meeting; as org admin creates an organisation-level forum    ok
+--   18  leak check: an outsider-org Project Board meeting targeted by UI
+--       Test DEC-003 and by a decision in "Test workspace": the member
+--       (UI Test only) sees decisions_targeted 1, lists only DEC-003,
+--       cannot read the other decision                                     ok
+--   19  member reads that forum and meeting (organisation-wide)            ok
+--   20  outsider (org admin, both workspaces) sees decisions_targeted 2    ok
+--   21  anon execute on the 5 new private functions                        false x5

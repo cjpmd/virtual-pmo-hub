@@ -97,7 +97,7 @@ export interface ProjectRequest {
   appraisalYears?: number;
   draftBenefits?: DraftBenefitProfile[];
 }
-export type MilestoneType = "Delivery" | "Gate" | "Key date" | "External dependency";
+export type MilestoneType = "Delivery" | "Gate" | "Key date" | "External dependency" | "Approval";
 export type MilestoneStatus = "Overdue" | "Late" | "On Track" | "Future" | "Completed";
 export interface MilestoneForecastPoint {
   reportingDate: string;
