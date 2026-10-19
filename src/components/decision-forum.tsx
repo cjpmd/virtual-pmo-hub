@@ -73,7 +73,10 @@ function Forum({
   const all = data.decisions;
   const date = chosenMeeting?.meetingDate ?? meetingDate;
   const agenda = useMemo(() => {
-    const result = getForumAgenda(forum, all.filter((item) => item.forumId === selectedForum.id));
+    const result = getForumAgenda(
+      forum,
+      all.filter((item) => item.forumId === selectedForum.id),
+    );
     const pending = targetedOnly
       ? result.pending.filter((item) => item.targetMeetingId === chosenMeeting?.id)
       : result.pending
@@ -88,7 +91,11 @@ function Forum({
   // Keep items recorded in this meeting on screen (they leave the pending list once saved).
   const [recorded, setRecorded] = useState<string[]>([]);
   const meetingItems = useMemo(
-    () => queue.flatMap((id) => { const item = all.find((decision) => decision.id === id); return item ? [item] : []; }),
+    () =>
+      queue.flatMap((id) => {
+        const item = all.find((decision) => decision.id === id);
+        return item ? [item] : [];
+      }),
     [all, queue],
   );
 
@@ -137,7 +144,10 @@ function Forum({
           <Button
             variant={meetingMode ? "default" : "outline"}
             disabled={Boolean(selectedMeeting && selectedMeeting.status !== "Planned")}
-            onClick={() => { setQueue(agenda.pending.map((item) => item.id)); setMeetingMode(true); }}
+            onClick={() => {
+              setQueue(agenda.pending.map((item) => item.id));
+              setMeetingMode(true);
+            }}
           >
             <Presentation />
             Meeting mode
