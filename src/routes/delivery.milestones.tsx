@@ -32,6 +32,7 @@ import {
 } from "@/components/dependency-focus";
 import {
   committeeColumn,
+  approvingForumColumn,
   milestoneInputFromBoard,
   milestonesToBoardRows,
 } from "@/components/project-milestones";
@@ -45,6 +46,8 @@ import {
   useProjects,
 } from "@/hooks/use-hierarchy";
 import { useCan } from "@/hooks/use-permissions";
+import { useForums } from "@/hooks/use-forums";
+import { MilestoneForm } from "@/components/milestone-form";
 import { useMilestoneMutations } from "@/hooks/use-project-records";
 import { formatDate, formatShortDate, parseDate } from "@/lib/format";
 import { today, todayIso } from "@/lib/today";
@@ -106,6 +109,7 @@ const SHORT_MONTHS = [
 ];
 
 interface PortfolioMilestone extends MilestoneItem {
+  forumName: string;
   projectName: string;
   projectCode: string;
   programmeId: string | null;
@@ -121,8 +125,7 @@ const columns: BoardColumn[] = [
     key: "type",
     label: "Type",
     type: "status",
-    editable: true,
-    options: ["Delivery", "Gate", "Key date", "External dependency"],
+    options: ["Delivery", "Gate", "Key date", "External dependency", "Approval"],
   },
   { key: "people", label: "Owner", type: "people", editable: true },
   { key: "deliveryStatus", label: "Status", type: "status", summary: "rag" },
@@ -215,6 +218,7 @@ function Milestones({
   const navigate = useNavigate();
   const projectIds = useMemo(() => projects.map((project) => project.id), [projects]);
   const milestones = useMilestones(projectIds, "portfolio");
+  const forums = useForums();
   const people = usePeople();
   const names = useMemo(
     () => new Map((people.data ?? []).map((person) => [person.id, person.name])),
@@ -230,6 +234,7 @@ function Milestones({
         const project = byProject.get(item.projectId);
         return {
           ...item,
+          forumName: forums.data?.find((forum) => forum.id === item.forumId)?.name ?? "",
           projectName: project?.name ?? "",
           projectCode: project?.code ?? "",
           programmeId: project?.programmeId ?? null,
@@ -237,7 +242,7 @@ function Milestones({
           ownerName: (item.ownerId && names.get(item.ownerId)) || "Unassigned",
         };
       }),
-    [milestones.data, byProject, names],
+    [milestones.data, byProject, names, forums.data],
   );
   const metrics = getMilestoneMetrics(items);
   const [projectId, setProjectId] = useState(
@@ -255,7 +260,8 @@ function Milestones({
     .sort((a, b) => b.slipDays - a.slipDays)
     .slice(0, 12)
     .map((item) => ({
-      name: item.title.length > 24 ? `${item.title.slice(0, 22)}…` : item.title,
+      name: item.title,
+      forum: item.type === "Approval" ? item.forumName : "",
       days: item.slipDays,
     }));
   const history = useForecastHistory(projectId);
@@ -338,7 +344,21 @@ function Milestones({
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" unit="d" />
                 <YAxis dataKey="name" type="category" width={145} tick={{ fontSize: 10 }} />
-                <Tooltip />
+                <Tooltip
+                  content={({ active, payload }) =>
+                    active && payload?.[0] ? (
+                      <div className="rounded-md border bg-popover p-3 text-sm text-popover-foreground">
+                        <p>{payload[0].payload.name}</p>
+                        {payload[0].payload.forum && (
+                          <p className="text-xs text-muted-foreground">
+                            {payload[0].payload.forum}
+                          </p>
+                        )}
+                        <p className="font-mono">{payload[0].payload.days} days</p>
+                      </div>
+                    ) : null
+                  }
+                />
                 <Bar dataKey="days" fill="var(--viz-warning)" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -407,6 +427,10 @@ function Milestones({
 
 function Register({ items }: { items: PortfolioMilestone[] }) {
   const people = usePeople();
+  const forums = useForums();
+  const [openId, setOpenId] = useState<string | null>(null);
+  const hasApproval = items.some((item) => item.type === "Approval");
+  const registerColumns = [...columns, ...(hasApproval ? [approvingForumColumn] : [])];
   const canEdit = useCan("contributor");
   const canDelete = useCan("manager");
   const mutations = useMilestoneMutations("portfolio");
@@ -422,7 +446,7 @@ function Register({ items }: { items: PortfolioMilestone[] }) {
     0,
   ).getTime();
   const byId = new Map(items.map((item) => [item.id, item]));
-  const rows = milestonesToBoardRows(items, names).map((row) => {
+  const rows = milestonesToBoardRows(items, names, [], forums.data ?? []).map((row) => {
     const item = byId.get(row.id);
     return {
       ...row,
@@ -440,7 +464,7 @@ function Register({ items }: { items: PortfolioMilestone[] }) {
     };
   });
   const onRecordChange = useBoardRecordSync<MilestoneInput>({
-    toInput: (patch) => milestoneInputFromBoard(patch, people.data ?? []),
+    toInput: (patch) => milestoneInputFromBoard(patch, people.data ?? [], [], forums.data ?? []),
     create: () => toast.error("Add milestones from the project's Milestones tab."),
     update: (id, input, lastSeen) => mutations.update.mutateAsync({ id, input, lastSeen }),
     remove: (ids) => mutations.remove.mutate(ids),
@@ -456,27 +480,52 @@ function Register({ items }: { items: PortfolioMilestone[] }) {
         </p>
       </div>
       <BoardWorkspace
-        key={String(canEdit)}
+        key={`${canEdit}-${hasApproval}`}
         title="Milestones"
         itemLabel="milestone"
         rows={rows}
-        columns={canEdit ? columns : columns.map((column) => ({ ...column, editable: false }))}
+        columns={
+          canEdit
+            ? registerColumns
+            : registerColumns.map((column) => ({ ...column, editable: false }))
+        }
+        onOpenRow={(row) => setOpenId(row.id)}
         manage={canEdit}
         canDelete={canDelete}
         canCreate={false}
         onRecordChange={onRecordChange}
         groupOptions={["programme", "project", "type", "deliveryStatus", "people"]}
-        seededViews={views}
+        seededViews={views.map((view) => ({
+          ...view,
+          visible: [...view.visible, ...(hasApproval ? ["approvingForum"] : [])],
+        }))}
         renderTitle={(row) => (
-          <Link
-            to="/portfolio/projects/$projectCode"
-            params={{ projectCode: String(row["code"]) }}
-            className="text-primary hover:underline"
-          >
-            {row.title}
-          </Link>
+          <div>
+            <Button
+              variant="link"
+              className="h-auto justify-start whitespace-normal p-0 text-left"
+              onClick={(event) => {
+                event.stopPropagation();
+                setOpenId(row.id);
+              }}
+            >
+              {row.title}
+            </Button>
+            {row["type"] === "Approval" && (
+              <p className="text-xs text-muted-foreground">
+                {String(row["approvingForum"] || "No approving forum")}
+              </p>
+            )}
+          </div>
         )}
       />
+      {openId && byId.get(openId) && (
+        <MilestoneForm
+          projectId={byId.get(openId)?.projectId ?? ""}
+          item={byId.get(openId)}
+          close={() => setOpenId(null)}
+        />
+      )}
     </section>
   );
 }
@@ -497,6 +546,11 @@ function MilestoneList({ title, items }: { title: string; items: PortfolioMilest
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{item.title}</p>
               <p className="truncate text-xs text-muted-foreground">{item.projectName}</p>
+              {item.type === "Approval" && (
+                <p className="text-xs text-muted-foreground">
+                  {item.forumName || "No approving forum"}
+                </p>
+              )}
             </div>
             <span className="shrink-0 text-xs text-muted-foreground">
               {formatDate(item.actualDate ?? item.forecastDate)}

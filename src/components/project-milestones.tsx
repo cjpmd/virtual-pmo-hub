@@ -1,7 +1,12 @@
 // Project milestones backed by Supabase. Status and slip come from v_milestones (the database's
 // date rule); edits write to the milestone by id, and forecast changes are recorded in
 // milestone_forecast_history by a trigger.
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MilestoneForm } from "@/components/milestone-form";
+import { useForums } from "@/hooks/use-forums";
+import type { ForumItem } from "@/services/forums";
 import { toast } from "sonner";
 import { BoardWorkspace, type BoardColumn, type BoardRow } from "@/components/board-workspace";
 import { QueryState } from "@/components/query-state";
@@ -13,7 +18,14 @@ import { fromIsoDate, toIsoDate } from "@/lib/format";
 import type { Person, Phase } from "@/services/hierarchy";
 import type { MilestoneInput, MilestoneItem } from "@/services/project-records";
 
-const TYPES: MilestoneType[] = ["Delivery", "Gate", "Key date", "External dependency"];
+const TYPES: MilestoneType[] = ["Delivery", "Gate", "Key date", "External dependency", "Approval"];
+
+export const approvingForumColumn: BoardColumn = {
+  key: "approvingForum",
+  label: "Approving forum",
+  type: "text",
+  width: 240,
+};
 
 /** Report to committee: a Yes/No switch saved to milestones.report_to_committee. */
 export const committeeColumn: BoardColumn = {
@@ -37,7 +49,7 @@ const phaseColumn = (phaseNames: string[]): BoardColumn => ({
 
 export const projectMilestoneColumns = (phaseNames: string[]): BoardColumn[] => [
   { key: "title", label: "Milestone", type: "text", editable: true, summary: "count", width: 280 },
-  { key: "type", label: "Type", type: "status", editable: true, options: TYPES },
+  { key: "type", label: "Type", type: "status", options: TYPES },
   phaseColumn(phaseNames),
   { key: "people", label: "Owner", type: "people", editable: true },
   { key: "deliveryStatus", label: "Status", type: "status", summary: "rag" },
@@ -53,6 +65,7 @@ export function milestonesToBoardRows(
   items: MilestoneItem[],
   people: Map<string, string>,
   phases: Phase[] = [],
+  forums: Pick<ForumItem, "id" | "name">[] = [],
 ): BoardRow[] {
   return items.map((item) => ({
     id: item.id,
@@ -71,6 +84,7 @@ export function milestonesToBoardRows(
     isMilestone: true,
     committee: item.reportToCommittee ? "Yes" : "No",
     phase: phases.find((phase) => phase.id === item.phaseId)?.name ?? "",
+    approvingForum: forums.find((forum) => forum.id === item.forumId)?.name ?? "",
     group: item.type,
   }));
 }
@@ -80,11 +94,16 @@ export function milestoneInputFromBoard(
   patch: Partial<BoardRow>,
   people: Person[],
   phases: Phase[] = [],
+  forums: Pick<ForumItem, "id" | "name">[] = [],
 ): MilestoneInput | undefined {
   const input: MilestoneInput = {};
   if ("title" in patch && String(patch.title ?? "").trim()) input.title = String(patch.title);
   const type = TYPES.find((option) => option === patch["type"]);
   if (type) input.type = type;
+  if ("approvingForum" in patch) {
+    const name = String(patch["approvingForum"] ?? "");
+    input.forumId = forums.find((forum) => forum.name === name)?.id ?? null;
+  }
   if ("people" in patch) {
     const name = Array.isArray(patch.people) ? String(patch.people[0] ?? "").trim() : "";
     const person = people.find((item) => item.name.toLowerCase() === name.toLowerCase());
@@ -116,6 +135,9 @@ export function milestoneInputFromBoard(
 
 export function ProjectMilestones({ projectId }: { projectId: string }) {
   const milestones = useMilestones([projectId], projectId);
+  const forums = useForums();
+  const [openId, setOpenId] = useState<string | "new" | null>(null);
+  const hasApproval = milestones.data?.some((item) => item.type === "Approval") ?? false;
   const people = usePeople();
   const permissions = useProjectPermissions(projectId);
   const mutations = useMilestoneMutations(projectId);
@@ -123,8 +145,11 @@ export function ProjectMilestones({ projectId }: { projectId: string }) {
   const phases = usePhases();
   const phaseList = useMemo(() => phases.data ?? [], [phases.data]);
   const columns = useMemo(
-    () => projectMilestoneColumns(phaseList.map((phase) => phase.name)),
-    [phaseList],
+    () => [
+      ...projectMilestoneColumns(phaseList.map((phase) => phase.name)),
+      ...(hasApproval ? [approvingForumColumn] : []),
+    ],
+    [phaseList, hasApproval],
   );
   const names = useMemo(
     () => new Map(peopleList.map((person) => [person.id, person.name])),
@@ -132,7 +157,7 @@ export function ProjectMilestones({ projectId }: { projectId: string }) {
   );
 
   const onRecordChange = useBoardRecordSync<MilestoneInput>({
-    toInput: (patch) => milestoneInputFromBoard(patch, peopleList, phaseList),
+    toInput: (patch) => milestoneInputFromBoard(patch, peopleList, phaseList, forums.data ?? []),
     create: (input) => {
       if (!input.title || !input.forecastDate)
         return void toast.error("A milestone needs a title and a forecast date (DD/MM/YYYY).");
@@ -151,22 +176,60 @@ export function ProjectMilestones({ projectId }: { projectId: string }) {
   return (
     <QueryState query={milestones}>
       {(items) => (
-        <BoardWorkspace
-          // The board copies its columns on mount; remount once permissions and phases are known.
-          key={`${permissions.canEdit}-${phaseList.length}`}
-          title="Milestones"
-          itemLabel="milestone"
-          rows={milestonesToBoardRows(items, names, phaseList)}
-          columns={
-            permissions.canEdit
-              ? columns
-              : columns.map((column) => ({ ...column, editable: false }))
-          }
-          groupOptions={["group", "deliveryStatus"]}
-          manage={permissions.canEdit}
-          canDelete={permissions.canDelete}
-          onRecordChange={onRecordChange}
-        />
+        <>
+          <BoardWorkspace
+            // The board copies its columns on mount; remount once permissions and phases are known.
+            key={`${permissions.canEdit}-${phaseList.length}-${hasApproval}`}
+            title="Milestones"
+            itemLabel="milestone"
+            rows={milestonesToBoardRows(items, names, phaseList, forums.data ?? [])}
+            canCreate={false}
+            actions={
+              permissions.canEdit && (
+                <Button onClick={() => setOpenId("new")}>
+                  <Plus />
+                  New milestone
+                </Button>
+              )
+            }
+            onOpenRow={(row) => setOpenId(row.id)}
+            renderTitle={(row) => (
+              <div>
+                <Button
+                  variant="link"
+                  className="h-auto justify-start whitespace-normal p-0 text-left"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setOpenId(row.id);
+                  }}
+                >
+                  {row.title}
+                </Button>
+                {row["type"] === "Approval" && (
+                  <p className="text-xs text-muted-foreground">
+                    {String(row["approvingForum"] || "No approving forum")}
+                  </p>
+                )}
+              </div>
+            )}
+            columns={
+              permissions.canEdit
+                ? columns
+                : columns.map((column) => ({ ...column, editable: false }))
+            }
+            groupOptions={["group", "deliveryStatus"]}
+            manage={permissions.canEdit}
+            canDelete={permissions.canDelete}
+            onRecordChange={onRecordChange}
+          />
+          {openId && (
+            <MilestoneForm
+              projectId={projectId}
+              item={openId === "new" ? undefined : items.find((item) => item.id === openId)}
+              close={() => setOpenId(null)}
+            />
+          )}
+        </>
       )}
     </QueryState>
   );

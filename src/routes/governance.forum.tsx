@@ -2,9 +2,14 @@ import { AutoBreadcrumbs } from "@/components/section-nav";
 import { createFileRoute } from "@tanstack/react-router";
 import { DecisionForumView } from "@/components/decision-forum";
 import { PageHeader } from "@/components/pmo-ui";
-const title = "Decision Forum — Virtual PMO",
-  description = "Generate a decision agenda for a forum and record outcomes in meeting mode.";
+const title = "Boards — Virtual PMO",
+  description = "Decision forums, their members and meetings.";
 export const Route = createFileRoute("/governance/forum")({
+  validateSearch: (search: Record<string, unknown>): { forum?: string; meeting?: string } => ({
+    ...(typeof search["forum"] === "string" && { forum: search["forum"] }),
+    ...(typeof search["meeting"] === "string" &&
+      typeof search["forum"] === "string" && { meeting: search["meeting"] }),
+  }),
   head: () => ({
     meta: [
       { title },
@@ -21,11 +26,7 @@ function Page() {
   return (
     <div className="space-y-6">
       <AutoBreadcrumbs />
-      <PageHeader
-        eyebrow="Governance"
-        title="Forum view"
-        description="Pick a forum and meeting date to produce the decision agenda, then switch to meeting mode to record outcomes as you go."
-      />
+      <PageHeader eyebrow="Governance" title="Boards" description={description} />
       <DecisionForumView />
     </div>
   );

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "@tanstack/react-router";
 import {
   ArrowDown,
   ArrowUp,
@@ -1214,11 +1215,14 @@ export function RiskSettings() {
       >
         <div className="grid gap-6 sm:grid-cols-2">
           <FixedList label="Issue severity" values={lists.issueSeverities} />
-          <ListEditor
-            label="Decision forums"
-            values={lists.decisionForums}
-            onChange={(values) => patch("lists", { decisionForums: values })}
-          />
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">Decision forums</p>
+            <Button asChild variant="outline">
+              <Link to="/governance/forum" search={{}}>
+                Governance › Boards
+              </Link>
+            </Button>
+          </div>
           <FixedList label="Dependency types" values={lists.dependencyTypes} />
           <ListEditor
             label="Change types"
