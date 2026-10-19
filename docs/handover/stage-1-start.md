@@ -292,7 +292,8 @@ Spec: `docs/design/project-overview-spec.md` (components, data rules, option A c
 - Runbook `docs/sql/runbook-d2.sql` (user): drops the forum lookup FKs/indexes, deletes the 10
   decision_forum lookups, seeds organisation-level forums for new organisations,
   update_pending_decision with option history by title and target_meeting_id. Migration version
-  20261019170000. Status: see the latest commit / chat.
+  20261019170000. Run by the user 19/10 (Block A 7/7; Block B2; verified: 0 forum lookups,
+  0 lookup FKs, new seed and update_pending_decision, no anon execute); types regenerated.
 - Settings › Lists still shows "Decision forums" (lookup list); after the runbook it is empty.
   Lovable replaces it with a link to Governance › Boards (brief section 5).
 - Demo gate seed (`docs/sql/seed-gate-consistency.sql`) applied 19/10 for Phase 4-6 projects

@@ -3451,13 +3451,6 @@ export type Database = {
             referencedColumns: ["id", "organisation_id"]
           },
           {
-            foreignKeyName: "decision_events_forum_id_organisation_id_forum_list_fkey"
-            columns: ["forum_id", "organisation_id", "forum_list"]
-            isOneToOne: false
-            referencedRelation: "lookup_values"
-            referencedColumns: ["id", "organisation_id", "list_key"]
-          },
-          {
             foreignKeyName: "decision_events_project_id_workspace_id_fkey"
             columns: ["project_id", "workspace_id"]
             isOneToOne: false
@@ -4142,13 +4135,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "decisions_decided_by_forum_fkey"
-            columns: ["decided_by_forum_id", "organisation_id", "forum_list"]
-            isOneToOne: false
-            referencedRelation: "lookup_values"
-            referencedColumns: ["id", "organisation_id", "list_key"]
-          },
-          {
             foreignKeyName: "decisions_decided_by_forum_id_forums_fkey"
             columns: ["decided_by_forum_id", "organisation_id"]
             isOneToOne: false
@@ -4189,13 +4175,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_forums"
             referencedColumns: ["id", "organisation_id"]
-          },
-          {
-            foreignKeyName: "decisions_forum_id_organisation_id_forum_list_fkey"
-            columns: ["forum_id", "organisation_id", "forum_list"]
-            isOneToOne: false
-            referencedRelation: "lookup_values"
-            referencedColumns: ["id", "organisation_id", "list_key"]
           },
           {
             foreignKeyName: "decisions_portfolio_id_workspace_id_fkey"
@@ -12545,13 +12524,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "decisions_decided_by_forum_fkey"
-            columns: ["decided_by_forum_id", "organisation_id", "forum_list"]
-            isOneToOne: false
-            referencedRelation: "lookup_values"
-            referencedColumns: ["id", "organisation_id", "list_key"]
-          },
-          {
             foreignKeyName: "decisions_decided_by_forum_id_forums_fkey"
             columns: ["decided_by_forum_id", "organisation_id"]
             isOneToOne: false
@@ -12592,13 +12564,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_forums"
             referencedColumns: ["id", "organisation_id"]
-          },
-          {
-            foreignKeyName: "decisions_forum_id_organisation_id_forum_list_fkey"
-            columns: ["forum_id", "organisation_id", "forum_list"]
-            isOneToOne: false
-            referencedRelation: "lookup_values"
-            referencedColumns: ["id", "organisation_id", "list_key"]
           },
           {
             foreignKeyName: "decisions_portfolio_id_workspace_id_fkey"
