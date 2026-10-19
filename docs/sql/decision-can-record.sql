@@ -1,4 +1,4 @@
--- PROPOSAL (15/10/2026): v_decisions tells the signed-in user what they may do. Not applied.
+-- APPLIED 16/10/2026 as migration 20261016154523_decision_can_record (approved 16/10).
 --
 -- The drawer shows Record, Defer, Reverse and Withdraw to anyone who can edit the project and
 -- lets the RPC refuse. v_decisions gains two columns, computed for the current user with the
@@ -58,4 +58,4 @@ grant select on public.v_decisions to authenticated;
 --   member promoted to PMO in-txn   16 rows; can_record 16, can_write 16
 --   outsider                        0 rows
 --   anon execute on both functions  false / false
--- As intended. Awaiting approval (not applied).
+-- As intended. Approved and applied 16/10/2026.
