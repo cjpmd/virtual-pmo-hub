@@ -68,11 +68,12 @@ function Forum({
     selectedMeeting ?? planned.find((item) => item.id === meetingId) ?? planned[0];
   const [meetingDate, setMeetingDate] = useState(todayIso());
   const [meetingMode, setMeetingMode] = useState(false);
+  const [queue, setQueue] = useState<string[]>([]);
   const [outcomes, setOutcomes] = useState<Record<string, Outcome>>({});
   const all = data.decisions;
   const date = chosenMeeting?.meetingDate ?? meetingDate;
   const agenda = useMemo(() => {
-    const result = getForumAgenda(forum, all);
+    const result = getForumAgenda(forum, all.filter((item) => item.forumId === selectedForum.id));
     const pending = targetedOnly
       ? result.pending.filter((item) => item.targetMeetingId === chosenMeeting?.id)
       : result.pending
@@ -82,18 +83,13 @@ function Forum({
               Number(b.targetMeetingId === chosenMeeting?.id) -
               Number(a.targetMeetingId === chosenMeeting?.id),
           );
-    return { ...result, pending };
-  }, [forum, all, targetedOnly, chosenMeeting?.id]);
+    return { ...result, pending, overdue: pending.filter((item) => item.overdue) };
+  }, [forum, all, targetedOnly, chosenMeeting?.id, selectedForum.id]);
   // Keep items recorded in this meeting on screen (they leave the pending list once saved).
   const [recorded, setRecorded] = useState<string[]>([]);
   const meetingItems = useMemo(
-    () => [
-      ...agenda.pending,
-      ...all.filter(
-        (item) => recorded.includes(item.id) && item.forum === forum && item.status !== "Pending",
-      ),
-    ],
-    [agenda.pending, all, recorded, forum],
+    () => queue.flatMap((id) => { const item = all.find((decision) => decision.id === id); return item ? [item] : []; }),
+    [all, queue],
   );
 
   return (
@@ -141,7 +137,7 @@ function Forum({
           <Button
             variant={meetingMode ? "default" : "outline"}
             disabled={Boolean(selectedMeeting && selectedMeeting.status !== "Planned")}
-            onClick={() => setMeetingMode(true)}
+            onClick={() => { setQueue(agenda.pending.map((item) => item.id)); setMeetingMode(true); }}
           >
             <Presentation />
             Meeting mode

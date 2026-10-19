@@ -12,6 +12,14 @@ const orgForum = { workspaceId: null, chairResourceId: "chair", active: true };
 const wsForum = { workspaceId: "ws1", chairResourceId: null, active: true };
 
 describe("forum permissions", () => {
+  it("a contributor who is not the chair cannot manage forums or meetings", () => {
+    const contributor = { orgRole: "contributor" as const, workspaceRoles: [role("ws1", "contributor")], myResourceId: "other" };
+    expect(canManageForum(orgForum, contributor)).toBe(false);
+    expect(canManageForum(wsForum, contributor)).toBe(false);
+    expect(canManageMeetings(orgForum, contributor)).toBe(false);
+    expect(canManageMeetings(wsForum, contributor)).toBe(false);
+    expect(forumWorkspaces(contributor)).toEqual([]);
+  });
   it("organisation-level forums are managed by organisation admins only", () => {
     const pmo = {
       orgRole: "pmo" as const,
