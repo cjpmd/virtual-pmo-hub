@@ -270,9 +270,10 @@ Spec: `docs/design/project-overview-spec.md` (components, data rules, option A c
 - 16/10: "GATE 1 - Ready to Deliver" mapped to Phase 3; "Design authority approval" is now a
   key-date milestone reported to committee (`20261016154517_gate_mapping_2`). `v_decisions`
   has `can_record` / `can_write` (`20261016154523_decision_can_record`); the drawer uses them.
-- Waiting for the user to run `docs/sql/runbook-decision-edit-and-draft-links.sql`
-  (update_pending_decision; draft save and submit replace links atomically). After that: wire
-  both into the drawer and form, drop the client-side link delete, rerun the UIT flows.
+- The user applied `docs/sql/runbook-decision-edit-and-draft-links.sql`
+  (`20261016170000_decision_edit_and_draft_links`): the drawer edits Pending decisions and their
+  links through `update_pending_decision`; draft save and submit replace a draft's links in the
+  same transaction (no client-side delete). UIT round 2 run 19/10 (`docs/sql/ui-test-data.sql`).
 - UI write flows run in the "UI Test" workspace of the outsider test organisation (project
   UIT), never in the demo organisation. Setup and purge runbook: `docs/sql/ui-test-data.sql`.
   The member test user is now also a viewer of that organisation (contributor on UI Test only),

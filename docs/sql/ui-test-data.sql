@@ -96,3 +96,15 @@
 --   decided by forum Project Board, recorded by Test outsider; one 'made' event.
 --   Demo organisation afterwards: 16 decisions, 9 events, 0 ticks, no new reports; the member's
 --   profile is back on the demo organisation.
+
+-- UI WRITE FLOWS ROUND 2 (19/10/2026), after the runbook (update_pending_decision, atomic draft
+-- links) was applied, all in UIT:
+--   member: created DEC-002 and DEC-003; edited DEC-002's options (renamed January, added
+--   March, removed February) -> one update_pending_decision call; January kept its id, February
+--   removed, March added; one 'edited' event {options [2,2]}. Linked MS-002 from the drawer ->
+--   update_pending_decision with {milestone: [MS-002]}; 'edited' event {links {milestone [0,1]}}.
+--   Saved draft SR-002 with DEC-002 and DEC-003 (DEC-002#1, DEC-003#2), removed DEC-002 and saved
+--   again -> DEC-003#1 only, via save_status_report_draft alone (no client-side delete).
+--   Writes seen from the browser: decisions/decision_options inserts (create), two
+--   update_pending_decision calls, two save_status_report_draft calls, two profile updates (org
+--   switch there and back). Demo organisation unchanged (16 decisions, 9 events, 0 report links).
