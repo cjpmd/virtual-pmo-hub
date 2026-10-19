@@ -90,6 +90,16 @@ export interface ResolvedDecision extends Omit<
   canRecord: boolean;
   /** May edit, withdraw and supersede (the RPCs' rule). */
   canWrite: boolean;
+  /** The forum meeting the decision is aimed at, and the v_decisions rules about it. */
+  targetMeetingId: string | null;
+  targetMeetingDate: string | null;
+  targetPapersDeadline: string | null;
+  /** Pending, and the target meeting's papers deadline has gone. */
+  papersDeadlinePassed: boolean;
+  /** Pending, and needed before its papers are even due. */
+  neededByBeforePapersDeadline: boolean;
+  /** Pending, and the target meeting is after the needed-by date. */
+  targetMeetingAfterNeededBy: boolean;
   daysToNeededBy: number;
   latencyDays: number | undefined;
   chosenOption: string;
@@ -191,7 +201,7 @@ export async function loadGovernance(orgId: string): Promise<GovernanceData> {
       supabase
         .from("v_decisions")
         .select(
-          "id, overdue, days_overdue, deferral_count, pending_successor_id, pending_successor_ref, superseded_by_id, superseded_by_ref, can_record, can_write",
+          "id, overdue, days_overdue, deferral_count, pending_successor_id, pending_successor_ref, superseded_by_id, superseded_by_ref, can_record, can_write, target_meeting_id, target_meeting_date, target_papers_deadline, papers_deadline_passed, needed_by_before_papers_deadline, target_meeting_after_needed_by",
         )
         .eq("organisation_id", orgId),
       supabase.from("profiles").select("id, display_name"),
@@ -328,6 +338,12 @@ export async function loadGovernance(orgId: string): Promise<GovernanceData> {
       recordedAt: row.recorded_at,
       canRecord: Boolean(extra?.can_record),
       canWrite: Boolean(extra?.can_write),
+      targetMeetingId: extra?.target_meeting_id ?? null,
+      targetMeetingDate: extra?.target_meeting_date ?? null,
+      targetPapersDeadline: extra?.target_papers_deadline ?? null,
+      papersDeadlinePassed: Boolean(extra?.papers_deadline_passed),
+      neededByBeforePapersDeadline: Boolean(extra?.needed_by_before_papers_deadline),
+      targetMeetingAfterNeededBy: Boolean(extra?.target_meeting_after_needed_by),
       daysToNeededBy: toNeededBy,
       latencyDays: latency,
       chosenOption: options.find((option) => option.id === row.chosen_option_id)?.title ?? "—",
@@ -592,7 +608,44 @@ export interface DecisionEventView {
   previousNeededBy: string | null;
   newNeededBy: string | null;
   changedFields: string[];
+  /** For "edited" events: option changes by title (only the non-empty lists). */
+  optionChanges: OptionChanges | null;
+  /** For "edited" events: the target meeting before and after (meeting ids, null for none). */
+  targetMeetingChange: [string | null, string | null] | null;
 }
+
+export interface OptionChanges {
+  renamed?: Array<[string, string]>;
+  added?: string[];
+  removed?: string[];
+  prosConsChanged?: string[];
+}
+
+const changesOf = (value: unknown) =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+const meetingChangeOf = (value: unknown) =>
+  Array.isArray(value) ? (value as [string | null, string | null]) : null;
+
+/** changes.options as update_pending_decision writes it (older events hold [before, after] counts). */
+export const optionChangesOf = (value: unknown): OptionChanges | null => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const raw = value as Record<string, unknown>;
+  const list = (key: string) => (Array.isArray(raw[key]) ? (raw[key] as string[]) : undefined);
+  const renamed = Array.isArray(raw["renamed"])
+    ? (raw["renamed"] as Array<[string, string]>)
+    : undefined;
+  const added = list("added");
+  const removed = list("removed");
+  const prosConsChanged = list("pros_cons_changed");
+  return {
+    ...(renamed && { renamed }),
+    ...(added && { added }),
+    ...(removed && { removed }),
+    ...(prosConsChanged && { prosConsChanged }),
+  };
+};
 
 export async function listDecisionEvents(
   orgId: string,
@@ -629,6 +682,8 @@ export async function listDecisionEvents(
     previousNeededBy: row.previous_needed_by,
     newNeededBy: row.new_needed_by,
     changedFields: Object.keys((row.changes as Record<string, unknown> | null) ?? {}),
+    optionChanges: optionChangesOf(changesOf(row.changes)["options"]),
+    targetMeetingChange: meetingChangeOf(changesOf(row.changes)["target_meeting_id"]),
   }));
 }
 
@@ -704,6 +759,12 @@ export interface NewDecisionInput {
   options: DecisionOptionInput[];
   decisionMakerId: string | null;
   forumId: string | null;
+  /**
+   * A planned meeting of the decision's forum (database rule); null for none, left out to keep
+   * it. When the forum changes, send the new forum's meeting or null: a meeting of the old
+   * forum is refused.
+   */
+  targetMeetingId?: string | null;
   neededBy: string;
   impact: Record<"scope" | "cost" | "time" | "benefits", { impacted: boolean; note: string }>;
   evidenceLink: string;
@@ -728,6 +789,7 @@ export async function createDecision(input: NewDecisionInput) {
       context: input.context.trim() || null,
       decision_maker_id: input.decisionMakerId,
       forum_id: input.forumId,
+      ...(input.targetMeetingId && { target_meeting_id: input.targetMeetingId }),
       needed_by_date: input.neededBy,
       ...impactFields(input.impact),
       evidence_link: input.evidenceLink.trim() || null,
@@ -785,6 +847,7 @@ export async function updatePendingDecision(
       context: input.context.trim() || null,
       decision_maker_id: input.decisionMakerId,
       forum_id: input.forumId,
+      ...(input.targetMeetingId !== undefined && { target_meeting_id: input.targetMeetingId }),
       needed_by_date: input.neededBy,
       ...impactFields(input.impact),
       evidence_link: input.evidenceLink.trim() || null,

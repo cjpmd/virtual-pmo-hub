@@ -38,6 +38,8 @@ export interface MilestoneItem {
   reportToCommittee: boolean;
   /** The lifecycle phase a gate milestone closes (required for gates). */
   phaseId: string | null;
+  /** The forum that gives an approval milestone (required for approvals). */
+  forumId: string | null;
   updatedAt: string;
 }
 
@@ -72,15 +74,24 @@ export interface IssueItem {
 
 export async function listMilestones(projectIds: string[]): Promise<MilestoneItem[]> {
   if (!projectIds.length) return [];
-  const rows = unwrap(
-    await supabase
+  // v_milestones predates approval milestones, so their forum comes from the table itself.
+  const [view, forums] = await Promise.all([
+    supabase
       .from("v_milestones")
       .select(
         "id, project_id, ref, title, type, owner_id, baseline_date, forecast_date, actual_date, status, slip_days, report_to_committee, phase_id, updated_at",
       )
       .in("project_id", projectIds)
       .order("forecast_date"),
-    "Loading milestones",
+    supabase
+      .from("milestones")
+      .select("id, forum_id")
+      .in("project_id", projectIds)
+      .not("forum_id", "is", null),
+  ]);
+  const rows = unwrap(view, "Loading milestones");
+  const forumOf = new Map(
+    unwrap(forums, "Loading milestones").map((row) => [row.id, row.forum_id]),
   );
   return rows.map((row) => ({
     id: row.id ?? "",
@@ -96,6 +107,7 @@ export async function listMilestones(projectIds: string[]): Promise<MilestoneIte
     slipDays: row.slip_days ?? 0,
     reportToCommittee: row.report_to_committee ?? false,
     phaseId: row.phase_id,
+    forumId: forumOf.get(row.id ?? "") ?? null,
     updatedAt: row.updated_at ?? "",
   }));
 }
@@ -109,6 +121,7 @@ export interface MilestoneInput {
   actualDate?: string | null;
   reportToCommittee?: boolean;
   phaseId?: string | null;
+  forumId?: string | null;
 }
 
 const milestoneFields = (input: MilestoneInput): Update<"milestones"> => ({
@@ -120,6 +133,7 @@ const milestoneFields = (input: MilestoneInput): Update<"milestones"> => ({
   ...(input.actualDate !== undefined && { actual_date: input.actualDate }),
   ...(input.reportToCommittee !== undefined && { report_to_committee: input.reportToCommittee }),
   ...(input.phaseId !== undefined && { phase_id: input.phaseId }),
+  ...(input.forumId !== undefined && { forum_id: input.forumId }),
 });
 
 export async function createMilestone(

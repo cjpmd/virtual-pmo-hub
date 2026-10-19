@@ -80,6 +80,33 @@ export const milestoneTypeLabel: Record<Enums["milestone_type"], MilestoneType> 
 };
 export const milestoneTypeValue = invert(milestoneTypeLabel);
 
+export type ForumLevelLabel = "Project" | "Programme" | "Portfolio" | "Organisation";
+export const forumLevelLabel: Record<Enums["forum_level"], ForumLevelLabel> = {
+  project: "Project",
+  programme: "Programme",
+  portfolio: "Portfolio",
+  organisation: "Organisation",
+};
+export const forumLevelValue = invert(forumLevelLabel);
+
+export type ForumCadenceLabel = "Weekly" | "Fortnightly" | "Monthly" | "Quarterly" | "Ad hoc";
+export const forumCadenceLabel: Record<Enums["forum_cadence"], ForumCadenceLabel> = {
+  weekly: "Weekly",
+  fortnightly: "Fortnightly",
+  monthly: "Monthly",
+  quarterly: "Quarterly",
+  ad_hoc: "Ad hoc",
+};
+export const forumCadenceValue = invert(forumCadenceLabel);
+
+export type MeetingStatusLabel = "Planned" | "Held" | "Cancelled";
+export const meetingStatusLabel: Record<Enums["meeting_status"], MeetingStatusLabel> = {
+  planned: "Planned",
+  held: "Held",
+  cancelled: "Cancelled",
+};
+export const meetingStatusValue = invert(meetingStatusLabel);
+
 /** v_milestones.status is text derived by the database's date rule. */
 export const milestoneStatusLabel = (value: string | null): MilestoneStatus =>
   (

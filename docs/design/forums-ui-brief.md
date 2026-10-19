@@ -203,24 +203,50 @@ In the decision form (create and edit Pending):
 - On the milestone list and slippage views, approval milestones show the forum name as a
   secondary line.
 
-## 5. Done on our side (after the migrations are applied)
+## 5. Data layer (done on our side, 20/10/2026)
 
-- `src/integrations/supabase/types.ts` regenerated.
-- In services:
-  - `loadGovernance` and `listDecisionEvents` read forum names from `forums`, not
-    `lookup_values`.
-  - New `listForums`, `getForum`, `listMeetings`, `saveForum`, `setForumActive`,
-    `addForumMember`, `removeForumMember`, `saveMeeting`, `setMeetingStatus`.
-  - `updatePendingDecision` accepts `targetMeetingId`.
-  - The milestone service maps `approval` and `forum_id`.
-- In hooks: `useForums`, `useForum(id)`, `useMeetings(forumId)` and `useForumMutations`.
-- Settings: the "Decision forums" list in Settings › Lists (`decisionForums`,
-  `src/services/org-settings.ts`) is removed and replaced by a link to Governance › Boards. Forums
-  are now managed there.
-- Runbook `docs/sql/runbook-d2.sql` (the user runs it): it retires the forum lookups, seeds
-  organisation-level forums for new organisations and adds option history by title.
-- Done 19/10: `loadGovernance` and `listDecisionEvents` read forum names from `forums`; the
-  `Approval` milestone type label exists (the form option and forum picker are Lovable's).
+Use these; don't query Supabase from components.
+
+**Hooks** (`src/hooks/use-forums.ts`):
+
+| Hook | Returns |
+|---|---|
+| `useForums()` | Every forum (`ForumItem[]`), both kinds, active and inactive, by `sortOrder` then name |
+| `useForum(id)` | One forum from that list |
+| `useForumMembers(forumId?)` | `ForumMember[]` (`forumId`, `resourceId`, `name`), one forum's when given |
+| `useMeetings(forumId?)` | `MeetingItem[]`, earliest first, one forum's when given |
+| `useMeetingDecisions(meetingId)` | The decisions (`ResolvedDecision[]`, from `useGovernance`) targeted at the meeting that the viewer can see |
+| `useForumPermissions()` | `canManage(forum)`, `canManageMeetings(forum)`, `canAddOrganisationForum`, `workspaceIds` (workspaces the user may add a workspace forum to) |
+| `useForumMutations()` | `createForum({ workspaceId, input })` (null workspace = organisation-level), `updateForum({ id, input, lastSeen })`, `setForumActive({ id, active, lastSeen })`, `addMember({ forumId, resourceId })`, `removeMember(...)`, `createMeeting({ forumId, input })`, `updateMeeting({ id, input, lastSeen })`, `setMeetingStatus({ id, status, lastSeen, minutesLink? })` |
+
+`ForumItem`: `id`, `workspaceId` (null = organisation-level), `name`, `level` ("Project",
+"Programme", "Portfolio", "Organisation"), `chairResourceId`, `chairName`, `cadence` ("Weekly",
+"Fortnightly", "Monthly", "Quarterly", "Ad hoc" or null), `papersDeadlineDays`, `active`,
+`sortOrder`, `memberCount`, `nextMeetingId`, `nextMeetingDate`, `nextPapersDeadline`,
+`pendingDecisions`, `updatedAt`.
+
+`MeetingItem`: `id`, `forumId`, `forumName`, `meetingDate`, `papersDeadline`, `status`
+("Planned", "Held", "Cancelled"), `minutesLink`, `notes`, `isPast`, `papersDeadlinePassed`,
+`decisionsTargeted`, `decisionsPending`, `updatedAt`. Leave `papersDeadline` out (or null) on
+create to take the forum's default.
+
+**Decisions** (`src/services/decisions.ts`, `useGovernance`, `useGovernanceMutations`):
+
+- `ResolvedDecision` has `targetMeetingId`, `targetMeetingDate`, `targetPapersDeadline`,
+  `papersDeadlinePassed`, `neededByBeforePapersDeadline` and `targetMeetingAfterNeededBy`.
+- `NewDecisionInput.targetMeetingId` (create and `savePending`): a planned meeting of the
+  decision's forum, null for none, left out to keep it. **When the forum changes, send the new
+  forum's meeting or null**: a meeting of the old forum is refused.
+- `useGovernance().data.forums` lists active forums (`{ id, label }`) for the forum picker.
+- `useDecisionEvents` items have `optionChanges` (`renamed: [old, new][]`, `added`, `removed`,
+  `prosConsChanged`, each only when non-empty) and `targetMeetingChange` (`[oldId, newId]`)
+  for history lines.
+
+**Milestones** (`src/services/project-records.ts`): `MilestoneItem.forumId` and
+`MilestoneInput.forumId`; `type` "Approval" exists. An Approval milestone needs a forum.
+
+**Yours (Lovable):** the Settings › Lists "Decision forums" list (`decisionForums`) still edits
+the retired lookup list; replace it with a link to Governance › Boards.
 
 ## 6. Checks before handing back
 
