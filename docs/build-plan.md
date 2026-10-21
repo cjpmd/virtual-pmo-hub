@@ -405,13 +405,19 @@ options with numbers. Stop for my decision before any change.
 Run the e2e suite against a Supabase branch, not production (the 0.1 smoke run reached about
 1,000 API requests a minute on the live project, 21/10/2026).
 
+**Capacity (found in 0.5b, 21/10/2026):** the live instance stalled for about 20 s at ~900 API
+requests a minute during e2e runs (16:14 and 16:35 UTC): the whole API stopped answering and
+pg_cron could not open a connection, with no lock waits or connection exhaustion. Upgrade the
+compute before the first customer, and load-test on a branch. The e2e suite runs with one
+worker until then.
+
 Also before go-live: a cross-tenant RLS test suite in `supabase/tests` (user A can't read or write any of organisation B's tables, including through every RPC), and a check that the backups/PITR tier fits the plan.
 
 ---
 
 ## Progress
 
-- [ ] 0.1 Test harness  - [ ] 0.2 Clean-up  - [ ] 0.3 Migration history and indexes  - [ ] 0.4 Copy  - [ ] 0.5 Benefits timeout  - [ ] 0.6 Sign-in without personal email
+- [ ] 0.1 Test harness  - [ ] 0.2 Clean-up  - [ ] 0.3 Migration history and indexes  - [ ] 0.4 Copy  - [ ] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
 - [ ] 1.1 Data import/export  - [ ] 1.2 Pack export  - [ ] 1.3 Dashboards and views  - [ ] 1.4 Calendar and automations flag  - [ ] 1.5 Notes and map layout
 - [ ] 2.1 Invites  - [ ] 2.2 Self sign-up  - [ ] 2.3 Stripe
 - [ ] 3.1 Sprint schema  - [ ] 3.2 Sprint UI  - [ ] 3.3 Reports and forecast

@@ -8,19 +8,26 @@ for (const file of [".env", ".env.local"]) if (existsSync(file)) process.loadEnv
 
 const port = Number(process.env["E2E_PORT"] ?? 8080);
 const baseURL = process.env["E2E_BASE_URL"] ?? `http://127.0.0.1:${port}`;
+// Each run writes to its own folder, so a later run (or a rerun of one test) never deletes an
+// earlier run's traces, screenshots and errors. Set once here and inherited by the workers.
+process.env["E2E_RUN_ID"] ??= new Date().toISOString().replace(/[:.]/g, "-");
+const runId = process.env["E2E_RUN_ID"];
 
 export default defineConfig({
   testDir: "e2e",
   // *.e2e.ts rather than *.spec.ts, so Vitest's default glob never picks these up.
   testMatch: "**/*.e2e.ts",
+  outputDir: `test-results/${runId}`,
   globalSetup: "./e2e/global-setup.ts",
   fullyParallel: false,
-  // The suite runs against a live Supabase project: two workers keep its request rate down.
-  workers: 2,
+  // The suite runs against the live Supabase project. With two workers (~900 API requests a
+  // minute) the small instance stalled for up to 20 s (21/10/2026), so one worker until the
+  // suite moves to a Supabase branch (build plan, Phase 6).
+  workers: 1,
   retries: process.env["CI"] ? 1 : 0,
   timeout: 60_000,
   expect: { timeout: 15_000 },
-  reporter: [["list"], ["html", { open: "never" }]],
+  reporter: [["list"], ["html", { open: "never", outputFolder: `playwright-report/${runId}` }]],
   use: {
     baseURL,
     storageState: "e2e/.auth/user.json",
