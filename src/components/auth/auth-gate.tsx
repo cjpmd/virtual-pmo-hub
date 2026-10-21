@@ -1,14 +1,13 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { LoaderCircle, LogOut } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { selfSignup } from "@/lib/features";
-import { joinDemoOrganisation, signOut } from "@/services/auth";
-import { qk } from "@/services/query-keys";
+import { signOut } from "@/services/auth";
 import { errorMessage } from "@/services/service-error";
 import { OrganisationProvider, useOrganisationState } from "./organisation-provider";
-import { useSession, useUser } from "./session-provider";
+import { useSession } from "./session-provider";
 import { SettingsSync } from "./settings-sync";
 
 /** Paths anyone can open. Everything else needs a session and an organisation. */
@@ -89,40 +88,22 @@ function OrganisationGate({ children }: { children: ReactNode }) {
 }
 
 function NoOrganisation({ email }: { email: string }) {
-  const user = useUser();
-  const queryClient = useQueryClient();
-  const join = useMutation({
-    meta: { silent: true },
-    mutationFn: joinDemoOrganisation,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: qk.memberships(user.id) }),
-  });
   return (
     <CentredCard title="You're not in an organisation yet">
       <p className="text-sm text-muted-foreground">
         You're signed in as <strong className="text-foreground">{email}</strong>, but no
-        organisation has added you. Ask an organisation admin to invite this address
-        {selfSignup ? ", or create a new organisation for your team." : "."}
+        organisation has added you.
       </p>
       <p className="mt-3 text-sm text-muted-foreground">
-        If you've been given access to the demo organisation, you can join it now.
+        Ask your administrator for an invite
+        {selfSignup ? ", or create a new organisation for your team." : "."}
       </p>
-      {join.isError && (
-        <p
-          role="alert"
-          className="mt-3 rounded-md border border-health-bad/40 bg-health-bad/10 p-3 text-sm"
-        >
-          {errorMessage(join.error)}
-        </p>
-      )}
       <div className="mt-5 flex flex-wrap gap-2">
         {selfSignup && (
           <Button asChild>
             <Link to="/signup/setup">Create an organisation</Link>
           </Button>
         )}
-        <Button variant="outline" onClick={() => join.mutate()} disabled={join.isPending}>
-          {join.isPending && <LoaderCircle className="animate-spin" />}Join the demo organisation
-        </Button>
         <SignOutButton />
       </div>
     </CentredCard>
