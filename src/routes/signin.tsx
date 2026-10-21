@@ -66,7 +66,7 @@ function SignInPage() {
             autoFocus
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="name@university.ac.uk"
+            placeholder="name@yourcompany.com"
           />
         </label>
         {send.isError && (

@@ -249,6 +249,10 @@ end to end, signed in, with a fresh email. List anything broken or university-sp
 fix it. If D3 says trial: create_organisation also creates an organisation_subscriptions row
 with plan "trial" and an end date (propose the SQL and stop). Show a trial banner with days left.
 ```
+**Also in 2.2:** Setup wizard sector choice (University / Public sector / General). University
+keeps the current seed_org_defaults; the others get neutral business units, benefit categories,
+forum names and tier wording, and a financial year start of April (public sector) or January
+(general). SQL proposal first.
 
 ### 2.3 Stripe billing
 Database change: yes, plus edge functions. Needs D1 and the Stripe price IDs.
@@ -427,7 +431,7 @@ Also before go-live: a cross-tenant RLS test suite in `supabase/tests` (user A c
 
 ## Progress
 
-- [x] 0.1 Test harness  - [ ] 0.2 Clean-up  - [ ] 0.3 Migration history and indexes  - [ ] 0.4 Copy  - [x] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
+- [x] 0.1 Test harness  - [ ] 0.2 Clean-up  - [ ] 0.3 Migration history and indexes  - [x] 0.4 Copy  - [x] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
 - [ ] 1.1 Data import/export  - [ ] 1.2 Pack export  - [ ] 1.3 Dashboards and views  - [ ] 1.4 Calendar and automations flag  - [ ] 1.5 Notes and map layout
 - [ ] 2.1 Invites  - [ ] 2.2 Self sign-up  - [ ] 2.3 Stripe
 - [ ] 3.1 Sprint schema  - [ ] 3.2 Sprint UI  - [ ] 3.3 Reports and forecast

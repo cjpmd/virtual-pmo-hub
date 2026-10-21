@@ -67,8 +67,8 @@ function SignupPage() {
   return (
     <CentredCard title="Start your free trial">
       <p className="text-sm text-muted-foreground">
-        Portfolio management for university IT and change teams. Enter your work email and we'll
-        send you a link: no password needed.
+        Portfolio, programme and project management for PMOs and change teams. Enter your work email
+        and we'll send you a link: no password needed.
       </p>
       <form
         className="mt-5 space-y-3"
@@ -86,7 +86,7 @@ function SignupPage() {
             autoComplete="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="you@your-university.ac.uk"
+            placeholder="you@yourcompany.com"
           />
         </label>
         {personal && (
