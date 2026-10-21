@@ -411,7 +411,7 @@ Also before go-live: a cross-tenant RLS test suite in `supabase/tests` (user A c
 
 ## Progress
 
-- [ ] 0.1 Test harness  - [ ] 0.2 Clean-up  - [ ] 0.3 Migration history and indexes  - [ ] 0.4 Copy  - [ ] 0.5 Benefits timeout  - [ ] 0.6 Sign-in without personal email
+- [ ] 0.1 Test harness  - [ ] 0.2 Clean-up  - [ ] 0.3 Migration history and indexes  - [ ] 0.4 Copy  - [ ] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
 - [ ] 1.1 Data import/export  - [ ] 1.2 Pack export  - [ ] 1.3 Dashboards and views  - [ ] 1.4 Calendar and automations flag  - [ ] 1.5 Notes and map layout
 - [ ] 2.1 Invites  - [ ] 2.2 Self sign-up  - [ ] 2.3 Stripe
 - [ ] 3.1 Sprint schema  - [ ] 3.2 Sprint UI  - [ ] 3.3 Reports and forecast
