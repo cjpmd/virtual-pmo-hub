@@ -20,8 +20,10 @@ export default defineConfig({
   outputDir: `test-results/${runId}`,
   globalSetup: "./e2e/global-setup.ts",
   fullyParallel: false,
-  // The suite runs against a live Supabase project: two workers keep its request rate down.
-  workers: 2,
+  // The suite runs against the live Supabase project. With two workers (~900 API requests a
+  // minute) the small instance stalled for up to 20 s (21/10/2026), so one worker until the
+  // suite moves to a Supabase branch (build plan, Phase 6).
+  workers: 1,
   retries: process.env["CI"] ? 1 : 0,
   timeout: 60_000,
   expect: { timeout: 15_000 },

@@ -5,6 +5,7 @@ import { expect, expectNoErrorBoundary, settle, setTheme, test } from "./fixture
 import type { Locator, Page } from "@playwright/test";
 
 const BOARDS = "/governance/forum";
+const TEST_BOARD = "E2E Test Board (automated)";
 
 /** The forum rows in a list section ("Organisation" or a workspace name). */
 const forumSections = (page: Page) =>
@@ -27,7 +28,7 @@ test.describe("Boards", () => {
     }
   });
 
-  test("forum details and meeting details", async ({ page }) => {
+  test("forum details", async ({ page }) => {
     await openBoards(page);
     const forum = forumLinks(page.locator("main")).first();
     const name = (await forum.textContent())!.trim();
@@ -38,13 +39,34 @@ test.describe("Boards", () => {
     await expect(page.getByRole("heading", { name: "Members" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Upcoming meetings" })).toBeVisible();
     await expectNoErrorBoundary(page);
+  });
 
-    // Meeting details: the first meeting of any forum that has one. Back to the list in the
-    // app rather than reloading it, so its data comes from the query cache.
-    await page.goBack();
+  // Meetings can't be deleted, only cancelled (src/services/forums.ts:10-11), so this test
+  // reuses one meeting on the test board instead of creating and removing one each run. It
+  // creates the meeting only when the board has none, and never edits or cancels it, so there
+  // is only ever one test meeting.
+  test("meeting details on the test board", async ({ page }, testInfo) => {
+    await openBoards(page);
+    await page.getByRole("link", { name: TEST_BOARD, exact: true }).click();
     await settle(page);
-    const meeting = page.locator(`main a[href*="meeting="]`).first();
-    test.skip((await meeting.count()) === 0, "No forum in the demo data has a meeting");
+    await expect(
+      page.getByRole("heading", { name: TEST_BOARD, level: 2, exact: true }),
+    ).toBeVisible();
+
+    const meetings = page.locator(`main a[href*="meeting="]`);
+    if ((await meetings.count()) === 0) {
+      // Only desktop creates it; with parallel workers the mobile run could add a second one.
+      test.skip(testInfo.project.name !== "desktop", "The desktop run creates the test meeting");
+      const date = new Date(Date.now() + 60 * 86_400_000).toISOString().slice(0, 10);
+      await page.getByRole("button", { name: "Add meeting" }).click();
+      const dialog = page.getByRole("dialog");
+      await dialog.getByLabel("Meeting date").fill(date);
+      await dialog.getByRole("button", { name: "Save meeting" }).click();
+      await expect(dialog).toBeHidden();
+      await expect(meetings).toHaveCount(1);
+    }
+
+    const meeting = meetings.first();
     await meeting.click();
     await settle(page);
     await expect(page).toHaveURL(/meeting=/);
