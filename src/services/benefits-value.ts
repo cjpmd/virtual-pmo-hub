@@ -23,6 +23,9 @@ const DAY = 86_400_000;
 const daysFromToday = (value: string) =>
   Math.round(((parseDate(value)?.getTime() ?? today().getTime()) - today().getTime()) / DAY);
 
+/** Days a measurement is overdue (0 when not yet due), on the same rule as getMeasurementSchedule. */
+export const measurementDaysOverdue = (nextDue: string) => Math.max(0, -daysFromToday(nextDue));
+
 export const projectsById = (data: Pick<BenefitsData, "projects">) =>
   new Map(data.projects.map((project) => [project.id, project]));
 

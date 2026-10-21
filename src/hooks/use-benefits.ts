@@ -5,6 +5,7 @@ import {
   createBenefit,
   deleteBenefits,
   loadBenefits,
+  loadMeasurementsDue,
   reviewMeasurement,
   saveHandover,
   submitMeasurement,
@@ -19,6 +20,16 @@ import { invalidateRollups } from "./use-project-records";
 export function useBenefits() {
   const orgId = useOrgId();
   return useQuery({ queryKey: qk.benefits.list(orgId), queryFn: () => loadBenefits(orgId) });
+}
+
+/** Measures due on benefits the person owns (for the notification feed). */
+export function useMeasurementsDue(ownerId: string | null | undefined) {
+  const orgId = useOrgId();
+  return useQuery({
+    queryKey: qk.benefits.measurementsDue(orgId, ownerId ?? ""),
+    queryFn: () => loadMeasurementsDue(orgId, ownerId!),
+    enabled: !!ownerId,
+  });
 }
 
 /** Benefit records feed benefit health, which rolls up into project, programme and portfolio health. */

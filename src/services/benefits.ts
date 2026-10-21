@@ -461,6 +461,38 @@ export async function loadBenefits(orgId: string): Promise<BenefitsData> {
 // ---- Writes -------------------------------------------------------------------------------
 
 /** The period a date falls in, or the last period that has started. */
+export interface MeasurementDueItem {
+  measureId: string;
+  measureName: string;
+  benefitReference: string;
+  nextDue: string;
+}
+
+/**
+ * Measures with a next-due date on benefits the given person owns: what the notification feed
+ * needs, without loading the whole benefits set (and v_benefit_realisation) on every page.
+ */
+export async function loadMeasurementsDue(
+  orgId: string,
+  ownerId: string,
+): Promise<MeasurementDueItem[]> {
+  const rows = unwrap(
+    await supabase
+      .from("benefit_measures")
+      .select("id, name, next_due_date, benefits!inner(ref, owner_id)")
+      .eq("organisation_id", orgId)
+      .eq("benefits.owner_id", ownerId)
+      .not("next_due_date", "is", null),
+    "Loading measurements due",
+  );
+  return rows.map((row) => ({
+    measureId: row.id,
+    measureName: row.name,
+    benefitReference: row.benefits.ref,
+    nextDue: row.next_due_date ?? "",
+  }));
+}
+
 export function periodFor(periods: BenefitPeriod[], isoDate: string): BenefitPeriod | undefined {
   return (
     periods.find((period) => period.start <= isoDate && period.end >= isoDate) ??

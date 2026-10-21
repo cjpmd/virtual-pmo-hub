@@ -3,14 +3,14 @@
 // decisions past needed-by, overdue measurements on benefits they own and off-track
 // dependencies. Read state is a per-browser convenience, shared by the bell and the page.
 import { useCallback, useMemo, useSyncExternalStore } from "react";
-import { useBenefits } from "@/hooks/use-benefits";
+import { useMeasurementsDue } from "@/hooks/use-benefits";
 import { useDependencies } from "@/hooks/use-dependencies";
 import { useGovernance } from "@/hooks/use-governance";
 import { useMyResourceId } from "@/hooks/use-hierarchy";
 import { useIssuedTasks } from "@/hooks/use-issued-tasks";
 import { usePortfolioTasks } from "@/hooks/use-work-items";
 import { todayIso } from "@/lib/today";
-import { getMeasurementSchedule } from "@/services/benefits-value";
+import { measurementDaysOverdue } from "@/services/benefits-value";
 
 export interface FeedItem {
   id: string;
@@ -43,7 +43,9 @@ export function useNotifications() {
   const tasks = usePortfolioTasks().data?.tasks;
   const issued = useIssuedTasks().data?.items;
   const decisions = useGovernance().data?.decisions;
-  const benefits = useBenefits().data?.benefits;
+  // Only the measures on the user's own benefits, not the full benefits set: the bell runs on
+  // every page.
+  const measurements = useMeasurementsDue(me).data;
   const dependencies = useDependencies().data?.dependencies;
   const read = useSyncExternalStore(subscribe, readIds, () => EMPTY);
   const feed = useMemo((): FeedItem[] => {
@@ -81,16 +83,17 @@ export function useNotifications() {
         text: `${decision.reference} passed its needed-by date and is still pending at ${decision.forum}.`,
         channel: "In-app",
       });
-    for (const due of getMeasurementSchedule(
-      (benefits ?? []).filter((benefit) => me && benefit.ownerId === me),
-    ).filter((entry) => entry.state === "Overdue"))
+    for (const due of measurements ?? []) {
+      const daysOverdue = measurementDaysOverdue(due.nextDue);
+      if (!daysOverdue) continue;
       items.push({
-        id: `measure:${due.measure.id}:${due.dueDate}`,
-        date: due.dueDate,
+        id: `measure:${due.measureId}:${due.nextDue}`,
+        date: due.nextDue,
         kind: "Measurement",
-        text: `${due.benefit.reference} measurement “${due.measure.name}” is ${due.daysOverdue} day${due.daysOverdue === 1 ? "" : "s"} overdue.`,
+        text: `${due.benefitReference} measurement “${due.measureName}” is ${daysOverdue} day${daysOverdue === 1 ? "" : "s"} overdue.`,
         channel: "In-app",
       });
+    }
     for (const dependency of (dependencies ?? []).filter((entry) => entry.health === "Off Track"))
       items.push({
         id: `dependency:${dependency.id}`,
@@ -100,7 +103,7 @@ export function useNotifications() {
         channel: "In-app",
       });
     return items.sort((a, b) => b.date.localeCompare(a.date));
-  }, [me, tasks, issued, decisions, benefits, dependencies]);
+  }, [me, tasks, issued, decisions, measurements, dependencies]);
   const markRead = useCallback((ids: string[]) => {
     cache = Array.from(new Set([...readIds(), ...ids]));
     try {
