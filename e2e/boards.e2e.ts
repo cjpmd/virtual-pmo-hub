@@ -34,7 +34,7 @@ test.describe("Boards", () => {
     await forum.click();
     await settle(page);
     await expect(page).toHaveURL(/forum=/);
-    await expect(page.getByRole("heading", { name, level: 2 })).toBeVisible();
+    await expect(page.getByRole("heading", { name, level: 2, exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Members" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Upcoming meetings" })).toBeVisible();
     await expectNoErrorBoundary(page);
