@@ -11,6 +11,8 @@ import { createOrganisation, listMemberships, setLastOrganisation } from "@/serv
 import { qk } from "@/services/query-keys";
 import { errorMessage } from "@/services/service-error";
 import { cn } from "@/lib/utils";
+import { orgFromDomain } from "@/lib/org-name";
+import { defaultLifecyclePhases } from "@/data/lifecycle";
 
 export const Route = createFileRoute("/signup/setup")({
   // Self-service sign-up is off unless VITE_SELF_SIGNUP is "true" (see lib/features.ts).
@@ -33,12 +35,10 @@ export const Route = createFileRoute("/signup/setup")({
   component: SetupPage,
 });
 
-const orgFromDomain = (domain: string) => {
-  const base = (domain.split(".")[0] ?? "")
-    .replace(/-/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-  return domain.endsWith(".ac.uk") && base ? `University of ${base}` : base;
-};
+// The default lifecycle seeded by private.seed_org_defaults, which copies data/lifecycle.ts.
+const defaultPhaseNames = defaultLifecyclePhases
+  .map((phase) => phase.name.replace(/^Phase \d+ - /, "").toLowerCase())
+  .join(", ");
 const months = [
   "January",
   "February",
@@ -72,7 +72,8 @@ function Setup({ userId, email }: { userId: string; email: string }) {
   const domain = email.split("@")[1] ?? "";
   const [step, setStep] = useState(0);
   const [another, setAnother] = useState(false);
-  const [name, setName] = useState(() => orgFromDomain(domain));
+  const [suggestedName] = useState(() => orgFromDomain(domain));
+  const [name, setName] = useState(suggestedName);
   const [region, setRegion] = useState<"uk" | "eu">("uk");
   const [currency, setCurrency] = useState<"GBP" | "EUR">("GBP");
   const [fyStart, setFyStart] = useState(8);
@@ -148,7 +149,8 @@ function Setup({ userId, email }: { userId: string; email: string }) {
             <>
               <h1 className="text-2xl font-semibold">Name your organisation</h1>
               <p className="text-sm text-muted-foreground">
-                Suggested from your email address. Colleagues see this name when you invite them.
+                {suggestedName && "Suggested from your email address. "}Colleagues see this name
+                when you invite them.
               </p>
               <label className="block text-sm">
                 Organisation name
@@ -206,9 +208,9 @@ function Setup({ userId, email }: { userId: string; email: string }) {
             <>
               <h1 className="text-2xl font-semibold">Your lifecycle</h1>
               <p className="text-sm text-muted-foreground">
-                New organisations start with the six-phase university IT lifecycle: pre-project,
-                feasibility, design and procure, build and test, deploy and handover, close. Rename
-                phases, change gate criteria or add your own in Settings → Lifecycle.
+                New organisations start with a {defaultLifecyclePhases.length}-phase lifecycle:{" "}
+                {defaultPhaseNames}. Rename phases, change gate criteria or add your own in Settings
+                → Lifecycle.
               </p>
               {create.isError && (
                 <p

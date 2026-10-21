@@ -87,13 +87,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Virtual PMO" },
       {
         name: "description",
-        content: "University digital portfolio, programme and project management.",
+        content: "Portfolio, programme and project management for any organisation's PMO.",
       },
       { name: "author", content: "Virtual PMO" },
       { property: "og:title", content: "Virtual PMO" },
       {
         property: "og:description",
-        content: "University digital portfolio, programme and project management.",
+        content: "Portfolio, programme and project management for any organisation's PMO.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
