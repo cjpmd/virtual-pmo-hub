@@ -16,6 +16,7 @@ import {
   type ProgrammeInput,
   type ProjectInput,
 } from "@/services/entities";
+import { importProjects } from "@/services/data-transfer";
 import { invalidateRollups } from "./use-project-records";
 
 // Lists refresh in the background after each write; a second action straight after a save
@@ -62,6 +63,7 @@ export function useEntityMutations() {
       onSettled,
     }),
     createProject: useMutation({ mutationFn: createProject, onSettled }),
+    importProjects: useMutation({ mutationFn: importProjects, onSettled }),
     updateProject: useMutation({
       mutationFn: (v: { id: string; input: ProjectInput; lastSeen: string | null }) =>
         updateProject(v.id, v.input, v.lastSeen),

@@ -21,14 +21,14 @@ one work package per session; finish with `npx tsc --noEmit`, `npx tsc --noEmit 
 
 ## Decisions you need to make first
 
-| # | Decision | Needed by |
-|---|---|---|
-| D1 | Pricing model: per seat, per organisation tier, or both; trial length | 2.3 |
-| D2 | Email provider: Resend (recommended) or Supabase custom SMTP | 2.1, 4.1 |
-| D3 | Self-service sign-up: switch on with a free trial, or invite-only | 2.2 |
-| D4 | Board automations: hide until 4.3, or leave visible meanwhile | 1.4 |
-| D5 | Committee pack export: PDF only, or PDF and PowerPoint | 1.2 |
-| D6 | Planner sync: keep (needs a Microsoft test tenant) or drop | Phase 5 |
+| # | Decision | Needed by | Decided |
+|---|---|---|---|
+| D1 | Pricing model: per seat, per organisation tier, or both; trial length | 2.3 | |
+| D2 | Email provider: Resend (recommended) or Supabase custom SMTP | 2.1, 4.1 | |
+| D3 | Self-service sign-up: switch on with a free trial, or invite-only | 2.2 | |
+| D4 | Board automations: hide until 4.3, or leave visible meanwhile | 1.4 | Hide until 4.3 |
+| D5 | Committee pack export: PDF only, or PDF and PowerPoint | 1.2 | PDF only for now |
+| D6 | Planner sync: keep (needs a Microsoft test tenant) or drop | Phase 5 | |
 
 ## Manual steps (you, not Claude Code)
 
@@ -157,6 +157,14 @@ have no handlers. Wire them up through src/services only:
   Admin and PMO only. No updates to existing projects in this version.
 Add unit tests for the project CSV validation.
 ```
+**Notes from 1.1:** the portfolio export, the import template and the import's column guesser
+share one set of headers (`services/data-transfer.ts`), so an export re-imports without
+re-mapping. Exports use ISO dates and plain amounts with the currency in the header
+("Budget (GBP)"). The import takes at most 500 rows and inserts them in one request (all or
+nothing); codes left blank are suggested in the browser with the same rule as
+`private.suggest_project_code`, so two blank codes can't clash inside one insert. Budget is not
+imported: it lives in `budget_baselines`, and a second insert would break all-or-nothing. Settings
+JSON is admin only and leaves out member emails, the audit log and the signed logo URL.
 
 ### 1.2 Committee pack export
 No database change. Scope depends on D5.
@@ -432,7 +440,7 @@ Also before go-live: a cross-tenant RLS test suite in `supabase/tests` (user A c
 ## Progress
 
 - [x] 0.1 Test harness  - [ ] 0.2 Clean-up  - [x] 0.3 Migration history and indexes  - [x] 0.4 Copy  - [x] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
-- [ ] 1.1 Data import/export  - [ ] 1.2 Pack export  - [ ] 1.3 Dashboards and views  - [ ] 1.4 Calendar and automations flag  - [ ] 1.5 Notes and map layout
+- [x] 1.1 Data import/export  - [ ] 1.2 Pack export  - [ ] 1.3 Dashboards and views  - [ ] 1.4 Calendar and automations flag  - [ ] 1.5 Notes and map layout
 - [ ] 2.1 Invites  - [ ] 2.2 Self sign-up  - [ ] 2.3 Stripe
 - [ ] 3.1 Sprint schema  - [ ] 3.2 Sprint UI  - [ ] 3.3 Reports and forecast
 - [ ] 4.1 Notifications  - [ ] 4.2 AI drafting  - [ ] 4.3 Automations  - [ ] 4.4 Programme report

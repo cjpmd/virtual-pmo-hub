@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowDown,
@@ -44,10 +44,19 @@ import {
   SelectField,
   SettingsCard,
   TextField,
+  useCanEditSettings,
 } from "@/components/settings/settings-shell";
 import { cn } from "@/lib/utils";
 import { IntegrationsWorkspace } from "@/components/integrations/integrations-workspace";
 import { setPendingLogo } from "@/components/auth/settings-sync";
+import { useOrgId } from "@/components/auth/organisation-provider";
+import { LessonsImport } from "@/components/lessons-import";
+import { ProjectImport } from "@/components/settings/project-import";
+import { useCan } from "@/hooks/use-permissions";
+import { useLessons } from "@/hooks/use-lessons";
+import { downloadText } from "@/lib/csv";
+import { portfolioCsv, settingsJson } from "@/services/data-transfer";
+import { toast } from "sonner";
 
 const sample = 1_248_500;
 const patch = <K extends keyof AppSettings>(key: K, value: Partial<AppSettings[K]>) =>
@@ -1773,35 +1782,88 @@ export function IntegrationSettings() {
   return <IntegrationsWorkspace />;
 }
 
+/** The Lessons page's import wizard, with the lessons data it needs loaded on open. */
+function SettingsLessonsImport({ close }: { close: () => void }) {
+  const lessons = useLessons();
+  const failed = lessons.error?.message;
+  useEffect(() => {
+    if (!failed) return;
+    toast.error(failed);
+    close();
+  }, [failed, close]);
+  if (!lessons.data) return null;
+  return <LessonsImport data={lessons.data} close={close} />;
+}
+
 export function DataSettings() {
   const settings = useSettings();
   const data = settings.data;
+  const orgId = useOrgId();
+  // The card is open to everyone; each button carries its own rule (RLS still enforces writes).
+  const canImportProjects = useCanEditSettings("pmo");
+  const canImportLessons = useCan("contributor");
+  const canExportSettings = useCanEditSettings("admin");
+  const [open, setOpen] = useState<"projects" | "lessons" | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const exportPortfolio = async () => {
+    setExporting(true);
+    try {
+      // A byte-order mark so spreadsheet apps read the file as UTF-8.
+      downloadText(`portfolio-${todayIso()}.csv`, `\ufeff${await portfolioCsv(orgId, settings)}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "The export failed.");
+    } finally {
+      setExporting(false);
+    }
+  };
   return (
     <>
-      <SettingsCard title="Import and export" description="Move data in and out of the workspace.">
+      <SettingsCard
+        requires="self"
+        title="Import and export"
+        description="Move data in and out of the workspace."
+      >
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline">
-            <Upload />
-            Import projects (CSV)
-          </Button>
-          <Button variant="outline">
-            <Upload />
-            Import lessons (CSV)
-          </Button>
-          <Button variant="outline">
+          {canImportProjects && (
+            <Button variant="outline" onClick={() => setOpen("projects")}>
+              <Upload />
+              Import projects (CSV)
+            </Button>
+          )}
+          {canImportLessons && (
+            <Button variant="outline" onClick={() => setOpen("lessons")}>
+              <Upload />
+              Import lessons (CSV)
+            </Button>
+          )}
+          <Button variant="outline" disabled={exporting} onClick={() => void exportPortfolio()}>
             <Download />
             Export portfolio (CSV)
           </Button>
-          <Button variant="outline">
-            <Download />
-            Export settings (JSON)
-          </Button>
+          {canExportSettings && (
+            <Button
+              variant="outline"
+              onClick={() =>
+                downloadText(
+                  `settings-${todayIso()}.json`,
+                  settingsJson(settings),
+                  "application/json",
+                )
+              }
+            >
+              <Download />
+              Export settings (JSON)
+            </Button>
+          )}
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          Exports use the workspace currency and date format, so a file opens with the same
-          formatting people see on screen.
+          The portfolio export has ISO dates (YYYY-MM-DD) and plain amounts in{" "}
+          {settings.regional.baseCurrency}, and re-imports with the same columns. Importing projects
+          is for PMO members and admins; exporting settings is for admins.
         </p>
       </SettingsCard>
+      {open === "projects" && <ProjectImport close={() => setOpen(null)} />}
+      {open === "lessons" && <SettingsLessonsImport close={() => setOpen(null)} />}
       <SettingsCard
         title="Retention"
         description="How long closed records are kept before archiving."
