@@ -408,6 +408,10 @@ as a base) on a Supabase branch, not production. Measure private.refresh_health_
 organisation and the nightly full refresh with 1, 2 and 5 tenants. Recommend one of the three
 options with numbers. Stop for my decision before any change.
 ```
+Run health-parity against a freshly seeded Supabase branch; it can't run cleanly against live data
+(it compares the database's results with the reference rules applied to the fixture data, not to
+the rows the database read).
+
 Run the e2e suite against a Supabase branch, not production (the 0.1 smoke run reached about
 1,000 API requests a minute on the live project, 21/10/2026).
 
