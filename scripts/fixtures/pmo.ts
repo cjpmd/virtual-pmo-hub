@@ -11,9 +11,9 @@ import {
   resourceAssignments,
   roadmaps,
   strategicObjectives,
-} from "@/data/mock-data";
-import { defaultLifecyclePhases, defaultTierDefinitions } from "@/data/lifecycle";
-import { getSettings } from "@/services/settings";
+} from "./mock-data";
+import { defaultLifecyclePhases, defaultTierDefinitions } from "../../src/data/lifecycle";
+import { getSettings } from "../../src/services/settings";
 // Parity fixture only: the prototype had a single sample portfolio.
 const portfolios: Portfolio[] = [portfolio];
 const getCurrentPortfolioId = () => portfolio.id;
@@ -48,7 +48,7 @@ import type {
   RoadmapItem,
   Task,
   TeamMember,
-} from "@/data/types";
+} from "../../src/data/types";
 
 const rank: Record<Health, number> = { "Not Set": 0, "On Track": 1, "At Risk": 2, "Off Track": 3 };
 const worst = (items: Health[]): Health => {

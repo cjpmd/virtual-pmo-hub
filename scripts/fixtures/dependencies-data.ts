@@ -1,4 +1,4 @@
-import type { Dependency, DependencyEnd, DependencyType } from "./types";
+import type { Dependency, DependencyEnd, DependencyType } from "../../src/data/types";
 
 const programmeEnd = (programmeId: string, owner: string): DependencyEnd => ({
   kind: "Programme",

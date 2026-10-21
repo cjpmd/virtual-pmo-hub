@@ -15,8 +15,8 @@ Commit this file as `docs/build-plan.md` so Claude Code can read it, and tick pa
 @docs/build-plan.md
 
 Working style: plan first and wait for my go-ahead; scoped str_replace edits, never whole-file rewrites;
-one work package per session; finish with `npx tsc --noEmit`, `npx vitest run`, `npm run lint` and
-`npx vite build` all passing, and a short summary of what changed and what I need to check by hand.
+one work package per session; finish with `npx tsc --noEmit`, `npx tsc --noEmit -p scripts`,
+`npx vitest run`, `npm run lint` and `npx vite build` all passing, and a short summary of what changed and what I need to check by hand.
 ```
 
 ## Decisions you need to make first
@@ -73,6 +73,12 @@ Work package 0.2. Remove dead code and stale notes:
 - Remove the vite-tsconfig-paths plugin in favour of resolve.tsconfigPaths if the build stays green.
 ```
 **Done when:** lint shows 0 errors and the build, tests and e2e smoke all pass.
+
+**Notes from 0.2:** `pmo.ts` and the five prototype data modules moved to `scripts/fixtures/`
+rather than being deleted, because `scripts/generate-seed.ts` and `scripts/health-parity.ts` still
+use them; `npx tsc --noEmit -p scripts` now typechecks the scripts. `vite-tsconfig-paths` stays:
+`@lovable.dev/vite-tanstack-config` loads it internally and lists it as a peer dependency, so
+there is no plugin in our `vite.config.ts` to replace with `resolve.tsconfigPaths`.
 
 ### 0.3 Migration history and database advisor fixes
 Database change: yes.
@@ -417,7 +423,7 @@ Also before go-live: a cross-tenant RLS test suite in `supabase/tests` (user A c
 
 ## Progress
 
-- [ ] 0.1 Test harness  - [ ] 0.2 Clean-up  - [ ] 0.3 Migration history and indexes  - [ ] 0.4 Copy  - [ ] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
+- [ ] 0.1 Test harness  - [x] 0.2 Clean-up  - [ ] 0.3 Migration history and indexes  - [ ] 0.4 Copy  - [ ] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
 - [ ] 1.1 Data import/export  - [ ] 1.2 Pack export  - [ ] 1.3 Dashboards and views  - [ ] 1.4 Calendar and automations flag  - [ ] 1.5 Notes and map layout
 - [ ] 2.1 Invites  - [ ] 2.2 Self sign-up  - [ ] 2.3 Stripe
 - [ ] 3.1 Sprint schema  - [ ] 3.2 Sprint UI  - [ ] 3.3 Reports and forecast

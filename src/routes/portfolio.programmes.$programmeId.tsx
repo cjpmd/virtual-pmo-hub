@@ -313,7 +313,6 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
         </div>
       )}
 
-      {/* Not yet on Supabase (Stage 4c): these tabs still read the prototype data for this programme. */}
       {tab === "benefits" && <ProgrammeBenefits programmeId={programme.id} />}
       {tab === "dependencies" && <DependencyTab programmeId={programme.id} />}
       {tab === "decisions" && <ProgrammeDecisions programmeId={programme.id} />}

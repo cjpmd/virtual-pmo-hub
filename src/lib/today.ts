@@ -1,6 +1,5 @@
 // The one source of "today" for the front end (Stage 4 brief). Calendar dates are taken in the
-// organisation's time zone, matching the database's org_today(). Every screen moved to Supabase
-// uses this; the remaining hardcoded prototype dates are replaced in Stage 4c.
+// organisation's time zone, matching the database's org_today().
 const DEFAULT_TIME_ZONE = "Europe/London";
 
 /** Today's calendar date as YYYY-MM-DD in the given IANA time zone. */

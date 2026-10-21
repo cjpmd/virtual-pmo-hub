@@ -35,9 +35,9 @@ import {
   programmes,
   projects,
   roadmaps,
-} from "../src/data/mock-data";
-import { dependencies } from "../src/data/dependencies-data";
-import { getDependencyHealth } from "../src/services/pmo";
+} from "./fixtures/mock-data";
+import { dependencies } from "./fixtures/dependencies-data";
+import { getDependencyHealth } from "./fixtures/pmo";
 import {
   getBenefitDimensionHealth,
   getBenefitHealth,
@@ -48,7 +48,7 @@ import {
   getProgrammeHealth,
   getProjectHealth,
   getResolvedRoadmapItems,
-} from "../src/services/pmo";
+} from "./fixtures/pmo";
 
 type Db = {
   today: string;
@@ -162,11 +162,16 @@ for (const original of projects) {
     check("project", p.name, "present", "missing");
     continue;
   }
-  check("project tasks", p.name, [p.taskCount, p.overdueTaskCount], [got.taskCount, got.overdue]);
+  check(
+    "project tasks",
+    p.name,
+    [p.taskCount, p.overdueTaskCount],
+    [got["taskCount"], got["overdue"]],
+  );
   // Patch the shared array entry so pmo.ts helpers that look projects up see the reshaped one.
   const index = projects.indexOf(original);
   projects[index] = p;
-  check("project health", p.name, toDb[getProjectHealth(p)], got.overall);
+  check("project health", p.name, toDb[getProjectHealth(p)], got["overall"]);
   projects[index] = original;
 }
 const reshapedProjects = projects.map(reshaped);
@@ -250,10 +255,10 @@ rows.push(
 const changes: string[] = [];
 for (const p of projects) {
   const was = toDb[getProjectHealth(p)],
-    now = db.projects[p.name]?.overall;
+    now = db.projects[p.name]?.["overall"];
   if (was !== now)
     changes.push(
-      `  ~ project ${p.name}: ${was} → ${now} (stored tasks ${p.taskCount}/${p.overdueTaskCount} overdue; db ${db.projects[p.name]?.taskCount}/${db.projects[p.name]?.overdue})`,
+      `  ~ project ${p.name}: ${was} → ${now} (stored tasks ${p.taskCount}/${p.overdueTaskCount} overdue; db ${db.projects[p.name]?.["taskCount"]}/${db.projects[p.name]?.["overdue"]})`,
     );
 }
 for (const programme of programmes) {

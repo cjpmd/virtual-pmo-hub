@@ -1,4 +1,4 @@
-import type { BenefitMapSeed, Capability, Outcome } from "./types";
+import type { BenefitMapSeed, Capability, Outcome } from "../../src/data/types";
 
 // Capabilities are the things a project delivers (outputs); outcomes are the business changes they enable.
 export const capabilities: Capability[] = [

@@ -25,8 +25,8 @@ import type {
   ProjectRequest,
   ResourceTeam,
   StrategicObjective,
-} from "./types";
-import { defaultLifecyclePhases, defaultStage } from "./lifecycle";
+} from "../../src/data/types";
+import { defaultLifecyclePhases, defaultStage } from "../../src/data/lifecycle";
 
 export const portfolio: Portfolio = {
   id: "dts-2526",
