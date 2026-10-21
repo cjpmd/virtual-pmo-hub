@@ -193,8 +193,6 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
     () => new Map((people.data ?? []).map((person) => [person.id, person.name])),
     [people.data],
   );
-
-  // ---- Still prototype data (Stage 4c), keyed by the demo project's old id ----
   const permissions = useProjectPermissions(project.id);
   const governance = useGovernance();
   const decisions = useMemo(
@@ -378,7 +376,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
       {tab === "raid" && sub === "risks" && <ProjectRaid projectId={project.id} />}
       {tab === "financials" && <ProjectFinancials project={project} />}
 
-      {/* Not yet on Supabase (Stage 4c): these tabs read the demo project's prototype record. */}
+      {/* The remaining tabs: status, plan, delivery, resources, benefits, RAID and business case. */}
       {
         <>
           {tab === "status" && (

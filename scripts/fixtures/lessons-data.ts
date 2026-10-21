@@ -6,7 +6,7 @@ import type {
   LessonStatus,
   LessonType,
   PhaseLessonsReview,
-} from "./types";
+} from "../../src/data/types";
 
 export const lessonCategories: LessonCategory[] = [
   "Project Management",

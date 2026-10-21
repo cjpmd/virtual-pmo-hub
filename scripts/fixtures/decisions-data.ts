@@ -5,7 +5,7 @@ import type {
   DecisionImpact,
   DecisionOption,
   DecisionStatus,
-} from "./types";
+} from "../../src/data/types";
 
 export const decisionForums: DecisionForum[] = [
   "Project Board",

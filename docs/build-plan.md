@@ -15,8 +15,8 @@ Commit this file as `docs/build-plan.md` so Claude Code can read it, and tick pa
 @docs/build-plan.md
 
 Working style: plan first and wait for my go-ahead; scoped str_replace edits, never whole-file rewrites;
-one work package per session; finish with `npx tsc --noEmit`, `npx vitest run`, `npm run lint` and
-`npx vite build` all passing, and a short summary of what changed and what I need to check by hand.
+one work package per session; finish with `npx tsc --noEmit`, `npx tsc --noEmit -p scripts`,
+`npx vitest run`, `npm run lint` and `npx vite build` all passing, and a short summary of what changed and what I need to check by hand.
 ```
 
 ## Decisions you need to make first
@@ -73,6 +73,12 @@ Work package 0.2. Remove dead code and stale notes:
 - Remove the vite-tsconfig-paths plugin in favour of resolve.tsconfigPaths if the build stays green.
 ```
 **Done when:** lint shows 0 errors and the build, tests and e2e smoke all pass.
+
+**Notes from 0.2:** `pmo.ts` and the five prototype data modules moved to `scripts/fixtures/`
+rather than being deleted, because `scripts/generate-seed.ts` and `scripts/health-parity.ts` still
+use them; `npx tsc --noEmit -p scripts` now typechecks the scripts. `vite-tsconfig-paths` stays:
+`@lovable.dev/vite-tanstack-config` loads it internally and lists it as a peer dependency, so
+there is no plugin in our `vite.config.ts` to replace with `resolve.tsconfigPaths`.
 
 ### 0.3 Migration history and database advisor fixes
 Database change: yes.

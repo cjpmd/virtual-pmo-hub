@@ -88,4 +88,4 @@ Project budget, actual and forecast come from the financials tables (Financials 
 
 ## Prototype data still in the repo
 
-`src/data/*` and `src/services/pmo.ts` remain only as the parity fixture (`scripts/health-parity.ts`) and seed source (`scripts/generate-seed.ts`). Static configuration also lives there (`settings-data`, `lifecycle` defaults, Microsoft permission descriptions, types).
+The prototype data and `pmo.ts` live in `scripts/fixtures/`, used only as the parity fixture (`scripts/health-parity.ts`) and seed source (`scripts/generate-seed.ts`); no app code imports them. `src/data/*` keeps static configuration (`settings-data`, `lifecycle` defaults, Microsoft permission descriptions) and types. `npx tsc --noEmit -p scripts` typechecks the scripts and fixtures.

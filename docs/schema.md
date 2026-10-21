@@ -743,7 +743,7 @@ As built. The order differs from the original plan: `delivery` (milestones) come
 | 20261006133444 | `financials_cutoff_once`      | `v_project_financials` computes the cut-off once per organisation (materialised CTE) instead of once per monthly value. Same output                                                                                                                                                                                                                                                                                                                                                            |
 | 20261006141749 | `financials_close_and_import` | Financials F3: RPCs `close_financial_period`, `reopen_financial_period` and `commit_actuals_import` (security invoker: RLS and the existing triggers still apply; one transaction, readable errors); `private.actuals_import_source` reads the import rows                                                                                                                                                                                                                                     |
 
-**Seed.** `scripts/generate-seed.ts` imports the current mock modules and writes `supabase/seed.sql`:
+**Seed.** `scripts/generate-seed.ts` imports the mock modules in `scripts/fixtures/` and writes `supabase/seed.sql`:
 
 - one demo organisation ("Demo University", `is_demo = true`) with one workspace
 - deterministic uuids (`md5('virtual-pmo-demo:' || kind:old_id)` cast to uuid), so reruns are stable
@@ -767,7 +767,7 @@ The seed builds helper functions in a temporary `seed_tmp` schema and drops it a
 
 **Checks.**
 
-- `scripts/health-parity.sql` + `scripts/health-parity.ts` compare the SQL roll-ups with `pmo.ts`.
+- `scripts/health-parity.sql` + `scripts/health-parity.ts` compare the SQL roll-ups with `scripts/fixtures/pmo.ts`.
 - `supabase/tests/tenant_guard.sql` runs the cross-organisation checks in a rolled-back transaction.
 
 ---
@@ -791,5 +791,5 @@ The seed builds helper functions in a temporary `seed_tmp` schema and drops it a
 
 **Also from review:**
 
-- After Stage 4, the `pmo.ts` health logic runs only as the parity-test fixture, never at runtime.
+- After Stage 4, the `pmo.ts` health logic runs only as the parity-test fixture (`scripts/fixtures/pmo.ts`), never at runtime.
 - Whether workspace PMOs can manage resources is **on hold**. Built as written: org-level pmo writes resources, and managers write placeholders.

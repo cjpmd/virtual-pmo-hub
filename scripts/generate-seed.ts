@@ -11,10 +11,10 @@
  *   `raise notice` when the seed runs.
  */
 import { createHash } from "node:crypto";
-import { benefitMaps, capabilities, outcomes } from "../src/data/benefits-map-data";
-import { assumptions, decisions } from "../src/data/decisions-data";
-import { dependencies } from "../src/data/dependencies-data";
-import { improvementActions, lessons, phaseLessonsReviews } from "../src/data/lessons-data";
+import { benefitMaps, capabilities, outcomes } from "./fixtures/benefits-map-data";
+import { assumptions, decisions } from "./fixtures/decisions-data";
+import { dependencies } from "./fixtures/dependencies-data";
+import { improvementActions, lessons, phaseLessonsReviews } from "./fixtures/lessons-data";
 import {
   benefits,
   collections,
@@ -28,7 +28,7 @@ import {
   resourceAssignments,
   roadmaps,
   strategicObjectives,
-} from "../src/data/mock-data";
+} from "./fixtures/mock-data";
 import { defaultSettings, demoUsers } from "../src/data/settings-data";
 import {
   capabilityPathway,
@@ -437,6 +437,7 @@ const milestoneType = {
   Gate: "gate",
   "Key date": "key_date",
   "External dependency": "external_dependency",
+  Approval: "approval",
 } as const;
 insert(
   "milestones",

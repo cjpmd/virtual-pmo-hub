@@ -1,0 +1,13 @@
+// Typechecks the Node scripts (seed generator, health parity, demo files) and their fixtures:
+//   npx tsc --noEmit -p scripts
+// The root tsconfig covers src/ only; this one adds Node types and resolves @/ to src/.
+{
+  "extends": "../tsconfig.json",
+  "include": ["**/*.ts", "../src/env.d.ts"],
+  "compilerOptions": {
+    "types": ["node", "vite/client"],
+    "paths": {
+      "@/*": ["../src/*"]
+    }
+  }
+}
