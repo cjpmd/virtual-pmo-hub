@@ -107,6 +107,30 @@ organisation's PMO, not just universities.
 Copy changes only; no restyling.
 ```
 
+### 0.5 Benefits timeout
+Front end, plus a database proposal. Found by the 0.1 smoke run: `v_benefit_realisation` timed
+out (HTTP 500) on governance and benefits pages.
+
+```
+Work package 0.5.
+(a) Front end: the notification bell must not load the full benefits set on every page.
+    Narrow the query or load it only when the bell opens. No SQL.
+(b) Database: diagnose v_benefit_realisation, read-only. Run EXPLAIN (ANALYZE, BUFFERS) as an
+    authenticated demo-org user, check for per-row RLS or function calls (unwrapped auth.uid(),
+    security helpers evaluated per row) and missing indexes. Report the evidence, then write a
+    proposal to docs/sql/0-5-benefit-realisation.sql and stop for approval.
+```
+**Done when:** the full e2e suite passes with no `v_benefit_realisation` errors.
+
+### 0.6 Sign-in without personal email
+No database change.
+
+```
+Work package 0.6. Remove the "Demo access (temporary)" panel from /signin, so no personal email
+appears on any public page. Sign-in becomes magic link only. Grep for every other use of
+DEMO_EMAIL (including any demo-org allowlist) and report before changing those.
+```
+
 ---
 
 ## Phase 1 — Finish what's half-built
@@ -381,7 +405,7 @@ Also before go-live: a cross-tenant RLS test suite in `supabase/tests` (user A c
 
 ## Progress
 
-- [ ] 0.1 Test harness  - [ ] 0.2 Clean-up  - [ ] 0.3 Migration history and indexes  - [ ] 0.4 Copy
+- [ ] 0.1 Test harness  - [ ] 0.2 Clean-up  - [ ] 0.3 Migration history and indexes  - [ ] 0.4 Copy  - [ ] 0.5 Benefits timeout  - [ ] 0.6 Sign-in without personal email
 - [ ] 1.1 Data import/export  - [ ] 1.2 Pack export  - [ ] 1.3 Dashboards and views  - [ ] 1.4 Calendar and automations flag  - [ ] 1.5 Notes and map layout
 - [ ] 2.1 Invites  - [ ] 2.2 Self sign-up  - [ ] 2.3 Stripe
 - [ ] 3.1 Sprint schema  - [ ] 3.2 Sprint UI  - [ ] 3.3 Reports and forecast
