@@ -77,6 +77,9 @@ export const qk = {
     list: (orgId: string) => ["org", orgId, "benefits", "list"] as const,
     /** Under benefits: pathway writes change benefit readiness, and benefit writes change the pathway. */
     pathway: (orgId: string) => ["org", orgId, "benefits", "pathway"] as const,
+    /** Under benefits, so measurement and benefit writes refresh the notification feed. */
+    measurementsDue: (orgId: string, ownerId: string) =>
+      ["org", orgId, "benefits", "measurements-due", ownerId] as const,
   },
   dependencies: (orgId: string) => ["org", orgId, "projects", "dependencies"] as const,
   roadmaps: (orgId: string) => ["org", orgId, "projects", "roadmaps"] as const,
