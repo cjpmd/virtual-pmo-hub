@@ -13,6 +13,9 @@ export default tseslint.config(
       "dist",
       ".output",
       ".vinxi",
+      // Local e2e output (gitignored); the report's minified bundles make Prettier take minutes.
+      "playwright-report",
+      "test-results",
       "src/integrations/supabase/types.ts",
       "src/integrations/supabase/previewAuthStorage.ts",
     ],

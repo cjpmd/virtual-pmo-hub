@@ -24,7 +24,11 @@ export default defineConfig({
   // minute) the small instance stalled for up to 20 s (21/10/2026), so one worker until the
   // suite moves to a Supabase branch (build plan, Phase 6).
   workers: 1,
-  retries: process.env["CI"] ? 1 : 0,
+  // One retry everywhere: the live instance sometimes times out a request (e.g. HTTP 500 from
+  // v_benefit_realisation), and a test that passes on retry is then reported as "flaky" rather
+  // than failed. "retain-on-failure" below still keeps the failed first attempt's trace,
+  // screenshot and errors (in its own folder; the retry's folder ends in -retry1).
+  retries: 1,
   timeout: 60_000,
   expect: { timeout: 15_000 },
   reporter: [["list"], ["html", { open: "never", outputFolder: `playwright-report/${runId}` }]],
