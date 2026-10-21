@@ -15,6 +15,7 @@ export default defineConfig({
   testMatch: "**/*.e2e.ts",
   globalSetup: "./e2e/global-setup.ts",
   fullyParallel: false,
+  // The suite runs against a live Supabase project: two workers keep its request rate down.
   workers: 2,
   retries: process.env["CI"] ? 1 : 0,
   timeout: 60_000,

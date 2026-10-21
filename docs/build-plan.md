@@ -230,6 +230,9 @@ Work package 2.1. There is no way to add people to an organisation. Design and p
   role change, remove.
 SQL to docs/sql/2-1-invites.sql and stop. Plan the edge function separately before deploying.
 ```
+**Note from 0.6:** the "Join the demo organisation" button is gone from the front end, but the
+`public.join_demo_organisation()` RPC (and `settings.demoAdmins`) is still in the database.
+Decide in 2.1 whether invites replace it, and drop it then in a new migration.
 
 ### 2.2 Self-service sign-up
 Depends on D3, and on 2.3 if trials are used.
@@ -399,6 +402,9 @@ as a base) on a Supabase branch, not production. Measure private.refresh_health_
 organisation and the nightly full refresh with 1, 2 and 5 tenants. Recommend one of the three
 options with numbers. Stop for my decision before any change.
 ```
+Run the e2e suite against a Supabase branch, not production (the 0.1 smoke run reached about
+1,000 API requests a minute on the live project, 21/10/2026).
+
 Also before go-live: a cross-tenant RLS test suite in `supabase/tests` (user A can't read or write any of organisation B's tables, including through every RPC), and a check that the backups/PITR tier fits the plan.
 
 ---

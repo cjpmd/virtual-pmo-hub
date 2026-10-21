@@ -49,7 +49,9 @@ for (const detail of details) {
     const listPaths = new Set(routes);
     const href = hrefs.find((path) => detail.link.test(path) && !listPaths.has(path));
     expect(href, `a ${detail.name} link on ${detail.list}`).toBeTruthy();
-    await page.goto(href!);
+    // Follow the link in the app, not page.goto, so the shell's data isn't fetched again.
+    await page.locator(`a[href="${href}"]`).filter({ visible: true }).first().click();
+    await expect(page).toHaveURL(href!);
     await settle(page);
     await checkBothThemes(page);
   });

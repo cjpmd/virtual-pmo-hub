@@ -39,8 +39,10 @@ test.describe("Boards", () => {
     await expect(page.getByRole("heading", { name: "Upcoming meetings" })).toBeVisible();
     await expectNoErrorBoundary(page);
 
-    // Meeting details: the first meeting of any forum that has one.
-    await openBoards(page);
+    // Meeting details: the first meeting of any forum that has one. Back to the list in the
+    // app rather than reloading it, so its data comes from the query cache.
+    await page.goBack();
+    await settle(page);
     const meeting = page.locator(`main a[href*="meeting="]`).first();
     test.skip((await meeting.count()) === 0, "No forum in the demo data has a meeting");
     await meeting.click();
