@@ -289,11 +289,25 @@ spec `e2e/workspaces.e2e.ts` needs two extra logins (E2E_ADMIN_* / E2E_MEMBER_*)
 `supabase/migrations/20261012120035_health_current_b.sql` is corrupted (live is correct), and the
 status-report snapshot trigger skips system-written submissions (NULL logic in its guard).
 
-### 1.7 Board date sort
+### 1.7 Housekeeping before Phase 2
+Database change: yes (a trigger fix). Found in 1.6.
+
+```
+Work package 1.7, housekeeping before Phase 2. Plan first, then stop.
+1. supabase/migrations/20261012120035_health_current_b.sql is corrupted: explain exactly how,
+   then restore it so that a rebuild from the migration files matches live. Prove it on a
+   throwaway database built from all migration files, comparing every function and view
+   definition with live.
+2. The status-report snapshot trigger skips submissions written with no signed-in user.
+   Explain why, and propose a fix (SQL to docs/sql/, stop for approval) so server-side writes
+   (future edge functions, cron) are snapshotted too, without weakening the signed-in checks.
+```
+
+### 1.8 Board date sort
 No database change. Found in 1.4.
 
 ```
-Work package 1.7. BoardWorkspace sorts by comparing cell values as text, so date columns
+Work package 1.8. BoardWorkspace sorts by comparing cell values as text, so date columns
 (DD/MM/YYYY) sort by day of the month across all months. Sort date columns (column type
 "date", and start / finish) by calendar date using lib/calendar.ts toIsoDay, with blanks and
 "—" last in both directions; keep text and number sorting as they are. Unit-test the
@@ -517,7 +531,7 @@ Also before go-live: a cross-tenant RLS test suite in `supabase/tests` (user A c
 ## Progress
 
 - [x] 0.1 Test harness  - [ ] 0.2 Clean-up  - [x] 0.3 Migration history and indexes  - [x] 0.4 Copy  - [x] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
-- [x] 1.1 Data import/export  - [x] 1.2 Pack export  - [x] 1.3 Dashboards and views  - [x] 1.4 Calendar and automations flag  - [x] 1.5 Notes and map layout  - [x] 1.6 Workspaces  - [ ] 1.7 Board date sort
+- [x] 1.1 Data import/export  - [x] 1.2 Pack export  - [x] 1.3 Dashboards and views  - [x] 1.4 Calendar and automations flag  - [x] 1.5 Notes and map layout  - [x] 1.6 Workspaces  - [ ] 1.7 Housekeeping  - [ ] 1.8 Board date sort
 - [ ] 2.1 Invites  - [ ] 2.2 Self sign-up  - [ ] 2.3 Stripe
 - [ ] 3.1 Sprint schema  - [ ] 3.2 Sprint UI  - [ ] 3.3 Reports and forecast
 - [ ] 4.1 Notifications  - [ ] 4.2 AI drafting  - [ ] 4.3 Automations  - [ ] 4.4 Programme report
