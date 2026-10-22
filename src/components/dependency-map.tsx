@@ -1,4 +1,14 @@
-import { Crosshair, Maximize2, Minus, Plus, Search, Sparkles, Pencil, Link2 } from "lucide-react";
+import {
+  Crosshair,
+  Maximize2,
+  Minus,
+  Plus,
+  RotateCcw,
+  Search,
+  Sparkles,
+  Pencil,
+  Link2,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +17,11 @@ import { DependencyEditor } from "@/components/dependency-editor";
 import { DependencyPanel, typeLegend } from "@/components/dependency-panel";
 import { QueryState } from "@/components/query-state";
 import { useDependencies } from "@/hooks/use-dependencies";
-import { useCan } from "@/hooks/use-permissions";
+import { useCan, useOrgRole } from "@/hooks/use-permissions";
+import { useDependencyLayout } from "@/hooks/use-notes-layout";
+import { atLeast } from "@/services/auth";
+import { mergeMovedNodes, parsePositions, type NodePositions } from "@/services/dependency-layouts";
+import { errorMessage } from "@/services/service-error";
 import {
   DependencyFocusList,
   FilterChips,
@@ -96,6 +110,10 @@ function edgePath(from: Box, to: Box, offset = 0) {
   return `M ${x1} ${y1} C ${x1 + offset} ${y1 + bend}, ${x2 + offset} ${y2 - bend}, ${x2} ${y2}`;
 }
 type View = { scale: number; x: number; y: number };
+/** Where this browser kept the map layout before 1.5 shared it; read once, then removed. */
+const LEGACY_LAYOUT_KEY = "virtual-pmo-dependency-layout";
+/** Wait this long after the last drag before saving the shared layout. */
+const LAYOUT_SAVE_DELAY = 800;
 
 export function DependencyMap(props: {
   focusId?: string | undefined;
@@ -144,14 +162,93 @@ function MapBody({
   const items = data.dependencies;
   const programmes = data.programmes;
   const selected = items.find((item) => item.id === selectedId);
+  // ---- shared layout (dependency_map_layouts) -------------------------------------
+  // Everyone sees the saved layout; PMO / admin moves are saved for everyone. Moves since the
+  // last save are kept on top when the saved layout changes, and re-applied after a conflict.
+  const layoutStore = useDependencyLayout();
+  const savedLayout = layoutStore.query.data;
+  const canSaveLayout = atLeast(useOrgRole(), "pmo");
+  const moved = useRef(new Set<string>());
+  const positionsRef = useRef(positions);
+  positionsRef.current = positions;
+  const savedRef = useRef(savedLayout);
+  savedRef.current = savedLayout;
+  const saveTimer = useRef<number | undefined>(undefined);
+  const [layoutNotice, setLayoutNotice] = useState("");
+  const [legacyLayout, setLegacyLayout] = useState<NodePositions | null>(null);
   useEffect(() => {
+    if (savedLayout === undefined) return;
+    setPositions((current) =>
+      mergeMovedNodes(savedLayout?.positions ?? {}, current, moved.current),
+    );
+  }, [savedLayout]);
+  // One-time hand-over of a layout this browser saved before layouts were shared: offered to
+  // PMO / admin when nothing is saved yet. The key is removed once seen; other people's
+  // browsers drop it unread.
+  useEffect(() => {
+    if (savedLayout === undefined) return;
     try {
-      const saved = localStorage.getItem("virtual-pmo-dependency-layout");
-      if (saved) setPositions(JSON.parse(saved) as Record<string, { x: number; y: number }>);
+      if (!canSaveLayout) {
+        localStorage.removeItem(LEGACY_LAYOUT_KEY);
+        return;
+      }
+      const raw = localStorage.getItem(LEGACY_LAYOUT_KEY);
+      if (raw === null) return;
+      localStorage.removeItem(LEGACY_LAYOUT_KEY);
+      const legacy = parsePositions(JSON.parse(raw));
+      if (!savedLayout && Object.keys(legacy).length) setLegacyLayout(legacy);
     } catch {
-      /* Start with the default arrangement. */
+      /* Unreadable or blocked storage: nothing to offer. */
     }
-  }, []);
+  }, [savedLayout, canSaveLayout]);
+  const saveLayout = useCallback(() => {
+    window.clearTimeout(saveTimer.current);
+    saveTimer.current = undefined;
+    const movedNow = [...moved.current];
+    if (!movedNow.length) return;
+    layoutStore.save.mutate(
+      { saved: savedRef.current ?? null, positions: positionsRef.current, moved: movedNow },
+      {
+        onSuccess: () => {
+          for (const id of movedNow) moved.current.delete(id);
+          setLayoutNotice("Layout saved for everyone");
+        },
+        onError: (error) => setLayoutNotice(errorMessage(error)),
+      },
+    );
+  }, [layoutStore.save]);
+  // A save still waiting when the map closes goes ahead.
+  useEffect(
+    () => () => {
+      if (saveTimer.current !== undefined) saveLayout();
+    },
+    [saveLayout],
+  );
+  const adoptLegacyLayout = () => {
+    if (!legacyLayout) return;
+    layoutStore.save.mutate(
+      { saved: null, positions: legacyLayout, moved: Object.keys(legacyLayout) },
+      {
+        onSuccess: (saved) => {
+          setPositions(saved.positions);
+          setLegacyLayout(null);
+          setLayoutNotice("This browser's layout is now saved for everyone");
+        },
+        onError: (error) => setLayoutNotice(errorMessage(error)),
+      },
+    );
+  };
+  const resetLayout = () => {
+    if (!savedLayout || !window.confirm("Reset the map layout for everyone?")) return;
+    layoutStore.reset.mutate(savedLayout.id, {
+      onSuccess: () => {
+        moved.current.clear();
+        setPositions({});
+        setLayoutNotice("Layout reset");
+      },
+      onError: (error) => setLayoutNotice(errorMessage(error)),
+    });
+  };
   const filtered = useMemo(
     () =>
       items.filter(
@@ -416,14 +513,11 @@ function MapBody({
     if (nodeDrag.current?.moved) {
       event.stopPropagation();
       draggedNode.current = nodeDrag.current.id;
-      setPositions((current) => {
-        try {
-          localStorage.setItem("virtual-pmo-dependency-layout", JSON.stringify(current));
-        } catch {
-          /* Layout remains available for this session. */
-        }
-        return current;
-      });
+      moved.current.add(nodeDrag.current.id);
+      if (canSaveLayout) {
+        window.clearTimeout(saveTimer.current);
+        saveTimer.current = window.setTimeout(saveLayout, LAYOUT_SAVE_DELAY);
+      }
     }
     nodeDrag.current = null;
   };
@@ -463,6 +557,23 @@ function MapBody({
 
   return (
     <div className="space-y-4">
+      {legacyLayout && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm"
+        >
+          <p className="mr-auto">
+            This browser kept a map layout from before layouts were shared. Save this layout for
+            everyone?
+          </p>
+          <Button size="sm" onClick={adoptLegacyLayout} disabled={layoutStore.save.isPending}>
+            Save for everyone
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setLegacyLayout(null)}>
+            Discard
+          </Button>
+        </div>
+      )}
       <div className="space-y-3 rounded-lg border border-border/70 bg-card p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-2 text-sm font-medium">
@@ -478,6 +589,23 @@ function MapBody({
               aria-label="Workshop mode"
             />
           </label>
+          {workshop && canSaveLayout && savedLayout && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={resetLayout}
+              disabled={layoutStore.reset.isPending}
+            >
+              <RotateCcw className="size-4" />
+              Reset layout
+            </Button>
+          )}
+          {(layoutNotice || (workshop && !canSaveLayout)) && (
+            <p className="text-xs text-muted-foreground" role="status">
+              {layoutNotice ||
+                "Your moves aren't saved: only PMO and admins can change the shared layout."}
+            </p>
+          )}
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
             <Input

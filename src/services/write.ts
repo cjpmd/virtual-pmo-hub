@@ -98,6 +98,7 @@ const KEY_COLUMN: Partial<Record<TableName, string>> = {
   benefit_handovers: "benefit_id",
   ms_connections: "organisation_id",
   project_plan_links: "project_id",
+  programme_office_notes: "programme_id",
 };
 const keyOf = (name: TableName) => KEY_COLUMN[name] ?? "id";
 // Link tables have no id column; return the whole (small) row instead.

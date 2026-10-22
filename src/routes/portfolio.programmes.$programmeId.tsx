@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { HealthUpdating } from "@/components/health-updating";
-import { UserRound } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AssumptionsWorkspace } from "@/components/assumptions-workspace";
 import { ProgrammeBenefits } from "@/components/project-benefits";
@@ -13,6 +12,7 @@ import { MilestoneSummary, type SummaryMilestone } from "@/components/milestone-
 import { EntityHeader, Fact, KpiCard } from "@/components/pmo-ui";
 import { RollupFinancials } from "@/components/rollup-financials";
 import { ProgrammeDecisions } from "@/components/programme-decisions";
+import { ProgrammeOfficeNote } from "@/components/programme-office-note";
 import { QueryState } from "@/components/query-state";
 import { Breadcrumbs } from "@/components/section-nav";
 import { Button } from "@/components/ui/button";
@@ -336,18 +336,7 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
           </div>
         </div>
       )}
-      {tab === "notes" && (
-        <div className="rounded-lg border border-border/70 bg-card p-6 shadow-sm">
-          <div className="flex items-center gap-2">
-            <UserRound className="size-4 text-primary" />
-            <p className="text-sm font-semibold">Programme office note</p>
-          </div>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-            Review delivery dependencies and confirm priorities ahead of the next portfolio
-            checkpoint.
-          </p>
-        </div>
-      )}
+      {tab === "notes" && <ProgrammeOfficeNote programme={programme} />}
     </div>
   );
 }

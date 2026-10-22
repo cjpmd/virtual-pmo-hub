@@ -245,6 +245,28 @@ Work package 1.5.
 Write SQL to docs/sql/1-5.sql and stop. After approval, wire both up through services and
 remove the localStorage path.
 ```
+**Notes from 1.5:** migration `20261022163735_1_5_notes_map_layout`. The office note is its own
+table, `programme_office_notes` (one row per programme), not a column on `programmes`: the
+programme's manager edits it without programme edit rights, and saving it doesn't bump
+`programmes.updated_at`. Editors: the programme's manager and workspace PMO / admin; archived
+programmes are read-only. `dependency_map_layouts` uses nullable `portfolio_id` / `programme_id`
+(both null = the organisation's map, which is today's map); PMO / admin save it, everyone reads
+it. Updates send only the granted column (`note` / `positions`); the e2e spec checks the request
+bodies. A save that conflicts reloads, re-applies only this user's moved nodes and saves once
+more (`mergeMovedNodes`). The old localStorage layout is offered once to PMO / admin ("Save this
+layout for everyone?") when no shared layout exists, then removed; nothing writes it any more.
+The e2e note test restores the text but can't delete a note row it created (no delete grant).
+
+### 1.6 Board date sort
+No database change. Found in 1.4.
+
+```
+Work package 1.6. BoardWorkspace sorts by comparing cell values as text, so date columns
+(DD/MM/YYYY) sort by day of the month across all months. Sort date columns (column type
+"date", and start / finish) by calendar date using lib/calendar.ts toIsoDay, with blanks and
+"—" last in both directions; keep text and number sorting as they are. Unit-test the
+comparator, and add an e2e check that a board sorted by a date column is in date order.
+```
 
 ---
 
@@ -463,7 +485,7 @@ Also before go-live: a cross-tenant RLS test suite in `supabase/tests` (user A c
 ## Progress
 
 - [x] 0.1 Test harness  - [ ] 0.2 Clean-up  - [x] 0.3 Migration history and indexes  - [x] 0.4 Copy  - [x] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
-- [x] 1.1 Data import/export  - [x] 1.2 Pack export  - [x] 1.3 Dashboards and views  - [x] 1.4 Calendar and automations flag  - [ ] 1.5 Notes and map layout
+- [x] 1.1 Data import/export  - [x] 1.2 Pack export  - [x] 1.3 Dashboards and views  - [x] 1.4 Calendar and automations flag  - [x] 1.5 Notes and map layout  - [ ] 1.6 Board date sort
 - [ ] 2.1 Invites  - [ ] 2.2 Self sign-up  - [ ] 2.3 Stripe
 - [ ] 3.1 Sprint schema  - [ ] 3.2 Sprint UI  - [ ] 3.3 Reports and forecast
 - [ ] 4.1 Notifications  - [ ] 4.2 AI drafting  - [ ] 4.3 Automations  - [ ] 4.4 Programme report

@@ -90,6 +90,9 @@ export const qk = {
   /** Saved views for one board (saved_views, by board_key). */
   savedViews: (orgId: string, boardKey: string) => ["org", orgId, "saved-views", boardKey] as const,
   dashboards: (orgId: string) => ["org", orgId, "dashboards"] as const,
+  programmeNote: (orgId: string, programmeId: string) =>
+    ["org", orgId, "programme-note", programmeId] as const,
+  dependencyLayout: (orgId: string) => ["org", orgId, "dependency-layout"] as const,
   lessons: (orgId: string) => ["org", orgId, "lessons"] as const,
   issuedTasks: (orgId: string) => ["org", orgId, "projects", "issued-tasks"] as const,
   orgRaid: (orgId: string) => ["org", orgId, "projects", "org-raid"] as const,
