@@ -2818,6 +2818,67 @@ export type Database = {
           },
         ]
       }
+      dashboards: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          is_shared: boolean
+          layout: Json
+          name: string
+          organisation_id: string
+          owner_id: string
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          is_shared?: boolean
+          layout?: Json
+          name: string
+          organisation_id: string
+          owner_id?: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          is_shared?: boolean
+          layout?: Json
+          name?: string
+          organisation_id?: string
+          owner_id?: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboards_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dashboards_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dashboards_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       decision_actions: {
         Row: {
           created_at: string
@@ -10287,6 +10348,70 @@ export type Database = {
           },
           {
             foreignKeyName: "roadmaps_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      saved_views: {
+        Row: {
+          board_key: string
+          config: Json
+          created_at: string
+          id: string
+          is_default: boolean
+          is_shared: boolean
+          name: string
+          organisation_id: string
+          owner_id: string
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          board_key: string
+          config: Json
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          is_shared?: boolean
+          name: string
+          organisation_id: string
+          owner_id?: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          board_key?: string
+          config?: Json
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          is_shared?: boolean
+          name?: string
+          organisation_id?: string
+          owner_id?: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_views_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_views_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_views_workspace_id_organisation_id_fkey"
             columns: ["workspace_id", "organisation_id"]
             isOneToOne: false
             referencedRelation: "workspaces"

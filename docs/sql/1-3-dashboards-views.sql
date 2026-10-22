@@ -1,7 +1,8 @@
--- PROPOSAL (work package 1.3), not applied. Persist Insights › Dashboards and board saved views.
--- To be applied, after approval, as one new migration: <timestamp>_1_3_dashboards_saved_views.
+-- APPROVED 22/10/2026 with two changes (size caps on layout / config; a personal is_default on
+-- dashboards). Applied as migration 20261022131402_1_3_dashboards_saved_views.
+-- Persist Insights › Dashboards and board saved views.
 --
--- Decisions taken (say if you want any changed):
+-- Decisions taken:
 --   * workspace_id is nullable, as on public.forums: null = organisation-wide, set = that
 --     workspace's own. Boards and the dashboard page are organisation-wide registers (they list
 --     every workspace the user can see), so 1.3's UI saves organisation-wide rows; the column is
@@ -22,16 +23,19 @@
 --     one in the same scope (trigger, as the caller, so RLS still applies). The UI resolves:
 --     my default, else the shared default, else the seeded default. Once a shared view is the
 --     board default, only PMO / admin can change or delete it, its owner included.
---   * Dashboards have no is_default (not in the spec); the page opens the last one used
---     (browser preference) or the seeded read-only default.
+--   * Dashboards have a personal default only (dashboards.is_default): one per person, on one
+--     of their own dashboards; setting it clears the previous one (same trigger pattern), and
+--     only the owner can change it, even on a shared dashboard PMO may edit. The page opens
+--     your default, else the seeded read-only dashboard.
+--   * Size caps: layout at most 64 KB, config at most 32 KB (pg_column_size).
 --   * Seeded views and the seeded dashboard stay in code as read-only defaults; no rows seeded.
 --   * Only name, layout / config, is_shared and is_default can be updated (column grants), so
 --     owner, board_key and tenant columns never change after insert.
 --   * board_key is the board's stable key, e.g. "projects", "milestones", "risks:<project id>".
 --   * No audit trigger: these are personal preferences, and audit_log would fill with layout
 --     drags. Say if shared ones should be audited.
--- No new functions: the policies use the existing array helpers inline, so there is nothing new
--- to revoke from public / anon.
+-- The policies use the existing array helpers inline. The two new trigger functions run as the
+-- caller (not SECURITY DEFINER) and have execute revoked from public / anon.
 
 -- ===== Migration 1_3_dashboards_saved_views ==================================================
 
@@ -44,8 +48,10 @@ create table public.dashboards (
   name text not null check (length(btrim(name)) between 1 and 80),
   -- {"version": 1, "widgets": [{"type": "RAG donut"}, ...]}; the service owns the shape.
   layout jsonb not null default '{"version": 1, "widgets": []}'::jsonb
-    check (jsonb_typeof(layout) = 'object'),
+    check (jsonb_typeof(layout) = 'object' and pg_column_size(layout) <= 65536),
   is_shared boolean not null default false,
+  -- The owner's own default dashboard (personal only, even when shared).
+  is_default boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   foreign key (organisation_id) references public.organisations (id),
@@ -55,15 +61,44 @@ create table public.dashboards (
 create index dashboards_organisation_idx on public.dashboards (organisation_id);
 create index dashboards_workspace_idx on public.dashboards (workspace_id, organisation_id);
 create index dashboards_owner_idx on public.dashboards (owner_id);
+create unique index dashboards_one_default on public.dashboards (organisation_id, owner_id)
+  where is_default;
 create trigger dashboards_00_tenant_guard before insert or update on public.dashboards
   for each row execute function private.tenant_guard('workspace_id', 'workspaces');
 create trigger dashboards_updated_at before update on public.dashboards
   for each row execute function private.set_updated_at();
 
+-- Only the owner sets or clears their default; setting it clears their previous default.
+-- Runs as the caller, so RLS applies to the clearing update.
+create function private.dashboards_single_default()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if tg_op = 'UPDATE' and new.is_default is distinct from old.is_default
+     and new.owner_id is distinct from (select auth.uid()) then
+    raise exception 'Only the owner can change their default dashboard' using errcode = '42501';
+  end if;
+  if new.is_default and (tg_op = 'INSERT' or not old.is_default) then
+    update public.dashboards d
+       set is_default = false
+     where d.id <> new.id
+       and d.is_default
+       and d.organisation_id = new.organisation_id
+       and d.owner_id = new.owner_id;
+  end if;
+  return new;
+end;
+$$;
+revoke all on function private.dashboards_single_default() from public, anon;
+create trigger dashboards_10_single_default before insert or update of is_default
+  on public.dashboards for each row execute function private.dashboards_single_default();
+
 alter table public.dashboards enable row level security;
 revoke all on public.dashboards from anon, authenticated;
 grant select, insert, delete on public.dashboards to authenticated;
-grant update (name, layout, is_shared) on public.dashboards to authenticated;
+grant update (name, layout, is_shared, is_default) on public.dashboards to authenticated;
 
 create policy dashboards_select on public.dashboards for select to authenticated
   using (
@@ -110,7 +145,7 @@ create table public.saved_views (
   name text not null check (length(btrim(name)) between 1 and 80),
   -- {"version": 1, "type": "table", "groupBy": ..., "sortKey": ..., "filter": ...,
   --  "filters": [...], "visible": [...]}; the service owns the shape.
-  config jsonb not null check (jsonb_typeof(config) = 'object'),
+  config jsonb not null check (jsonb_typeof(config) = 'object' and pg_column_size(config) <= 32768),
   is_shared boolean not null default false,
   is_default boolean not null default false,
   created_at timestamptz not null default now(),
