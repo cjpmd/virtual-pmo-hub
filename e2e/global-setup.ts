@@ -1,11 +1,16 @@
 // Signs in the dedicated test user once and saves the browser storage state for every spec.
 // The /signin password form only serves the demo account, so this signs in through the
 // Supabase auth API and hands the session to the app's own localStorage key.
-import { mkdirSync } from "node:fs";
+// Work package 1.6 adds two optional logins for the workspace specs (docs/sql/1-6-e2e-workspace.sql):
+// E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD (organisation admin) and E2E_MEMBER_EMAIL /
+// E2E_MEMBER_PASSWORD (in "E2E Workspace B" only). Without them those specs skip.
+import { mkdirSync, rmSync } from "node:fs";
 import { dirname } from "node:path";
 import { chromium, type FullConfig } from "@playwright/test";
 
 export const STORAGE_STATE = "e2e/.auth/user.json";
+export const ADMIN_STATE = "e2e/.auth/admin.json";
+export const MEMBER_STATE = "e2e/.auth/member.json";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -15,12 +20,24 @@ const required = (name: string) => {
 };
 
 export default async function globalSetup(config: FullConfig) {
-  const email = required("E2E_EMAIL");
-  const password = required("E2E_PASSWORD");
-  const url = required("VITE_SUPABASE_URL");
-  const key = required("VITE_SUPABASE_PUBLISHABLE_KEY");
   const baseURL = config.projects[0]?.use.baseURL;
   if (!baseURL) throw new Error("No baseURL in playwright.config.ts.");
+  await signIn(baseURL, required("E2E_EMAIL"), required("E2E_PASSWORD"), STORAGE_STATE);
+  for (const [prefix, path] of [
+    ["E2E_ADMIN", ADMIN_STATE],
+    ["E2E_MEMBER", MEMBER_STATE],
+  ] as const) {
+    const email = process.env[`${prefix}_EMAIL`];
+    const password = process.env[`${prefix}_PASSWORD`];
+    // No stale session from an earlier run: a spec skips when the file is missing.
+    rmSync(path, { force: true });
+    if (email && password) await signIn(baseURL, email, password, path);
+  }
+}
+
+async function signIn(baseURL: string, email: string, password: string, path: string) {
+  const url = required("VITE_SUPABASE_URL");
+  const key = required("VITE_SUPABASE_PUBLISHABLE_KEY");
 
   const response = await fetch(`${url}/auth/v1/token?grant_type=password`, {
     method: "POST",
@@ -57,7 +74,7 @@ export default async function globalSetup(config: FullConfig) {
   ] as const);
   await page.goto("/home");
   await page.getByRole("button", { name: "Toggle theme" }).waitFor({ timeout: 60_000 });
-  mkdirSync(dirname(STORAGE_STATE), { recursive: true });
-  await page.context().storageState({ path: STORAGE_STATE });
+  mkdirSync(dirname(path), { recursive: true });
+  await page.context().storageState({ path });
   await browser.close();
 }

@@ -110,6 +110,11 @@ export const qk = {
   integrations: (orgId: string) => ["org", orgId, "integrations"] as const,
   favourites: (orgId: string) => ["org", orgId, "favourites"] as const,
   workspaceRoles: (orgId: string) => ["org", orgId, "workspace-roles"] as const,
+  workspaces: {
+    all: (orgId: string) => ["org", orgId, "workspaces"] as const,
+    members: (orgId: string, workspaceId: string) =>
+      ["org", orgId, "workspaces", "members", workspaceId] as const,
+  },
   phases: (orgId: string) => ["org", orgId, "phases"] as const,
   /** When stored health was last refreshed (max computed_at). */
   healthComputedAt: (orgId: string) => ["org", orgId, "health-computed-at"] as const,

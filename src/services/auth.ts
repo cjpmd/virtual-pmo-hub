@@ -1,14 +1,7 @@
 // Authentication and organisation membership. Email magic link only for now.
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  ServiceError,
-  fromPostgrest,
-  fromAuth,
-  unwrap,
-  unwrapMaybe,
-  unwrapWrite,
-} from "./service-error";
+import { ServiceError, fromPostgrest, fromAuth, unwrap, unwrapWrite } from "./service-error";
 
 export interface Profile {
   id: string;
@@ -127,19 +120,6 @@ export async function createOrganisation(input: NewOrganisation): Promise<string
   });
   if (error) throw fromPostgrest(error, "Creating your organisation");
   return data;
-}
-
-export async function getWorkspaces(organisationId: string) {
-  return (
-    unwrapMaybe(
-      await supabase
-        .from("workspaces")
-        .select("id, name")
-        .eq("organisation_id", organisationId)
-        .order("name"),
-      "Loading workspaces",
-    ) ?? []
-  );
 }
 
 export type AppRole = "viewer" | "contributor" | "manager" | "pmo" | "admin";

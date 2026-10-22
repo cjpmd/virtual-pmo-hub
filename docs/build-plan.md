@@ -270,6 +270,24 @@ report behaves correctly with two workspaces and a user who belongs to only one.
 test with a second workspace. SQL proposal first if anything in the schema or policies needs
 changing (for example an archived_at column).
 ```
+**Notes from 1.6:** migration `20261022221830_1_6_workspaces` (`docs/sql/1-6-workspaces.sql`):
+`workspaces.archived_at` / `archived_by`. An archived workspace is read-only and stays visible:
+`private.workspace_role` caps every role at viewer there and `my_workspace_ids(min_role)` leaves
+it out of every write check, plus explicit checks on the write paths that don't go through a role
+(decision maker, forum chair, programme manager, offer recipient, request author). A trigger keeps
+one active workspace per organisation; a workspace holding records can't be deleted (foreign
+keys). `my_workspace_roles()` is unchanged (changing its result needs a `drop`); the UI reads
+`workspaces.archived_at` (`hooks/use-workspaces.ts`). Background jobs keep computing archived
+workspaces. Signed-in reads cost 1–4 ms more on live (under 20%). Settings › Workspaces: org admins
+create, edit, archive, restore and delete; org admins and the workspace's admins manage members
+(`write.ts` now takes composite keys for `workspace_members`). New portfolios ask for the
+workspace when the user is PMO in more than one; the portfolio overview reads from the
+portfolio's own workspace instead of the organisation's first. "Archived workspace" badges on the
+portfolio, programme and project headers, the portfolio manager and switcher, and Boards. The e2e
+spec `e2e/workspaces.e2e.ts` needs two extra logins (E2E_ADMIN_* / E2E_MEMBER_*) and
+`docs/sql/1-6-e2e-workspace.sql`; without them it skips all but one test. Found, not fixed:
+`supabase/migrations/20261012120035_health_current_b.sql` is corrupted (live is correct), and the
+status-report snapshot trigger skips system-written submissions (NULL logic in its guard).
 
 ### 1.7 Board date sort
 No database change. Found in 1.4.
@@ -499,7 +517,7 @@ Also before go-live: a cross-tenant RLS test suite in `supabase/tests` (user A c
 ## Progress
 
 - [x] 0.1 Test harness  - [ ] 0.2 Clean-up  - [x] 0.3 Migration history and indexes  - [x] 0.4 Copy  - [x] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
-- [x] 1.1 Data import/export  - [x] 1.2 Pack export  - [x] 1.3 Dashboards and views  - [x] 1.4 Calendar and automations flag  - [x] 1.5 Notes and map layout  - [ ] 1.6 Workspaces  - [ ] 1.7 Board date sort
+- [x] 1.1 Data import/export  - [x] 1.2 Pack export  - [x] 1.3 Dashboards and views  - [x] 1.4 Calendar and automations flag  - [x] 1.5 Notes and map layout  - [x] 1.6 Workspaces  - [ ] 1.7 Board date sort
 - [ ] 2.1 Invites  - [ ] 2.2 Self sign-up  - [ ] 2.3 Stripe
 - [ ] 3.1 Sprint schema  - [ ] 3.2 Sprint UI  - [ ] 3.3 Reports and forecast
 - [ ] 4.1 Notifications  - [ ] 4.2 AI drafting  - [ ] 4.3 Automations  - [ ] 4.4 Programme report

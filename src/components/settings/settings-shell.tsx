@@ -4,6 +4,7 @@ import { Link } from "@tanstack/react-router";
 import {
   Banknote,
   BellRing,
+  Boxes,
   Building2,
   ClipboardList,
   Clock4,
@@ -42,6 +43,12 @@ export const settingsSections: SettingsSectionDefinition[] = [
     label: "Organisation",
     icon: Building2,
     blurb: "Name, logo, brand colour and support contact.",
+  },
+  {
+    id: "workspaces",
+    label: "Workspaces",
+    icon: Boxes,
+    blurb: "Workspaces, their members and workspace roles.",
   },
   {
     id: "regional",
@@ -189,14 +196,21 @@ export function SettingsCard({
   children,
   actions,
   requires = "admin",
+  editable,
+  lockedNote,
 }: {
   title: string;
   description?: string;
   children: ReactNode;
   actions?: ReactNode;
   requires?: SettingsAccess;
+  /** Overrides the organisation-role check, for cards with their own rule (workspace admins). */
+  editable?: boolean;
+  /** Shown instead of the default notice when the card is read-only. */
+  lockedNote?: string;
 }) {
-  const canEdit = useCanEditSettings(requires);
+  const byRole = useCanEditSettings(requires);
+  const canEdit = editable ?? byRole;
   return (
     <section className="rounded-lg border border-border/70 bg-card p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -208,8 +222,8 @@ export function SettingsCard({
       </div>
       {!canEdit && (
         <p className="mt-3 rounded-md border bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-          Only {requires === "pmo" ? "PMO members and admins" : "organisation admins"} can change
-          these settings.
+          {lockedNote ??
+            `Only ${requires === "pmo" ? "PMO members and admins" : "organisation admins"} can change these settings.`}
         </p>
       )}
       {/* A disabled fieldset disables every control inside it, so read-only users can't make edits that would be refused. */}

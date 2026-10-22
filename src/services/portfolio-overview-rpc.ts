@@ -205,21 +205,6 @@ export const toCommittee = (row: { date: string; title: string | null }) => ({
   title: row.title ?? "Committee",
 });
 
-/** The workspace the overview reads from (one per organisation today). */
-export async function getWorkspaceId(orgId: string): Promise<string> {
-  const { data, error } = await supabase
-    .from("workspaces")
-    .select("id")
-    .eq("organisation_id", orgId)
-    .order("created_at")
-    .limit(1)
-    .maybeSingle();
-  if (error)
-    throw new ServiceError("unknown", "Loading the workspace failed.", { detail: error.message });
-  if (!data) throw new ServiceError("not_found", "This organisation has no workspace yet.");
-  return data.id;
-}
-
 /**
  * The whole overview in one call. Range stays 'all' so the chart's FY / 12m / all switcher
  * works from one cached result; the programme filter stays client-side for the same reason.

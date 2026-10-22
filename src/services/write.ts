@@ -7,6 +7,9 @@
 //                row at all means it was removed or is no longer visible ("not_found").
 //   deleteRows – delete by id; an empty result is "forbidden" (RLS filtered it)
 //
+// A row key is its id, or for tables keyed by several columns (KEY_COLUMNS) an object of
+// those columns, e.g. { workspace_id, profile_id }. Written.id is then the values joined by ":".
+//
 // Writes to tables that feed health also mark "Updating health…" until the stored health has
 // been refreshed past them (health-pending.ts).
 //
@@ -100,14 +103,42 @@ const KEY_COLUMN: Partial<Record<TableName, string>> = {
   project_plan_links: "project_id",
   programme_office_notes: "programme_id",
 };
+/** Tables keyed by several columns (membership rows). */
+const KEY_COLUMNS: Partial<Record<TableName, string[]>> = {
+  workspace_members: ["workspace_id", "profile_id"],
+};
 const keyOf = (name: TableName) => KEY_COLUMN[name] ?? "id";
+const keyColumns = (name: TableName) => KEY_COLUMNS[name] ?? [keyOf(name)];
 // Link tables have no id column; return the whole (small) row instead.
 const returning = (name: TableName) =>
-  NO_UPDATED_AT.has(name) ? "*" : `${keyOf(name)}, updated_at`;
+  NO_UPDATED_AT.has(name) ? "*" : `${keyColumns(name).join(", ")}, updated_at`;
+
+/** An id, or the key columns' values for a table in KEY_COLUMNS. */
+export type RowKey = string | Readonly<Record<string, string>>;
+const keyText = (name: TableName, key: RowKey) =>
+  typeof key === "string"
+    ? key
+    : keyColumns(name)
+        .map((column) => key[column] ?? "")
+        .join(":");
+function whereKey(query: LooseFilter, name: TableName, key: RowKey) {
+  const columns = keyColumns(name);
+  if (typeof key === "string") {
+    if (columns.length > 1) throw new Error(`${name} needs a key of ${columns.join(", ")}`);
+    return query.eq(columns[0]!, key);
+  }
+  return columns.reduce((filtered, column) => {
+    if (!key[column]) throw new Error(`${name} key is missing ${column}`);
+    return filtered.eq(column, key[column]);
+  }, query);
+}
 
 const toWritten = (name: TableName, row: unknown): Written => {
   const value = row as Record<string, string | null | undefined>;
-  const written = { id: value[keyOf(name)] ?? "", updatedAt: value["updated_at"] ?? null };
+  const id = keyColumns(name)
+    .map((column) => value[column] ?? "")
+    .join(":");
+  const written = { id, updatedAt: value["updated_at"] ?? null };
   if (written.id && written.updatedAt) ownWrites.set(`${name}:${written.id}`, written.updatedAt);
   if (HEALTH_TABLES.has(name)) markHealthPending(written.updatedAt);
   return written;
@@ -117,8 +148,8 @@ const toWritten = (name: TableName, row: unknown): Written => {
 const ownWrites = new Map<string, string>();
 
 /** The updated_at to send: the caller's copy, or our own later write to the same row. */
-export const versionToSend = (name: TableName, id: string, lastSeen: string | null | undefined) =>
-  lastSeen ? latest(lastSeen, ownWrites.get(`${name}:${id}`)) : lastSeen;
+export const versionToSend = (name: TableName, key: RowKey, lastSeen: string | null | undefined) =>
+  lastSeen ? latest(lastSeen, ownWrites.get(`${name}:${keyText(name, key)}`)) : lastSeen;
 
 export async function insertRow<T extends TableName>(
   name: T,
@@ -153,13 +184,13 @@ export async function insertRows<T extends TableName>(
  */
 export async function updateRow<T extends TableName>(
   name: T,
-  id: string,
+  id: RowKey,
   fields: Update<T>,
   options: { context: string; lastSeen?: string | null | undefined },
 ): Promise<Written> {
   const { context } = options;
   const lastSeen = versionToSend(name, id, options.lastSeen);
-  let query = table(name).update(fields).eq(keyOf(name), id);
+  let query = whereKey(table(name).update(fields), name, id);
   if (lastSeen) query = query.eq("updated_at", lastSeen);
   const result = await query.select(returning(name));
   if (result.error) throw fromPostgrest(result.error, context, result.status);
@@ -171,11 +202,11 @@ export async function updateRow<T extends TableName>(
 /** Work out why an update touched nothing. */
 async function explainEmptyWrite(
   name: TableName,
-  id: string,
+  id: RowKey,
   lastSeen: string | null | undefined,
   context: string,
 ): Promise<ServiceError> {
-  const current = await table(name).select(returning(name)).eq(keyOf(name), id).maybeSingle();
+  const current = await whereKey(table(name).select(returning(name)), name, id).maybeSingle();
   const row = current.data as { updated_at?: string | null } | null;
   if (!row)
     return new ServiceError(
@@ -228,5 +259,18 @@ export async function deleteWhere(
   for (const [column, value] of Object.entries(filters)) query = query.eq(column, value);
   const result = await query.select(Object.keys(filters)[0] ?? "*");
   if (result.error) throw fromPostgrest(result.error, context, result.status);
+  if (HEALTH_TABLES.has(name)) markHealthPending(null);
+}
+
+/** Delete one row by its key (see RowKey); an empty result is "forbidden" (RLS filtered it). */
+export async function deleteRow(name: TableName, key: RowKey, context: string) {
+  const result = await whereKey(table(name).delete(), name, key).select(keyColumns(name)[0]!);
+  if (result.error) throw fromPostgrest(result.error, context, result.status);
+  if (!(result.data as unknown[] | null)?.length)
+    throw new ServiceError(
+      "forbidden",
+      `${context}: You don't have permission to make this change.`,
+    );
+  ownWrites.delete(`${name}:${keyText(name, key)}`);
   if (HEALTH_TABLES.has(name)) markHealthPending(null);
 }

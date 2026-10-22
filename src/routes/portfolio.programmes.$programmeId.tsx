@@ -7,6 +7,7 @@ import { BoardWorkspace } from "@/components/board-workspace";
 import { DependencyTab } from "@/components/dependency-tab";
 import { ProgrammeActions } from "@/components/entity-management";
 import { FavouriteButton } from "@/components/favourite-button";
+import { ArchivedWorkspaceBadge } from "@/components/workspace-badge";
 import { HealthPill } from "@/components/health-pill";
 import { MilestoneSummary, type SummaryMilestone } from "@/components/milestone-summary";
 import { EntityHeader, Fact, KpiCard } from "@/components/pmo-ui";
@@ -133,6 +134,7 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
           health={
             <div className="flex items-center gap-3">
               <HealthPill health={programme.health} />
+              <ArchivedWorkspaceBadge workspaceId={programme.workspaceId} />
               <HealthUpdating className="text-muted-foreground" />
               <FavouriteButton target={{ programmeId: programme.id }} />
               <ProgrammeActions
