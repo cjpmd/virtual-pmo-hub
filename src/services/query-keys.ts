@@ -87,6 +87,9 @@ export const qk = {
   /** Forums, members and meetings. Under governance, so decision writes refresh their counts. */
   forums: (orgId: string) => ["org", orgId, "governance", "forums"] as const,
   committeePacks: (orgId: string) => ["org", orgId, "committee-packs"] as const,
+  /** Saved views for one board (saved_views, by board_key). */
+  savedViews: (orgId: string, boardKey: string) => ["org", orgId, "saved-views", boardKey] as const,
+  dashboards: (orgId: string) => ["org", orgId, "dashboards"] as const,
   lessons: (orgId: string) => ["org", orgId, "lessons"] as const,
   issuedTasks: (orgId: string) => ["org", orgId, "projects", "issued-tasks"] as const,
   orgRaid: (orgId: string) => ["org", orgId, "projects", "org-raid"] as const,

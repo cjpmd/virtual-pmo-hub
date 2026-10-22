@@ -1,15 +1,18 @@
 import { AutoBreadcrumbs } from "@/components/section-nav";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import {
   BarChart3,
   CalendarRange,
+  CopyPlus,
   Gauge,
   GripVertical,
   LayoutDashboard,
   ListChecks,
   Plus,
+  Save,
+  Settings2,
   Table2,
   UsersRound,
   X,
@@ -23,6 +26,14 @@ import { activeOnly, getRag, openOnly } from "@/services/analytics";
 import { resourceDashboard } from "@/services/resources";
 import type { ProjectSummary } from "@/services/hierarchy";
 import { cn } from "@/lib/utils";
+import { useDashboards } from "@/hooks/use-saved-views";
+import {
+  DASHBOARD_WIDGETS,
+  canEditDashboard,
+  defaultDashboardId,
+  type DashboardWidget,
+} from "@/services/dashboards";
+import { errorMessage } from "@/services/service-error";
 import { useSettings } from "@/services/settings";
 export const Route = createFileRoute("/insights/dashboards")({
   head: () => ({
@@ -43,28 +54,93 @@ export const Route = createFileRoute("/insights/dashboards")({
   }),
   component: DashboardPage,
 });
-type Widget =
-  "KPI number" | "RAG donut" | "Bar chart" | "Table" | "Timeline" | "Milestone list" | "Workload";
-const all: Widget[] = [
-  "KPI number",
-  "RAG donut",
-  "Bar chart",
-  "Table",
-  "Timeline",
-  "Milestone list",
-  "Workload",
-];
+type Widget = DashboardWidget;
+const all = DASHBOARD_WIDGETS;
+/** The built-in dashboard: every widget, read-only. Its id in the picker. */
+const SEEDED = "seeded";
+
 function DashboardPage() {
   const settings = useSettings();
-  const [widgets, setWidgets] = useState<Widget[]>(all),
+  const store = useDashboards();
+  const records = store.query.data;
+  // null until the list loads; then my default, else the seeded dashboard.
+  const [activeId, setActiveId] = useState<string | null>(null),
+    // Unsaved changes to the open dashboard (null = none).
+    [draft, setDraft] = useState<Widget[] | null>(null),
     [picker, setPicker] = useState(false),
-    [dragged, setDragged] = useState<number | null>(null);
+    [dragged, setDragged] = useState<number | null>(null),
+    [notice, setNotice] = useState("");
+  useEffect(() => {
+    if (records && activeId === null) setActiveId(defaultDashboardId(records, store.me) ?? SEEDED);
+  }, [records, activeId, store.me]);
+  const current = records?.find((record) => record.id === activeId);
+  const widgets = draft ?? current?.widgets ?? [...all];
+  const editable = current ? canEditDashboard(current, store.me, store.canManageShared) : false;
+  const mine = current?.ownerId === store.me;
+  const busy = store.create.isPending || store.update.isPending || store.remove.isPending;
+  const failed = (error: Error) => setNotice(errorMessage(error));
+  const setWidgets = (next: Widget[]) => {
+    setDraft(next);
+    setNotice("");
+  };
+  const open = (id: string) => {
+    if (draft && !window.confirm("Discard your unsaved changes to this dashboard?")) return;
+    setDraft(null);
+    setActiveId(id);
+    setNotice("");
+  };
+  const saveAsNew = () => {
+    const name = window
+      .prompt("Name this dashboard", current ? `${current.name} (copy)` : "My dashboard")
+      ?.trim();
+    if (!name) return;
+    store.create.mutate(
+      { name, widgets },
+      {
+        onSuccess: (written) => {
+          setDraft(null);
+          setActiveId(written.id);
+          setNotice(`${name} saved`);
+        },
+        onError: failed,
+      },
+    );
+  };
+  const update = (patch: Parameters<typeof store.update.mutate>[0]["patch"], done: string) => {
+    if (!current) return;
+    store.update.mutate(
+      { id: current.id, patch, lastSeen: current.updatedAt },
+      {
+        onSuccess: () => {
+          if (patch.widgets) setDraft(null);
+          setNotice(done);
+        },
+        onError: failed,
+      },
+    );
+  };
+  const rename = () => {
+    if (!current) return;
+    const name = window.prompt("Rename the dashboard", current.name)?.trim();
+    if (name && name !== current.name) update({ name }, `Renamed to ${name}`);
+  };
+  const remove = () => {
+    if (!current || !window.confirm(`Delete the dashboard "${current.name}"?`)) return;
+    store.remove.mutate(current.id, {
+      onSuccess: () => {
+        setDraft(null);
+        setActiveId(SEEDED);
+        setNotice(`${current.name} deleted`);
+      },
+      onError: failed,
+    });
+  };
   return (
     <div className="space-y-6">
       <AutoBreadcrumbs />
       <PageHeader
         eyebrow="Dashboard"
-        title={`${settings.organisation.shortName} portfolio`}
+        title={current?.name ?? `${settings.organisation.shortName} portfolio`}
         description="A configurable view of delivery, finance, milestones and portfolio capacity."
         actions={
           <Button onClick={() => setPicker(true)}>
@@ -73,6 +149,92 @@ function DashboardPage() {
           </Button>
         }
       />
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/70 bg-card p-2 shadow-sm">
+        <select
+          aria-label="Dashboard"
+          value={activeId ?? SEEDED}
+          onChange={(event) => open(event.target.value)}
+          className="h-8 rounded border border-input bg-background px-2 text-xs"
+        >
+          <option value={SEEDED}>{settings.organisation.shortName} portfolio (built-in)</option>
+          {records?.map((record) => (
+            <option key={record.id} value={record.id}>
+              {record.isDefault && record.ownerId === store.me ? "★ " : ""}
+              {record.name}
+              {record.isShared ? " · shared" : ""}
+            </option>
+          ))}
+        </select>
+        {editable && draft && (
+          <Button size="sm" disabled={busy} onClick={() => update({ widgets }, "Dashboard saved")}>
+            <Save />
+            Save
+          </Button>
+        )}
+        <Button size="sm" variant="outline" disabled={busy} onClick={saveAsNew}>
+          <CopyPlus />
+          Save as new
+        </Button>
+        {current && (
+          <details className="relative">
+            <summary className="flex h-8 cursor-pointer list-none items-center gap-1 rounded px-2 text-xs hover:bg-accent">
+              <Settings2 className="size-4" />
+              Dashboard
+            </summary>
+            <div className="absolute left-0 z-30 mt-1 w-60 rounded-md border bg-popover p-1 shadow-lg">
+              {editable && <MenuItem onClick={rename}>Rename</MenuItem>}
+              {mine && (
+                <MenuItem
+                  onClick={() =>
+                    update(
+                      { isDefault: !current.isDefault },
+                      current.isDefault
+                        ? "The built-in dashboard opens by default again"
+                        : `${current.name} now opens by default`,
+                    )
+                  }
+                >
+                  {current.isDefault ? "Stop opening by default" : "Open this by default"}
+                </MenuItem>
+              )}
+              {mine && (
+                <MenuItem
+                  onClick={() =>
+                    update(
+                      { isShared: !current.isShared },
+                      current.isShared
+                        ? `${current.name} is private`
+                        : `${current.name} is shared with the organisation`,
+                    )
+                  }
+                >
+                  {current.isShared ? "Stop sharing" : "Share with organisation"}
+                </MenuItem>
+              )}
+              {editable && (
+                <MenuItem destructive onClick={remove}>
+                  Delete dashboard
+                </MenuItem>
+              )}
+              {!editable && (
+                <p className="p-2 text-xs text-muted-foreground">
+                  Shared by someone else. Save as new keeps your own copy.
+                </p>
+              )}
+            </div>
+          </details>
+        )}
+        <p className="ml-auto text-xs text-muted-foreground" role="status">
+          {notice ||
+            (draft
+              ? editable
+                ? "Unsaved changes"
+                : "Unsaved changes: save as new to keep them"
+              : store.query.isError
+                ? `Saved dashboards could not be loaded: ${store.query.error.message}`
+                : "")}
+        </p>
+      </div>
       <div className="grid auto-rows-[260px] gap-4 lg:grid-cols-2 xl:grid-cols-3">
         {widgets.map((widget, index) => (
           <section
@@ -102,7 +264,8 @@ function DashboardPage() {
                 variant="ghost"
                 size="icon"
                 className="ml-auto"
-                onClick={() => setWidgets((current) => current.filter((_, i) => i !== index))}
+                aria-label={`Remove ${widget}`}
+                onClick={() => setWidgets(widgets.filter((_, i) => i !== index))}
               >
                 <X />
               </Button>
@@ -130,7 +293,7 @@ function DashboardPage() {
                   variant="outline"
                   className="h-20 justify-start"
                   onClick={() => {
-                    setWidgets((current) => [...current, type]);
+                    setWidgets([...widgets, type]);
                     setPicker(false);
                   }}
                 >
@@ -143,6 +306,31 @@ function DashboardPage() {
         </div>
       )}
     </div>
+  );
+}
+function MenuItem({
+  onClick,
+  destructive = false,
+  children,
+}: {
+  onClick: () => void;
+  destructive?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        event.currentTarget.closest("details")?.removeAttribute("open");
+        onClick();
+      }}
+      className={cn(
+        "block w-full rounded px-2 py-1.5 text-left text-xs hover:bg-accent",
+        destructive && "text-health-bad-foreground",
+      )}
+    >
+      {children}
+    </button>
   );
 }
 function WidgetIcon({ type }: { type: Widget }) {

@@ -218,6 +218,7 @@ function Page() {
         <div className="space-y-5">
           <BoardWorkspace
             title="Issue register"
+            boardKey="issue-register"
             itemLabel="issue"
             rows={issuesToRows(issues).map((row, index) => ({
               ...row,

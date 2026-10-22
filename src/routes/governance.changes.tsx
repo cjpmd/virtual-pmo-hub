@@ -183,6 +183,7 @@ function Changes({ data }: { data: GovernanceData }) {
       <BoardWorkspace
         key={String(canEdit)}
         title="Change register"
+        boardKey="changes"
         itemLabel="change request"
         rows={rows}
         columns={columns}

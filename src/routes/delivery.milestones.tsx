@@ -482,6 +482,7 @@ function Register({ items }: { items: PortfolioMilestone[] }) {
       <BoardWorkspace
         key={`${canEdit}-${hasApproval}`}
         title="Milestones"
+        boardKey="milestones"
         itemLabel="milestone"
         rows={rows}
         columns={

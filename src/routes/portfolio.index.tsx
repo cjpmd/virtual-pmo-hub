@@ -448,6 +448,7 @@ function PortfolioBody({
         <h2 className="font-display text-lg font-semibold">Programmes</h2>
         <BoardWorkspace
           title="Programmes"
+          boardKey="programmes"
           manage={false}
           rows={rows}
           columns={columns}

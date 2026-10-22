@@ -181,6 +181,7 @@ export function ProjectMilestones({ projectId }: { projectId: string }) {
             // The board copies its columns on mount; remount once permissions and phases are known.
             key={`${permissions.canEdit}-${phaseList.length}-${hasApproval}`}
             title="Milestones"
+            boardKey="project-milestones"
             itemLabel="milestone"
             rows={milestonesToBoardRows(items, names, phaseList, forums.data ?? [])}
             canCreate={false}

@@ -112,6 +112,7 @@ function CollectionBody({ collection, projects }: { collection: Collection; proj
         </div>
         <BoardWorkspace
           title="Collection projects"
+          boardKey="collection-projects"
           manage={false}
           rows={projectSummariesToRows(projects)}
           columns={projectColumns()}

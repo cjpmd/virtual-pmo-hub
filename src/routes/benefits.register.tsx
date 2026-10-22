@@ -127,6 +127,7 @@ function Register({ data }: { data: BenefitsData }) {
       <BoardWorkspace
         key={String(canEdit)}
         title="Benefits register"
+        boardKey="benefits"
         itemLabel="benefit"
         seededAutomations={benefitAutomationRecipes}
         rows={rows}

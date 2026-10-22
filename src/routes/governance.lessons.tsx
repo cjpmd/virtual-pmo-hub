@@ -278,6 +278,7 @@ function Lessons({ data }: { data: LessonsData }) {
       <BoardWorkspace
         key={String(canEdit)}
         title="Lessons log"
+        boardKey="lessons"
         itemLabel="lesson"
         rows={lessonsToRows(lessons)}
         columns={

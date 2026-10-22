@@ -156,6 +156,7 @@ function Decisions({ data }: { data: GovernanceData }) {
       <BoardWorkspace
         key={String(canEdit)}
         title="Decision log"
+        boardKey="decisions"
         itemLabel="decision"
         rows={rows}
         columns={canEdit ? columns : columns.map((column) => ({ ...column, editable: false }))}

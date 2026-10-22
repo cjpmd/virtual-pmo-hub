@@ -205,6 +205,14 @@ edit shared ones. Write SQL to docs/sql/1-3-dashboards-views.sql and stop.
 After approval: services, hooks, save/rename/delete/share UI, and seeded views kept as
 read-only defaults.
 ```
+**Notes from 1.3:** migration `20261022131402_1_3_dashboards_saved_views`, approved with size caps
+(layout 64 KB, config 32 KB) and a personal `dashboards.is_default`. `workspace_id` is nullable as
+on `forums` (null = organisation-wide; the UI saves organisation-wide rows). Owners edit their
+own; shared rows are read by the organisation and edited by PMO / admin; a shared view that is
+the board default is PMO's. Boards open on my default, else the shared default, else the seeded
+one; dashboards open on my default, else the built-in one. Every `BoardWorkspace` has a stable
+`boardKey`. Access rules were tested on a throwaway Postgres (50 checks) before applying. The
+e2e spec writes at desktop width only and deletes its own "E2E …" rows in `afterAll`.
 
 ### 1.4 Board Calendar view and automations
 No database change.
@@ -449,7 +457,7 @@ Also before go-live: a cross-tenant RLS test suite in `supabase/tests` (user A c
 ## Progress
 
 - [x] 0.1 Test harness  - [ ] 0.2 Clean-up  - [x] 0.3 Migration history and indexes  - [x] 0.4 Copy  - [x] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
-- [x] 1.1 Data import/export  - [x] 1.2 Pack export  - [ ] 1.3 Dashboards and views  - [ ] 1.4 Calendar and automations flag  - [ ] 1.5 Notes and map layout
+- [x] 1.1 Data import/export  - [x] 1.2 Pack export  - [x] 1.3 Dashboards and views  - [ ] 1.4 Calendar and automations flag  - [ ] 1.5 Notes and map layout
 - [ ] 2.1 Invites  - [ ] 2.2 Self sign-up  - [ ] 2.3 Stripe
 - [ ] 3.1 Sprint schema  - [ ] 3.2 Sprint UI  - [ ] 3.3 Reports and forecast
 - [ ] 4.1 Notifications  - [ ] 4.2 AI drafting  - [ ] 4.3 Automations  - [ ] 4.4 Programme report

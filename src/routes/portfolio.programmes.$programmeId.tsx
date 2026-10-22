@@ -294,6 +294,7 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
             {() => (
               <BoardWorkspace
                 title="Programme projects"
+                boardKey="programme-projects"
                 manage={false}
                 rows={projectSummariesToRows(projects)}
                 columns={projectColumns()}

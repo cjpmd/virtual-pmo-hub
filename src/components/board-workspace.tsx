@@ -51,6 +51,14 @@ import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { today as todayDate } from "@/lib/today";
 import { usePeople } from "@/hooks/use-hierarchy";
+import { useSavedViews } from "@/hooks/use-saved-views";
+import {
+  canEditView,
+  resolveDefaultView,
+  type SavedViewRecord,
+  type ViewConfig,
+} from "@/services/saved-views";
+import { errorMessage } from "@/services/service-error";
 /** The status a board uses for "closed", from the options it offers. */
 function closedStatusFor(options: string[] | undefined): string {
   const order = ["Closed", "Done", "Completed", "Realised", "Embedded", "Superseded", "Approved"];
@@ -115,6 +123,10 @@ export interface SavedView {
   filters?: BoardFilter[];
   visible: string[];
   isDefault: boolean;
+  /** Where the view comes from: seeded in code (read-only), or saved (saved_views). */
+  source?: "seeded" | "saved";
+  /** Saved views only. */
+  record?: SavedViewRecord;
 }
 interface Automation {
   id: string;
@@ -140,6 +152,8 @@ interface BoardProps {
   actions?: ReactNode;
   seededAutomations?: string[];
   storageKey?: string;
+  /** Stable key for this board's saved views (saved_views.board_key); without one, views aren't saved. */
+  boardKey?: string;
   itemLabel?: string;
   manage?: boolean;
   onRecordChange?: (change: BoardRecordChange) => void;
@@ -440,6 +454,32 @@ function Summary({ rows, column }: { rows: BoardRow[]; column: BoardColumn }) {
     </div>
   );
 }
+function ViewMenuItem({
+  onClick,
+  destructive = false,
+  children,
+}: {
+  onClick: () => void;
+  destructive?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        event.currentTarget.closest("details")?.removeAttribute("open");
+        onClick();
+      }}
+      className={cn(
+        "block w-full rounded px-2 py-1.5 text-left text-xs hover:bg-accent",
+        destructive && "text-health-bad-foreground",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function BoardWorkspace({
   title,
   rows: initialRows,
@@ -454,6 +494,7 @@ export function BoardWorkspace({
   actions,
   seededAutomations,
   storageKey,
+  boardKey,
   itemLabel = "item",
   manage: manageProp = true,
   onRecordChange,
@@ -494,12 +535,56 @@ export function BoardWorkspace({
     [sortKey, setSortKey] = useState(defaultView?.sortKey ?? ""),
     [saved, setSaved] = useState<SavedView[]>(defaults),
     [activeView, setActiveView] = useState(defaultView?.id ?? "default"),
+    [defaultResolved, setDefaultResolved] = useState(false),
     [automationOpen, setAutomationOpen] = useState(false),
     [panelTab, setPanelTab] = useState("details"),
     [dragged, setDragged] = useState<string | null>(null),
     [notice, setNotice] = useState(""),
     [creating, setCreating] = useState(false),
     [undo, setUndo] = useState<{ label: string; rows: BoardRow[] } | null>(null);
+  // Saved views (work package 1.3): seeded views stay as read-only defaults; saved ones come
+  // from saved_views for this board. The board opens on my default, else the shared default,
+  // else the seeded default.
+  const stored = useSavedViews(boardKey, {
+    type: defaultView?.type ?? initialView,
+    groupBy: defaultView?.groupBy ?? groupOptions[0] ?? "",
+    sortKey: "",
+    filter: "",
+    visible: initialColumns.map((c) => c.key),
+  });
+  const records = stored.query.data;
+  const effectiveDefault = records
+    ? resolveDefaultView(records, stored.me, defaultView?.id ?? null)
+    : (defaultView?.id ?? null);
+  const fromRecord = (record: SavedViewRecord): SavedView => ({
+    id: record.id,
+    name: record.name,
+    ...record.config,
+    isDefault: false,
+    source: "saved",
+    record,
+  });
+  const applyView = (item: SavedView) => {
+    setActiveView(item.id);
+    setView(item.type);
+    setGroupBy(item.groupBy);
+    setSortKey(item.sortKey);
+    setFilter(item.filter);
+  };
+  useEffect(() => {
+    if (!records) return;
+    setSaved([
+      ...defaults.map((item) => ({ ...item, source: "seeded" as const })),
+      ...records.map(fromRecord),
+    ]);
+    if (!defaultResolved) {
+      setDefaultResolved(true);
+      const record = records.find((item) => item.id === effectiveDefault);
+      if (record) applyView(fromRecord(record));
+    }
+    // Rebuilt only when the saved views change; defaults come from props that don't.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [records]);
   const statusOptions = initialColumns.find((c) => c.key === "status")?.options;
   const commit = (next: BoardRow[]) => {
     setRows(next);
@@ -635,7 +720,88 @@ export function BoardWorkspace({
   const groups = groupBy
     ? Array.from(new Set(shown.map((row) => String(row[groupBy] ?? "Unassigned"))))
     : ["All items"];
+  const activeRecord = saved.find((item) => item.id === activeView)?.record;
+  const editable = activeRecord
+    ? canEditView(activeRecord, stored.me, stored.canManageShared)
+    : false;
+  /** The board's current settings, to save as a view. */
+  const currentConfig = (): ViewConfig => {
+    const active = saved.find((item) => item.id === activeView);
+    return {
+      type: view,
+      groupBy,
+      sortKey,
+      filter,
+      ...(active?.filters?.length ? { filters: active.filters } : {}),
+      visible: active?.visible ?? columns.map((c) => c.key),
+    };
+  };
+  const failed = (error: Error) => flash(errorMessage(error));
+  const updateActive = (
+    patch: Parameters<typeof stored.update.mutate>[0]["patch"],
+    done: string,
+  ) => {
+    if (!activeRecord) return;
+    stored.update.mutate(
+      { id: activeRecord.id, patch, lastSeen: activeRecord.updatedAt },
+      { onSuccess: () => flash(done), onError: failed },
+    );
+  };
+  const renameView = () => {
+    if (!activeRecord) return;
+    const name = window.prompt("Rename the view", activeRecord.name)?.trim();
+    if (name && name !== activeRecord.name) updateActive({ name }, `Renamed to ${name}`);
+  };
+  const deleteView = () => {
+    if (!activeRecord || !window.confirm(`Delete the view "${activeRecord.name}"?`)) return;
+    stored.remove.mutate(activeRecord.id, {
+      onSuccess: () => {
+        if (defaultView) applyView(defaultView);
+        flash(`${activeRecord.name} deleted`);
+      },
+      onError: failed,
+    });
+  };
+  // A private view becomes my default; a shared one becomes the board default (PMO / admin).
+  const canMakeDefault = boardKey
+    ? Boolean(
+        activeRecord &&
+        activeRecord.id !== effectiveDefault &&
+        (activeRecord.isShared ? stored.canManageShared : activeRecord.ownerId === stored.me),
+      )
+    : true;
+  const makeDefault = () => {
+    if (!boardKey) {
+      setSaved((current) =>
+        current.map((item) => ({ ...item, isDefault: item.id === activeView })),
+      );
+      return;
+    }
+    if (!activeRecord || !canMakeDefault) return;
+    updateActive(
+      { isDefault: true },
+      activeRecord.isShared
+        ? `${activeRecord.name} is now the default for everyone`
+        : `${activeRecord.name} is now your default`,
+    );
+  };
+  const isStarred = (item: SavedView) => (boardKey ? item.id === effectiveDefault : item.isDefault);
   const saveView = () => {
+    if (boardKey) {
+      const name = window.prompt("Name this view", `My view ${saved.length + 1}`)?.trim();
+      if (!name) return;
+      stored.create.mutate(
+        { name, config: currentConfig() },
+        {
+          onSuccess: (written) => {
+            setActiveView(written.id);
+            flash(`${name} saved`);
+          },
+          onError: failed,
+        },
+      );
+      return;
+    }
     const name = `My view ${saved.length + 1}`;
     const id = `view-${Date.now()}`;
     setSaved((current) => [
@@ -656,12 +822,7 @@ export function BoardWorkspace({
   };
   const applySaved = (id: string) => {
     const item = saved.find((entry) => entry.id === id);
-    if (!item) return;
-    setActiveView(id);
-    setView(item.type);
-    setGroupBy(item.groupBy);
-    setSortKey(item.sortKey);
-    setFilter(item.filter);
+    if (item) applyView(item);
   };
   return (
     <section className="space-y-3">
@@ -708,29 +869,88 @@ export function BoardWorkspace({
           >
             {saved.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.isDefault ? "★ " : ""}
+                {isStarred(item) ? "★ " : ""}
                 {item.name}
+                {item.record?.isShared ? " · shared" : ""}
               </option>
             ))}
           </select>
           <Button
             size="sm"
             variant="ghost"
-            onClick={() =>
-              setSaved((current) =>
-                current.map((item) => ({ ...item, isDefault: item.id === activeView })),
-              )
+            onClick={makeDefault}
+            disabled={!canMakeDefault}
+            title={
+              boardKey && !activeRecord
+                ? "Built-in views can't be a default: save a copy first"
+                : undefined
             }
           >
             <Star
               className={cn(
                 "size-4",
-                saved.find((item) => item.id === activeView)?.isDefault &&
+                saved.some((item) => item.id === activeView && isStarred(item)) &&
                   "fill-primary text-primary",
               )}
             />
             Default
           </Button>
+          {boardKey && (
+            <details className="relative">
+              <summary className="flex h-8 cursor-pointer list-none items-center gap-1 rounded px-2 text-xs hover:bg-accent">
+                <Settings2 className="size-4" />
+                View
+              </summary>
+              <div className="absolute left-0 z-30 mt-1 w-60 rounded-md border bg-popover p-1 shadow-lg">
+                {!activeRecord ? (
+                  <p className="p-2 text-xs text-muted-foreground">
+                    A built-in view. Save view keeps your own copy.
+                  </p>
+                ) : (
+                  <>
+                    {editable && (
+                      <ViewMenuItem
+                        onClick={() =>
+                          updateActive({ config: currentConfig() }, `${activeRecord.name} updated`)
+                        }
+                      >
+                        Update with current settings
+                      </ViewMenuItem>
+                    )}
+                    {editable && <ViewMenuItem onClick={renameView}>Rename</ViewMenuItem>}
+                    {activeRecord.ownerId === stored.me &&
+                      !(activeRecord.isShared && activeRecord.isDefault) && (
+                        <ViewMenuItem
+                          onClick={() =>
+                            updateActive(
+                              // Sharing or unsharing drops a default: each scope has its own.
+                              { isShared: !activeRecord.isShared, isDefault: false },
+                              activeRecord.isShared
+                                ? `${activeRecord.name} is private`
+                                : `${activeRecord.name} is shared with the organisation`,
+                            )
+                          }
+                        >
+                          {activeRecord.isShared ? "Stop sharing" : "Share with organisation"}
+                        </ViewMenuItem>
+                      )}
+                    {editable && (
+                      <ViewMenuItem destructive onClick={deleteView}>
+                        Delete view
+                      </ViewMenuItem>
+                    )}
+                    {!editable && (
+                      <p className="p-2 text-xs text-muted-foreground">
+                        {activeRecord.isShared && activeRecord.isDefault
+                          ? "The default for everyone: only PMO and admins can change it."
+                          : "Shared by someone else. Save view keeps your own copy."}
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+            </details>
+          )}
           <div className="relative">
             <Search className="absolute left-2 top-2 size-3.5 text-muted-foreground" />
             <Input
