@@ -1,5 +1,5 @@
--- PROPOSAL (work package 1.6), not applied. Workspace archiving and the guards around it.
--- To be applied, after approval, as one new migration: <timestamp>_1_6_workspaces.
+-- APPROVED 22/10/2026 with my_workspace_roles() left unchanged (your option 2); applied as
+-- migration 20261022221830_1_6_workspaces. Workspace archiving and the guards around it.
 --
 -- Decisions (yours, 22/10/2026):
 --   * Archived = read-only and still visible (an "Archived" badge in the UI).
@@ -34,17 +34,20 @@
 -- and triggers run as the definer and don't use these helpers, so archived workspaces keep
 -- being computed. Tested on a live-shaped copy (see the 1.6 report).
 --
--- my_workspace_roles() gains an "archived" column (it must be dropped and recreated to change
--- its result; grants are restored as they are today).
+-- my_workspace_roles() is unchanged (revised 22/10/2026, your option 2): changing its result
+-- would need a drop function, which the Supabase tool can't confirm. It already reports
+-- 'viewer' in an archived workspace (through workspace_role); the UI reads
+-- workspaces.archived_at for the badges and the archived state. Members can already read the
+-- workspaces they belong to. The migration has no destructive statements.
 
 -- ===== Tested on a live-shaped copy (22/10/2026) ============================================
 -- The live schema (generated from the live catalogue: the repo migrations can't rebuild it, see
 -- below) and all live data (8,388 rows), in a throwaway local Postgres 16. Live is Postgres 17.
 --
--- Behaviour (42 checks pass): with the demo workspace archived (records kept) and a second,
+-- Behaviour (44 checks pass on the revised migration, re-run on a fresh copy): with the demo workspace archived (records kept) and a second,
 -- empty workspace added:
 --   * reads unchanged (PMO and member see the same projects as before);
---   * my_workspace_roles shows viewer + archived; PMO can't update a project, add a risk, create
+--   * my_workspace_roles shows viewer, and archived_at is readable by members; PMO can't update a project, add a risk, create
 --     a portfolio or save a status report; the member can't update a work item;
 --   * the decision maker, forum chair, programme manager, offer recipient and request author
 --     paths are all closed while archived, and all open again after unarchiving;
@@ -71,8 +74,23 @@
 --   get_portfolio_overview(DTS) as member        34.68        32.60    -6.0%        63.5
 --   v_projects list as member                     1.86         1.89    +1.6%         5.5
 --   my_editable_project_ids() as member           1.37         1.16   -15.3%         0.5
--- Nothing is more than ~20% slower; local run-to-run noise is about +/-20%. Live "after" is
--- measured the same way once applied.
+-- Nothing is more than ~20% slower; local run-to-run noise is about +/-20%.
+--
+-- Re-run on the revised migration (fresh copy, both databases vacuumed, 4 interleaved rounds,
+-- which removes the drift of the sequential runs above), and live after applying (two runs for
+-- the PMO, one for the member and the job):
+--                                          local before  local after  change   live after  change
+--   refresh_health_current(demo org) [job]      189.80       183.56    -3.3%       408.1    +0.8%
+--   get_project_overview(DLM) as PMO             16.39        18.77   +14.5%        24.3   +13.6%
+--   get_project_overview(CYB) as PMO             17.36        19.37   +11.5%        25.2   +18.3%
+--   get_portfolio_overview(DTS) as PMO           29.33        32.46   +10.7%        66.1    +6.1%
+--   v_projects list as PMO                        1.81         1.99   +10.5%         4.9    +2.1%
+--   get_project_overview(DLM) as member          16.48        19.44   +17.9%        22.6    +4.6%
+--   get_portfolio_overview(DTS) as member        30.18        32.25    +6.9%        63.8    +0.5%
+--   v_projects list as member                     1.84         2.05   +11.4%         5.5     0.0%
+--   my_editable_project_ids() as member           0.81         1.21   +47.9%        0.58   +26.1%
+-- Signed-in reads cost about 1-4 ms more (one indexed lookup on workspaces per helper call);
+-- none is over 20% except my_editable_project_ids, which is +0.1 ms on live. The jobs are flat.
 --
 -- Found while building the copy: supabase/migrations/20261012120035_health_current_b.sql is
 -- corrupted (line 7 reads `create table public.project_health_current" to`, followed by pasted
@@ -271,19 +289,3 @@ as $$
   where (r.created_by = (select auth.uid()) or r.requester_id = any (private.my_resource_ids()))
     and private.workspace_is_active(r.workspace_id);
 $$;
-
--- 5. my_workspace_roles(): the role in each workspace (viewer in an archived one) and whether
--- it is archived, for the UI's controls and badges.
-drop function public.my_workspace_roles();
-create function public.my_workspace_roles()
-returns table (workspace_id uuid, organisation_id uuid, role public.app_role, archived boolean)
-language sql
-stable
-set search_path = ''
-as $$
-  select w.id, w.organisation_id, private.workspace_role(w.id), w.archived_at is not null
-  from public.workspaces w
-  where private.workspace_role(w.id) is not null;
-$$;
-revoke all on function public.my_workspace_roles() from public;
-grant execute on function public.my_workspace_roles() to authenticated, service_role;
