@@ -9,3 +9,9 @@ export const selfSignup = import.meta.env.VITE_SELF_SIGNUP === "true";
 
 /** Where access and demo requests go (the request-access page opens an email to it). */
 export const contactEmail = (import.meta.env.VITE_CONTACT_EMAIL ?? "").trim();
+
+/**
+ * Board automations (D4: hidden until work package 4.3 makes them run). Off unless
+ * VITE_BOARD_AUTOMATIONS is "true"; the panel and recipes stay in board-workspace.tsx.
+ */
+export const boardAutomations = import.meta.env.VITE_BOARD_AUTOMATIONS === "true";

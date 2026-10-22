@@ -225,6 +225,12 @@ Work package 1.4.
 - Automations: [D4 = hide] hide the Automations button and panel behind a feature flag until
   work package 4.3. [D4 = keep] label the panel "Preview — not active yet".
 ```
+**Notes from 1.4:** the Calendar view (`board-workspace.tsx`, helpers in `lib/calendar.ts`) opens on
+the current month in the organisation's time zone, with previous / next / Today, whole weeks
+starting on Settings › Regional › First day of week, and items on their finish date (else start),
+read as DD/MM/YYYY or ISO. Up to three items a day, then "+N more". Automations are hidden behind
+`VITE_BOARD_AUTOMATIONS` (`lib/features.ts`, off by default) until 4.3. Found, not fixed: the
+board's Sort compares date columns as DD/MM/YYYY text, so it orders by day of the month.
 
 ### 1.5 Programme notes and shared dependency layout
 Database change: yes.
@@ -457,7 +463,7 @@ Also before go-live: a cross-tenant RLS test suite in `supabase/tests` (user A c
 ## Progress
 
 - [x] 0.1 Test harness  - [ ] 0.2 Clean-up  - [x] 0.3 Migration history and indexes  - [x] 0.4 Copy  - [x] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
-- [x] 1.1 Data import/export  - [x] 1.2 Pack export  - [x] 1.3 Dashboards and views  - [ ] 1.4 Calendar and automations flag  - [ ] 1.5 Notes and map layout
+- [x] 1.1 Data import/export  - [x] 1.2 Pack export  - [x] 1.3 Dashboards and views  - [x] 1.4 Calendar and automations flag  - [ ] 1.5 Notes and map layout
 - [ ] 2.1 Invites  - [ ] 2.2 Self sign-up  - [ ] 2.3 Stripe
 - [ ] 3.1 Sprint schema  - [ ] 3.2 Sprint UI  - [ ] 3.3 Reports and forecast
 - [ ] 4.1 Notifications  - [ ] 4.2 AI drafting  - [ ] 4.3 Automations  - [ ] 4.4 Programme report
