@@ -1,7 +1,7 @@
--- PROPOSAL (work package 1.5), not applied. Programme office notes and a shared dependency
--- map layout. To be applied, after approval, as one new migration: <timestamp>_1_5_notes_map_layout.
+-- APPROVED 22/10/2026 as written; applied as migration 20261022163735_1_5_notes_map_layout.
+-- Programme office notes and a shared dependency map layout.
 --
--- Decisions taken (say if you want any changed):
+-- Decisions taken:
 --   * Office note in its own one-row-per-programme table (programme_office_notes), not a column
 --     on programmes. Two reasons: (1) programmes_update needs the workspace manager role, so a
 --     programme's named manager who is only a contributor couldn't save a column on programmes
@@ -27,7 +27,7 @@
 --   * Layout edits: PMO / admin (organisation PMO / admin for the organisation map, the
 --     workspace's for a scoped one). Everyone else can still drag nodes for themselves; their
 --     moves aren't saved. Reset = delete the row (PMO / admin).
---   * No audit trigger on either table; say if the note should be audited.
+--   * No audit trigger on either table (confirmed).
 -- New functions: private.set_updated_by() (trigger, runs as the caller) and
 -- private.can_edit_programme_note(uuid) (SECURITY DEFINER, explicit checks); both have execute
 -- revoked from public and anon.
