@@ -1,5 +1,6 @@
 import { formatCompactCurrency, formatDate, fromIsoDate, toIsoDate } from "@/lib/format";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowLeft,
   ArrowRight,
@@ -9,7 +10,6 @@ import {
   Download,
   FileDown,
   FileText,
-  Presentation,
   Save,
   X,
 } from "lucide-react";
@@ -19,27 +19,30 @@ import { HealthPill } from "@/components/health-pill";
 import type { Health } from "@/data/types";
 import type { CollectionView as Collection, PackProject as Project } from "@/services/collections";
 import {
-  getBenefitsByObjective,
-  getMeasurementSchedule,
-  getValueMetrics,
-} from "@/services/benefits-value";
+  buildBenefitsSection,
+  buildDecisionsSection,
+  issuedPackPages,
+  packPages,
+  type CommitteePackContent,
+  type PackBenefitsSection,
+  type PackDecisionsSection,
+  type PackPage as PackPageOf,
+} from "@/services/committee-packs";
 import { useBenefits } from "@/hooks/use-benefits";
-import { madeSince } from "@/services/decisions";
 import { useGovernance } from "@/hooks/use-governance";
 import { usePackProjects } from "@/hooks/use-collections";
-import { useIssueCommitteePack } from "@/hooks/use-committee-packs";
+import { useCommitteePack, useIssueCommitteePack } from "@/hooks/use-committee-packs";
 import { useWorkspaceRole } from "@/hooks/use-permissions";
 import { errorMessage } from "@/services/service-error";
-import { addDaysIso, todayIso } from "@/lib/today";
+import { todayIso } from "@/lib/today";
 import { getSettings } from "@/services/settings";
 import { cn } from "@/lib/utils";
 
-type PackPage = {
-  id: string;
-  label: string;
-  type: "cover" | "summary" | "milestones" | "exceptions" | "benefits" | "decisions" | "project";
-  project?: Project;
-};
+type PackPage = PackPageOf<Project>;
+/** What a pack page header and cover need from the collection. */
+type PackCollection = Pick<Collection, "id" | "name"> & { workspaceId?: string };
+/** A stored section, or the note to show in its place (loading, failed, not stored). */
+type Section<T> = T | string;
 const money = formatCompactCurrency;
 
 /** The latest submitted status report; no invented narrative when there isn't one. */
@@ -59,7 +62,7 @@ function PackHeader({
   pageNumber,
   total,
 }: {
-  collection: Collection;
+  collection: PackCollection;
   pageNumber: number;
   total: number;
 }) {
@@ -79,10 +82,14 @@ function CoverPage({
   collection,
   meetingDate,
   generatedAt,
+  coverText,
+  issued,
 }: {
-  collection: Collection;
+  collection: PackCollection;
   meetingDate: string;
   generatedAt: string;
+  coverText: string;
+  issued: boolean;
 }) {
   return (
     <div className="flex min-h-[580px] flex-col justify-between p-10 sm:p-14">
@@ -110,9 +117,7 @@ function CoverPage({
       <div className="max-w-3xl">
         <p className="mb-4 text-xs font-semibold uppercase text-primary">Governance pack</p>
         <h2 className="font-display text-4xl font-semibold sm:text-6xl">{collection.name}</h2>
-        <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">
-          {getSettings().templates.committeePack.coverText}
-        </p>
+        <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">{coverText}</p>
       </div>
       <div className="grid gap-6 border-t border-border pt-6 text-sm sm:grid-cols-2">
         <div>
@@ -120,7 +125,7 @@ function CoverPage({
           <p className="mt-1 font-semibold">{meetingDate}</p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">Generated</p>
+          <p className="text-xs text-muted-foreground">{issued ? "Issued" : "Generated"}</p>
           <p className="mt-1 font-semibold">{generatedAt}</p>
         </div>
       </div>
@@ -134,7 +139,7 @@ function SummaryPage({
   pageNumber,
   total,
 }: {
-  collection: Collection;
+  collection: PackCollection;
   projects: Project[];
   pageNumber: number;
   total: number;
@@ -223,7 +228,7 @@ function ExceptionsPage({
   pageNumber,
   total,
 }: {
-  collection: Collection;
+  collection: PackCollection;
   projects: Project[];
   pageNumber: number;
   total: number;
@@ -281,7 +286,7 @@ function MilestonesPage({
   pageNumber,
   total,
 }: {
-  collection: Collection;
+  collection: PackCollection;
   projects: Project[];
   pageNumber: number;
   total: number;
@@ -337,30 +342,35 @@ function MilestonesPage({
   );
 }
 
+/** Shown in place of a section that is loading, failed to load or was not stored. */
+function SectionNote({ children }: { children: string }) {
+  return (
+    <p className="mt-6 rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">
+      {children}
+    </p>
+  );
+}
+
 function BenefitsPage({
   collection,
-  projects,
+  section,
   pageNumber,
   total,
 }: {
-  collection: Collection;
-  projects: Project[];
+  collection: PackCollection;
+  section: Section<PackBenefitsSection>;
   pageNumber: number;
   total: number;
 }) {
-  const data = useBenefits().data;
-  const ids = new Set(projects.map((project) => project.id));
-  const benefits = (data?.benefits ?? []).filter((benefit) =>
-    benefit.enablingProjects.some((link) => ids.has(link.projectId)),
-  );
-  const metrics = getValueMetrics(benefits);
-  const objectives = data
-    ? getBenefitsByObjective(data, benefits)
-        .filter((row) => row.planned > 0)
-        .slice(0, 6)
-    : [];
-  const behind = benefits.filter((benefit) => benefit.realisation.behindProfile);
-  const overdue = getMeasurementSchedule(benefits).filter((item) => item.state === "Overdue");
+  if (typeof section === "string")
+    return (
+      <div className="min-h-[580px] p-7 sm:p-10">
+        <PackHeader collection={collection} pageNumber={pageNumber} total={total} />
+        <p className="mt-7 text-xs font-semibold uppercase text-primary">Benefits realisation</p>
+        <SectionNote>{section}</SectionNote>
+      </div>
+    );
+  const { metrics, objectives, behind, overdue } = section;
   return (
     <div className="min-h-[580px] p-7 sm:p-10">
       <PackHeader collection={collection} pageNumber={pageNumber} total={total} />
@@ -418,11 +428,11 @@ function BenefitsPage({
             Behind profile
           </p>
           <div className="mt-1 space-y-1.5">
-            {behind.slice(0, 5).map((benefit) => (
+            {behind.map((benefit) => (
               <p key={benefit.id} className="text-sm">
                 {benefit.reference} · {benefit.title}{" "}
                 <span className="text-muted-foreground">
-                  ({benefit.realisation.percent}% realised, {money(benefit.realisation.realised)})
+                  ({benefit.percent}% realised, {money(benefit.realised)})
                 </span>
               </p>
             ))}
@@ -434,11 +444,11 @@ function BenefitsPage({
             Measurements overdue
           </p>
           <div className="mt-1 space-y-1.5">
-            {overdue.slice(0, 5).map((item) => (
-              <p key={item.measure.id} className="text-sm">
-                {item.benefit.reference} · {item.measure.name}{" "}
+            {overdue.map((item) => (
+              <p key={item.id} className="text-sm">
+                {item.reference} · {item.measureName}{" "}
                 <span className="text-muted-foreground">
-                  ({item.daysOverdue} days overdue, {item.benefit.owner || "unowned"})
+                  ({item.daysOverdue} days overdue, {item.owner || "unowned"})
                 </span>
               </p>
             ))}
@@ -454,30 +464,34 @@ function BenefitsPage({
 
 function DecisionsPage({
   collection,
-  projects,
+  section,
   pageNumber,
   total,
 }: {
-  collection: Collection;
-  projects: Project[];
+  collection: PackCollection;
+  section: Section<PackDecisionsSection>;
   pageNumber: number;
   total: number;
 }) {
-  const codes = new Set(projects.map((project) => project.code));
-  const decisions = (useGovernance().data?.decisions ?? []).filter(
-    (decision) => !decision.projectCode || codes.has(decision.projectCode),
+  const heading = (
+    <div className="mt-7">
+      <p className="text-xs font-semibold uppercase text-primary">Governance</p>
+      <h2 className="mt-2 font-display text-3xl font-semibold">Decisions</h2>
+    </div>
   );
-  const required = decisions
-    .filter((decision) => decision.status === "Pending")
-    .sort((a, b) => a.daysToNeededBy - b.daysToNeededBy);
-  const made = decisions.filter((decision) => madeSince(decision, addDaysIso(-31)));
+  if (typeof section === "string")
+    return (
+      <div className="min-h-[580px] p-7 sm:p-10">
+        <PackHeader collection={collection} pageNumber={pageNumber} total={total} />
+        {heading}
+        <SectionNote>{section}</SectionNote>
+      </div>
+    );
+  const { required, made } = section;
   return (
     <div className="min-h-[580px] p-7 sm:p-10">
       <PackHeader collection={collection} pageNumber={pageNumber} total={total} />
-      <div className="mt-7">
-        <p className="text-xs font-semibold uppercase text-primary">Governance</p>
-        <h2 className="mt-2 font-display text-3xl font-semibold">Decisions</h2>
-      </div>
+      {heading}
       <div className="mt-6">
         <h3 className="font-semibold">Decisions required</h3>
         <div className="mt-3 space-y-3">
@@ -508,7 +522,7 @@ function DecisionsPage({
               </p>
               <p className="mt-2 text-sm text-muted-foreground">{decision.context}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Options: {decision.options.map((option) => option.title).join(" | ")}
+                Options: {decision.options.join(" | ")}
               </p>
             </div>
           ))}
@@ -553,7 +567,7 @@ function HighlightPage({
   pageNumber,
   total,
 }: {
-  collection: Collection;
+  collection: PackCollection;
   project: Project;
   pageNumber: number;
   total: number;
@@ -653,74 +667,177 @@ function HealthFact({ label, health }: { label: string; health: Health }) {
   );
 }
 
+/** One pack page, the same on screen and in the printed PDF. */
+function PackPageBody({
+  page,
+  index,
+  total,
+  collection,
+  projects,
+  meetingDate,
+  generatedAt,
+  coverText,
+  issued,
+  benefits,
+  decisions,
+}: {
+  page: PackPage;
+  index: number;
+  total: number;
+  collection: PackCollection;
+  projects: Project[];
+  meetingDate: string;
+  generatedAt: string;
+  coverText: string;
+  issued: boolean;
+  benefits: Section<PackBenefitsSection>;
+  decisions: Section<PackDecisionsSection>;
+}) {
+  const common = { collection, pageNumber: index + 1, total };
+  switch (page.type) {
+    case "cover":
+      return (
+        <CoverPage
+          collection={collection}
+          meetingDate={meetingDate}
+          generatedAt={generatedAt}
+          coverText={coverText}
+          issued={issued}
+        />
+      );
+    case "summary":
+      return <SummaryPage {...common} projects={projects} />;
+    case "milestones":
+      return <MilestonesPage {...common} projects={projects} />;
+    case "exceptions":
+      return <ExceptionsPage {...common} projects={projects} />;
+    case "benefits":
+      return <BenefitsPage {...common} section={benefits} />;
+    case "decisions":
+      return <DecisionsPage {...common} section={decisions} />;
+    default:
+      return page.project ? <HighlightPage {...common} project={page.project} /> : null;
+  }
+}
+
+/**
+ * While the pack is open, printing (Export to PDF or the browser's own print) uses the light
+ * theme and names the PDF after the pack; both are put back afterwards.
+ */
+function usePrintSetup(title: string) {
+  useEffect(() => {
+    const root = document.documentElement;
+    let wasDark = false;
+    let previousTitle = document.title;
+    const before = () => {
+      wasDark = root.classList.contains("dark");
+      root.classList.remove("dark");
+      previousTitle = document.title;
+      document.title = title;
+    };
+    const after = () => {
+      if (wasDark) root.classList.add("dark");
+      document.title = previousTitle;
+    };
+    window.addEventListener("beforeprint", before);
+    window.addEventListener("afterprint", after);
+    return () => {
+      window.removeEventListener("beforeprint", before);
+      window.removeEventListener("afterprint", after);
+    };
+  }, [title]);
+}
+
+const generatedNow = () =>
+  `${fromIsoDate(todayIso())} at ${new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
+const issuedOn = (iso: string) =>
+  `${formatDate(iso.slice(0, 10))} at ${new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
+
+/**
+ * The pack preview. A draft (no `issued`) is built from live data and can be issued; an issued
+ * pack shows its stored snapshot, read-only. Both export to PDF through the browser's print.
+ */
 export function CommitteePack({
   collection,
   projects,
+  benefits,
+  decisions,
+  issued,
   onClose,
   onIssued,
 }: {
-  collection: Collection;
+  collection: PackCollection;
   projects: Project[];
+  benefits: Section<PackBenefitsSection>;
+  decisions: Section<PackDecisionsSection>;
+  issued?: { meetingDate: string; issuedAt: string | null; sections: string[]; coverText: string };
   onClose: () => void;
-  onIssued: () => void;
+  onIssued?: () => void;
 }) {
   const [pageIndex, setPageIndex] = useState(0),
-    [meetingDate, setMeetingDate] = useState(() => fromIsoDate(todayIso()));
-  const [generatedAt] = useState(
-    () =>
-      `${fromIsoDate(todayIso())} at ${new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`,
+    [meetingDate, setMeetingDate] = useState(() =>
+      fromIsoDate(issued ? issued.meetingDate : todayIso()),
+    );
+  const [generatedAt] = useState(() =>
+    issued ? (issued.issuedAt ? issuedOn(issued.issuedAt) : "—") : generatedNow(),
   );
   const settings = getSettings();
-  const pageByName: Record<string, PackPage> = {
-    Cover: { id: "cover", label: "Cover", type: "cover" },
-    "Portfolio summary": { id: "summary", label: "Portfolio summary", type: "summary" },
-    Milestones: { id: "milestones", label: "Milestones", type: "milestones" },
-    Exceptions: { id: "exceptions", label: "Exceptions", type: "exceptions" },
-    "Benefits realisation": { id: "benefits", label: "Benefits realisation", type: "benefits" },
-    Decisions: { id: "decisions", label: "Decisions", type: "decisions" },
-  };
-  const pages = useMemo<PackPage[]>(() => {
-    const ordered = settings.templates.committeePack.sectionOrder.flatMap((name) => {
-      const page = pageByName[name];
-      return page ? [page] : [];
-    });
-    const highlights = settings.templates.committeePack.sectionOrder.includes("Project highlights")
-      ? projects.map((project) => ({
-          id: project.id,
-          label: project.name,
-          type: "project" as const,
-          project,
-        }))
-      : [];
-    return [...ordered, ...highlights];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projects, settings.templates.committeePack.sectionOrder]);
+  const coverText = issued ? issued.coverText : settings.templates.committeePack.coverText;
+  const pages = useMemo<PackPage[]>(
+    () =>
+      issued
+        ? issuedPackPages(issued.sections, projects)
+        : packPages(settings.templates.committeePack.sectionOrder, projects),
+    [projects, issued, settings.templates.committeePack.sectionOrder],
+  );
+  usePrintSetup(`${collection.name} pack – ${meetingDate}`);
   // Issuing stores the pack as built; it can't be changed afterwards, so it takes a confirm. PMO only.
   const role = useWorkspaceRole(collection.workspaceId),
-    canIssue = role === "pmo" || role === "admin";
+    canIssue = !issued && (role === "pmo" || role === "admin");
   const issue = useIssueCommitteePack(),
     [confirming, setConfirming] = useState(false);
   const meetingIso = toIsoDate(meetingDate);
+  // Every page is stored, so the pack can't be issued until the live sections have loaded.
+  const sectionsReady = typeof benefits !== "string" && typeof decisions !== "string";
   const issuePack = () => {
-    if (!meetingIso) return;
+    if (!meetingIso || typeof benefits === "string" || typeof decisions === "string") return;
+    const content: CommitteePackContent = {
+      version: 2,
+      collection: { id: collection.id, name: collection.name },
+      sections: pages.map((item) => item.label),
+      pageCount: pages.length,
+      coverText,
+      projects,
+      benefits,
+      decisions,
+    };
     issue.mutate(
       {
         collectionId: collection.id,
         title: `${collection.name} pack`,
         meetingDate: meetingIso,
-        content: {
-          collection: { id: collection.id, name: collection.name },
-          sections: pages.map((item) => item.label),
-          pageCount: pages.length,
-          coverText: settings.templates.committeePack.coverText,
-          projects,
-        },
+        content,
       },
-      { onSuccess: onIssued },
+      { onSuccess: () => onIssued?.() },
     );
   };
   const page = pages[pageIndex];
   if (!page) return null;
+  const body = (item: PackPage, index: number) => (
+    <PackPageBody
+      page={item}
+      index={index}
+      total={pages.length}
+      collection={collection}
+      projects={projects}
+      meetingDate={meetingDate}
+      generatedAt={generatedAt}
+      coverText={coverText}
+      issued={Boolean(issued)}
+      benefits={benefits}
+      decisions={decisions}
+    />
+  );
   return (
     <div
       className="fixed inset-0 z-[100] flex flex-col bg-background"
@@ -734,13 +851,16 @@ export function CommitteePack({
         </Button>
         <div className="mr-auto">
           <p className="font-semibold">{collection.name} pack</p>
-          <p className="text-xs text-muted-foreground">Preview · {pages.length} pages</p>
+          <p className="text-xs text-muted-foreground">
+            {issued ? "Issued · read-only" : "Preview"} · {pages.length} pages
+          </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => {}}>
-          <Presentation className="size-4" />
-          <span className="hidden sm:inline">Export to PowerPoint</span>
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => {}}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => window.print()}
+          aria-label="Export to PDF"
+        >
           <FileDown className="size-4" />
           <span className="hidden sm:inline">Export to PDF</span>
         </Button>
@@ -756,7 +876,11 @@ export function CommitteePack({
               >
                 Cancel
               </Button>
-              <Button size="sm" onClick={issuePack} disabled={!meetingIso || issue.isPending}>
+              <Button
+                size="sm"
+                onClick={issuePack}
+                disabled={!meetingIso || !sectionsReady || issue.isPending}
+              >
                 <Save className="size-4" />
                 {issue.isPending ? "Issuing…" : "Confirm and issue"}
               </Button>
@@ -768,8 +892,14 @@ export function CommitteePack({
                 issue.reset();
                 setConfirming(true);
               }}
-              disabled={!meetingIso}
-              title={meetingIso ? undefined : "Enter the meeting date as DD/MM/YYYY"}
+              disabled={!meetingIso || !sectionsReady}
+              title={
+                !meetingIso
+                  ? "Enter the meeting date as DD/MM/YYYY"
+                  : !sectionsReady
+                    ? "Waiting for benefits and decisions to load"
+                    : undefined
+              }
             >
               <Save className="size-4" />
               Issue pack
@@ -825,55 +955,7 @@ export function CommitteePack({
               </select>
             </div>
             <div className="overflow-hidden rounded-md border border-border bg-card shadow-lg">
-              {page.type === "cover" ? (
-                <CoverPage
-                  collection={collection}
-                  meetingDate={meetingDate}
-                  generatedAt={generatedAt}
-                />
-              ) : page.type === "summary" ? (
-                <SummaryPage
-                  collection={collection}
-                  projects={projects}
-                  pageNumber={pageIndex + 1}
-                  total={pages.length}
-                />
-              ) : page.type === "milestones" ? (
-                <MilestonesPage
-                  collection={collection}
-                  projects={projects}
-                  pageNumber={pageIndex + 1}
-                  total={pages.length}
-                />
-              ) : page.type === "exceptions" ? (
-                <ExceptionsPage
-                  collection={collection}
-                  projects={projects}
-                  pageNumber={pageIndex + 1}
-                  total={pages.length}
-                />
-              ) : page.type === "benefits" ? (
-                <BenefitsPage
-                  collection={collection}
-                  projects={projects}
-                  pageNumber={pageIndex + 1}
-                  total={pages.length}
-                />
-              ) : page.type === "decisions" ? (
-                <DecisionsPage
-                  collection={collection}
-                  projects={projects}
-                  pageNumber={pageIndex + 1}
-                  total={pages.length}
-                />
-              ) : page.project ? (
-                <HighlightPage
-                  collection={collection}
-                  project={page.project}
-                  pageNumber={pageIndex + 1}
-                  total={pages.length}
-                />
-              ) : null}
+              {body(page, pageIndex)}
             </div>
           </div>
         </main>
@@ -888,6 +970,7 @@ export function CommitteePack({
             id="meeting-date"
             value={meetingDate}
             onChange={(event) => setMeetingDate(event.target.value)}
+            readOnly={Boolean(issued)}
             inputMode="numeric"
             className="h-8 w-32 text-xs"
           />
@@ -916,11 +999,40 @@ export function CommitteePack({
           </Button>
         </div>
       </footer>
+      {/* Every page, one per A4 sheet; shown only when printing (styles.css). */}
+      {createPortal(
+        <div className="pack-print-root" aria-hidden="true">
+          {pages.map((item, index) => (
+            <section key={item.id} className="pack-print-page">
+              {body(item, index)}
+            </section>
+          ))}
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }
 
-/** Loads the collection's project facts from Supabase, then shows the pack. */
+const sectionNote = (query: { error: Error | null }, what: string) =>
+  query.error ? `The ${what} could not be loaded: ${query.error.message}` : `Loading ${what}…`;
+
+function PackMessage({ children, onClose }: { children: ReactNode; onClose?: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-overlay p-6">
+      <div className="max-w-md rounded-lg border bg-background p-6 text-sm shadow-xl">
+        {children}
+        {onClose && (
+          <Button className="mt-4" variant="outline" onClick={onClose}>
+            Close
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Loads the collection's project facts, benefits and decisions, then shows the draft pack. */
 export function CollectionCommitteePack({
   collection,
   onClose,
@@ -931,19 +1043,37 @@ export function CollectionCommitteePack({
   onIssued: () => void;
 }) {
   const query = usePackProjects(collection.projectIds);
+  const benefitsQuery = useBenefits(),
+    governanceQuery = useGovernance();
+  const projects = query.data;
+  const benefits = useMemo(
+    () =>
+      benefitsQuery.data && projects
+        ? buildBenefitsSection(
+            benefitsQuery.data,
+            projects.map((project) => project.id),
+          )
+        : sectionNote(benefitsQuery, "benefits"),
+    [benefitsQuery, projects],
+  );
+  const decisions = useMemo(
+    () =>
+      governanceQuery.data && projects
+        ? buildDecisionsSection(
+            governanceQuery.data.decisions,
+            projects.map((project) => project.code),
+          )
+        : sectionNote(governanceQuery, "decisions"),
+    [governanceQuery, projects],
+  );
   if (query.isError)
     return (
-      <div className="fixed inset-0 z-50 grid place-items-center bg-overlay p-6">
-        <div className="max-w-md rounded-lg border bg-background p-6 text-sm shadow-xl">
-          <p className="font-semibold">The pack could not be built.</p>
-          <p className="mt-1 text-muted-foreground">{query.error.message}</p>
-          <Button className="mt-4" variant="outline" onClick={onClose}>
-            Close
-          </Button>
-        </div>
-      </div>
+      <PackMessage onClose={onClose}>
+        <p className="font-semibold">The pack could not be built.</p>
+        <p className="mt-1 text-muted-foreground">{query.error.message}</p>
+      </PackMessage>
     );
-  if (!query.data)
+  if (!projects)
     return (
       <div className="fixed inset-0 z-50 grid place-items-center bg-overlay">
         <p className="rounded-md bg-background px-4 py-3 text-sm shadow">Building the pack…</p>
@@ -952,9 +1082,47 @@ export function CollectionCommitteePack({
   return (
     <CommitteePack
       collection={collection}
-      projects={query.data}
+      projects={projects}
+      benefits={benefits}
+      decisions={decisions}
       onClose={onClose}
       onIssued={onIssued}
+    />
+  );
+}
+
+const NOT_STORED = "Not stored when this pack was issued.";
+
+/** An issued pack from its stored snapshot, read-only, for viewing and PDF export. */
+export function IssuedCommitteePack({ packId, onClose }: { packId: string; onClose: () => void }) {
+  const query = useCommitteePack(packId);
+  if (query.isError)
+    return (
+      <PackMessage onClose={onClose}>
+        <p className="font-semibold">The pack could not be opened.</p>
+        <p className="mt-1 text-muted-foreground">{query.error.message}</p>
+      </PackMessage>
+    );
+  if (!query.data)
+    return (
+      <div className="fixed inset-0 z-50 grid place-items-center bg-overlay">
+        <p className="rounded-md bg-background px-4 py-3 text-sm shadow">Opening the pack…</p>
+      </div>
+    );
+  const { content } = query.data;
+  return (
+    <CommitteePack
+      collection={content.collection}
+      projects={content.projects as Project[]}
+      benefits={content.benefits ?? NOT_STORED}
+      decisions={content.decisions ?? NOT_STORED}
+      issued={{
+        meetingDate: query.data.meetingDate,
+        issuedAt: query.data.issuedAt,
+        sections: content.sections,
+        coverText: content.coverText,
+      }}
+      onClose={onClose}
     />
   );
 }
