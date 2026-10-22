@@ -257,11 +257,25 @@ more (`mergeMovedNodes`). The old localStorage layout is offered once to PMO / a
 layout for everyone?") when no shared layout exists, then removed; nothing writes it any more.
 The e2e note test restores the text but can't delete a note row it created (no delete grant).
 
-### 1.6 Board date sort
+### 1.6 Workspace management
+Database change: probably yes (for example an archived_at column).
+
+```
+Work package 1.6. Workspace management. Settings › Workspaces (admins): create, rename,
+describe and archive workspaces (archive, not delete, if it holds records). Workspace
+membership: add an organisation member to a workspace, set or change their workspace role,
+remove them. Creating a portfolio asks which workspace when the user is PMO in more than
+one; moving a portfolio between workspaces is out of scope. Check that every list, board and
+report behaves correctly with two workspaces and a user who belongs to only one. Add an e2e
+test with a second workspace. SQL proposal first if anything in the schema or policies needs
+changing (for example an archived_at column).
+```
+
+### 1.7 Board date sort
 No database change. Found in 1.4.
 
 ```
-Work package 1.6. BoardWorkspace sorts by comparing cell values as text, so date columns
+Work package 1.7. BoardWorkspace sorts by comparing cell values as text, so date columns
 (DD/MM/YYYY) sort by day of the month across all months. Sort date columns (column type
 "date", and start / finish) by calendar date using lib/calendar.ts toIsoDay, with blanks and
 "—" last in both directions; keep text and number sorting as they are. Unit-test the
@@ -485,7 +499,7 @@ Also before go-live: a cross-tenant RLS test suite in `supabase/tests` (user A c
 ## Progress
 
 - [x] 0.1 Test harness  - [ ] 0.2 Clean-up  - [x] 0.3 Migration history and indexes  - [x] 0.4 Copy  - [x] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
-- [x] 1.1 Data import/export  - [x] 1.2 Pack export  - [x] 1.3 Dashboards and views  - [x] 1.4 Calendar and automations flag  - [x] 1.5 Notes and map layout  - [ ] 1.6 Board date sort
+- [x] 1.1 Data import/export  - [x] 1.2 Pack export  - [x] 1.3 Dashboards and views  - [x] 1.4 Calendar and automations flag  - [x] 1.5 Notes and map layout  - [ ] 1.6 Workspaces  - [ ] 1.7 Board date sort
 - [ ] 2.1 Invites  - [ ] 2.2 Self sign-up  - [ ] 2.3 Stripe
 - [ ] 3.1 Sprint schema  - [ ] 3.2 Sprint UI  - [ ] 3.3 Reports and forecast
 - [ ] 4.1 Notifications  - [ ] 4.2 AI drafting  - [ ] 4.3 Automations  - [ ] 4.4 Programme report
