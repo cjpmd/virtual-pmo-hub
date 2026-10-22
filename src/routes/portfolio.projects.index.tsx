@@ -217,6 +217,7 @@ function ProjectsBody({ items }: { items: ProjectSummary[] }) {
       </section>
       <BoardWorkspace
         title="Projects"
+        boardKey="projects"
         manage={false}
         rows={rows}
         columns={projectColumns()}

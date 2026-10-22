@@ -2818,6 +2818,67 @@ export type Database = {
           },
         ]
       }
+      dashboards: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          is_shared: boolean
+          layout: Json
+          name: string
+          organisation_id: string
+          owner_id: string
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          is_shared?: boolean
+          layout?: Json
+          name: string
+          organisation_id: string
+          owner_id?: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          is_shared?: boolean
+          layout?: Json
+          name?: string
+          organisation_id?: string
+          owner_id?: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboards_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dashboards_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dashboards_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       decision_actions: {
         Row: {
           created_at: string
@@ -4679,6 +4740,106 @@ export type Database = {
           },
           {
             foreignKeyName: "dependency_issues_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      dependency_map_layouts: {
+        Row: {
+          created_at: string
+          id: string
+          organisation_id: string
+          portfolio_id: string | null
+          positions: Json
+          programme_id: string | null
+          updated_at: string
+          updated_by: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organisation_id: string
+          portfolio_id?: string | null
+          positions?: Json
+          programme_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organisation_id?: string
+          portfolio_id?: string | null
+          positions?: Json
+          programme_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dependency_map_layouts_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dependency_map_layouts_portfolio_id_workspace_id_fkey"
+            columns: ["portfolio_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "portfolios"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "dependency_map_layouts_portfolio_id_workspace_id_fkey"
+            columns: ["portfolio_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_portfolio_financials"
+            referencedColumns: ["portfolio_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "dependency_map_layouts_portfolio_id_workspace_id_fkey"
+            columns: ["portfolio_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_portfolio_health"
+            referencedColumns: ["portfolio_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "dependency_map_layouts_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "programmes"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "dependency_map_layouts_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_financials"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "dependency_map_layouts_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_health"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "dependency_map_layouts_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dependency_map_layouts_workspace_id_organisation_id_fkey"
             columns: ["workspace_id", "organisation_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -8179,6 +8340,79 @@ export type Database = {
           },
         ]
       }
+      programme_office_notes: {
+        Row: {
+          created_at: string
+          note: string
+          organisation_id: string
+          programme_id: string
+          updated_at: string
+          updated_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          note?: string
+          organisation_id: string
+          programme_id: string
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          note?: string
+          organisation_id?: string
+          programme_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programme_office_notes_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_office_notes_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "programmes"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_office_notes_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_financials"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_office_notes_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_health"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_office_notes_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_office_notes_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       programmes: {
         Row: {
           archived_at: string | null
@@ -10294,6 +10528,70 @@ export type Database = {
           },
         ]
       }
+      saved_views: {
+        Row: {
+          board_key: string
+          config: Json
+          created_at: string
+          id: string
+          is_default: boolean
+          is_shared: boolean
+          name: string
+          organisation_id: string
+          owner_id: string
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          board_key: string
+          config: Json
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          is_shared?: boolean
+          name: string
+          organisation_id: string
+          owner_id?: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          board_key?: string
+          config?: Json
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          is_shared?: boolean
+          name?: string
+          organisation_id?: string
+          owner_id?: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_views_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_views_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_views_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       status_report_decisions: {
         Row: {
           created_at: string
@@ -12176,6 +12474,8 @@ export type Database = {
       }
       workspaces: {
         Row: {
+          archived_at: string | null
+          archived_by: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -12185,6 +12485,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -12194,6 +12496,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
+          archived_by?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -12203,6 +12507,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "workspaces_archived_by_fkey"
+            columns: ["archived_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "workspaces_created_by_fkey"
             columns: ["created_by"]

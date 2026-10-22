@@ -1514,6 +1514,7 @@ function TaskEditor({
         <BoardWorkspace
           key={tasks.map((t) => `${t.id}${t.bucket}${t.percentComplete}`).join()}
           title="Tasks"
+          boardKey="project-tasks"
           manage={false}
           rows={tasksToRows(tasks)}
           columns={taskColumns}

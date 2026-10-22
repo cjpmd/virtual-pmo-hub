@@ -205,6 +205,14 @@ edit shared ones. Write SQL to docs/sql/1-3-dashboards-views.sql and stop.
 After approval: services, hooks, save/rename/delete/share UI, and seeded views kept as
 read-only defaults.
 ```
+**Notes from 1.3:** migration `20261022131402_1_3_dashboards_saved_views`, approved with size caps
+(layout 64 KB, config 32 KB) and a personal `dashboards.is_default`. `workspace_id` is nullable as
+on `forums` (null = organisation-wide; the UI saves organisation-wide rows). Owners edit their
+own; shared rows are read by the organisation and edited by PMO / admin; a shared view that is
+the board default is PMO's. Boards open on my default, else the shared default, else the seeded
+one; dashboards open on my default, else the built-in one. Every `BoardWorkspace` has a stable
+`boardKey`. Access rules were tested on a throwaway Postgres (50 checks) before applying. The
+e2e spec writes at desktop width only and deletes its own "E2E …" rows in `afterAll`.
 
 ### 1.4 Board Calendar view and automations
 No database change.
@@ -217,6 +225,12 @@ Work package 1.4.
 - Automations: [D4 = hide] hide the Automations button and panel behind a feature flag until
   work package 4.3. [D4 = keep] label the panel "Preview — not active yet".
 ```
+**Notes from 1.4:** the Calendar view (`board-workspace.tsx`, helpers in `lib/calendar.ts`) opens on
+the current month in the organisation's time zone, with previous / next / Today, whole weeks
+starting on Settings › Regional › First day of week, and items on their finish date (else start),
+read as DD/MM/YYYY or ISO. Up to three items a day, then "+N more". Automations are hidden behind
+`VITE_BOARD_AUTOMATIONS` (`lib/features.ts`, off by default) until 4.3. Found, not fixed: the
+board's Sort compares date columns as DD/MM/YYYY text, so it orders by day of the month.
 
 ### 1.5 Programme notes and shared dependency layout
 Database change: yes.
@@ -230,6 +244,60 @@ Work package 1.5.
   scope_id, positions jsonb, updated_at), editable by PMO and admins, and readable by members.
 Write SQL to docs/sql/1-5.sql and stop. After approval, wire both up through services and
 remove the localStorage path.
+```
+**Notes from 1.5:** migration `20261022163735_1_5_notes_map_layout`. The office note is its own
+table, `programme_office_notes` (one row per programme), not a column on `programmes`: the
+programme's manager edits it without programme edit rights, and saving it doesn't bump
+`programmes.updated_at`. Editors: the programme's manager and workspace PMO / admin; archived
+programmes are read-only. `dependency_map_layouts` uses nullable `portfolio_id` / `programme_id`
+(both null = the organisation's map, which is today's map); PMO / admin save it, everyone reads
+it. Updates send only the granted column (`note` / `positions`); the e2e spec checks the request
+bodies. A save that conflicts reloads, re-applies only this user's moved nodes and saves once
+more (`mergeMovedNodes`). The old localStorage layout is offered once to PMO / admin ("Save this
+layout for everyone?") when no shared layout exists, then removed; nothing writes it any more.
+The e2e note test restores the text but can't delete a note row it created (no delete grant).
+
+### 1.6 Workspace management
+Database change: probably yes (for example an archived_at column).
+
+```
+Work package 1.6. Workspace management. Settings › Workspaces (admins): create, rename,
+describe and archive workspaces (archive, not delete, if it holds records). Workspace
+membership: add an organisation member to a workspace, set or change their workspace role,
+remove them. Creating a portfolio asks which workspace when the user is PMO in more than
+one; moving a portfolio between workspaces is out of scope. Check that every list, board and
+report behaves correctly with two workspaces and a user who belongs to only one. Add an e2e
+test with a second workspace. SQL proposal first if anything in the schema or policies needs
+changing (for example an archived_at column).
+```
+**Notes from 1.6:** migration `20261022221830_1_6_workspaces` (`docs/sql/1-6-workspaces.sql`):
+`workspaces.archived_at` / `archived_by`. An archived workspace is read-only and stays visible:
+`private.workspace_role` caps every role at viewer there and `my_workspace_ids(min_role)` leaves
+it out of every write check, plus explicit checks on the write paths that don't go through a role
+(decision maker, forum chair, programme manager, offer recipient, request author). A trigger keeps
+one active workspace per organisation; a workspace holding records can't be deleted (foreign
+keys). `my_workspace_roles()` is unchanged (changing its result needs a `drop`); the UI reads
+`workspaces.archived_at` (`hooks/use-workspaces.ts`). Background jobs keep computing archived
+workspaces. Signed-in reads cost 1–4 ms more on live (under 20%). Settings › Workspaces: org admins
+create, edit, archive, restore and delete; org admins and the workspace's admins manage members
+(`write.ts` now takes composite keys for `workspace_members`). New portfolios ask for the
+workspace when the user is PMO in more than one; the portfolio overview reads from the
+portfolio's own workspace instead of the organisation's first. "Archived workspace" badges on the
+portfolio, programme and project headers, the portfolio manager and switcher, and Boards. The e2e
+spec `e2e/workspaces.e2e.ts` needs two extra logins (E2E_ADMIN_* / E2E_MEMBER_*) and
+`docs/sql/1-6-e2e-workspace.sql`; without them it skips all but one test. Found, not fixed:
+`supabase/migrations/20261012120035_health_current_b.sql` is corrupted (live is correct), and the
+status-report snapshot trigger skips system-written submissions (NULL logic in its guard).
+
+### 1.7 Board date sort
+No database change. Found in 1.4.
+
+```
+Work package 1.7. BoardWorkspace sorts by comparing cell values as text, so date columns
+(DD/MM/YYYY) sort by day of the month across all months. Sort date columns (column type
+"date", and start / finish) by calendar date using lib/calendar.ts toIsoDay, with blanks and
+"—" last in both directions; keep text and number sorting as they are. Unit-test the
+comparator, and add an e2e check that a board sorted by a date column is in date order.
 ```
 
 ---
@@ -449,7 +517,7 @@ Also before go-live: a cross-tenant RLS test suite in `supabase/tests` (user A c
 ## Progress
 
 - [x] 0.1 Test harness  - [ ] 0.2 Clean-up  - [x] 0.3 Migration history and indexes  - [x] 0.4 Copy  - [x] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
-- [x] 1.1 Data import/export  - [x] 1.2 Pack export  - [ ] 1.3 Dashboards and views  - [ ] 1.4 Calendar and automations flag  - [ ] 1.5 Notes and map layout
+- [x] 1.1 Data import/export  - [x] 1.2 Pack export  - [x] 1.3 Dashboards and views  - [x] 1.4 Calendar and automations flag  - [x] 1.5 Notes and map layout  - [x] 1.6 Workspaces  - [ ] 1.7 Board date sort
 - [ ] 2.1 Invites  - [ ] 2.2 Self sign-up  - [ ] 2.3 Stripe
 - [ ] 3.1 Sprint schema  - [ ] 3.2 Sprint UI  - [ ] 3.3 Reports and forecast
 - [ ] 4.1 Notifications  - [ ] 4.2 AI drafting  - [ ] 4.3 Automations  - [ ] 4.4 Programme report

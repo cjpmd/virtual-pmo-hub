@@ -208,6 +208,7 @@ function Requests({ requests, people }: { requests: RequestView[]; people: Perso
       <BoardWorkspace
         key={String(canManage)}
         title="Requests"
+        boardKey="requests"
         itemLabel="request"
         rows={rows}
         columns={canManage ? columns : columns.map((column) => ({ ...column, editable: false }))}

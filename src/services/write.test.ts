@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // A fake PostgREST: one row per table, updated only when the updated_at filter matches.
-const db = new Map<string, { id: string; updated_at: string }>();
+const db = new Map<string, Record<string, string> & { updated_at: string }>();
 const sent: (string | undefined)[] = [];
+const lastFilters: Record<string, unknown> = {};
 let clock = 0;
 const stamp = () => `2026-10-06T10:00:00.${String(++clock).padStart(6, "0")}+00:00`;
 
@@ -16,6 +17,7 @@ vi.mock("@/integrations/supabase/client", () => {
       eq: (column: string, value: unknown) => ((filters[column] = value), builder),
       maybeSingle: async () => ({ data: db.get(table) ?? null, error: null }),
       then: (resolve: (value: unknown) => void) => {
+        Object.assign(lastFilters, filters);
         const row = db.get(table);
         if (op === "update") sent.push(filters["updated_at"] as string | undefined);
         const matches = row && (!filters["updated_at"] || filters["updated_at"] === row.updated_at);
@@ -60,6 +62,27 @@ describe("updateRow optimistic concurrency", () => {
     const refreshed = db.get("risks")!.updated_at;
     await save(refreshed);
     expect(sent.at(-1)).toBe(refreshed);
+  });
+});
+
+describe("composite keys", () => {
+  it("filters on every key column and reports the key as one id", async () => {
+    db.set("workspace_members", { workspace_id: "w1", profile_id: "p1", updated_at: stamp() });
+    for (const key of Object.keys(lastFilters)) delete lastFilters[key];
+    const written = await updateRow(
+      "workspace_members",
+      { workspace_id: "w1", profile_id: "p1" },
+      { role: "manager" },
+      { context: "Changing the role", lastSeen: db.get("workspace_members")!.updated_at },
+    );
+    expect(lastFilters).toMatchObject({ workspace_id: "w1", profile_id: "p1" });
+    expect(written.id).toBe("w1:p1");
+  });
+
+  it("refuses a bare id for a table keyed by several columns", async () => {
+    await expect(
+      updateRow("workspace_members", "p1", { role: "viewer" }, { context: "Changing the role" }),
+    ).rejects.toThrow(/workspace_id, profile_id/);
   });
 });
 

@@ -85,6 +85,7 @@ function Actions({ data }: { data: LessonsData }) {
       <BoardWorkspace
         key={String(canEdit)}
         title="Improvement actions"
+        boardKey="improvement-actions"
         itemLabel="action"
         rows={improvementActionsToRows(actions)}
         columns={

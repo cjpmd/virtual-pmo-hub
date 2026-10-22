@@ -575,6 +575,7 @@ function PortfolioTasks({
         </div>
         <BoardWorkspace
           title={personal ? "My tasks" : "Portfolio tasks"}
+          boardKey={personal ? "my-tasks" : "portfolio-tasks"}
           itemLabel="task"
           rows={portfolioTasksToRows(shown, personal)}
           columns={columns}

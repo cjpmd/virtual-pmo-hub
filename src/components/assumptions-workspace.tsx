@@ -128,6 +128,7 @@ function Assumptions({
       <BoardWorkspace
         key={String(canEdit)}
         title="Assumption log"
+        boardKey="assumptions"
         itemLabel="assumption"
         rows={assumptionsToRows(items)}
         columns={

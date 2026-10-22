@@ -87,6 +87,12 @@ export const qk = {
   /** Forums, members and meetings. Under governance, so decision writes refresh their counts. */
   forums: (orgId: string) => ["org", orgId, "governance", "forums"] as const,
   committeePacks: (orgId: string) => ["org", orgId, "committee-packs"] as const,
+  /** Saved views for one board (saved_views, by board_key). */
+  savedViews: (orgId: string, boardKey: string) => ["org", orgId, "saved-views", boardKey] as const,
+  dashboards: (orgId: string) => ["org", orgId, "dashboards"] as const,
+  programmeNote: (orgId: string, programmeId: string) =>
+    ["org", orgId, "programme-note", programmeId] as const,
+  dependencyLayout: (orgId: string) => ["org", orgId, "dependency-layout"] as const,
   lessons: (orgId: string) => ["org", orgId, "lessons"] as const,
   issuedTasks: (orgId: string) => ["org", orgId, "projects", "issued-tasks"] as const,
   orgRaid: (orgId: string) => ["org", orgId, "projects", "org-raid"] as const,
@@ -104,6 +110,11 @@ export const qk = {
   integrations: (orgId: string) => ["org", orgId, "integrations"] as const,
   favourites: (orgId: string) => ["org", orgId, "favourites"] as const,
   workspaceRoles: (orgId: string) => ["org", orgId, "workspace-roles"] as const,
+  workspaces: {
+    all: (orgId: string) => ["org", orgId, "workspaces"] as const,
+    members: (orgId: string, workspaceId: string) =>
+      ["org", orgId, "workspaces", "members", workspaceId] as const,
+  },
   phases: (orgId: string) => ["org", orgId, "phases"] as const,
   /** When stored health was last refreshed (max computed_at). */
   healthComputedAt: (orgId: string) => ["org", orgId, "health-computed-at"] as const,

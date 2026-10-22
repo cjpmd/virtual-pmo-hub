@@ -9,6 +9,7 @@ import {
 } from "@/components/settings/settings-shell";
 import { AccountSettings } from "@/components/settings/account-settings";
 import { FinanceSettings } from "@/components/settings/finance-settings";
+import { WorkspaceSettings } from "@/components/settings/workspace-settings";
 import {
   BenefitSettingsSection,
   DataSettings,
@@ -51,6 +52,7 @@ export const Route = createFileRoute("/settings/$section")({
 const panels: Record<string, () => JSX.Element> = {
   account: AccountSettings,
   organisation: OrganisationSettings,
+  workspaces: WorkspaceSettings,
   regional: RegionalSettings,
   "working-time": WorkingTimeSettings,
   terminology: TerminologySettings,

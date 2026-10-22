@@ -39,6 +39,8 @@ import { useBenefits } from "@/hooks/use-benefits";
 import { useEntityMutations } from "@/hooks/use-entities";
 import { usePeople, usePhases, usePortfolioNames, useProgrammesLight } from "@/hooks/use-hierarchy";
 import { useCan, useWorkspaceRoles } from "@/hooks/use-permissions";
+import { useWorkspaces } from "@/hooks/use-workspaces";
+import { ArchivedWorkspaceBadge } from "@/components/workspace-badge";
 import { currencySymbol, formatCurrency } from "@/lib/format";
 import { atLeast } from "@/services/auth";
 import { getHandoverCandidates } from "@/services/benefits-value";
@@ -302,15 +304,21 @@ function PortfolioForm({
   open,
   onOpenChange,
   portfolio,
-  workspaceId,
+  workspaces,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   portfolio?: PortfolioSummary | undefined;
-  workspaceId: string | undefined;
+  /** Active workspaces the user is PMO in; asked for when there is more than one. */
+  workspaces: { id: string; name: string }[];
 }) {
   const mutations = useEntityMutations();
   const { select } = useCurrentPortfolio();
+  const [chosenWorkspace, setChosenWorkspace] = useState("");
+  useEffect(() => {
+    if (open) setChosenWorkspace("");
+  }, [open]);
+  const workspaceId = workspaces.length === 1 ? workspaces[0]!.id : chosenWorkspace;
   const [d, set] = useDraft(open, () => ({
     name: portfolio?.name ?? "",
     description: portfolio?.description ?? "",
@@ -322,6 +330,10 @@ function PortfolioForm({
   const submit = () => {
     if (!d.name.trim()) {
       setError("A name is required.");
+      return;
+    }
+    if (!portfolio && !workspaceId) {
+      setError("Choose the workspace for this portfolio.");
       return;
     }
     const done = {
@@ -357,6 +369,22 @@ function PortfolioForm({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 sm:grid-cols-2">
+          {!portfolio && workspaces.length > 1 && (
+            <Field label="Workspace" required wide>
+              <select
+                value={chosenWorkspace}
+                onChange={(e) => setChosenWorkspace(e.target.value)}
+                className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+              >
+                <option value="">Choose a workspace…</option>
+                {workspaces.map((workspace) => (
+                  <option key={workspace.id} value={workspace.id}>
+                    {workspace.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
           <Field label="Name" required wide>
             <Input
               value={d.name}
@@ -412,7 +440,10 @@ export function PortfolioManagerDialog({
   const portfolios = usePortfolioNames().data ?? [];
   const programmes = useProgrammesLight().data ?? [];
   const roles = useWorkspaceRoles().data ?? [];
-  const pmoWorkspace = roles.find((role) => atLeast(role.role, "pmo"))?.workspaceId;
+  // Archived workspaces cap every role at viewer, so they never appear here.
+  const pmoWorkspaces = (useWorkspaces().data ?? []).filter((workspace) =>
+    roles.some((role) => role.workspaceId === workspace.id && atLeast(role.role, "pmo")),
+  );
   const canManage = (workspaceId: string) =>
     roles.some((role) => role.workspaceId === workspaceId && atLeast(role.role, "pmo"));
   return (
@@ -434,6 +465,7 @@ export function PortfolioManagerDialog({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="truncate font-medium">{p.name}</p>
+                      <ArchivedWorkspaceBadge workspaceId={p.workspaceId} />
                       {p.id === current?.id && (
                         <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
                           Selected
@@ -490,7 +522,7 @@ export function PortfolioManagerDialog({
             )}
           </div>
           <DialogFooter>
-            {pmoWorkspace && (
+            {pmoWorkspaces.length > 0 && (
               <Button
                 onClick={() => {
                   setEditing(undefined);
@@ -508,7 +540,7 @@ export function PortfolioManagerDialog({
         open={formOpen}
         onOpenChange={setFormOpen}
         portfolio={editing}
-        workspaceId={pmoWorkspace}
+        workspaces={pmoWorkspaces}
       />
     </>
   );

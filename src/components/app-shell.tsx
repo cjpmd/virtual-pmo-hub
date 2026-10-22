@@ -38,6 +38,7 @@ import { useFavourites } from "@/hooks/use-favourites";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
 import { useWorkspaceRole } from "@/hooks/use-permissions";
+import { useWorkspaceArchived } from "@/hooks/use-workspaces";
 import { appRoleLabel } from "@/services/org-settings";
 import type { AppRole } from "@/services/auth";
 import { hydrateSettings, term, useSettings } from "@/services/settings";
@@ -109,6 +110,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   // what decides the buttons on screen. The organisation role is shown in the profile menu.
   const { portfolio: currentPortfolio } = useCurrentPortfolio();
   const workspaceRole = useWorkspaceRole(currentPortfolio?.workspaceId);
+  const workspaceArchived = useWorkspaceArchived(currentPortfolio?.workspaceId);
   const roleName = (role: string | null) =>
     role ? (appRoleLabel[role as AppRole] ?? role) : "No access";
   const user = {
@@ -710,6 +712,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       <div className="px-2 pb-1.5 text-xs text-muted-foreground">
                         In this workspace:{" "}
                         <span className="font-medium text-foreground">{user.role}</span>
+                        {workspaceArchived && " (archived, read-only)"}
                       </div>
                     )}
                     <DropdownMenuSeparator />

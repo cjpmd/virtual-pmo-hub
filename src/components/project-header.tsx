@@ -10,6 +10,7 @@ import { AlertTriangle, Check, ListPlus } from "lucide-react";
 import { JustificationForm } from "@/components/divergence-note";
 import { ProjectEditAction, ProjectMoreMenu, StateBadge } from "@/components/entity-management";
 import { FavouriteButton } from "@/components/favourite-button";
+import { ArchivedWorkspaceBadge } from "@/components/workspace-badge";
 import { openIssueTask } from "@/components/issue-task-sheet";
 import { HealthMark } from "@/components/overview/project-watchlist";
 import { Button } from "@/components/ui/button";
@@ -115,6 +116,7 @@ export function ProjectHeader({
               <FavouriteButton target={{ projectId: project.id }} />
             </span>
             <StateBadge state={project.state} />
+            <ArchivedWorkspaceBadge workspaceId={project.workspaceId} />
           </div>
           {project.businessCase && (
             <p

@@ -7,6 +7,8 @@ import { BoardWorkspace, type BoardColumn, type BoardRow } from "@/components/bo
 import { ChartCard, LegendItem } from "@/components/charts/chart-card";
 import { BulletChart, SegmentedBar, SortedBars, StatStrip } from "@/components/charts/primitives";
 import { ManagePortfoliosButton, StateBadge } from "@/components/entity-management";
+import { ArchivedWorkspaceBadge } from "@/components/workspace-badge";
+import { useWorkspaces } from "@/hooks/use-workspaces";
 import { StatusBar } from "@/components/overview/status-bar";
 import { SummaryStrip } from "@/components/overview/summary-strip";
 import { ProgressChart } from "@/components/overview/progress-chart";
@@ -92,6 +94,9 @@ const columns: BoardColumn[] = [
 function PortfolioPage() {
   const { portfolio, portfolios, select } = useCurrentPortfolio();
   const overview = usePortfolioOverview(portfolio?.id);
+  const archivedWorkspaces = new Set(
+    (useWorkspaces().data ?? []).filter((item) => item.archivedAt).map((item) => item.id),
+  );
   if (!portfolio)
     return (
       <div className="space-y-6">
@@ -129,6 +134,7 @@ function PortfolioPage() {
                   {portfolios.data?.map((item) => (
                     <option key={item.id} value={item.id}>
                       {item.name}
+                      {archivedWorkspaces.has(item.workspaceId) ? " (archived workspace)" : ""}
                     </option>
                   ))}
                 </select>
@@ -448,6 +454,7 @@ function PortfolioBody({
         <h2 className="font-display text-lg font-semibold">Programmes</h2>
         <BoardWorkspace
           title="Programmes"
+          boardKey="programmes"
           manage={false}
           rows={rows}
           columns={columns}
@@ -524,7 +531,7 @@ function OverviewBand({
 }) {
   const { portfolio, projects, milestones } = data;
   // One RPC call feeds the chart inputs, snapshot history, forecast history, as-of and today.
-  const rpc = usePortfolioOverviewData(portfolio.id);
+  const rpc = usePortfolioOverviewData(portfolio);
   const healthComputedAt = useHealthComputedAt();
   const history = rpc.data?.history ?? data.history;
   const projectHistory = rpc.data?.projectHistory ?? data.projectHistory;
@@ -743,6 +750,7 @@ function OverviewBand({
             {switcher}
             <ManagePortfoliosButton />
             <StateBadge state={portfolio.state} />
+            <ArchivedWorkspaceBadge workspaceId={portfolio.workspaceId} />
             <HealthPill health={portfolio.health} />
             <HealthUpdating className="text-pmo-muted" />
           </div>

@@ -134,6 +134,7 @@ function Workspace({ data }: { data: DependenciesData }) {
       <BoardWorkspace
         key={String(canEdit)}
         title="Dependency register"
+        boardKey="dependencies"
         itemLabel="dependency"
         manage={canEdit}
         canDelete={canDelete}

@@ -1,5 +1,4 @@
 import { useState, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { ArrowLeft, CalendarDays, Pencil, Plus, UserMinus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,8 +18,8 @@ import {
 } from "@/hooks/use-forums";
 import { usePeople } from "@/hooks/use-hierarchy";
 import { useGovernance } from "@/hooks/use-governance";
-import { useOrgId } from "@/components/auth/organisation-provider";
-import { getWorkspaces } from "@/services/auth";
+import { ArchivedWorkspaceBadge } from "@/components/workspace-badge";
+import { useWorkspaces } from "@/hooks/use-workspaces";
 import type { ForumItem, MeetingItem } from "@/services/forums";
 import { formatDate } from "@/lib/format";
 import { daysFromToday } from "@/lib/today";
@@ -33,11 +32,7 @@ type AgendaRenderer = (
 ) => ReactNode;
 export function BoardsWorkspace({ renderAgenda }: { renderAgenda: AgendaRenderer }) {
   const forums = useForums();
-  const orgId = useOrgId();
-  const workspaces = useQuery({
-    queryKey: ["org", orgId, "forum-workspaces"],
-    queryFn: () => getWorkspaces(orgId),
-  });
+  const workspaces = useWorkspaces();
   const { forum: forumId, meeting: meetingId } = useSearch({ from: "/governance/forum" });
   const permissions = useForumPermissions();
   const [inactive, setInactive] = useState(false);
@@ -96,11 +91,12 @@ export function BoardsWorkspace({ renderAgenda }: { renderAgenda: AgendaRenderer
                 if (!group.length) return null;
                 return (
                   <section key={workspaceId ?? "organisation"} className="space-y-3">
-                    <h2 className="text-lg font-semibold">
+                    <h2 className="flex flex-wrap items-center gap-2 text-lg font-semibold">
                       {workspaceId
                         ? (workspaces.data?.find((workspace) => workspace.id === workspaceId)
                             ?.name ?? "Workspace")
                         : "Organisation"}
+                      <ArchivedWorkspaceBadge workspaceId={workspaceId} />
                     </h2>
                     <div className="divide-y border-y">
                       {group.map((forum) => (

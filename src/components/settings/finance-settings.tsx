@@ -3,10 +3,8 @@
 // forecast history. Months close in order; only the latest closed month can be reopened, with
 // a reason. The PMO can also import actuals for a whole workspace from here.
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { FileUp, Lock, LockOpen } from "lucide-react";
 import { ActualsImportDialog } from "@/components/actuals-import-dialog";
-import { useOrgId } from "@/components/auth/organisation-provider";
 import { QueryState } from "@/components/query-state";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +28,8 @@ import { useWorkspaceRoles } from "@/hooks/use-permissions";
 import { useFormat } from "@/lib/format";
 import { todayIso } from "@/lib/today";
 import { monthLabel } from "@/services/actuals-import";
-import { atLeast, getWorkspaces } from "@/services/auth";
+import { useWorkspaces } from "@/hooks/use-workspaces";
+import { atLeast } from "@/services/auth";
 import {
   addMonths,
   latestClosedMonth,
@@ -204,13 +203,8 @@ function MonthEndClose({ periods }: { periods: FinancialPeriod[] }) {
 }
 
 function WorkspaceImport() {
-  const orgId = useOrgId();
   const roles = useWorkspaceRoles();
-  const workspaces = useQuery({
-    queryKey: ["org", orgId, "workspaces"],
-    queryFn: () => getWorkspaces(orgId),
-    staleTime: 5 * 60_000,
-  });
+  const workspaces = useWorkspaces();
   const pmoWorkspaces = (workspaces.data ?? []).filter((workspace) =>
     atLeast(roles.data?.find((row) => row.workspaceId === workspace.id)?.role, "pmo"),
   );

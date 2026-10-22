@@ -126,6 +126,7 @@ export function RaidWorkspace({
         {visible.length || (onRiskChange && editable && !selected) ? (
           <BoardWorkspace
             title="Risks"
+            boardKey="project-risks"
             itemLabel="risk"
             storageKey={`risks:${risks
               .map((r) => r.id)
@@ -147,6 +148,7 @@ export function RaidWorkspace({
         {issues.length || (onIssueChange && editable) ? (
           <BoardWorkspace
             title="Issues"
+            boardKey="project-issues"
             itemLabel="issue"
             storageKey={`issues:${
               issues
