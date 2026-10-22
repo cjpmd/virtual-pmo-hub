@@ -179,6 +179,15 @@ components/committee-pack.tsx have empty handlers.
   charts as images.
 Plan first, including how charts render for print.
 ```
+**Notes from 1.2:** PDF only (D5); the PowerPoint button is removed. Export to PDF calls
+`window.print()`: the pack renders every page into `.pack-print-root` (shown only in print,
+`styles.css`), one per A4 landscape sheet, in the light theme. The pack has no chart library:
+its bars and health pills are HTML, so they print as they are, with `print-color-adjust:
+exact`. The print CSS applies the pack's desktop grids directly, because browsers lay a printed
+page out below the `lg` breakpoint. A long section (exceptions, milestones) continues onto a
+second sheet. From this package the issued snapshot (`content.version` 2) also stores the
+Benefits and Decisions pages; packs issued earlier show "Not stored when this pack was issued"
+on those pages. Issued packs open read-only from the issued list and export from the snapshot.
 
 ### 1.3 Persist dashboards and board saved views
 Database change: yes.
@@ -440,7 +449,7 @@ Also before go-live: a cross-tenant RLS test suite in `supabase/tests` (user A c
 ## Progress
 
 - [x] 0.1 Test harness  - [ ] 0.2 Clean-up  - [x] 0.3 Migration history and indexes  - [x] 0.4 Copy  - [x] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
-- [x] 1.1 Data import/export  - [ ] 1.2 Pack export  - [ ] 1.3 Dashboards and views  - [ ] 1.4 Calendar and automations flag  - [ ] 1.5 Notes and map layout
+- [x] 1.1 Data import/export  - [x] 1.2 Pack export  - [ ] 1.3 Dashboards and views  - [ ] 1.4 Calendar and automations flag  - [ ] 1.5 Notes and map layout
 - [ ] 2.1 Invites  - [ ] 2.2 Self sign-up  - [ ] 2.3 Stripe
 - [ ] 3.1 Sprint schema  - [ ] 3.2 Sprint UI  - [ ] 3.3 Reports and forecast
 - [ ] 4.1 Notifications  - [ ] 4.2 AI drafting  - [ ] 4.3 Automations  - [ ] 4.4 Programme report

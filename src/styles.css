@@ -468,3 +468,62 @@
   fill: color-mix(in oklab, var(--accent) 55%, transparent);
   stroke: var(--viz-axis);
 }
+
+/* Committee pack PDF export (work package 1.2). The pack renders every page into
+   .pack-print-root, which shows only when printing; while it is in the page, nothing else
+   prints. The pack switches to the light theme on beforeprint. */
+.pack-print-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
+  body:has(> .pack-print-root) > :not(.pack-print-root) {
+    display: none !important;
+  }
+
+  body:has(> .pack-print-root) {
+    background: white;
+  }
+
+  .pack-print-root {
+    display: block;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .pack-print-page + .pack-print-page {
+    break-before: page;
+  }
+
+  /* Cards stay whole; the milestone table (overflow-hidden) may split, but not mid-row. */
+  .pack-print-page .rounded-md:not(.overflow-hidden),
+  .pack-print-page .overflow-hidden > div {
+    break-inside: avoid;
+  }
+
+  /* Browsers lay a printed page out narrower than the lg breakpoint, so the pack's desktop
+     grids are applied here directly: the printed layout doesn't depend on the browser. */
+  .pack-print-page .lg\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pack-print-page .lg\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .pack-print-page .lg\:grid-cols-5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .pack-print-page .lg\:grid-cols-\[1\.2fr_1fr\] {
+    grid-template-columns: 1.2fr 1fr;
+  }
+
+  /* One pack page per sheet where the content allows: no screen minimum height, less padding. */
+  .pack-print-page > div {
+    min-height: 0;
+    padding: 0;
+  }
+}
