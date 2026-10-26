@@ -23,9 +23,9 @@ one work package per session; finish with `npx tsc --noEmit`, `npx tsc --noEmit 
 
 | # | Decision | Needed by | Decided |
 |---|---|---|---|
-| D1 | Pricing model: per seat, per organisation tier, or both; trial length | 2.3 | |
-| D2 | Email provider: Resend (recommended) or Supabase custom SMTP | 2.1, 4.1 | |
-| D3 | Self-service sign-up: switch on with a free trial, or invite-only | 2.2 | |
+| D1 | Pricing model: per seat, per organisation tier, or both; trial length | 2.3 | £10 per paid seat per month, GBP only, excluding VAT (Stripe Tax adds VAT where due). Monthly or annual (annual = 10× monthly, £100 per seat per year). Card only, through Stripe Checkout; no invoice option. Paid seats = contributor and above; viewers are free. |
+| D2 | Email provider: Resend (recommended) or Supabase custom SMTP | 2.1, 4.1 | Supabase Auth custom SMTP backed by Resend (SMTP credentials). Edge functions send through the same SMTP credentials (invites in 2.1, notification email in 4.1). |
+| D3 | Self-service sign-up: switch on with a free trial, or invite-only | 2.2 | Open self sign-up with a 30-day free trial, no card. On expiry the organisation becomes read-only; nothing is deleted. Cloudflare Turnstile CAPTCHA on sign-up; email confirmation required. Optional "start with sample data". |
 | D4 | Board automations: hide until 4.3, or leave visible meanwhile | 1.4 | Hide until 4.3 |
 | D5 | Committee pack export: PDF only, or PDF and PowerPoint | 1.2 | PDF only for now |
 | D6 | Planner sync: keep (needs a Microsoft test tenant) or drop | Phase 5 | |
@@ -33,8 +33,9 @@ one work package per session; finish with `npx tsc --noEmit`, `npx tsc --noEmit 
 ## Manual steps (you, not Claude Code)
 
 - **Supabase → Authentication:** turn on leaked-password protection, and confirm that email confirmation is required.
-- **Stripe** (before 2.3): create the products and prices for D1, and note their price IDs.
-- **Email** (before 2.1): create the Resend account, verify `originoverthrow.com`, and add `RESEND_API_KEY` to the Supabase edge-function secrets.
+- **Stripe** (before 2.3, test mode first): one product with two GBP prices, £10 per seat per month and £100 per seat per year, both per-unit with tax behaviour "exclusive"; note their price IDs. Turn on Stripe Tax with the UK VAT registration. Card as the only payment method. Configure the customer portal (change seats, switch monthly/annual, cancel, update card, invoices).
+- **Email** (before 2.1): create the Resend account and verify `originoverthrow.com`. In Supabase → Authentication → SMTP, set host `smtp.resend.com`, port 465, user `resend`, the Resend API key as password, and the sender address. Add the same values as edge-function secrets `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` (edge functions can't use ports 25 or 587, so keep 465).
+- **Turnstile** (before 2.2): create a Cloudflare Turnstile widget for `pmo.originoverthrow.com` (and the preview hosts). Put the secret key in Supabase → Authentication → Bot and Abuse Protection (CAPTCHA, Turnstile) and the site key in `VITE_TURNSTILE_SITE_KEY`. Use Cloudflare's always-pass test keys on the Supabase branch the e2e suite runs against.
 - **Anthropic** (before 4.2): add `ANTHROPIC_API_KEY` to the edge-function secrets.
 
 ---
@@ -305,7 +306,7 @@ comparator, and add an e2e check that a board sorted by a date column is in date
 ## Phase 2 — Make it sellable
 
 ### 2.1 Member invites and management
-Database change: yes, plus an edge function. Needs D2.
+Database change: yes, plus an edge function. D2: Resend over SMTP.
 
 ```
 Work package 2.1. There is no way to add people to an organisation. Design and propose:
@@ -314,8 +315,14 @@ Work package 2.1. There is no way to add people to an organisation. Design and p
 - RPCs (SECURITY DEFINER, explicit admin check, execute revoked from public and anon):
   create_invite, revoke_invite, accept_invite(token), change_member_role, remove_member.
   Never allow removing or demoting the last admin.
-- Edge function send-invite: emails a sign-up/sign-in link carrying the token via Resend
-  (RESEND_API_KEY). The token is hashed at rest.
+- Paid seats (D1): contributor, manager, pmo and admin use a paid seat; viewer is free. Put
+  the seat count in one private function (paid members plus pending paid-role invites) that
+  2.3 will check in accept_invite and change_member_role (viewer → contributor or above).
+  Nothing is enforced in 2.1; the Users page shows "N paid seats, M viewers".
+- Edge function send-invite: emails a sign-up/sign-in link carrying the token through the
+  shared SMTP secrets (SMTP_HOST, SMTP_PORT 465, SMTP_USER, SMTP_PASS, SMTP_FROM), the same
+  Resend account Supabase Auth uses. No RESEND_API_KEY. Put the SMTP sending in a shared
+  module (supabase/functions/_shared) so 4.1 reuses it. The token is hashed at rest.
 - /auth/callback handles ?invite=token by calling accept_invite after sign-in.
 - Settings › Users: Invite button (email + role), pending invites with resend and revoke,
   role change, remove.
@@ -326,13 +333,29 @@ SQL to docs/sql/2-1-invites.sql and stop. Plan the edge function separately befo
 Decide in 2.1 whether invites replace it, and drop it then in a new migration.
 
 ### 2.2 Self-service sign-up
-Depends on D3, and on 2.3 if trials are used.
+Database change: yes. D3: open sign-up, 30-day trial with no card, read-only on expiry.
+Comes before 2.3: the read-only mode built here is the one 2.3 reuses for a lapsed subscription.
 
 ```
-Work package 2.2. VITE_SELF_SIGNUP gates /signup. Review the existing sign-up and setup wizard
-end to end, signed in, with a fresh email. List anything broken or university-specific, then
-fix it. If D3 says trial: create_organisation also creates an organisation_subscriptions row
-with plan "trial" and an end date (propose the SQL and stop). Show a trial banner with days left.
+Work package 2.2. VITE_SELF_SIGNUP gates /signup; switch it on. Review the existing sign-up and
+setup wizard end to end, signed in, with a fresh email. List anything broken or
+university-specific, then fix it. Then propose (SQL first, then stop):
+- Trial: create_organisation also creates the organisation_subscriptions row with plan
+  "trial" and trial_ends_at = now() + 30 days. No card is asked for.
+- Read-only on expiry: one private check function (organisation is writable unless its trial
+  has ended with no active subscription) used by the write policies, or a trigger, so every
+  write is refused, RPCs included. Reads and exports keep working; nothing is deleted. Admins
+  can still reach Settings › Subscription to subscribe. Explain how it fits the existing
+  policies, and measure the cost on signed-in reads as in 1.6.
+- Trial banner with days left; after expiry a read-only banner with "Subscribe" for admins
+  and "Ask your admin" for others.
+- Turnstile CAPTCHA: Supabase Auth's built-in CAPTCHA protection with Turnstile. Supabase then
+  asks for a captchaToken on every auth call, so the widget goes on /signup and /signin (magic
+  link) and the e2e global setup must pass a token (branch with Cloudflare test keys).
+- Email confirmation stays required: the setup wizard runs only after the confirmed link.
+- "Start with sample data" (optional, off by default) in the setup wizard: seeds a small
+  sample portfolio, programme and projects through a SECURITY DEFINER RPC, labelled as sample.
+  Propose how the user clears it (archive, never delete).
 ```
 **Also in 2.2:** Setup wizard sector choice (University / Public sector / General). University
 keeps the current seed_org_defaults; the others get neutral business units, benefit categories,
@@ -340,19 +363,29 @@ forum names and tier wording, and a financial year start of April (public sector
 (general). SQL proposal first.
 
 ### 2.3 Stripe billing
-Database change: yes, plus edge functions. Needs D1 and the Stripe price IDs.
+Database change: yes, plus edge functions. D1: £10 per paid seat per month or £100 per year,
+GBP, VAT added by Stripe Tax, card only. Needs the Stripe price IDs.
 
 ```
 Work package 2.3. Settings › Subscription only reads organisation_subscriptions; nothing is
 wired to Stripe. Propose:
 - Columns on organisation_subscriptions: stripe_customer_id, stripe_subscription_id, status,
-  price_id, seats_total, current_period_end, cancel_at_period_end.
+  price_id, billing_interval (month | year), seats_total, current_period_end,
+  cancel_at_period_end.
 - Edge functions: create-checkout-session and create-portal-session (verify JWT, admin only),
   and stripe-webhook (verify_jwt false, Stripe signature verification, idempotent on event id)
   handling checkout.session.completed and customer.subscription.created, updated and deleted.
-- Seat enforcement: accept_invite refuses when seats are full; admins see a clear message.
-- When a subscription lapses: read-only mode for the organisation (writes refused by RLS or a
-  check function), with a banner. Never delete data.
+- Checkout: subscription mode, currency GBP, the monthly or annual price (STRIPE_PRICE_MONTHLY,
+  STRIPE_PRICE_ANNUAL secrets) with quantity = seats chosen, defaulting to the current paid
+  seats (contributor and above; viewers free). Card only (payment_method_types ['card']),
+  automatic_tax on, billing address required, business tax ID collection on. No invoice
+  payment method. Prices shown in the app say "excl. VAT".
+- Seat enforcement, using the 2.1 seat function: accept_invite and change_member_role refuse a
+  paid role when paid seats are full; viewer invites are always allowed. Admins see a clear
+  message with a link to add seats in the portal. Propose whether the trial caps seats.
+- Read-only: extend the 2.2 check function so a lapsed subscription (canceled, unpaid, or
+  past_due beyond a grace period you propose) makes the organisation read-only, with the 2.2
+  banner. Subscribing again restores writes. Never delete data.
 SQL first, then stop. Use Stripe test mode throughout.
 ```
 
@@ -422,7 +455,8 @@ Propose:
   recorded on your project).
 - Per-user preferences (channel per kind, daily digest vs immediate) on profiles or a small
   table.
-- Edge function send-notification-email: daily digest via Resend, respecting organisation and
+- Edge function send-notification-email: daily digest through the shared SMTP module from 2.1
+  (D2), respecting organisation and
   user settings, with an unsubscribe link.
 Teams stays off until Phase 5. SQL first, then stop. Then switch the bell and the page to the
 table.
