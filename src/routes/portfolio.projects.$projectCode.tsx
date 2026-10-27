@@ -324,6 +324,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
           }
           onHandover={() => setHandover(true)}
           onArchived={() => void navigate({ to: "/portfolio/projects" })}
+          showIssueTask={!(tab === "plan" && sub === "tasks")}
         />
       </TopBand>
       {tab === "overview" && (
@@ -440,7 +441,9 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
           {tab === "delivery" && <DeliveryWorkspace projectId={project.code} />}
           {tab === "resources" && <ProjectResources projectId={project.id} />}
           {tab === "benefits" && <ProjectBenefits projectId={project.id} />}
-          {tab === "plan" && sub === "dependencies" && <DependencyTab projectId={project.id} />}
+          {tab === "plan" && sub === "dependencies" && (
+            <DependencyTab projectId={project.id} canCreate={permissions.canEdit} />
+          )}
           {tab === "raid" && sub === "decisions" && (
             <DecisionLog
               scope={{ projectId: project.id }}

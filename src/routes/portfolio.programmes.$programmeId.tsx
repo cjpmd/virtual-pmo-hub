@@ -26,6 +26,7 @@ import {
 } from "@/hooks/use-hierarchy";
 import { projectColumns } from "@/lib/board-data";
 import { useFormat } from "@/lib/format";
+import { useCan } from "@/hooks/use-permissions";
 import { projectSummariesToRows } from "@/lib/project-rows";
 import { daysFromToday, todayIso } from "@/lib/today";
 import type { ProgrammeSummary, ProjectSummary } from "@/services/hierarchy";
@@ -88,6 +89,8 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
   const portfolios = usePortfolioNames();
   const allProjects = useProjects();
   const people = usePeople();
+  // Same role the dependency register asks for, in this programme's workspace.
+  const canAddDependency = useCan("contributor", programme.workspaceId);
   const projects = useMemo(
     () => (allProjects.data ?? []).filter((project) => project.programmeId === programme.id),
     [allProjects.data, programme.id],
@@ -317,7 +320,9 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
       )}
 
       {tab === "benefits" && <ProgrammeBenefits programmeId={programme.id} />}
-      {tab === "dependencies" && <DependencyTab programmeId={programme.id} />}
+      {tab === "dependencies" && (
+        <DependencyTab programmeId={programme.id} canCreate={canAddDependency} />
+      )}
       {tab === "decisions" && <ProgrammeDecisions programmeId={programme.id} />}
       {tab === "assumptions" && (
         <AssumptionsWorkspace scope={{ programmeId: programme.id }} compact />

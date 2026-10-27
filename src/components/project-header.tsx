@@ -51,6 +51,7 @@ export function ProjectHeader({
   onJustifyClosed,
   onHandover,
   onArchived,
+  showIssueTask = true,
 }: {
   project: ProjectDetail;
   portfolioName: string | undefined;
@@ -67,6 +68,8 @@ export function ProjectHeader({
   onJustifyClosed?: (() => void) | undefined;
   onHandover: () => void;
   onArchived: () => void;
+  /** False on Plan › Tasks, which shows Issue task in its own toolbar. */
+  showIssueTask?: boolean;
 }) {
   const settings = useSettings();
   const format = useFormat();
@@ -142,14 +145,16 @@ export function ProjectHeader({
               Business case
             </Link>
           </Button>
-          <Button
-            size="sm"
-            className="bg-pmo-accent text-pmo-bg hover:bg-pmo-accent/90"
-            onClick={() => openIssueTask(project.id)}
-          >
-            <ListPlus />
-            Issue task
-          </Button>
+          {showIssueTask && (
+            <Button
+              size="sm"
+              className="bg-pmo-accent text-pmo-bg hover:bg-pmo-accent/90"
+              onClick={() => openIssueTask(project.id)}
+            >
+              <ListPlus />
+              Issue task
+            </Button>
+          )}
           <ProjectMoreMenu
             project={project}
             canHandover={canEdit}
