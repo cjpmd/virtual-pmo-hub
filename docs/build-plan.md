@@ -301,6 +301,21 @@ Work package 1.7. BoardWorkspace sorts by comparing cell values as text, so date
 comparator, and add an e2e check that a board sorted by a date column is in date order.
 ```
 
+### 1.9 Progress chart polish
+No database change. Visual polish of `components/overview/progress-chart.tsx` to match the
+Milestone delivery profile (`CumulativeArea`).
+
+**Notes from 1.9:** every series is one `d3-shape` monotone-X curve (`d3-shape` is now an
+explicit dependency), drawn twice and clipped at today, so the actual and forecast halves meet
+exactly; months without a value are bridged as before. Forecasts are dashed `6 5` at 0.55
+opacity; series dashed already (plan, % green) keep their dash in the forecast. Each tab names a
+`lead` series (`TABS` / `PROJECT_TABS`) that gets a gradient fill under its actual period.
+Hovering a chip or line dims the other series. Markers less than 8px apart merge
+(`lib/cluster-marks.ts`): a diamond with a count on the portfolio, "Gate 2 +1" on the project.
+Chart series colours now differ by theme (light values under `:root`, dark under `.dark`), are
+at least 3:1 on both panels, and keep red, amber and orange for status. The overview spec still
+says "dotted" for forecasts.
+
 ---
 
 ## Phase 2 — Make it sellable
@@ -551,7 +566,7 @@ Also before go-live: a cross-tenant RLS test suite in `supabase/tests` (user A c
 ## Progress
 
 - [x] 0.1 Test harness  - [ ] 0.2 Clean-up  - [x] 0.3 Migration history and indexes  - [x] 0.4 Copy  - [x] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
-- [x] 1.1 Data import/export  - [x] 1.2 Pack export  - [x] 1.3 Dashboards and views  - [x] 1.4 Calendar and automations flag  - [x] 1.5 Notes and map layout  - [x] 1.6 Workspaces  - [ ] 1.7 Board date sort
+- [x] 1.1 Data import/export  - [x] 1.2 Pack export  - [x] 1.3 Dashboards and views  - [x] 1.4 Calendar and automations flag  - [x] 1.5 Notes and map layout  - [x] 1.6 Workspaces  - [ ] 1.7 Board date sort  - [x] 1.9 Progress chart polish
 - [ ] 2.1 Invites  - [ ] 2.2 Self sign-up  - [ ] 2.3 Stripe
 - [ ] 3.1 Sprint schema  - [ ] 3.2 Sprint UI  - [ ] 3.3 Reports and forecast
 - [ ] 4.1 Notifications  - [ ] 4.2 AI drafting  - [ ] 4.3 Automations  - [ ] 4.4 Programme report
