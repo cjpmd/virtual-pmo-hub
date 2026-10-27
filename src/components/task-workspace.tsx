@@ -41,6 +41,7 @@ import {
   X,
 } from "lucide-react";
 import { BoardWorkspace } from "@/components/board-workspace";
+import { openIssueTask } from "@/components/issue-task-sheet";
 import { taskColumns, tasksToRows } from "@/lib/board-data";
 import { Button } from "@/components/ui/button";
 import {
@@ -1469,6 +1470,11 @@ function TaskEditor({
               Open in Planner
             </a>
           )}
+          {/* Plan › Tasks shows Issue task here; the project header hides its copy on this tab. */}
+          <Button onClick={() => openIssueTask(projectId)}>
+            <ListPlus />
+            Issue task
+          </Button>
         </div>
       </div>
       {notice && (

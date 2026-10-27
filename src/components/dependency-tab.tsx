@@ -1,11 +1,13 @@
 import { formatDate } from "@/lib/format";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Plus } from "lucide-react";
+import { DependencyEditor } from "@/components/dependency-editor";
 import { DependencyPanel } from "@/components/dependency-panel";
 import { QueryState } from "@/components/query-state";
 import { useDependencies } from "@/hooks/use-dependencies";
 import { HealthPill } from "@/components/health-pill";
+import { Button } from "@/components/ui/button";
 import {
   getDependenciesFor,
   type DependenciesData,
@@ -14,7 +16,12 @@ import {
 import { cn } from "@/lib/utils";
 
 /** "We depend on" and "Depends on us" for a project or programme (Prompt I1). */
-export function DependencyTab(props: { projectId?: string; programmeId?: string }) {
+export function DependencyTab(props: {
+  projectId?: string;
+  programmeId?: string;
+  /** Shows New dependency, with this project or programme as the receiving side. */
+  canCreate?: boolean;
+}) {
   const dependencies = useDependencies();
   return <QueryState query={dependencies}>{(data) => <Tab data={data} {...props} />}</QueryState>;
 }
@@ -23,12 +30,17 @@ function Tab({
   data,
   projectId,
   programmeId,
+  canCreate,
 }: {
   data: DependenciesData;
   projectId?: string;
   programmeId?: string;
+  canCreate?: boolean;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  // Editor node ids: the receiving side starts as this work, so the new row lands under "We depend on".
+  const ownNode = projectId ? `project:${projectId}` : `programme:${programmeId}`;
   const scope = { ...(projectId ? { projectId } : {}), ...(programmeId ? { programmeId } : {}) };
   const { weDependOn, dependsOnUs } = getDependenciesFor(scope, data.dependencies);
   const selected = data.dependencies.find((item) => item.id === selectedId);
@@ -36,6 +48,14 @@ function Tab({
 
   return (
     <div className="space-y-6">
+      {canCreate && (
+        <div className="flex justify-end">
+          <Button onClick={() => setCreating(true)}>
+            <Plus />
+            New dependency
+          </Button>
+        </div>
+      )}
       <Section
         title="We depend on"
         note="Other people owe this work something."
@@ -55,6 +75,9 @@ function Tab({
         onOpen={setSelected}
       />
       {selected && <DependencyPanel dependency={selected} close={() => setSelectedId(null)} />}
+      {creating && (
+        <DependencyEditor data={data} toId={ownNode} onClose={() => setCreating(false)} />
+      )}
     </div>
   );
 }
