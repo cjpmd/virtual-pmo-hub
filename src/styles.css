@@ -156,19 +156,20 @@
   --pmo-orange: #e0702e;
   --pmo-bad: #d93b3b;
   --pmo-bad-text: #b42828;
-  /* Chart series: the same in both themes. */
-  --series-spend: #4c86ff;
-  --series-tasks: #a78bfa;
-  --series-milestones: #2dd4bf;
-  --series-green: #f2b33d;
-  --series-capabilities: #22d3ee;
-  --series-outcomes: #c084fc;
-  --series-benefits: #86efac;
-  --series-dim-schedule: #38bdf8;
-  --series-dim-financial: #818cf8;
-  --series-dim-effort: #f472b6;
-  --series-dim-issue: #fb7185;
-  --series-dim-benefit: #34d399;
+  /* Chart series (work package 1.9): at least 3:1 on --pmo-panel and --pmo-panel-2 in each
+   * theme. Red, amber and orange are kept for status (RAG, risks, overdue). */
+  --series-spend: #2563eb;
+  --series-tasks: #7c3aed;
+  --series-milestones: #0f8f80;
+  --series-green: #475569;
+  --series-capabilities: #0369a1;
+  --series-outcomes: #a21caf;
+  --series-benefits: #15803d;
+  --series-dim-schedule: #0369a1;
+  --series-dim-financial: #4f46e5;
+  --series-dim-effort: #0f8f80;
+  --series-dim-issue: #a21caf;
+  --series-dim-benefit: #4d7c0f;
   --radius: 0.5rem;
   --background: oklch(0.975 0.006 250);
   --foreground: oklch(0.24 0.035 254);
@@ -305,6 +306,18 @@
   --pmo-orange: #f28a4a;
   --pmo-bad: #f0625e;
   --pmo-bad-text: #f47a76;
+  --series-spend: #4c86ff;
+  --series-tasks: #a78bfa;
+  --series-milestones: #2dd4bf;
+  --series-green: #e2e8f0;
+  --series-capabilities: #38bdf8;
+  --series-outcomes: #f0abfc;
+  --series-benefits: #86efac;
+  --series-dim-schedule: #38bdf8;
+  --series-dim-financial: #818cf8;
+  --series-dim-effort: #2dd4bf;
+  --series-dim-issue: #f0abfc;
+  --series-dim-benefit: #a3e635;
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.208 0.042 265.755);

@@ -1,12 +1,16 @@
-import { useMemo, useState, type KeyboardEvent } from "react";
+import { useId, useMemo, useState, type KeyboardEvent } from "react";
+import { area, curveMonotoneX, line } from "d3-shape";
 import { useMeasuredWidth } from "@/components/charts/use-measure";
+import { clusterMarks } from "@/lib/cluster-marks";
 import { cn } from "@/lib/utils";
 import {
   PROJECT_TABS,
   SERIES,
   TABS,
+  type ChartMarker,
   type ChartRange,
   type ChartTab,
+  type ChartTabPreset,
   type ProgressChartData,
   type SeriesKey,
 } from "@/services/progress-chart";
@@ -24,10 +28,17 @@ const fmt = (key: SeriesKey, value: number | undefined) =>
       ? String(Math.round(value))
       : `${Math.round(value)}%`;
 
+// Monotone in x: a curve never overshoots its data points, so it stays inside 0–100% and
+// doesn't invent peaks or loops between months.
+const curve = line<[number, number]>().curve(curveMonotoneX);
+const dmy = (date: string) => date.split("-").reverse().join("/");
+const kindLabel = (kind: ChartMarker["kind"]) =>
+  kind === "committee" ? "Committee" : kind === "gate" ? "Gate" : "Key milestone";
+
 /**
  * The overview centrepiece (spec §4 ProgressChart). Every series is % of its own full-year
  * plan on one axis; red risks use a right-hand count axis. Actuals are solid, forecasts
- * dotted in a shaded region after today. Hover or arrow keys move a crosshair.
+ * dashed in a shaded region after today. Hover or arrow keys move a crosshair.
  */
 export function ProgressChart({
   data,
@@ -45,17 +56,21 @@ export function ProgressChart({
   scope?: "portfolio" | "project";
 }) {
   const project = scope === "project";
-  const tabs: Partial<Record<ChartTab, { label: string; chips: SeriesKey[]; on: SeriesKey[] }>> =
-    project ? PROJECT_TABS : TABS;
+  const tabs: Partial<Record<ChartTab, ChartTabPreset>> = project ? PROJECT_TABS : TABS;
   const [tab, setTab] = useState<ChartTab>("overlay");
   const [on, setOn] = useState<Set<SeriesKey>>(() => new Set(tabs.overlay?.on));
   const [cursor, setCursor] = useState<number | null>(null);
+  // The chip or line under the pointer (or focused chip): other series dim.
+  const [hovered, setHovered] = useState<SeriesKey | null>(null);
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const { ref, width } = useMeasuredWidth(640);
 
   const labelOf = (key: SeriesKey) =>
     key === "plan" && data.evenPhasing ? "Even phasing (no budget profile)" : SERIES[key].label;
   const chips = (tabs[tab]?.chips ?? []).filter((key) => data.available.has(key));
   const visible = chips.filter((key) => on.has(key));
+  const focus = hovered !== null && visible.includes(hovered) ? hovered : null;
+  const lead = tabs[tab]?.lead;
   const selectTab = (next: ChartTab) => {
     setTab(next);
     setOn(new Set(tabs[next]?.on));
@@ -70,7 +85,7 @@ export function ProgressChart({
 
   const height = tab === "timeline" ? 340 : project ? 290 : 250;
   const showRisks = visible.includes("risks");
-  const pad = { top: project ? 38 : 26, right: showRisks ? 40 : 14, bottom: 24, left: 38 };
+  const pad = { top: project ? 38 : 30, right: showRisks ? 40 : 14, bottom: 24, left: 38 };
   const innerW = Math.max(10, width - pad.left - pad.right);
   const innerH = height - pad.top - pad.bottom;
   const n = data.points.length;
@@ -80,33 +95,25 @@ export function ProgressChart({
   const yRisk = (v: number) => pad.top + (1 - v / riskMax) * innerH;
   const todayIndex = data.points.findIndex((p) => p.month === data.currentMonth);
 
+  // Where actual turns into forecast: today's point, else the first forecast month. Each series
+  // is one curve clipped either side of this line, so the two halves join exactly and smoothly.
+  const firstForecast = data.points.findIndex((p) => p.forecast);
+  const splitX = todayIndex >= 0 ? x(todayIndex) : firstForecast >= 0 ? x(firstForecast) : width;
+
   const paths = useMemo(() => {
     return visible.map((key) => {
       const scale = key === "risks" ? yRisk : y;
-      const segment = (forecast: boolean) => {
-        let d = "";
-        data.points.forEach((point, i) => {
-          const value = point.values[key];
-          // The forecast line starts from today's point so the two halves join.
-          const include = forecast ? point.forecast || i === todayIndex : !point.forecast;
-          if (value === undefined || !include) return;
-          d += `${d ? "L" : "M"}${x(i).toFixed(1)},${scale(value).toFixed(1)}`;
-        });
-        return d;
-      };
-      return { key, actual: segment(false), forecast: key === "plan" ? "" : segment(true) };
+      // Months without a value are skipped; the curve bridges them.
+      const coords = data.points.flatMap((point, i) => {
+        const value = point.values[key];
+        return value === undefined ? [] : [[x(i), scale(value)] as [number, number]];
+      });
+      const fill =
+        key === lead ? (area<[number, number]>().curve(curveMonotoneX).y0(y(0))(coords) ?? "") : "";
+      return { key, d: curve(coords) ?? "", fill };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- scales derive from width/data
-  }, [visible.join(), data, width, height, riskMax]);
-
-  const planPath = (key: SeriesKey) => {
-    let d = "";
-    data.points.forEach((point, i) => {
-      const value = point.values[key];
-      if (value !== undefined) d += `${d ? "L" : "M"}${x(i).toFixed(1)},${y(value).toFixed(1)}`;
-    });
-    return d;
-  };
+  }, [visible.join(), data, width, height, riskMax, lead]);
 
   const onKey = (event: KeyboardEvent<SVGSVGElement>) => {
     if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
@@ -146,22 +153,27 @@ export function ProgressChart({
     const day = Number(marker.date.slice(8, 10)) / 31;
     return Math.min(pad.left + innerW, x(index) + (n > 1 ? day * (innerW / (n - 1)) : 0));
   };
-  // Project scope: every marker is a labelled dotted line; labels take the first of two rows
-  // where they don't overlap the previous label (otherwise only the line and its tooltip show).
+  // Markers less than 8px apart merge into one, listing every marker in its tooltip.
+  const markClusters = clusterMarks(
+    data.markers.flatMap((marker) => {
+      const mx = markerX(marker);
+      return mx === null ? [] : [{ x: mx, item: marker }];
+    }),
+  );
+  // Project scope: every marker is a labelled dotted line ("Gate 2 +1" when merged); labels take
+  // the first of two rows where they don't overlap the previous label (otherwise only the line
+  // and its tooltip show).
   const projectMarks = project
     ? (() => {
         const rowEnd = [-Infinity, -Infinity];
-        return [...data.markers]
-          .map((marker) => ({ marker, mx: markerX(marker) }))
-          .filter((m): m is { marker: (typeof data.markers)[number]; mx: number } => m.mx !== null)
-          .sort((a, b) => a.mx - b.mx)
-          .map(({ marker, mx }) => {
-            const w = marker.label.length * 5.6;
-            const start = Math.max(pad.left, Math.min(mx - w / 2, pad.left + innerW - w));
-            const row = rowEnd.findIndex((end) => start > end + 6);
-            if (row >= 0) rowEnd[row] = start + w;
-            return { marker, mx, row, start };
-          });
+        return markClusters.map(({ x: mx, items }) => {
+          const label = `${items[0]?.label ?? ""}${items.length > 1 ? ` +${items.length - 1}` : ""}`;
+          const w = label.length * 5.6;
+          const start = Math.max(pad.left, Math.min(mx - w / 2, pad.left + innerW - w));
+          const row = rowEnd.findIndex((end) => start > end + 6);
+          if (row >= 0) rowEnd[row] = start + w;
+          return { items, label, mx, row, start };
+        });
       })()
     : [];
 
@@ -175,7 +187,7 @@ export function ProgressChart({
           <div className="min-w-0">
             <h2 className="text-[15px] font-semibold text-pmo-text">Progress against plan</h2>
             <p className="text-[12.5px] text-pmo-muted">
-              Every line is a percentage of its own total plan. Solid is actual, dotted is forecast.
+              Every line is a percentage of its own total plan. Solid is actual, dashed is forecast.
             </p>
           </div>
         )}
@@ -234,6 +246,10 @@ export function ProgressChart({
               type="button"
               aria-pressed={pressed}
               onClick={() => toggle(key)}
+              onMouseEnter={() => setHovered(key)}
+              onMouseLeave={() => setHovered(null)}
+              onFocus={() => setHovered(key)}
+              onBlur={() => setHovered(null)}
               className={cn(
                 "inline-flex min-h-[30px] items-center gap-[7px] rounded-full border px-2.5 text-xs",
                 pressed
@@ -288,12 +304,15 @@ export function ProgressChart({
           )}
           {[0, 25, 50, 75, 100].map((tick) => (
             <g key={tick}>
+              {/* 0% is the axis line, drawn once at full strength; the gridlines are faint. */}
               <line
                 x1={pad.left}
                 x2={pad.left + innerW}
                 y1={y(tick)}
                 y2={y(tick)}
                 stroke="var(--pmo-line)"
+                opacity={tick === 0 ? 1 : 0.5}
+                shapeRendering="crispEdges"
               />
               <text
                 x={pad.left - 6}
@@ -340,15 +359,17 @@ export function ProgressChart({
               <line
                 x1={x(todayIndex)}
                 x2={x(todayIndex)}
-                y1={pad.top - 4}
+                y1={pad.top}
                 y2={pad.top + innerH}
                 stroke="var(--pmo-text)"
                 strokeWidth={1}
+                strokeDasharray="3 3"
                 opacity={0.6}
               />
               <text
-                x={x(todayIndex) + 4}
-                y={pad.top + innerH - 4}
+                x={x(todayIndex)}
+                y={pad.top - 4}
+                textAnchor="middle"
                 fontSize={10}
                 fill="var(--pmo-muted)"
               >
@@ -356,43 +377,86 @@ export function ProgressChart({
               </text>
             </g>
           )}
-          {visible.includes("plan") && (
-            <path
-              d={planPath("plan")}
-              fill="none"
-              stroke={SERIES.plan.colour}
-              strokeWidth={1.5}
-              strokeDasharray="5 4"
-            />
-          )}
+          <defs>
+            <clipPath id={`${uid}-actual`}>
+              <rect x={0} y={0} width={Math.max(0, splitX)} height={height} />
+            </clipPath>
+            <clipPath id={`${uid}-forecast`}>
+              <rect x={splitX} y={0} width={Math.max(0, width - splitX)} height={height} />
+            </clipPath>
+            {lead && (
+              <linearGradient id={`${uid}-lead`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={SERIES[lead].colour} stopOpacity="0.28" />
+                <stop offset="100%" stopColor={SERIES[lead].colour} stopOpacity="0.02" />
+              </linearGradient>
+            )}
+          </defs>
+          {/* The tab's lead series: a soft fill under its actual period, below every line. */}
           {paths
-            .filter((p) => p.key !== "plan")
-            .map((p) => {
-              const meta = SERIES[p.key];
-              return (
-                <g key={p.key}>
+            .filter((p) => p.fill)
+            .map((p) => (
+              <path
+                key={`${p.key}-fill`}
+                d={p.fill}
+                fill={`url(#${uid}-lead)`}
+                clipPath={`url(#${uid}-actual)`}
+                opacity={focus && focus !== p.key ? 0.35 : 1}
+              />
+            ))}
+          {paths.map((p) => {
+            const meta = SERIES[p.key];
+            // Series dashed already (plan, % green) keep their dash in the forecast; the lower
+            // opacity and the shaded region set it apart.
+            const dash = meta.dashed ? "5 4" : undefined;
+            return (
+              <g key={p.key} opacity={focus && focus !== p.key ? 0.35 : 1}>
+                {p.key === "plan" ? (
                   <path
-                    d={p.actual}
+                    d={p.d}
                     fill="none"
                     stroke={meta.colour}
-                    strokeWidth={2}
-                    strokeDasharray={meta.dashed ? "5 4" : undefined}
-                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    strokeDasharray={dash}
+                    shapeRendering="geometricPrecision"
                   />
-                  {p.forecast && (
+                ) : (
+                  <>
                     <path
-                      d={p.forecast}
+                      d={p.d}
                       fill="none"
                       stroke={meta.colour}
-                      strokeWidth={2}
-                      strokeDasharray="2 4"
-                      strokeLinecap="round"
-                      opacity={0.85}
+                      strokeWidth={2.25}
+                      strokeDasharray={dash}
+                      strokeLinejoin="round"
+                      clipPath={`url(#${uid}-actual)`}
+                      shapeRendering="geometricPrecision"
                     />
-                  )}
-                </g>
-              );
-            })}
+                    <path
+                      d={p.d}
+                      fill="none"
+                      stroke={meta.colour}
+                      strokeWidth={1.75}
+                      strokeDasharray={dash ?? "6 5"}
+                      strokeLinecap="butt"
+                      opacity={0.55}
+                      clipPath={`url(#${uid}-forecast)`}
+                      shapeRendering="geometricPrecision"
+                    />
+                  </>
+                )}
+                {/* A wider invisible stroke, so the line is easy to point at. */}
+                <path
+                  d={p.d}
+                  fill="none"
+                  stroke="transparent"
+                  strokeWidth={10}
+                  pointerEvents="stroke"
+                  onMouseEnter={() => setHovered(p.key)}
+                  onMouseLeave={() => setHovered(null)}
+                />
+              </g>
+            );
+          })}
           {/* Gap callout: spend leads milestones by more than 15 points. */}
           {showGap && spendNow !== undefined && milestonesNow !== undefined && (
             <g aria-hidden>
@@ -416,14 +480,16 @@ export function ProgressChart({
             </g>
           )}
           {/* Project: labelled lines for start, gates, baseline and forecast finish */}
-          {projectMarks.map(({ marker, mx, row, start }, i) => (
+          {projectMarks.map(({ items, label, mx, row, start }, i) => (
             <g
-              key={`${marker.label}-${i}`}
+              key={`${label}-${i}`}
               tabIndex={0}
-              aria-label={`${marker.label}, ${marker.date}`}
+              aria-label={items.map((marker) => `${marker.label}, ${marker.date}`).join("; ")}
               className="outline-none [&:focus>line]:stroke-pmo-accent [&:focus>line]:[stroke-dasharray:none] [&:focus>line]:[stroke-width:2] [&:focus>text]:fill-pmo-text [&:focus>text]:font-semibold"
             >
-              <title>{`${marker.label} (${marker.date.split("-").reverse().join("/")})`}</title>
+              <title>
+                {items.map((marker) => `${marker.label} (${dmy(marker.date)})`).join("\n")}
+              </title>
               <line
                 x1={mx}
                 x2={mx}
@@ -434,47 +500,55 @@ export function ProgressChart({
               />
               {row >= 0 && (
                 <text x={start} y={12 + row * 12} fontSize={10.5} fill="var(--pmo-muted)">
-                  {marker.label}
+                  {label}
                 </text>
               )}
             </g>
           ))}
           {/* Event markers along the top */}
-          {(project ? [] : data.markers).map((marker, i) => {
-            const index = data.points.findIndex((p) => p.month === marker.month);
-            if (index < 0) return null;
-            const day = Number(marker.date.slice(8, 10)) / 31;
-            const mx = Math.min(
-              pad.left + innerW,
-              x(index) + (n > 1 ? day * (innerW / (n - 1)) : 0),
-            );
+          {(project ? [] : markClusters).map(({ x: mx, items }, i) => {
             const size = tab === "timeline" ? 6 : 5;
-            const kindLabel =
-              marker.kind === "committee"
-                ? "Committee"
-                : marker.kind === "gate"
-                  ? "Gate"
-                  : "Key milestone";
+            // A merged marker takes the colour of its most significant kind.
+            const kind = items.some((m) => m.kind === "committee")
+              ? "committee"
+              : items.some((m) => m.kind === "gate")
+                ? "gate"
+                : "milestone";
             return (
               <g
-                key={`${marker.label}-${i}`}
+                key={`${items[0]?.label}-${i}`}
                 tabIndex={0}
-                aria-label={`${kindLabel}: ${marker.label}, ${marker.date}`}
+                aria-label={`${items.length > 1 ? `${items.length} markers: ` : ""}${items
+                  .map((m) => `${kindLabel(m.kind)}: ${m.label}, ${m.date}`)
+                  .join("; ")}`}
                 className="outline-none [&:focus>polygon]:stroke-pmo-text"
               >
-                <title>{`${kindLabel}: ${marker.label} (${marker.date.split("-").reverse().join("/")})`}</title>
+                <title>
+                  {items.map((m) => `${kindLabel(m.kind)}: ${m.label} (${dmy(m.date)})`).join("\n")}
+                </title>
                 <polygon
                   points={`${mx},${12 - size} ${mx + size},12 ${mx},${12 + size} ${mx - size},12`}
                   fill={
-                    marker.kind === "committee"
+                    kind === "committee"
                       ? "var(--pmo-accent)"
-                      : marker.kind === "gate"
+                      : kind === "gate"
                         ? "var(--pmo-warn)"
                         : "var(--series-milestones)"
                   }
                   stroke="var(--pmo-panel)"
                   strokeWidth={1}
                 />
+                {items.length > 1 && (
+                  <text
+                    x={mx + size + 2}
+                    y={15.5}
+                    fontSize={9.5}
+                    fill="var(--pmo-muted)"
+                    className="font-geist-mono tabular-nums"
+                  >
+                    {items.length}
+                  </text>
+                )}
                 {tab === "timeline" && (
                   <line
                     x1={mx}

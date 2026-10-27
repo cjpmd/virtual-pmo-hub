@@ -120,8 +120,16 @@ export const SERIES: Record<SeriesKey, SeriesMeta> = {
   },
 };
 
+/** A tab: its chips, which start switched on, and the lead series that gets the area fill. */
+export interface ChartTabPreset {
+  label: string;
+  chips: SeriesKey[];
+  on: SeriesKey[];
+  lead: SeriesKey;
+}
+
 /** Chips shown for each tab, and which start switched on. */
-export const TABS: Record<ChartTab, { label: string; chips: SeriesKey[]; on: SeriesKey[] }> = {
+export const TABS: Record<ChartTab, ChartTabPreset> = {
   overlay: {
     label: "Overlay",
     chips: [
@@ -136,13 +144,20 @@ export const TABS: Record<ChartTab, { label: string; chips: SeriesKey[]; on: Ser
       "benefits",
     ],
     on: ["spend", "tasks", "milestones", "green", "capabilities"],
+    lead: "spend",
   },
-  spend: { label: "Spend", chips: ["plan", "spend"], on: ["plan", "spend"] },
-  delivery: { label: "Delivery", chips: ["tasks", "milestones"], on: ["tasks", "milestones"] },
+  spend: { label: "Spend", chips: ["plan", "spend"], on: ["plan", "spend"], lead: "spend" },
+  delivery: {
+    label: "Delivery",
+    chips: ["tasks", "milestones"],
+    on: ["tasks", "milestones"],
+    lead: "milestones",
+  },
   health: {
     label: "Health",
     chips: ["green", "schedule", "financial", "effort", "issue", "benefit"],
     on: ["green", "schedule", "financial", "effort", "issue", "benefit"],
+    lead: "green",
   },
   benefits: {
     label: "Benefits",
@@ -162,28 +177,33 @@ export const TABS: Record<ChartTab, { label: string; chips: SeriesKey[]; on: Ser
       "outcomesGreen",
       "benefitsGreen",
     ],
+    lead: "capabilities",
   },
-  timeline: { label: "Timeline", chips: ["milestones"], on: ["milestones"] },
+  timeline: { label: "Timeline", chips: ["milestones"], on: ["milestones"], lead: "milestones" },
 };
 
 /** Presets for scope = "project" (project overview design): no health or risk lines. */
 export type ProjectChartTab = "overlay" | "spend" | "delivery" | "benefits";
-export const PROJECT_TABS: Record<
-  ProjectChartTab,
-  { label: string; chips: SeriesKey[]; on: SeriesKey[] }
-> = {
+export const PROJECT_TABS: Record<ProjectChartTab, ChartTabPreset> = {
   overlay: {
     label: "Overlay",
     chips: ["plan", "spend", "milestones", "tasks", "pathway"],
     on: ["plan", "spend", "milestones", "tasks"],
+    lead: "spend",
   },
-  spend: { label: "Spend", chips: ["plan", "spend"], on: ["plan", "spend"] },
+  spend: { label: "Spend", chips: ["plan", "spend"], on: ["plan", "spend"], lead: "spend" },
   delivery: {
     label: "Delivery",
     chips: ["plan", "milestones", "tasks"],
     on: ["plan", "milestones", "tasks"],
+    lead: "milestones",
   },
-  benefits: { label: "Benefits", chips: ["plan", "pathway"], on: ["plan", "pathway"] },
+  benefits: {
+    label: "Benefits",
+    chips: ["plan", "pathway"],
+    on: ["plan", "pathway"],
+    lead: "pathway",
+  },
 };
 
 // ---- Inputs -------------------------------------------------------------------------
