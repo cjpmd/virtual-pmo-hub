@@ -1,5 +1,11 @@
 # Virtual PMO prototype
 
+## View demo
+- [x] Add home-page and no-organisation demo entry buttons.
+- [x] Wire email confirmation to the approved viewer RPC and demo portfolio, skipping organisation setup without enabling general organisation sign-up.
+- [x] Verify 161 tests, lint (no errors), automatic build and public browser entry flow.
+- [ ] Verify real email delivery, confirmed-account demo joining and portfolio reads — blocked: external unmanaged Supabase has no available authenticated test session; hosted Auth settings remain unverified.
+
 ## Forums and meetings D2
 - [x] Build Boards list, forum details, meeting details and retain agenda/meeting mode.
 - [x] Add decision target-meeting pickers, signals and detailed history.

@@ -14,12 +14,25 @@ export const Route = createFileRoute("/signin")({
   validateSearch: (search: Record<string, unknown>): { next?: string | undefined } => ({
     next: safeNext(search["next"]),
   }),
-  head: () => ({ meta: [{ title: "Sign in — Virtual PMO" }] }),
+  head: () => ({
+    meta: [
+      { title: "Sign in — Virtual PMO" },
+      { name: "description", content: "Sign in to Virtual PMO securely with an email link." },
+      { property: "og:title", content: "Sign in — Virtual PMO" },
+      {
+        property: "og:description",
+        content: "Sign in to Virtual PMO securely with an email link.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: SignInPage,
 });
 
 function SignInPage() {
   const { next } = Route.useSearch();
+  const demo = next === "/auth/demo";
   const session = useSession();
   const [email, setEmail] = useState("");
   const send = useMutation({
@@ -45,9 +58,11 @@ function SignInPage() {
     );
 
   return (
-    <CentredCard title="Sign in">
+    <CentredCard title={demo ? "View demo" : "Sign in"}>
       <p className="text-sm text-muted-foreground">
-        Enter your work email and we'll send you a link to sign in. No password needed.
+        {demo
+          ? "Enter your email and we'll send you a link to view the demo, read-only. No password or organisation setup needed."
+          : "Enter your work email and we'll send you a link to sign in. No password needed."}
       </p>
       <form
         className="mt-5 space-y-3"
@@ -57,7 +72,7 @@ function SignInPage() {
         }}
       >
         <label className="block text-xs font-medium text-muted-foreground">
-          Work email
+          {demo ? "Email" : "Work email"}
           <Input
             className="mt-1"
             type="email"

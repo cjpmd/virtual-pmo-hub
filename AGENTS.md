@@ -11,6 +11,8 @@
 
 ## Project rules
 
+- Demo entry uses the public `/auth/demo` route and `joinDemoAsViewer` service backed only by the approved RPC; it confirms email before joining and refreshes organisation caches before opening the portfolio.
+
 - Boards, forum details and meeting details share the existing governance/forum route and forum hooks; this preserves one source of forum data and access rules.
 - Milestone approval edits use the shared MilestoneForm so type and required forum are saved together through the existing write helper.
 

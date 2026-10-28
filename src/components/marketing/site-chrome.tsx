@@ -1,7 +1,9 @@
 // Shared pieces of the public site (design G, docs/design/homepage-g.html): fonts, logo,
 // header, buttons and footer. Colours come from the --site-* tokens in styles.css.
 import { Link } from "@tanstack/react-router";
+import { Eye } from "lucide-react";
 import type { ReactNode } from "react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { contactEmail, selfSignup } from "@/lib/features";
 
@@ -60,7 +62,7 @@ export function SiteHeader() {
 const ctaBase =
   "inline-flex min-h-[50px] items-center rounded-[10px] px-6 font-semibold no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-site-link";
 
-/** "Get started" and "Book a demo", both to the request-access page. */
+/** Public calls to action, including self-serve demo entry. */
 export function SiteCtas({ className }: { className?: string }) {
   return (
     <div className={cn("flex flex-wrap gap-3", className)}>
@@ -70,16 +72,19 @@ export function SiteCtas({ className }: { className?: string }) {
       >
         Get started
       </Link>
-      <Link
-        to="/request-access"
-        search={{ demo: true }}
+      <Button
+        asChild
+        variant="ghost"
         className={cn(
           ctaBase,
-          "border border-site-ink-outline text-site-on-ink hover:border-site-on-ink-faint",
+          "border border-site-ink-outline text-site-on-ink hover:bg-site-ink hover:text-site-on-ink hover:border-site-on-ink-faint",
         )}
       >
-        Book a demo
-      </Link>
+        <Link to="/auth/demo">
+          <Eye />
+          View demo
+        </Link>
+      </Button>
     </div>
   );
 }
