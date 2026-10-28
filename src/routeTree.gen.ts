@@ -41,6 +41,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SigninRouteImport } from './routes/signin'
 import { Route as TaskOverviewRouteImport } from './routes/task-overview'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as AuthDemoRouteImport } from './routes/auth.demo'
 import { Route as BenefitsIndexRouteImport } from './routes/benefits.index'
 import { Route as BenefitsBenefitIdRouteImport } from './routes/benefits.$benefitId'
 import { Route as BenefitsDashboardRouteImport } from './routes/benefits.dashboard'
@@ -265,6 +266,11 @@ const TaskOverviewRoute = TaskOverviewRouteImport.update({
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthDemoRoute = AuthDemoRouteImport.update({
+  id: '/auth/demo',
+  path: '/auth/demo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BenefitsIndexRoute = BenefitsIndexRouteImport.update({
@@ -636,6 +642,7 @@ export interface FileRoutesByFullPath {
   '/signin': typeof SigninRoute
   '/task-overview': typeof TaskOverviewRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/demo': typeof AuthDemoRoute
   '/benefits/$benefitId': typeof BenefitsBenefitIdRoute
   '/benefits/dashboard': typeof BenefitsDashboardRoute
   '/benefits/map': typeof BenefitsMapRoute
@@ -721,6 +728,7 @@ export interface FileRoutesByTo {
   '/signin': typeof SigninRoute
   '/task-overview': typeof TaskOverviewRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/demo': typeof AuthDemoRoute
   '/benefits/$benefitId': typeof BenefitsBenefitIdRoute
   '/benefits/dashboard': typeof BenefitsDashboardRoute
   '/benefits/map': typeof BenefitsMapRoute
@@ -817,6 +825,7 @@ export interface FileRoutesById {
   '/signin': typeof SigninRoute
   '/task-overview': typeof TaskOverviewRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/demo': typeof AuthDemoRoute
   '/benefits/$benefitId': typeof BenefitsBenefitIdRoute
   '/benefits/dashboard': typeof BenefitsDashboardRoute
   '/benefits/map': typeof BenefitsMapRoute
@@ -918,6 +927,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/task-overview'
     | '/auth/callback'
+    | '/auth/demo'
     | '/benefits/$benefitId'
     | '/benefits/dashboard'
     | '/benefits/map'
@@ -1003,6 +1013,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/task-overview'
     | '/auth/callback'
+    | '/auth/demo'
     | '/benefits/$benefitId'
     | '/benefits/dashboard'
     | '/benefits/map'
@@ -1098,6 +1109,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/task-overview'
     | '/auth/callback'
+    | '/auth/demo'
     | '/benefits/$benefitId'
     | '/benefits/dashboard'
     | '/benefits/map'
@@ -1198,6 +1210,7 @@ export interface RootRouteChildren {
   SigninRoute: typeof SigninRoute
   TaskOverviewRoute: typeof TaskOverviewRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthDemoRoute: typeof AuthDemoRoute
   SignupSetupRoute: typeof SignupSetupRoute
   SignupIndexRoute: typeof SignupIndexRoute
 }
@@ -1426,6 +1439,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/callback'
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/demo': {
+      id: '/auth/demo'
+      path: '/auth/demo'
+      fullPath: '/auth/demo'
+      preLoaderRoute: typeof AuthDemoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/benefits/': {
@@ -2220,6 +2240,7 @@ const rootRouteChildren: RootRouteChildren = {
   SigninRoute: SigninRoute,
   TaskOverviewRoute: TaskOverviewRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  AuthDemoRoute: AuthDemoRoute,
   SignupSetupRoute: SignupSetupRoute,
   SignupIndexRoute: SignupIndexRoute,
 }
