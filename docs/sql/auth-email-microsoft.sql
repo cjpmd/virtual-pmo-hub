@@ -1,5 +1,5 @@
 -- Auth: email + password and Microsoft (Entra ID) sign-in.
--- Proposed migration: auth_email_microsoft. No destructive statements; every change is
+-- Migration 20261028112834_auth_email_microsoft (applied 28/10/2026). No destructive statements; every change is
 -- additive (a nullable column, create or replace, one new trigger).
 --
 -- 1. Profiles for Microsoft users. private.handle_new_user already runs after insert on
