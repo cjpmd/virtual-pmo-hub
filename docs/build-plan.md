@@ -347,6 +347,16 @@ SQL to docs/sql/2-1-invites.sql and stop. Plan the edge function separately befo
 `public.join_demo_organisation()` RPC (and `settings.demoAdmins`) is still in the database.
 Decide in 2.1 whether invites replace it, and drop it then in a new migration.
 
+**Notes from the auth package (28/10/2026, outside the numbered plan):** magic links are gone.
+Sign-in is email + password (confirmation required) or Microsoft (Supabase `azure` provider,
+`/common`), on `/login`; `/signin` redirects there. Anyone can create an account;
+`VITE_SELF_SIGNUP` is now a kill switch for organisation creation only (default on), and the
+personal-email block is removed. Users without an organisation go to `/signup/setup`. Migration
+`20261028112834_auth_email_microsoft`: Microsoft names in profiles, profile email sync, and
+`organisation_subscriptions.trial_ends_at` (14 days, not enforced yet). Setup steps, account
+linking (needs the Entra `email` and `xms_edov` optional claims) and the manual test checklist
+are in `docs/auth-setup.md`; email templates in `supabase/templates/`.
+
 ### 2.2 Self-service sign-up
 Database change: yes. D3: open sign-up, 14-day trial with no card, read-only on expiry.
 Comes before 2.3: the read-only mode built here is the one 2.3 reuses for a lapsed subscription.
@@ -366,8 +376,8 @@ university-specific, then fix it. Then propose (SQL first, then stop):
 - Trial banner with days left; after expiry a read-only banner with "Subscribe" for admins
   and "Ask your admin" for others.
 - Turnstile CAPTCHA: Supabase Auth's built-in CAPTCHA protection with Turnstile. Supabase then
-  asks for a captchaToken on every auth call, so the widget goes on /signup and /signin (magic
-  link) and the e2e global setup must pass a token (branch with Cloudflare test keys).
+  asks for a captchaToken on every auth call, so the widget goes on /signup, /login and
+  /auth/forgot-password (useCaptcha in components/auth/captcha.tsx is the slot) and the e2e global setup must pass a token (branch with Cloudflare test keys).
 - Email confirmation stays required: the setup wizard runs only after the confirmed link.
 - "Start with sample data" (optional, off by default) in the setup wizard: seeds a small
   sample portfolio, programme and projects through a SECURITY DEFINER RPC, labelled as sample.
