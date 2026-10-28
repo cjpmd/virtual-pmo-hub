@@ -25,7 +25,7 @@ one work package per session; finish with `npx tsc --noEmit`, `npx tsc --noEmit 
 |---|---|---|---|
 | D1 | Pricing model: per seat, per organisation tier, or both; trial length | 2.3 | £10 per paid seat per month, GBP only, excluding VAT (Stripe Tax adds VAT where due). Monthly or annual (annual = 10× monthly, £100 per seat per year). Card only, through Stripe Checkout; no invoice option. Paid seats = contributor and above; viewers are free. |
 | D2 | Email provider: Resend (recommended) or Supabase custom SMTP | 2.1, 4.1 | Supabase Auth custom SMTP backed by Resend (SMTP credentials). Edge functions send through the same SMTP credentials (invites in 2.1, notification email in 4.1). |
-| D3 | Self-service sign-up: switch on with a free trial, or invite-only | 2.2 | Open self sign-up with a 30-day free trial, no card. On expiry the organisation becomes read-only; nothing is deleted. Cloudflare Turnstile CAPTCHA on sign-up; email confirmation required. Optional "start with sample data". |
+| D3 | Self-service sign-up: switch on with a free trial, or invite-only | 2.2 | Open self sign-up with a 14-day free trial, no card. On expiry the organisation becomes read-only; nothing is deleted. Cloudflare Turnstile CAPTCHA on sign-up; email confirmation required. Optional "start with sample data". |
 | D4 | Board automations: hide until 4.3, or leave visible meanwhile | 1.4 | Hide until 4.3 |
 | D5 | Committee pack export: PDF only, or PDF and PowerPoint | 1.2 | PDF only for now |
 | D6 | Planner sync: keep (needs a Microsoft test tenant) or drop | Phase 5 | |
@@ -347,8 +347,18 @@ SQL to docs/sql/2-1-invites.sql and stop. Plan the edge function separately befo
 `public.join_demo_organisation()` RPC (and `settings.demoAdmins`) is still in the database.
 Decide in 2.1 whether invites replace it, and drop it then in a new migration.
 
+**Notes from the auth package (28/10/2026, outside the numbered plan):** magic links are gone.
+Sign-in is email + password (confirmation required) or Microsoft (Supabase `azure` provider,
+`/common`), on `/login`; `/signin` redirects there. Anyone can create an account;
+`VITE_SELF_SIGNUP` is now a kill switch for organisation creation only (default on), and the
+personal-email block is removed. Users without an organisation go to `/signup/setup`. Migration
+`20261028112834_auth_email_microsoft`: Microsoft names in profiles, profile email sync, and
+`organisation_subscriptions.trial_ends_at` (14 days, not enforced yet). Setup steps, account
+linking (needs the Entra `email` and `xms_edov` optional claims) and the manual test checklist
+are in `docs/auth-setup.md`; email templates in `supabase/templates/`.
+
 ### 2.2 Self-service sign-up
-Database change: yes. D3: open sign-up, 30-day trial with no card, read-only on expiry.
+Database change: yes. D3: open sign-up, 14-day trial with no card, read-only on expiry.
 Comes before 2.3: the read-only mode built here is the one 2.3 reuses for a lapsed subscription.
 
 ```
@@ -356,7 +366,8 @@ Work package 2.2. VITE_SELF_SIGNUP gates /signup; switch it on. Review the exist
 setup wizard end to end, signed in, with a fresh email. List anything broken or
 university-specific, then fix it. Then propose (SQL first, then stop):
 - Trial: create_organisation also creates the organisation_subscriptions row with plan
-  "trial" and trial_ends_at = now() + 30 days. No card is asked for.
+  "trial" and trial_ends_at = now() + 14 days (done in the auth package: migration
+  20261028112834_auth_email_microsoft). No card is asked for.
 - Read-only on expiry: one private check function (organisation is writable unless its trial
   has ended with no active subscription) used by the write policies, or a trigger, so every
   write is refused, RPCs included. Reads and exports keep working; nothing is deleted. Admins
@@ -365,8 +376,8 @@ university-specific, then fix it. Then propose (SQL first, then stop):
 - Trial banner with days left; after expiry a read-only banner with "Subscribe" for admins
   and "Ask your admin" for others.
 - Turnstile CAPTCHA: Supabase Auth's built-in CAPTCHA protection with Turnstile. Supabase then
-  asks for a captchaToken on every auth call, so the widget goes on /signup and /signin (magic
-  link) and the e2e global setup must pass a token (branch with Cloudflare test keys).
+  asks for a captchaToken on every auth call, so the widget goes on /signup, /login and
+  /auth/forgot-password (useCaptcha in components/auth/captcha.tsx is the slot) and the e2e global setup must pass a token (branch with Cloudflare test keys).
 - Email confirmation stays required: the setup wizard runs only after the confirmed link.
 - "Start with sample data" (optional, off by default) in the setup wizard: seeds a small
   sample portfolio, programme and projects through a SECURITY DEFINER RPC, labelled as sample.

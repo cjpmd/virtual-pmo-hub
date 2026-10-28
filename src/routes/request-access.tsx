@@ -185,7 +185,7 @@ function RequestAccessPage() {
           )}
           <p className="text-[0.95rem] text-site-text-muted">
             Already have an account?{" "}
-            <Link to="/signin" className="font-medium text-site-accent-strong hover:underline">
+            <Link to="/login" className="font-medium text-site-accent-strong hover:underline">
               Log in
             </Link>
           </p>

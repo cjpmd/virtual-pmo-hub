@@ -1,10 +1,10 @@
 import { useMutation } from "@tanstack/react-query";
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, Navigate, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Eye, LoaderCircle, LogOut } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { selfSignup } from "@/lib/features";
-import { signOut } from "@/services/auth";
+import { consumeSigningOut, signOut } from "@/services/auth";
 import { errorMessage } from "@/services/service-error";
 import { OrganisationProvider, useOrganisationState } from "./organisation-provider";
 import { useSession } from "./session-provider";
@@ -13,6 +13,7 @@ import { SettingsSync } from "./settings-sync";
 /** Paths anyone can open. Everything else needs a session and an organisation. */
 export const isPublicPath = (path: string) =>
   path === "/" ||
+  path === "/login" ||
   path === "/signin" ||
   path.startsWith("/auth/") ||
   path === "/request-access" ||
@@ -35,8 +36,9 @@ export function Splash({ label = "Loading your workspace…" }: { label?: string
 }
 
 /**
- * Route protection. Signed-out visitors go to /signin (and come back afterwards); signed-in
- * users without an organisation see the onboarding screen. RLS remains the real boundary:
+ * Route protection. Signed-out visitors go to /login (and come back afterwards, unless they
+ * signed out on purpose); signed-in users without an organisation go to organisation setup
+ * (or, with organisation creation switched off, see the "no organisation" screen). RLS remains the real boundary:
  * this only decides what to render.
  */
 export function AuthGate({ children }: { children: ReactNode }) {
@@ -53,9 +55,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
     if (session.status === "signed_in") redirected.current = false;
     if (session.status !== "signed_out" || redirected.current) return;
     redirected.current = true;
-    const next = hrefRef.current;
+    const next = consumeSigningOut() ? undefined : hrefRef.current;
     void navigate({
-      to: "/signin",
+      to: "/login",
       search: next && next !== "/" && !isPublicPath(next.split("?")[0] ?? "") ? { next } : {},
       replace: true,
     });
@@ -79,7 +81,12 @@ function OrganisationGate({ children }: { children: ReactNode }) {
         </div>
       </CentredCard>
     );
-  if (state.status === "none") return <NoOrganisation email={state.profile.email} />;
+  if (state.status === "none")
+    return selfSignup ? (
+      <Navigate to="/signup/setup" replace />
+    ) : (
+      <NoOrganisation email={state.profile.email} />
+    );
   return (
     <OrganisationProvider value={state.value}>
       <SettingsSync>{children}</SettingsSync>
@@ -94,10 +101,7 @@ function NoOrganisation({ email }: { email: string }) {
         You're signed in as <strong className="text-foreground">{email}</strong>, but no
         organisation has added you.
       </p>
-      <p className="mt-3 text-sm text-muted-foreground">
-        Ask your administrator for an invite
-        {selfSignup ? ", or create a new organisation for your team." : "."}
-      </p>
+      <p className="mt-3 text-sm text-muted-foreground">Ask your administrator for an invite.</p>
       <div className="mt-5 flex flex-wrap gap-2">
         <Button asChild>
           <Link to="/auth/demo">
@@ -105,11 +109,6 @@ function NoOrganisation({ email }: { email: string }) {
             View demo
           </Link>
         </Button>
-        {selfSignup && (
-          <Button asChild>
-            <Link to="/signup/setup">Create an organisation</Link>
-          </Button>
-        )}
         <SignOutButton />
       </div>
     </CentredCard>

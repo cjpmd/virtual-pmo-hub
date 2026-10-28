@@ -52,7 +52,7 @@ export default defineConfig({
   ...(!process.env["E2E_BASE_URL"] && {
     webServer: {
       command: `npx vite dev --host 127.0.0.1 --port ${port} --strictPort`,
-      url: `${baseURL}/signin`,
+      url: `${baseURL}/login`,
       reuseExistingServer: !process.env["CI"],
       timeout: 120_000,
     },

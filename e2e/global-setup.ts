@@ -1,6 +1,6 @@
 // Signs in the dedicated test user once and saves the browser storage state for every spec.
-// The /signin password form only serves the demo account, so this signs in through the
-// Supabase auth API and hands the session to the app's own localStorage key.
+// It signs in through the Supabase auth API (password grant) rather than the /login form, and
+// hands the session to the app's own localStorage key.
 // Work package 1.6 adds two optional logins for the workspace specs (docs/sql/1-6-e2e-workspace.sql):
 // E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD (organisation admin) and E2E_MEMBER_EMAIL /
 // E2E_MEMBER_PASSWORD (in "E2E Workspace B" only). Without them those specs skip.
@@ -67,7 +67,7 @@ async function signIn(baseURL: string, email: string, password: string, path: st
   const storageKey = `sb-${new URL(url).hostname.split(".")[0]}-auth-token`;
   const browser = await chromium.launch();
   const page = await browser.newPage({ baseURL });
-  await page.goto("/signin");
+  await page.goto("/login");
   await page.evaluate(([name, value]) => localStorage.setItem(name, value), [
     storageKey,
     JSON.stringify(session),

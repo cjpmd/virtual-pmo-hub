@@ -23,6 +23,7 @@ import { Route as GovernanceRouteImport } from './routes/governance'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as InsightsRouteImport } from './routes/insights'
 import { Route as LessonsRouteImport } from './routes/lessons'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as MilestonesRouteImport } from './routes/milestones'
 import { Route as MyTimelineRouteImport } from './routes/my-timeline'
 import { Route as MyWorkRouteImport } from './routes/my-work'
@@ -42,6 +43,8 @@ import { Route as SigninRouteImport } from './routes/signin'
 import { Route as TaskOverviewRouteImport } from './routes/task-overview'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthDemoRouteImport } from './routes/auth.demo'
+import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
+import { Route as AuthResetPasswordRouteImport } from './routes/auth.reset-password'
 import { Route as BenefitsIndexRouteImport } from './routes/benefits.index'
 import { Route as BenefitsBenefitIdRouteImport } from './routes/benefits.$benefitId'
 import { Route as BenefitsDashboardRouteImport } from './routes/benefits.dashboard'
@@ -178,6 +181,11 @@ const LessonsRoute = LessonsRouteImport.update({
   path: '/lessons',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MilestonesRoute = MilestonesRouteImport.update({
   id: '/milestones',
   path: '/milestones',
@@ -271,6 +279,16 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
 const AuthDemoRoute = AuthDemoRouteImport.update({
   id: '/auth/demo',
   path: '/auth/demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/auth/forgot-password',
+  path: '/auth/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/auth/reset-password',
+  path: '/auth/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BenefitsIndexRoute = BenefitsIndexRouteImport.update({
@@ -624,6 +642,7 @@ export interface FileRoutesByFullPath {
   '/home': typeof HomeRouteWithChildren
   '/insights': typeof InsightsRouteWithChildren
   '/lessons': typeof LessonsRouteWithChildren
+  '/login': typeof LoginRoute
   '/milestones': typeof MilestonesRoute
   '/my-timeline': typeof MyTimelineRoute
   '/my-work': typeof MyWorkRoute
@@ -643,6 +662,8 @@ export interface FileRoutesByFullPath {
   '/task-overview': typeof TaskOverviewRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/demo': typeof AuthDemoRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/benefits/$benefitId': typeof BenefitsBenefitIdRoute
   '/benefits/dashboard': typeof BenefitsDashboardRoute
   '/benefits/map': typeof BenefitsMapRoute
@@ -715,6 +736,7 @@ export interface FileRoutesByTo {
   '/assumptions': typeof AssumptionsRoute
   '/connect-microsoft': typeof ConnectMicrosoftRoute
   '/dashboards': typeof DashboardsRoute
+  '/login': typeof LoginRoute
   '/milestones': typeof MilestonesRoute
   '/my-timeline': typeof MyTimelineRoute
   '/my-work': typeof MyWorkRoute
@@ -729,6 +751,8 @@ export interface FileRoutesByTo {
   '/task-overview': typeof TaskOverviewRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/demo': typeof AuthDemoRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/benefits/$benefitId': typeof BenefitsBenefitIdRoute
   '/benefits/dashboard': typeof BenefitsDashboardRoute
   '/benefits/map': typeof BenefitsMapRoute
@@ -807,6 +831,7 @@ export interface FileRoutesById {
   '/home': typeof HomeRouteWithChildren
   '/insights': typeof InsightsRouteWithChildren
   '/lessons': typeof LessonsRouteWithChildren
+  '/login': typeof LoginRoute
   '/milestones': typeof MilestonesRoute
   '/my-timeline': typeof MyTimelineRoute
   '/my-work': typeof MyWorkRoute
@@ -826,6 +851,8 @@ export interface FileRoutesById {
   '/task-overview': typeof TaskOverviewRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/demo': typeof AuthDemoRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/benefits/$benefitId': typeof BenefitsBenefitIdRoute
   '/benefits/dashboard': typeof BenefitsDashboardRoute
   '/benefits/map': typeof BenefitsMapRoute
@@ -909,6 +936,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/insights'
     | '/lessons'
+    | '/login'
     | '/milestones'
     | '/my-timeline'
     | '/my-work'
@@ -928,6 +956,8 @@ export interface FileRouteTypes {
     | '/task-overview'
     | '/auth/callback'
     | '/auth/demo'
+    | '/auth/forgot-password'
+    | '/auth/reset-password'
     | '/benefits/$benefitId'
     | '/benefits/dashboard'
     | '/benefits/map'
@@ -1000,6 +1030,7 @@ export interface FileRouteTypes {
     | '/assumptions'
     | '/connect-microsoft'
     | '/dashboards'
+    | '/login'
     | '/milestones'
     | '/my-timeline'
     | '/my-work'
@@ -1014,6 +1045,8 @@ export interface FileRouteTypes {
     | '/task-overview'
     | '/auth/callback'
     | '/auth/demo'
+    | '/auth/forgot-password'
+    | '/auth/reset-password'
     | '/benefits/$benefitId'
     | '/benefits/dashboard'
     | '/benefits/map'
@@ -1091,6 +1124,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/insights'
     | '/lessons'
+    | '/login'
     | '/milestones'
     | '/my-timeline'
     | '/my-work'
@@ -1110,6 +1144,8 @@ export interface FileRouteTypes {
     | '/task-overview'
     | '/auth/callback'
     | '/auth/demo'
+    | '/auth/forgot-password'
+    | '/auth/reset-password'
     | '/benefits/$benefitId'
     | '/benefits/dashboard'
     | '/benefits/map'
@@ -1192,6 +1228,7 @@ export interface RootRouteChildren {
   HomeRoute: typeof HomeRouteWithChildren
   InsightsRoute: typeof InsightsRouteWithChildren
   LessonsRoute: typeof LessonsRouteWithChildren
+  LoginRoute: typeof LoginRoute
   MilestonesRoute: typeof MilestonesRoute
   MyTimelineRoute: typeof MyTimelineRoute
   MyWorkRoute: typeof MyWorkRoute
@@ -1211,6 +1248,8 @@ export interface RootRouteChildren {
   TaskOverviewRoute: typeof TaskOverviewRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthDemoRoute: typeof AuthDemoRoute
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   SignupSetupRoute: typeof SignupSetupRoute
   SignupIndexRoute: typeof SignupIndexRoute
 }
@@ -1313,6 +1352,13 @@ declare module '@tanstack/react-router' {
       path: '/lessons'
       fullPath: '/lessons'
       preLoaderRoute: typeof LessonsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/milestones': {
@@ -1446,6 +1492,20 @@ declare module '@tanstack/react-router' {
       path: '/auth/demo'
       fullPath: '/auth/demo'
       preLoaderRoute: typeof AuthDemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/forgot-password': {
+      id: '/auth/forgot-password'
+      path: '/auth/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/reset-password': {
+      id: '/auth/reset-password'
+      path: '/auth/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/benefits/': {
@@ -2222,6 +2282,7 @@ const rootRouteChildren: RootRouteChildren = {
   HomeRoute: HomeRouteWithChildren,
   InsightsRoute: InsightsRouteWithChildren,
   LessonsRoute: LessonsRouteWithChildren,
+  LoginRoute: LoginRoute,
   MilestonesRoute: MilestonesRoute,
   MyTimelineRoute: MyTimelineRoute,
   MyWorkRoute: MyWorkRoute,
@@ -2241,6 +2302,8 @@ const rootRouteChildren: RootRouteChildren = {
   TaskOverviewRoute: TaskOverviewRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthDemoRoute: AuthDemoRoute,
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
   SignupSetupRoute: SignupSetupRoute,
   SignupIndexRoute: SignupIndexRoute,
 }
