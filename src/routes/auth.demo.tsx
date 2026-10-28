@@ -4,7 +4,8 @@ import { DemoEntry } from "@/components/auth/demo-entry";
 import { useSession } from "@/components/auth/session-provider";
 
 const title = "View demo — Virtual PMO";
-const description = "Explore the Virtual PMO demo portfolio with read-only access after confirming your email.";
+const description =
+  "Explore the Virtual PMO demo portfolio with read-only access after confirming your email.";
 
 export const Route = createFileRoute("/auth/demo")({
   ssr: false,

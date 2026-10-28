@@ -21,14 +21,16 @@ export const Route = createFileRoute("/auth/callback")({
     error_description:
       typeof search["error_description"] === "string" ? search["error_description"] : undefined,
   }),
-  head: () => ({ meta: [
-    { title: "Signing in — Virtual PMO" },
-    { name: "description", content: "Complete your secure Virtual PMO email sign-in." },
-    { property: "og:title", content: "Signing in — Virtual PMO" },
-    { property: "og:description", content: "Complete your secure Virtual PMO email sign-in." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary" },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "Signing in — Virtual PMO" },
+      { name: "description", content: "Complete your secure Virtual PMO email sign-in." },
+      { property: "og:title", content: "Signing in — Virtual PMO" },
+      { property: "og:description", content: "Complete your secure Virtual PMO email sign-in." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   ssr: false,
   component: AuthCallback,
 });

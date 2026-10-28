@@ -75,9 +75,15 @@ export function SiteCtas({ className }: { className?: string }) {
       <Button
         asChild
         variant="ghost"
-        className={cn(ctaBase, "border border-site-ink-outline text-site-on-ink hover:bg-site-ink hover:text-site-on-ink hover:border-site-on-ink-faint")}
+        className={cn(
+          ctaBase,
+          "border border-site-ink-outline text-site-on-ink hover:bg-site-ink hover:text-site-on-ink hover:border-site-on-ink-faint",
+        )}
       >
-        <Link to="/auth/demo"><Eye />View demo</Link>
+        <Link to="/auth/demo">
+          <Eye />
+          View demo
+        </Link>
       </Button>
     </div>
   );

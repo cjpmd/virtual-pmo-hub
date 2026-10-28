@@ -100,7 +100,10 @@ function NoOrganisation({ email }: { email: string }) {
       </p>
       <div className="mt-5 flex flex-wrap gap-2">
         <Button asChild>
-          <Link to="/auth/demo"><Eye />View demo</Link>
+          <Link to="/auth/demo">
+            <Eye />
+            View demo
+          </Link>
         </Button>
         {selfSignup && (
           <Button asChild>

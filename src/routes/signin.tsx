@@ -14,14 +14,19 @@ export const Route = createFileRoute("/signin")({
   validateSearch: (search: Record<string, unknown>): { next?: string | undefined } => ({
     next: safeNext(search["next"]),
   }),
-  head: () => ({ meta: [
-    { title: "Sign in — Virtual PMO" },
-    { name: "description", content: "Sign in to Virtual PMO securely with an email link." },
-    { property: "og:title", content: "Sign in — Virtual PMO" },
-    { property: "og:description", content: "Sign in to Virtual PMO securely with an email link." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary" },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "Sign in — Virtual PMO" },
+      { name: "description", content: "Sign in to Virtual PMO securely with an email link." },
+      { property: "og:title", content: "Sign in — Virtual PMO" },
+      {
+        property: "og:description",
+        content: "Sign in to Virtual PMO securely with an email link.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: SignInPage,
 });
 

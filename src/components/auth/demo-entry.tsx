@@ -30,13 +30,23 @@ export function DemoEntry({ userId }: { userId: string }) {
   if (join.isError)
     return (
       <div className="space-y-4">
-        <p role="alert" className="text-sm text-muted-foreground">{errorMessage(join.error)}</p>
-        <Button onClick={() => join.mutate()}><Eye />Try again</Button>
+        <p role="alert" className="text-sm text-muted-foreground">
+          {errorMessage(join.error)}
+        </p>
+        <Button onClick={() => join.mutate()}>
+          <Eye />
+          Try again
+        </Button>
       </div>
     );
   return (
-    <p role="status" aria-live="polite" className="flex items-center gap-2 text-sm text-muted-foreground">
-      <LoaderCircle className="size-4 animate-spin" />Opening the demo…
+    <p
+      role="status"
+      aria-live="polite"
+      className="flex items-center gap-2 text-sm text-muted-foreground"
+    >
+      <LoaderCircle className="size-4 animate-spin" />
+      Opening the demo…
     </p>
   );
 }
