@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LoaderCircle, LogOut } from "lucide-react";
+import { Eye, LoaderCircle, LogOut } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { selfSignup } from "@/lib/features";
@@ -99,6 +99,9 @@ function NoOrganisation({ email }: { email: string }) {
         {selfSignup ? ", or create a new organisation for your team." : "."}
       </p>
       <div className="mt-5 flex flex-wrap gap-2">
+        <Button asChild>
+          <Link to="/auth/demo"><Eye />View demo</Link>
+        </Button>
         {selfSignup && (
           <Button asChild>
             <Link to="/signup/setup">Create an organisation</Link>

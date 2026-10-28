@@ -1,5 +1,10 @@
 # Virtual PMO prototype
 
+## View demo
+- [ ] Add home-page and no-organisation demo entry buttons.
+- [ ] Confirm email through the existing sign-in flow, then join using the approved viewer RPC and open the demo portfolio.
+- [ ] Verify service tests and public entry flow; authenticated checks require external Supabase access.
+
 ## Forums and meetings D2
 - [x] Build Boards list, forum details, meeting details and retain agenda/meeting mode.
 - [x] Add decision target-meeting pickers, signals and detailed history.

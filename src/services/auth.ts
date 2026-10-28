@@ -122,6 +122,11 @@ export async function createOrganisation(input: NewOrganisation): Promise<string
   return data;
 }
 
+/** Joins and selects the demo through the approved RPC; existing roles are preserved. */
+export async function joinDemoAsViewer(): Promise<string> {
+  return unwrap(await supabase.rpc("join_demo_as_viewer"), "Opening the demo");
+}
+
 export type AppRole = "viewer" | "contributor" | "manager" | "pmo" | "admin";
 const roleRank: Record<AppRole, number> = {
   viewer: 0,
