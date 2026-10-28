@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  /** "true" turns on self-service sign-up. Default off. */
+  /** "false" switches off self-service organisation creation (the kill switch). Default on. */
   readonly VITE_SELF_SIGNUP?: string;
   /** "true" shows board automations (hidden until work package 4.3). Default off. */
   readonly VITE_BOARD_AUTOMATIONS?: string;

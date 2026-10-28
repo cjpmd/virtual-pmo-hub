@@ -33,6 +33,7 @@ const PROVIDER_SCOPES: Record<OAuthProvider, string> = { azure: "email openid pr
 export interface CaptchaOptions {
   captchaToken?: string | undefined;
 }
+const captcha = (token: string | undefined) => (token ? { captchaToken: token } : {});
 
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 function checkEmail(email: string) {
@@ -110,7 +111,7 @@ export async function signUpWithPassword(input: NewAccount) {
     options: {
       emailRedirectTo: callbackUrl(input.next),
       data: { full_name: input.name.trim() },
-      captchaToken: input.captchaToken,
+      ...captcha(input.captchaToken),
     },
   });
   // Only returned when email confirmation is switched off; still say nothing about the account.
@@ -124,7 +125,7 @@ export async function signInWithPassword(
   const { error } = await supabase.auth.signInWithPassword({
     email: checkEmail(input.email),
     password: input.password,
-    options: { captchaToken: input.captchaToken },
+    options: captcha(input.captchaToken),
   });
   if (error) throw fromSignInError(error);
 }
@@ -136,7 +137,7 @@ export async function resendConfirmation(
   const { error } = await supabase.auth.resend({
     type: "signup",
     email: checkEmail(input.email),
-    options: { emailRedirectTo: callbackUrl(input.next), captchaToken: input.captchaToken },
+    options: { emailRedirectTo: callbackUrl(input.next), ...captcha(input.captchaToken) },
   });
   if (error) throw fromSignInError(error);
 }
@@ -148,7 +149,7 @@ export async function resendConfirmation(
 export async function sendPasswordReset(input: { email: string } & CaptchaOptions) {
   const { error } = await supabase.auth.resetPasswordForEmail(checkEmail(input.email), {
     redirectTo: new URL("/auth/reset-password", window.location.origin).toString(),
-    captchaToken: input.captchaToken,
+    ...captcha(input.captchaToken),
   });
   if (error) throw fromSignInError(error);
 }
@@ -185,12 +186,21 @@ export const consumeSigningOut = () => {
 
 /** Recovery links raise PASSWORD_RECOVERY once, possibly before the reset page mounts. */
 let recovering = false;
+const recoveryListeners = new Set<() => void>();
 if (typeof window !== "undefined")
   supabase.auth.onAuthStateChange((event) => {
-    if (event === "PASSWORD_RECOVERY") recovering = true;
+    if (event === "PASSWORD_RECOVERY") {
+      recovering = true;
+      recoveryListeners.forEach((listener) => listener());
+    }
     if (event === "SIGNED_OUT") recovering = false;
   });
 export const isPasswordRecovery = () => recovering;
+/** Calls `listener` when a recovery link signs the user in; returns the unsubscribe. */
+export function onPasswordRecovery(listener: () => void) {
+  recoveryListeners.add(listener);
+  return () => void recoveryListeners.delete(listener);
+}
 
 export async function signOut() {
   signingOut = true;

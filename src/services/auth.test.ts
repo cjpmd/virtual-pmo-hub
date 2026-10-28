@@ -58,7 +58,6 @@ describe("read-only demo entry", () => {
         options: {
           emailRedirectTo: "https://pmo.originoverthrow.com/auth/callback?next=%2Fauth%2Fdemo",
           data: { full_name: "Visitor" },
-          captchaToken: undefined,
         },
       });
     } finally {
@@ -103,7 +102,6 @@ describe("email and password", () => {
       await sendPasswordReset({ email: "user@example.com" });
       expect(auth.resetPasswordForEmail).toHaveBeenCalledWith("user@example.com", {
         redirectTo: "https://pmo.originoverthrow.com/auth/reset-password",
-        captchaToken: undefined,
       });
     } finally {
       vi.unstubAllGlobals();

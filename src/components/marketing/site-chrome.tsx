@@ -5,7 +5,7 @@ import { Eye } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { contactEmail, selfSignup } from "@/lib/features";
+import { contactEmail } from "@/lib/features";
 
 export function SiteLogo({ className }: { className?: string }) {
   return (
@@ -43,13 +43,13 @@ export function SiteHeader() {
           Pricing
         </Link>
         <Link
-          to="/signin"
+          to="/login"
           className="inline-flex min-h-11 items-center px-4 text-[0.95rem] text-site-on-ink no-underline"
         >
           Log in
         </Link>
         <Link
-          to={selfSignup ? "/signup" : "/request-access"}
+          to="/signup"
           className="inline-flex min-h-10 items-center rounded-lg bg-site-accent px-4 text-[0.95rem] font-semibold text-white no-underline hover:bg-site-accent-strong"
         >
           Sign up

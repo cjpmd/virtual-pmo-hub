@@ -35,9 +35,9 @@ export function readAuthUrlError(params: URLSearchParams): AuthUrlError | null {
     return {
       kind: "consent",
       message:
-        "Your organisation needs to approve Virtual PMO before you can sign in with Microsoft. " +
-        "Ask your IT administrator to approve the app for your organisation, or sign in with " +
-        "your email and a password instead.",
+        "Your Microsoft account belongs to an organisation that hasn't approved Virtual PMO yet. " +
+        "Ask your IT administrator to approve the app, or sign in with your email and a " +
+        "password instead.",
       detail: description,
     };
   if (

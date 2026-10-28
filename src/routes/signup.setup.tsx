@@ -15,7 +15,7 @@ import { orgFromDomain } from "@/lib/org-name";
 import { defaultLifecyclePhases } from "@/data/lifecycle";
 
 export const Route = createFileRoute("/signup/setup")({
-  // Self-service sign-up is off unless VITE_SELF_SIGNUP is "true" (see lib/features.ts).
+  // Creating an organisation can be switched off with VITE_SELF_SIGNUP=false (lib/features.ts).
   beforeLoad: () => {
     if (!selfSignup) throw redirect({ to: "/request-access", replace: true });
   },
@@ -57,7 +57,8 @@ const months = [
 function SetupPage() {
   const session = useSession();
   if (session.status === "loading") return <Splash label="Checking your session…" />;
-  if (session.status === "signed_out") return <Navigate to="/signup" replace />;
+  if (session.status === "signed_out")
+    return <Navigate to="/login" search={{ next: "/signup/setup" }} replace />;
   return <Setup userId={session.session.user.id} email={session.session.user.email ?? ""} />;
 }
 
@@ -157,7 +158,12 @@ function Setup({ userId, email }: { userId: string; email: string }) {
                 <Input className="mt-1" value={name} onChange={(e) => setName(e.target.value)} />
               </label>
               <p className="text-xs text-muted-foreground">
-                Signed in as {email}. You'll be the organisation's admin.
+                Signed in as {email}. You'll be the organisation's admin, with a 14-day free trial
+                (no card needed). Invited by a colleague? Ask them to add you instead, or{" "}
+                <Link to="/auth/demo" className="text-primary hover:underline">
+                  view the demo
+                </Link>
+                .
               </p>
             </>
           )}

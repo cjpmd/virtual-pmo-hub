@@ -26,7 +26,7 @@ function ViewDemo() {
   const session = useSession();
   if (session.status === "loading") return <Splash label="Checking your session…" />;
   if (session.status === "signed_out")
-    return <Navigate to="/signin" search={{ next: "/auth/demo" }} replace />;
+    return <Navigate to="/login" search={{ next: "/auth/demo" }} replace />;
   return (
     <CentredCard title="View demo">
       <DemoEntry key={session.user.id} userId={session.user.id} />
