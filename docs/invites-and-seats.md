@@ -40,6 +40,13 @@ edge-function secrets `RESEND_API_KEY` and `RESEND_FROM`
 (`ORMO PMO <invites@ormo-pmo.originoverthrow.com>`). The sender is always read from
 `RESEND_FROM`; any other domain is refused by Resend with a 403.
 
+**Resend webhook** (to do, after `resend-webhook` is deployed): in Resend › Webhooks, add the
+endpoint `https://xvdlmtkzfmbcegkmampz.supabase.co/functions/v1/resend-webhook` with the events
+`email.delivered`, `email.delivery_delayed`, `email.bounced`, `email.complained` and
+`email.suppressed`. Copy its signing secret (`whsec_…`) into the edge-function secret
+`RESEND_WEBHOOK_SECRET`. Every request is checked against that signature (Svix) and requests more
+than 5 minutes old are refused.
+
 **Stripe** (test mode first, then live):
 
 1. Customer portal (Settings › Billing › Customer portal): under Subscriptions, turn **off**
@@ -77,9 +84,12 @@ providers. Run the Stripe steps in test mode, with a test clock to move past ren
       "already been used".
 - [ ] **Not sent**: temporarily set `RESEND_FROM` to an address on another domain, invite
       someone → the invite shows "Not sent" with "The email couldn’t be sent. Use Resend invite to
-      try again."; put `RESEND_FROM` back and Resend invite → sent. (`bounced@resend.dev` is
-      accepted by Resend and bounces later, so it doesn't show "Not sent" until the bounce
-      webhook exists.)
+      try again."; put `RESEND_FROM` back and Resend invite → sent.
+- [ ] **Bounced**: invite `bounced@resend.dev` → sent at first; within a minute the bounce arrives
+      through `resend-webhook`, the invite shows "Not delivered" and its link stops working;
+      Settings › Audit shows "Invitation email bounced". Invite `delivered@resend.dev` → status
+      "delivered". Resend's webhook log shows 200 responses.
+- [ ] A request to `resend-webhook` without a valid signature gets 400.
 - [ ] Rate limits: a 21st address in one request is refused; the 4th email of one invite in a
       day is refused.
 

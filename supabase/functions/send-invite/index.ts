@@ -3,6 +3,7 @@
 // resend_invite are called as the signed-in admin. This function only makes the token (stored as
 // a SHA-256 hash by issue_invite_token, service role), sends the email, and records the outcome
 // with mark_invite_sent. A failed send clears the token, so the Members page shows "Not sent".
+// The Resend email id is stored (record_invite_email_id) so resend-webhook can track delivery.
 // Secrets: RESEND_API_KEY, RESEND_FROM, APP_URL. SUPABASE_* are provided by the platform.
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.45.4";
 import { APP_URL, UUID, adminClient, dbErrorResponse, json, serve, signedIn } from "../_shared/http.ts";
@@ -35,7 +36,7 @@ async function deliver(admin: SupabaseClient, inviteId: string, actorId: string)
     link: inviteLink(APP_URL, token),
     expiresAt: info.expires_at,
   });
-  const { error } = await sendEmail({
+  const { data: sent, error } = await sendEmail({
     to: info.email,
     ...email,
     // Each send has a new token, so a resend never reuses the key of an earlier (failed) send.
@@ -49,6 +50,11 @@ async function deliver(admin: SupabaseClient, inviteId: string, actorId: string)
     p_error: error ? `${error.status} ${error.name}: ${error.message}` : null,
   });
   if (markError) console.error("send-invite: mark_invite_sent", markError);
+  // Remember which Resend email this is, so resend-webhook can match bounces and deliveries.
+  if (sent) {
+    const { error: idError } = await admin.rpc("record_invite_email_id", { p_invite_id: inviteId, p_email_id: sent.id });
+    if (idError) console.error("send-invite: record_invite_email_id", idError);
+  }
   return error ? { emailStatus: "failed", emailError: "The email couldn’t be sent. Use Resend invite to try again." } : { emailStatus: "sent" };
 }
 
