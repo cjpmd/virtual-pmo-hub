@@ -27,7 +27,7 @@ import { todayIso } from "@/lib/today";
 import type { ValidationQueueItem } from "@/services/benefits-value";
 import { cn } from "@/lib/utils";
 
-const title = "Approvals — Virtual PMO",
+const title = "Approvals — ORMO PMO",
   description = "Decisions and measurement records waiting on you.";
 export const Route = createFileRoute("/home/approvals")({
   head: () => ({

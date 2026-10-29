@@ -13,13 +13,8 @@ export function SiteLogo({ className }: { className?: string }) {
       to="/"
       className={cn("flex items-center gap-2.5 text-site-on-ink no-underline", className)}
     >
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-        <rect width="28" height="28" rx="7" className="fill-site-accent" />
-        <rect x="7" y="15" width="3.5" height="6" rx="1" fill="#FFFFFF" />
-        <rect x="12.25" y="11" width="3.5" height="10" rx="1" fill="#FFFFFF" />
-        <rect x="17.5" y="7" width="3.5" height="14" rx="1" fill="#FFFFFF" />
-      </svg>
-      <span className="text-[1.08rem] font-semibold tracking-[-0.01em]">Virtual PMO</span>
+      <img src="/brand/ormo-mark.png" alt="" width={28} height={28} className="size-7" />
+      <span className="text-[1.08rem] font-semibold tracking-[-0.01em]">ORMO PMO</span>
     </Link>
   );
 }
@@ -93,7 +88,7 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-site-line">
       <div className="mx-auto flex max-w-[1240px] flex-wrap justify-between gap-3 p-7 text-[0.9rem] text-site-text-muted">
-        <span>© Virtual PMO</span>
+        <span>© ORMO PMO</span>
         {contactEmail && (
           <a href={`mailto:${contactEmail}`} className="text-site-accent-strong">
             {contactEmail}

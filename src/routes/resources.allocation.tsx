@@ -5,12 +5,12 @@ import { PageHeader } from "@/components/pmo-ui";
 export const Route = createFileRoute("/resources/allocation")({
   head: () => ({
     meta: [
-      { title: "Resource Allocation — Virtual PMO" },
+      { title: "Resource Allocation — ORMO PMO" },
       {
         name: "description",
         content: "Plan weekly people and skill capacity across the next 26 weeks.",
       },
-      { property: "og:title", content: "Resource Allocation — Virtual PMO" },
+      { property: "og:title", content: "Resource Allocation — ORMO PMO" },
       {
         property: "og:description",
         content: "Plan weekly people and skill capacity across the next 26 weeks.",

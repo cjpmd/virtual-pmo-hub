@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/portfolio/collections/$collectionId")({
   head: () => {
-    const title = "Collection — Virtual PMO";
+    const title = "Collection — ORMO PMO";
     const description = "Governance view and committee packs for a portfolio collection.";
     return {
       meta: [

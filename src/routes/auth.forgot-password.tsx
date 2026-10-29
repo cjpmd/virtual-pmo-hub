@@ -8,8 +8,8 @@ import { useCaptcha } from "@/components/auth/captcha";
 import { Button } from "@/components/ui/button";
 import { sendPasswordReset } from "@/services/auth";
 
-const title = "Reset your password — Virtual PMO";
-const description = "Get a link to set a new Virtual PMO password.";
+const title = "Reset your password — ORMO PMO";
+const description = "Get a link to set a new ORMO PMO password.";
 
 export const Route = createFileRoute("/auth/forgot-password")({
   validateSearch: (search: Record<string, unknown>): { email?: string | undefined } => ({
@@ -44,8 +44,8 @@ function ForgotPassword() {
         <p className="flex gap-2 text-sm text-muted-foreground">
           <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-health-good" />
           <span>
-            If <strong className="text-foreground">{email.trim()}</strong> has a Virtual PMO
-            account, we've sent it a link to set a new password. The link expires in an hour.
+            If <strong className="text-foreground">{email.trim()}</strong> has a ORMO PMO account,
+            we've sent it a link to set a new password. The link expires in an hour.
           </span>
         </p>
         <p className="mt-3 text-xs text-muted-foreground">

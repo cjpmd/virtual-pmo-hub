@@ -32,7 +32,7 @@ import { useBenefits } from "@/hooks/use-benefits";
 import type { BenefitsData } from "@/services/benefits";
 import { cn } from "@/lib/utils";
 
-const title = "Benefits Value Dashboard — Virtual PMO",
+const title = "Benefits Value Dashboard — ORMO PMO",
   description =
     "Portfolio benefit value, objective contribution, portfolio return and forecasting accuracy.";
 export const Route = createFileRoute("/benefits/")({

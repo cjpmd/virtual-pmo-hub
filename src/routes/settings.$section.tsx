@@ -34,7 +34,7 @@ export const Route = createFileRoute("/settings/$section")({
   },
   head: ({ params }) => {
     const section = settingsSections.find((item) => item.id === params.section);
-    const title = `${section?.label ?? "Settings"} — Virtual PMO`;
+    const title = `${section?.label ?? "Settings"} — ORMO PMO`;
     const description = section?.blurb ?? "Configure the workspace.";
     return {
       meta: [

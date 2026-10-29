@@ -57,9 +57,9 @@ import { dataAsOf, getSummaryMetrics, periodStatus } from "@/services/overview";
 export const Route = createFileRoute("/portfolio/")({
   head: () => ({
     meta: [
-      { title: "Portfolio Overview — Virtual PMO" },
+      { title: "Portfolio Overview — ORMO PMO" },
       { name: "description", content: "DTS portfolio health, delivery and financial overview." },
-      { property: "og:title", content: "Portfolio Overview — Virtual PMO" },
+      { property: "og:title", content: "Portfolio Overview — ORMO PMO" },
       {
         property: "og:description",
         content: "DTS portfolio health, delivery and financial overview.",

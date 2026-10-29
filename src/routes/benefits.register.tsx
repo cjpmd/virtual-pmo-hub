@@ -18,12 +18,12 @@ import type { BenefitInput, BenefitsData } from "@/services/benefits";
 export const Route = createFileRoute("/benefits/register")({
   head: () => ({
     meta: [
-      { title: "Benefits Register — Virtual PMO" },
+      { title: "Benefits Register — ORMO PMO" },
       {
         name: "description",
         content: "Portfolio benefits, disbenefits, ownership and realisation evidence.",
       },
-      { property: "og:title", content: "Benefits Register — Virtual PMO" },
+      { property: "og:title", content: "Benefits Register — ORMO PMO" },
       {
         property: "og:description",
         content: "Portfolio benefits, disbenefits, ownership and realisation evidence.",

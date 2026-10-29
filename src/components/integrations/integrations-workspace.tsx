@@ -256,7 +256,7 @@ function Integrations({ s }: { s: IntegrationsData }) {
                   {names[x.projectId]} · changed in Planner by {x.changedInPlannerBy} at {x.at}
                 </p>
                 <p className="mt-1">
-                  Planner: <strong>{x.plannerValue}</strong> · Virtual PMO:{" "}
+                  Planner: <strong>{x.plannerValue}</strong> · ORMO PMO:{" "}
                   <strong>{x.ourValue}</strong>
                 </p>
               </div>
@@ -301,7 +301,7 @@ function Integrations({ s }: { s: IntegrationsData }) {
 
       <SettingsCard
         title="Sync log"
-        description="Recent activity between Virtual PMO and Microsoft."
+        description="Recent activity between ORMO PMO and Microsoft."
         actions={
           <select
             className="h-8 rounded-md border bg-background px-2 text-xs"
@@ -337,13 +337,13 @@ function Integrations({ s }: { s: IntegrationsData }) {
 
       <SettingsCard
         title="Going live"
-        description="Steps needed before Virtual PMO talks to real Microsoft 365."
+        description="Steps needed before ORMO PMO talks to real Microsoft 365."
       >
         <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
           <li>
             Get a test Dataverse environment with Planner Premium, plus a few test Basic plans.
           </li>
-          <li>Register "Virtual PMO" in Microsoft Entra as a multi-tenant app.</li>
+          <li>Register "ORMO PMO" in Microsoft Entra as a multi-tenant app.</li>
           <li>Add the Microsoft Graph and Dataverse permissions and get admin consent.</li>
           <li>Add the app as a Dataverse application user with a read role.</li>
           <li>Turn on the backend, store the app credentials securely and build the sync.</li>

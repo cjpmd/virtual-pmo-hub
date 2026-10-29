@@ -20,9 +20,9 @@ import type { ProjectSummary } from "@/services/hierarchy";
 export const Route = createFileRoute("/portfolio/projects/")({
   head: () => ({
     meta: [
-      { title: "Projects — Virtual PMO" },
+      { title: "Projects — ORMO PMO" },
       { name: "description", content: "Manage delivery across every project." },
-      { property: "og:title", content: "Projects — Virtual PMO" },
+      { property: "og:title", content: "Projects — ORMO PMO" },
       { property: "og:description", content: "Manage delivery across every project." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -152,7 +152,7 @@ function ProjectsBody({ items }: { items: ProjectSummary[] }) {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `virtual-pmo-projects-${todayIso()}.csv`;
+    anchor.download = `ormo-pmo-projects-${todayIso()}.csv`;
     anchor.click();
     URL.revokeObjectURL(url);
   };

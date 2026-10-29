@@ -11,8 +11,8 @@ import { Button } from "@/components/ui/button";
 import { isUnconfirmedEmail, resendConfirmation, signInWithPassword } from "@/services/auth";
 import { nextLocation, safeNext } from "@/lib/safe-next";
 
-const title = "Sign in — Virtual PMO";
-const description = "Sign in to Virtual PMO with Microsoft or your email and password.";
+const title = "Sign in — ORMO PMO";
+const description = "Sign in to ORMO PMO with Microsoft or your email and password.";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>): { next?: string | undefined } => ({
@@ -133,7 +133,7 @@ function LoginPage() {
         </Button>
       </form>
       <p className="mt-6 text-center text-xs text-muted-foreground">
-        New to Virtual PMO?{" "}
+        New to ORMO PMO?{" "}
         <Link to="/signup" search={next ? { next } : {}} className="text-primary hover:underline">
           Create an account
         </Link>

@@ -63,7 +63,7 @@ import { toTaskSource } from "@/services/work-items";
 export const Route = createFileRoute("/portfolio/projects/$projectCode")({
   head: ({ params }) => ({
     meta: [
-      { title: `${params.projectCode.toUpperCase()} — Virtual PMO` },
+      { title: `${params.projectCode.toUpperCase()} — ORMO PMO` },
       { name: "description", content: "Project detail." },
     ],
   }),

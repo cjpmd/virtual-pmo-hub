@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { BusinessCasePage } from "@/components/business-case/business-case-page";
 import { useProject, useProjectPermissions } from "@/hooks/use-hierarchy";
 
-const title = "Business case — Virtual PMO",
+const title = "Business case — ORMO PMO",
   description =
     "The project's business case: Five Case Model sections, options, benefits and documents.";
 

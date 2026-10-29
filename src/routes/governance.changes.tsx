@@ -15,7 +15,7 @@ import { formatCompactCurrency } from "@/lib/format";
 import type { ChangeRequest } from "@/data/types";
 import type { ChangeInput, GovernanceData } from "@/services/decisions";
 
-const title = "Change Control — Virtual PMO",
+const title = "Change Control — ORMO PMO",
   description = "Change requests across the portfolio with cost and schedule impact.";
 export const Route = createFileRoute("/governance/changes")({
   head: () => ({

@@ -15,7 +15,7 @@ import { acceptInvite, getInvitePreview, roleLabel, usesPaidSeat } from "@/servi
 import { qk } from "@/services/query-keys";
 import { errorMessage } from "@/services/service-error";
 
-const title = "Accept your invitation — Virtual PMO";
+const title = "Accept your invitation — ORMO PMO";
 
 export const Route = createFileRoute("/invite")({
   validateSearch: (search: Record<string, unknown>): { token?: string | undefined } => ({
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/invite")({
   head: () => ({
     meta: [
       { title },
-      { name: "description", content: "Join your organisation in Virtual PMO." },
+      { name: "description", content: "Join your organisation in ORMO PMO." },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -75,7 +75,7 @@ function InvitePage() {
       <CentredCard title={`You're in ${invite.organisationName ?? "the organisation"}`}>
         <p className="text-sm text-muted-foreground">You've already accepted this invitation.</p>
         <Button asChild className="mt-4">
-          <Link to="/">Open Virtual PMO</Link>
+          <Link to="/">Open ORMO PMO</Link>
         </Button>
       </CentredCard>
     );
@@ -102,7 +102,7 @@ function InvitePage() {
         {session.status === "signed_in" && (
           <div className="mt-4">
             <Button asChild variant="outline">
-              <Link to="/">Go to Virtual PMO</Link>
+              <Link to="/">Go to ORMO PMO</Link>
             </Button>
           </div>
         )}

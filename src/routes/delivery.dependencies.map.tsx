@@ -4,7 +4,7 @@ import { DependencyMap } from "@/components/dependency-map";
 import { PageHeader } from "@/components/pmo-ui";
 import { DependencyViewTabs } from "@/components/dependency-view-tabs";
 
-const title = "Dependency Map — Virtual PMO",
+const title = "Dependency Map — ORMO PMO",
   description = "Network view of dependencies between programmes, projects and external parties.";
 export const Route = createFileRoute("/delivery/dependencies/map")({
   // The focused node travels in the URL so a chain can be shared as a link.

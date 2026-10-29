@@ -43,7 +43,7 @@ import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-const title = "Lessons Overview — Virtual PMO",
+const title = "Lessons Overview — ORMO PMO",
   description = "Portfolio lessons learned, recurring themes, coverage and improvement actions.";
 export const Route = createFileRoute("/governance/lessons")({
   head: () => ({

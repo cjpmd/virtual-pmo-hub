@@ -8,7 +8,7 @@ import { formatDate } from "@/lib/format";
 import { useSettings } from "@/services/settings";
 import { cn } from "@/lib/utils";
 import { useNotifications } from "@/hooks/use-notifications";
-const title = "Notifications — Virtual PMO",
+const title = "Notifications — ORMO PMO",
   description = "Everything the workspace has told you, and how you are told.";
 export const Route = createFileRoute("/home/notifications")({
   head: () => ({

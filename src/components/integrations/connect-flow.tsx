@@ -59,9 +59,9 @@ function Connect({ data }: { data: IntegrationsData }) {
         onError: (error) => toast.error(error.message),
       },
     );
-  const subject = encodeURIComponent("Approve Virtual PMO for Microsoft 365");
+  const subject = encodeURIComponent("Approve ORMO PMO for Microsoft 365");
   const body = encodeURIComponent(
-    `Hello,\n\n${profile.displayName} would like to connect Virtual PMO to Microsoft 365 for ${organisation.name}.\n\nIt reads and updates Planner tasks, reads group names so plans can be found, and reads staff names and job titles for resourcing. It does not read email, files or Teams chats.\n\nData is stored in the UK. Access can be removed at any time from Microsoft Entra.\n\nThank you.`,
+    `Hello,\n\n${profile.displayName} would like to connect ORMO PMO to Microsoft 365 for ${organisation.name}.\n\nIt reads and updates Planner tasks, reads group names so plans can be found, and reads staff names and job titles for resourcing. It does not read email, files or Teams chats.\n\nData is stored in the UK. Access can be removed at any time from Microsoft Entra.\n\nThank you.`,
   );
 
   return (
@@ -84,7 +84,7 @@ function Connect({ data }: { data: IntegrationsData }) {
         <div>
           <h2 className="text-lg font-semibold">Connect Microsoft 365</h2>
           <p className="text-sm text-muted-foreground">
-            Virtual PMO needs permission to read and update your Planner plans.
+            ORMO PMO needs permission to read and update your Planner plans.
           </p>
         </div>
         <div className="mt-5">
@@ -93,7 +93,7 @@ function Connect({ data }: { data: IntegrationsData }) {
         <div className="mt-5 flex items-start gap-2 rounded-md border bg-muted/40 p-4 text-sm">
           <Info className="mt-0.5 size-4 shrink-0 text-primary" />
           <p className="text-muted-foreground">
-            Signing in to Microsoft, finding plans and syncing tasks need the Virtual PMO app
+            Signing in to Microsoft, finding plans and syncing tasks need the ORMO PMO app
             registered in Microsoft Entra and the sync service running. Neither is live yet, so for
             now you can record who will approve access. Native tasks work in the meantime.
           </p>
@@ -140,8 +140,8 @@ function Connect({ data }: { data: IntegrationsData }) {
             <div className="rounded-md border bg-muted/40 p-4 text-xs leading-5 text-muted-foreground">
               <p className="mb-2 text-sm font-semibold text-foreground">What your admin receives</p>
               <p>
-                {profile.displayName} would like to connect <strong>Virtual PMO</strong> to
-                Microsoft 365 for {organisation.name}.
+                {profile.displayName} would like to connect <strong>ORMO PMO</strong> to Microsoft
+                365 for {organisation.name}.
               </p>
               <p className="mt-2">
                 It reads and updates Planner tasks, reads group names so plans can be found, and

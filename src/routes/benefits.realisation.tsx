@@ -2,7 +2,7 @@ import { AutoBreadcrumbs } from "@/components/section-nav";
 import { createFileRoute } from "@tanstack/react-router";
 import { RealisationWorkspace } from "@/components/realisation-workspace";
 import { PageHeader } from "@/components/pmo-ui";
-const title = "Benefit Realisation — Virtual PMO",
+const title = "Benefit Realisation — ORMO PMO",
   description =
     "Cumulative benefit value, measurement cadence, PMO validation and benefits tracked beyond closure.";
 export const Route = createFileRoute("/benefits/realisation")({

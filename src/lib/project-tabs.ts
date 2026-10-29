@@ -95,7 +95,7 @@ export const projectPanelId = "project-tab-panel";
 
 /** Where a project's tasks are managed (projects.task_source), for the Tasks chip. */
 export const TASK_SOURCE: Record<string, string> = {
-  native: "Managed in Virtual PMO",
+  native: "Managed in ORMO PMO",
   planner_basic: "Planner Basic",
   planner_premium: "Planner Premium",
 };

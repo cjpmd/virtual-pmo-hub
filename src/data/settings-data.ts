@@ -533,7 +533,7 @@ export const defaultSettings: AppSettings = {
       {
         id: "audit-5",
         timestamp: "14/09/2026 08:55",
-        actor: "Virtual PMO",
+        actor: "ORMO PMO",
         action: "Dependencies inferred",
         detail: "Seven dependencies inferred from plan analysis.",
       },

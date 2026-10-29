@@ -101,7 +101,7 @@ function NoSprintData({ title }: { title: string }) {
       <p className="font-semibold">{title}</p>
       <p className="mt-1 text-muted-foreground">
         No sprint data yet. Sprints, the burn-up, velocity and the what-if forecast return once
-        sprints are recorded in Virtual PMO.
+        sprints are recorded in ORMO PMO.
       </p>
     </div>
   );

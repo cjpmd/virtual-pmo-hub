@@ -12,9 +12,9 @@ import { checkPassword } from "@/lib/password";
 import { nextLocation, safeNext } from "@/lib/safe-next";
 import { signUpWithPassword } from "@/services/auth";
 
-const title = "Create your account — Virtual PMO";
+const title = "Create your account — ORMO PMO";
 const description =
-  "Create a Virtual PMO account with Microsoft or your email, then start a free trial for your organisation.";
+  "Create a ORMO PMO account with Microsoft or your email, then start a free trial for your organisation.";
 
 // Anyone can create an account. Creating an organisation is separate (/signup/setup) and can
 // be switched off with VITE_SELF_SIGNUP=false (see lib/features.ts).

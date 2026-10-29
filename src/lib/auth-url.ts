@@ -35,7 +35,7 @@ export function readAuthUrlError(params: URLSearchParams): AuthUrlError | null {
     return {
       kind: "consent",
       message:
-        "Your Microsoft account belongs to an organisation that hasn't approved Virtual PMO yet. " +
+        "Your Microsoft account belongs to an organisation that hasn't approved ORMO PMO yet. " +
         "Ask your IT administrator to approve the app, or sign in with your email and a " +
         "password instead.",
       detail: description,

@@ -2,12 +2,12 @@ import { Outlet, createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/portfolio/programmes")({
   head: () => ({
     meta: [
-      { title: "Programmes Workspace — Virtual PMO" },
+      { title: "Programmes Workspace — ORMO PMO" },
       {
         name: "description",
         content: "Navigate programme delivery, health, finance and project information.",
       },
-      { property: "og:title", content: "Programmes Workspace — Virtual PMO" },
+      { property: "og:title", content: "Programmes Workspace — ORMO PMO" },
       {
         property: "og:description",
         content: "Navigate programme delivery, health, finance and project information.",

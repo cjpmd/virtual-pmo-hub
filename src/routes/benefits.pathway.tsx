@@ -5,7 +5,7 @@ import { QueryState } from "@/components/query-state";
 import { PathwayBoard } from "@/components/pathway/pathway-board";
 import { usePathway } from "@/hooks/use-pathway";
 
-const title = "Benefits pathway — Virtual PMO",
+const title = "Benefits pathway — ORMO PMO",
   description =
     "Capabilities enable outcomes, outcomes produce benefits: dates, acceptance and RAG.";
 

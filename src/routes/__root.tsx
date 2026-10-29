@@ -84,13 +84,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Virtual PMO" },
+      { title: "ORMO PMO" },
       {
         name: "description",
         content: "Portfolio, programme and project management for any organisation's PMO.",
       },
-      { name: "author", content: "Virtual PMO" },
-      { property: "og:title", content: "Virtual PMO" },
+      { name: "author", content: "ORMO PMO" },
+      { property: "og:title", content: "ORMO PMO" },
       {
         property: "og:description",
         content: "Portfolio, programme and project management for any organisation's PMO.",
@@ -110,9 +110,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap",
       },
-      // The site logo (SiteLogo); favicon.ico is the fallback for browsers without SVG icons.
+      // The ORMO mark (public/brand/ormo-mark.png is the same mark for the site logo).
       { rel: "icon", href: "/favicon.ico", sizes: "any" },
-      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
     ],
   }),

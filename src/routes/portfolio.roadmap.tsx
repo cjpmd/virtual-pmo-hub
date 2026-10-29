@@ -7,7 +7,7 @@ import { QueryState } from "@/components/query-state";
 import { useRoadmaps } from "@/hooks/use-roadmaps";
 import type { RoadmapView } from "@/services/roadmaps";
 
-const title = "Portfolio Roadmaps — Virtual PMO",
+const title = "Portfolio Roadmaps — ORMO PMO",
   description =
     "Plan and present portfolio delivery across linked projects and proposed initiatives.";
 export const Route = createFileRoute("/portfolio/roadmap")({

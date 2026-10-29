@@ -11,7 +11,7 @@ import { KpiCard, PageHeader } from "@/components/pmo-ui";
 import { Button } from "@/components/ui/button";
 import { useCommitteePacks } from "@/hooks/use-committee-packs";
 import { useSettings } from "@/services/settings";
-const title = "Committee Packs — Virtual PMO",
+const title = "Committee Packs — ORMO PMO",
   description = "Generate and store governance packs for each committee.";
 export const Route = createFileRoute("/governance/committee-packs")({
   head: () => ({
