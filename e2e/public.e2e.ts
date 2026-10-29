@@ -47,3 +47,37 @@ test("callback explains a missing Microsoft admin consent", async ({ page }) => 
   await expect(page.getByRole("heading", { name: /needs to approve ORMO PMO/ })).toBeVisible();
   await expect(page.getByText(/IT administrator/)).toBeVisible();
 });
+
+test("public site pages open signed out and link to each other", async ({ page }) => {
+  for (const [path, heading] of [
+    ["/pricing", "Simple pricing, per user."],
+    ["/product", "Everything a PMO needs, in one place."],
+    ["/security", "How we protect your data."],
+    ["/privacy", "Privacy notice"],
+    ["/terms", "Terms of service"],
+  ] as const) {
+    await page.goto(path);
+    await expect(page).toHaveURL(new RegExp(`${path}$`));
+    await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
+    await expectNoErrorBoundary(page);
+  }
+  const header = page.getByRole("navigation", { name: "Main" });
+  await expect(header.getByRole("link", { name: "Pricing" })).toHaveAttribute("href", "/pricing");
+  await expect(header.getByRole("link", { name: "Security" })).toHaveAttribute("href", "/security");
+  await expect(header.getByRole("link", { name: "Product" })).toHaveAttribute("href", "/product");
+  const footer = page.getByRole("navigation", { name: "Footer" });
+  for (const name of ["Product", "Pricing", "Security", "Privacy", "Terms", "Contact"]) {
+    await expect(footer.getByRole("link", { name, exact: true })).toBeVisible();
+  }
+});
+
+test("pricing switches between monthly and annual", async ({ page }) => {
+  await page.goto("/pricing");
+  await expect(page.getByText("per user per month, excl. VAT")).toBeVisible();
+  await page.getByRole("button", { name: /Annual/ }).click();
+  await expect(page.getByText("per user per year, excl. VAT")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Start free trial" }).first()).toHaveAttribute(
+    "href",
+    "/signup",
+  );
+});

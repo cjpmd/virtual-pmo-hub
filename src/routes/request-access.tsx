@@ -5,9 +5,8 @@ import { siteFontLinks } from "@/components/marketing/site-fonts";
 import { contactEmail } from "@/lib/features";
 import { cn } from "@/lib/utils";
 
-const title = "Request access — ORMO PMO";
-const description =
-  "Ask for access to ORMO PMO for your organisation, or book a demo with the team.";
+const title = "Contact sales / book a demo — ORMO PMO";
+const description = "Talk to the ORMO PMO team about your organisation, or book a demo.";
 
 export const Route = createFileRoute("/request-access")({
   validateSearch: (search: Record<string, unknown>): { demo?: boolean } =>
@@ -54,13 +53,13 @@ function RequestAccessPage() {
   const subject =
     interest === "demo"
       ? `Demo request: ${form.organisation || "ORMO PMO"}`
-      : `Access request: ${form.organisation || "ORMO PMO"}`;
+      : `Sales enquiry: ${form.organisation || "ORMO PMO"}`;
   const body = [
     `Name: ${form.name}`,
     `Work email: ${form.email}`,
     `Organisation: ${form.organisation}`,
     `Role: ${form.role}`,
-    `Interested in: ${interest === "demo" ? "a demo" : "access for our organisation"}`,
+    `Interested in: ${interest === "demo" ? "a demo" : "talking to sales"}`,
     "",
     form.notes,
   ].join("\n");
@@ -72,11 +71,15 @@ function RequestAccessPage() {
         <SiteHeader />
         <div className="mx-auto max-w-[1240px] px-7 pt-14 pb-16">
           <h1 className="m-0 max-w-[20ch] text-[clamp(2.2rem,4.4vw,3.4rem)] leading-[1.08] font-semibold tracking-[-0.03em]">
-            {interest === "demo" ? "Book a demo." : "Get started with ORMO PMO."}
+            Contact sales or book a demo.
           </h1>
           <p className="mt-4 max-w-[40rem] text-[1.1rem] leading-[1.6] text-site-on-ink-muted">
-            We're setting organisations up one at a time. Tell us a little about yours and we'll
-            arrange access or a walkthrough with your team.
+            Tell us a little about your organisation and we'll get back to you, or arrange a
+            walkthrough with your team. Want to try it yourself?{" "}
+            <Link to="/signup" className="font-medium text-site-link hover:text-site-link-hover">
+              Start a free trial
+            </Link>
+            .
           </p>
         </div>
       </div>
@@ -93,7 +96,7 @@ function RequestAccessPage() {
             <legend className="mb-2 text-[0.9rem] font-medium text-site-text-soft">I'd like</legend>
             {(
               [
-                ["access", "Access for my organisation"],
+                ["access", "Talk to sales"],
                 ["demo", "A demo"],
               ] as const
             ).map(([value, label]) => (
@@ -169,7 +172,7 @@ function RequestAccessPage() {
                 type="submit"
                 className="inline-flex min-h-[50px] items-center rounded-[10px] bg-site-accent px-6 font-semibold text-white hover:bg-site-accent-strong"
               >
-                {interest === "demo" ? "Request a demo" : "Request access"}
+                {interest === "demo" ? "Request a demo" : "Contact sales"}
               </button>
               <p className="text-[0.9rem] text-site-text-muted">
                 This opens an email to {contactEmail} with your details filled in.
