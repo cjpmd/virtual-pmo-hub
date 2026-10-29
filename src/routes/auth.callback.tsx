@@ -4,7 +4,7 @@ import { CentredCard, Splash } from "@/components/auth/auth-gate";
 import { Button } from "@/components/ui/button";
 import { authUrlParams, readAuthUrlError } from "@/lib/auth-url";
 import { selfSignup } from "@/lib/features";
-import { safeNext } from "@/lib/safe-next";
+import { nextLocation, safeNext } from "@/lib/safe-next";
 import { completeSignIn, listMemberships } from "@/services/auth";
 import { errorMessage } from "@/services/service-error";
 
@@ -55,7 +55,8 @@ function AuthCallback() {
   });
 
   if (result.isPending) return <Splash label="Signing you in…" />;
-  if (result.isSuccess && result.data.to) return <Navigate to={result.data.to} replace />;
+  if (result.isSuccess && result.data.to)
+    return <Navigate {...nextLocation(result.data.to)} replace />;
 
   const urlError = result.data?.urlError;
   const consent = urlError?.kind === "consent";

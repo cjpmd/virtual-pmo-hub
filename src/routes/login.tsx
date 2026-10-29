@@ -9,7 +9,7 @@ import { OrDivider, ProviderButtons } from "@/components/auth/provider-buttons";
 import { useSession } from "@/components/auth/session-provider";
 import { Button } from "@/components/ui/button";
 import { isUnconfirmedEmail, resendConfirmation, signInWithPassword } from "@/services/auth";
-import { safeNext } from "@/lib/safe-next";
+import { nextLocation, safeNext } from "@/lib/safe-next";
 
 const title = "Sign in — Virtual PMO";
 const description = "Sign in to Virtual PMO with Microsoft or your email and password.";
@@ -50,7 +50,7 @@ function LoginPage() {
   });
 
   if (session.status === "loading") return <Splash label="Checking your session…" />;
-  if (session.status === "signed_in") return <Navigate to={next ?? "/"} replace />;
+  if (session.status === "signed_in") return <Navigate {...nextLocation(next ?? "/")} replace />;
 
   const unconfirmed = isUnconfirmedEmail(signIn.error);
   return (

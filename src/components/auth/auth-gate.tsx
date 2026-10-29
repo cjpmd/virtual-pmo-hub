@@ -17,6 +17,7 @@ export const isPublicPath = (path: string) =>
   path === "/signin" ||
   path.startsWith("/auth/") ||
   path === "/request-access" ||
+  path === "/invite" ||
   path === "/signup" ||
   path.startsWith("/signup/");
 
