@@ -640,8 +640,15 @@ const savePhases = async (
   previous: LifecyclePhase[],
   next: LifecyclePhase[],
 ) => {
+  // First renumber in the previous order, so rows a failed save left on parking values are
+  // back at 1..n before this save parks its new rows.
+  await reorderPhases(orgId, ids, previous);
   await savePhaseRows(orgId, ids, previous, next);
-  const ordered = next
+  await reorderPhases(orgId, ids, next);
+};
+
+const reorderPhases = async (orgId: string, ids: Map<string, string>, phases: LifecyclePhase[]) => {
+  const ordered = phases
     .map((phase) => resolveId(ids, phase.id))
     .filter((id): id is string => Boolean(id));
   unwrapMaybe(
