@@ -427,7 +427,14 @@ a Stripe customer. Manage billing shows whenever a customer exists ("Billing his
 live subscription). The demo organisation can't subscribe. Not in this package:
 `private.paid_seat_count` and `private.organisation_is_writable` exist but nothing calls them yet
 (seat enforcement in `accept_invite` / `change_member_role` waits for 2.1, read-only mode and its
-banner for 2.2).
+banner for 2.2). Fix (29/10/2026): the Stripe account has Managed Payments (Stripe as merchant
+of record) on by default, which refuses `payment_method_types`, `automatic_tax`,
+`tax_id_collection` and `customer_update`, so every checkout failed; `create-checkout-session`
+(version 8) now sends `managed_payments.enabled = false`, logs the Stripe error (type, code, param,
+request id) and returns a code (`billing_misconfigured`, `billing_unavailable`, `stripe_unavailable`,
+`price_not_found`, `checkout_failed`). Keep the API version pinned at `2024-06-20`: newer versions
+drop `payment_method_types`, and card-only would then have to come from the dashboard's payment
+method configuration (it currently also offers Klarna, Link, Revolut Pay and Amazon Pay).
 
 ---
 
