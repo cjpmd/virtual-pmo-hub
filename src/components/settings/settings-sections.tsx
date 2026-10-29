@@ -26,7 +26,7 @@ import {
   notificationEvents,
   timeZones,
 } from "@/data/settings-data";
-import type { AppSettings, PermissionKey, TermKey, UserRole } from "@/data/settings-types";
+import type { AppSettings, PermissionKey, TermKey } from "@/data/settings-types";
 import type { BenefitCategory, ProjectTier } from "@/data/types";
 import {
   formatCompactCurrency,
@@ -1423,65 +1423,10 @@ const homeOptions = [
   { value: "/settings/organisation", label: "Settings › Organisation" },
 ];
 
-const appRoles: UserRole[] = ["Viewer", "Contributor", "Manager", "PMO", "Admin"];
-
 export function UserSettings() {
   const settings = useSettings();
   return (
     <>
-      <SettingsCard
-        title="Members"
-        description="People with access to this organisation and their organisation role. Workspace roles can be higher for individual workspaces."
-        actions={
-          <span className="text-xs text-muted-foreground">{settings.users.length} members</span>
-        }
-      >
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-left text-sm">
-            <thead className="bg-table-head text-xs text-muted-foreground">
-              <tr>
-                <th className="h-10 px-3 font-semibold">Name</th>
-                <th className="px-3 font-semibold">Email</th>
-                <th className="px-3 font-semibold">Organisation role</th>
-              </tr>
-            </thead>
-            <tbody>
-              {settings.users.map((user) => (
-                <tr key={user.id} className="border-t">
-                  <td className="px-3 py-2.5 font-medium">
-                    {user.name}
-                    {user.id === settings.currentUserId && (
-                      <span className="ml-2 text-xs text-muted-foreground">(you)</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2.5 text-muted-foreground">{user.email}</td>
-                  <td className="px-3 py-2">
-                    <select
-                      aria-label={`${user.name} role`}
-                      value={user.role}
-                      onChange={(event) =>
-                        updateSettings({
-                          users: settings.users.map((item) =>
-                            item.id === user.id
-                              ? { ...item, role: event.target.value as UserRole }
-                              : item,
-                          ),
-                        })
-                      }
-                      className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-                    >
-                      {appRoles.map((role) => (
-                        <option key={role}>{role}</option>
-                      ))}
-                    </select>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </SettingsCard>
-
       <SettingsCard
         title="Roles and default home page"
         description="Each role lands on its own home page after signing in."

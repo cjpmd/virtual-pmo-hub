@@ -343,6 +343,20 @@ Work package 2.1. There is no way to add people to an organisation. Design and p
   role change, remove.
 SQL to docs/sql/2-1-invites.sql and stop. Plan the edge function separately before deploying.
 ```
+**Notes from 2.1:** migrations `20261029171524_2_1_invites_seats`, `20261029192122_2_1_audit_actions`
+and `20261029192147_2_1_resend_bounces`. Edge functions `send-invite`, `notify-join-request`,
+`manage-subscription` and `resend-webhook`; `stripe-webhook` and `create-checkout-session` updated.
+Five database roles, shown as Admin / Member (manager and PMO under "More roles") / Viewer;
+viewers are free and read-only in RLS. Seats: paid members plus pending paid invitations, a
+10-seat trial allowance, seat checks locked per organisation. Email goes through the Resend HTTP
+API (D2 updated), and bounces void the link. Seat increases are charged at once (3D Secure
+supported); reductions and monthly ↔ annual switches wait for renewal through a Stripe
+subscription schedule. Settings › Members & invitations, `/invite`, "Ask to join" on
+`/signup/setup`, and seat controls on Settings › Subscription. `join_demo_organisation` is
+revoked (dropping it is left for a later migration). Details and the manual checklist are in
+`docs/invites-and-seats.md`. Still to do by hand: the Stripe test-mode settings and test-clock
+checklist listed there.
+
 **Note from 0.6:** the "Join the demo organisation" button is gone from the front end, but the
 `public.join_demo_organisation()` RPC (and `settings.demoAdmins`) is still in the database.
 Decide in 2.1 whether invites replace it, and drop it then in a new migration.
@@ -606,7 +620,7 @@ Also before go-live: a cross-tenant RLS test suite in `supabase/tests` (user A c
 
 - [x] 0.1 Test harness  - [ ] 0.2 Clean-up  - [x] 0.3 Migration history and indexes  - [x] 0.4 Copy  - [x] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
 - [x] 1.1 Data import/export  - [x] 1.2 Pack export  - [x] 1.3 Dashboards and views  - [x] 1.4 Calendar and automations flag  - [x] 1.5 Notes and map layout  - [x] 1.6 Workspaces  - [ ] 1.7 Board date sort  - [x] 1.9 Progress chart polish
-- [ ] 2.1 Invites  - [ ] 2.2 Self sign-up  - [x] 2.3 Stripe
+- [x] 2.1 Invites  - [ ] 2.2 Self sign-up  - [x] 2.3 Stripe
 - [ ] 3.1 Sprint schema  - [ ] 3.2 Sprint UI  - [ ] 3.3 Reports and forecast
 - [ ] 4.1 Notifications  - [ ] 4.2 AI drafting  - [ ] 4.3 Automations  - [ ] 4.4 Programme report
 - [ ] 5.x Planner  - [ ] 6.1 Multi-tenant refresh and RLS suite

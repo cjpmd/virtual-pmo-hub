@@ -2,8 +2,32 @@
 
 Database: migration `20261029171524_2_1_invites_seats` (`docs/sql/2-1-invites-seats.sql`, rollback
 reference `docs/sql/2-1-rollback.sql`). Edge functions: `send-invite`, `notify-join-request`,
-`manage-subscription`, and schedule handling in `stripe-webhook` (shared code in
-`supabase/functions/_shared/`).
+`manage-subscription`, `resend-webhook`, and schedule handling in `stripe-webhook` (shared code in
+`supabase/functions/_shared/`). Later migrations: `2_1_audit_actions` (audit action list) and
+`2_1_resend_bounces` (email delivery status on invitations).
+
+## Screens
+
+- **Settings › Members & invitations** (`components/settings/members-settings.tsx`, hooks in
+  `hooks/use-members.ts`, service `services/members.ts`). Everyone sees the seat summary and the
+  member list. Admins also get: the role select and Remove on each member; Invite people
+  (addresses, role, with manager and PMO under "More roles", workspaces ticked by default, and
+  the seat check before sending); open invitations with Sent / Delivered / Not sent / Not
+  delivered / Expired, Resend invite and Revoke; Requests to join (approve with role and
+  workspaces, or decline); and the join settings (switch, add own email domain or Microsoft
+  organisation, remove). Pending requests show as a count on Settings in the sidebar.
+- **Settings › Roles & permissions** (was "Users, roles & permissions"): home pages and the
+  permissions matrix. The old Members card is gone.
+- **Settings › Subscription**: with a live subscription, "Seats and billing period" previews the
+  prorated charge, confirms, schedules reductions and period switches for renewal, shows and
+  cancels a scheduled change, and links to Stripe's invoice page when the bank asks for 3D
+  Secure. Checkout's minimum seats now include pending paid invitations.
+- **`/invite?token=…`** (public): shows who invited you to which organisation and role. Signed
+  out, Create an account / Sign in return to the invitation (`next` keeps the query string:
+  `lib/safe-next.ts` `nextLocation`). Signed in, it checks the address and confirmation, then
+  Accept and join opens the organisation.
+- **`/signup/setup`**: "Ask to join" for organisations that accept requests from the user's
+  domain or Microsoft organisation, with an optional message and Withdraw.
 
 ## How it works
 
@@ -40,12 +64,12 @@ edge-function secrets `RESEND_API_KEY` and `RESEND_FROM`
 (`ORMO PMO <invites@ormo-pmo.originoverthrow.com>`). The sender is always read from
 `RESEND_FROM`; any other domain is refused by Resend with a 403.
 
-**Resend webhook** (to do, after `resend-webhook` is deployed): in Resend › Webhooks, add the
-endpoint `https://xvdlmtkzfmbcegkmampz.supabase.co/functions/v1/resend-webhook` with the events
-`email.delivered`, `email.delivery_delayed`, `email.bounced`, `email.complained` and
-`email.suppressed`. Copy its signing secret (`whsec_…`) into the edge-function secret
+**Resend webhook** (done 29/10/2026; the bounce test with `bounced@resend.dev` passed): Resend ›
+Webhooks has the endpoint `https://xvdlmtkzfmbcegkmampz.supabase.co/functions/v1/resend-webhook`
+with the events `email.delivered`, `email.delivery_delayed`, `email.bounced`, `email.complained`
+and `email.suppressed`, and its signing secret (`whsec_…`) is the edge-function secret
 `RESEND_WEBHOOK_SECRET`. Every request is checked against that signature (Svix) and requests more
-than 5 minutes old are refused.
+than 5 minutes old are refused. If the secret is rotated in Resend, update the edge-function secret.
 
 **Stripe** (test mode first, then live):
 
