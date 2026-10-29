@@ -414,6 +414,20 @@ wired to Stripe. Propose:
   banner. Subscribing again restores writes. Never delete data.
 SQL first, then stop. Use Stripe test mode throughout.
 ```
+**Notes from 2.3:** migration `20261029095029_2_3_stripe_billing` (`docs/sql/2-3-stripe-billing.sql`),
+applied on live before the front end, plus the edge functions `create-checkout-session`,
+`create-portal-session` and `stripe-webhook` (`verify_jwt = false` in `supabase/config.toml`),
+copied unchanged into `supabase/functions` (ESLint ignores that folder: it is Deno code). Prices
+are found by lookup key (`ormo_seat_monthly`, `ormo_seat_annual`), not price-ID secrets. Checkout
+keeps the rest of a trial when more than 48 hours remain. Settings › Subscription
+(`components/settings/subscription-settings.tsx`, `services/billing.ts`) shows the plan and status,
+paid seats X of Y plus free viewers, and the renewal, cancellation or trial end. Subscribe shows
+whenever there's no live subscription (active, trialing, past_due, unpaid, incomplete), even with
+a Stripe customer. Manage billing shows whenever a customer exists ("Billing history" without a
+live subscription). The demo organisation can't subscribe. Not in this package:
+`private.paid_seat_count` and `private.organisation_is_writable` exist but nothing calls them yet
+(seat enforcement in `accept_invite` / `change_member_role` waits for 2.1, read-only mode and its
+banner for 2.2).
 
 ---
 
@@ -578,7 +592,7 @@ Also before go-live: a cross-tenant RLS test suite in `supabase/tests` (user A c
 
 - [x] 0.1 Test harness  - [ ] 0.2 Clean-up  - [x] 0.3 Migration history and indexes  - [x] 0.4 Copy  - [x] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
 - [x] 1.1 Data import/export  - [x] 1.2 Pack export  - [x] 1.3 Dashboards and views  - [x] 1.4 Calendar and automations flag  - [x] 1.5 Notes and map layout  - [x] 1.6 Workspaces  - [ ] 1.7 Board date sort  - [x] 1.9 Progress chart polish
-- [ ] 2.1 Invites  - [ ] 2.2 Self sign-up  - [ ] 2.3 Stripe
+- [ ] 2.1 Invites  - [ ] 2.2 Self sign-up  - [x] 2.3 Stripe
 - [ ] 3.1 Sprint schema  - [ ] 3.2 Sprint UI  - [ ] 3.3 Reports and forecast
 - [ ] 4.1 Notifications  - [ ] 4.2 AI drafting  - [ ] 4.3 Automations  - [ ] 4.4 Programme report
 - [ ] 5.x Planner  - [ ] 6.1 Multi-tenant refresh and RLS suite

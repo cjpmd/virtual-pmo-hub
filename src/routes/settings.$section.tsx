@@ -9,6 +9,7 @@ import {
 } from "@/components/settings/settings-shell";
 import { AccountSettings } from "@/components/settings/account-settings";
 import { FinanceSettings } from "@/components/settings/finance-settings";
+import { SubscriptionSettings } from "@/components/settings/subscription-settings";
 import { WorkspaceSettings } from "@/components/settings/workspace-settings";
 import {
   BenefitSettingsSection,
@@ -20,7 +21,6 @@ import {
   OrganisationSettings,
   RegionalSettings,
   RiskSettings,
-  SubscriptionSettings,
   TemplateSettings,
   TerminologySettings,
   UserSettings,

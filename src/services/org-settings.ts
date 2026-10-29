@@ -168,7 +168,9 @@ export async function loadOrgSettings(orgId: string, userId: string): Promise<Or
     // Admins only; others get no row and the defaults stay hidden behind the card's notice.
     supabase
       .from("organisation_subscriptions")
-      .select("plan, seats_total, renewal_date, billing_contact")
+      .select(
+        "plan, status, billing_interval, seats_total, trial_ends_at, current_period_end, cancel_at_period_end, billing_contact, stripe_customer_id",
+      )
       .eq("organisation_id", orgId)
       .maybeSingle(),
   ]);
@@ -316,12 +318,23 @@ export async function loadOrgSettings(orgId: string, userId: string): Promise<Or
   };
 
   const plan = subscription.error ? null : subscription.data;
+  const viewers = memberRows.filter((row) => row.role === "viewer").length;
   settings.subscription = {
+    canManage: memberRows.some((row) => row.profile_id === userId && row.role === "admin"),
     plan: plan?.plan ?? "",
-    seatsUsed: memberRows.length,
+    status: plan?.status ?? "",
+    billingInterval:
+      plan?.billing_interval === "month" || plan?.billing_interval === "year"
+        ? plan.billing_interval
+        : "",
+    paidSeatsUsed: memberRows.length - viewers,
+    viewers,
     seatsTotal: plan?.seats_total ?? 0,
-    renewalDate: plan?.renewal_date ?? "",
+    trialEndsAt: plan?.trial_ends_at ?? "",
+    currentPeriodEnd: plan?.current_period_end ?? "",
+    cancelAtPeriodEnd: plan?.cancel_at_period_end ?? false,
     billingContact: plan?.billing_contact ?? "",
+    hasBillingAccount: Boolean(plan?.stripe_customer_id),
   };
 
   return {
