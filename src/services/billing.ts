@@ -2,8 +2,8 @@
 // create-portal-session check that the caller is an organisation admin, talk to Stripe and
 // return { url } (or { error, code }); the stripe-webhook function writes the result back to
 // organisation_subscriptions. Prices are excl. VAT; Stripe Tax adds VAT at checkout.
-import { supabase } from "@/integrations/supabase/client";
-import { ServiceError, type ServiceErrorKind } from "./service-error";
+import { invokeFunction } from "./functions";
+import { ServiceError } from "./service-error";
 
 export type BillingInterval = "month" | "year";
 
@@ -35,49 +35,14 @@ export function keepsTrialDays(trialEndsAt: string, now = Date.now()): boolean {
   return new Date(trialEndsAt).getTime() - now > 2 * 86_400_000;
 }
 
-const kindForStatus = (status: number | undefined): ServiceErrorKind =>
-  status === 401
-    ? "unauthenticated"
-    : status === 403
-      ? "forbidden"
-      : status === 404
-        ? "not_found"
-        : status === 409
-          ? "conflict"
-          : status === 400
-            ? "invalid"
-            : "unknown";
-
-interface FunctionErrorBody {
-  error?: unknown;
-  code?: unknown;
-}
-
 /** Calls a billing function and returns its url, or throws with the function's own message. */
 async function invokeForUrl(
   name: "create-checkout-session" | "create-portal-session",
   body: Record<string, unknown>,
   fallback: string,
 ): Promise<string> {
-  const { data, error } = await supabase.functions.invoke<{ url?: string }>(name, { body });
-  if (error) {
-    // FunctionsHttpError keeps the function's Response in `context`; other errors (relay or
-    // fetch failures) carry none.
-    const context = (error as { context?: unknown }).context;
-    if (context && typeof (context as Response).json === "function") {
-      const response = context as Response;
-      const parsed = (await response.json().catch(() => null)) as FunctionErrorBody | null;
-      const message = typeof parsed?.error === "string" && parsed.error ? parsed.error : fallback;
-      throw new ServiceError(kindForStatus(response.status), message, {
-        code: typeof parsed?.code === "string" ? parsed.code : undefined,
-        cause: error,
-      });
-    }
-    throw new ServiceError("network", `${fallback} Check your connection and try again.`, {
-      cause: error,
-    });
-  }
-  if (!data?.url) throw new ServiceError("unknown", fallback);
+  const data = await invokeFunction<{ url?: string }>(name, body, fallback);
+  if (!data.url) throw new ServiceError("unknown", fallback);
   return data.url;
 }
 

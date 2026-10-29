@@ -8,6 +8,8 @@
 export const qk = {
   me: () => ["me"] as const,
   memberships: (userId: string) => ["me", userId, "memberships"] as const,
+  /** Organisations the signed-in user may ask to join (work package 2.1). */
+  joinable: (userId: string) => ["me", userId, "joinable"] as const,
 
   org: (orgId: string) => ["org", orgId] as const,
 
@@ -114,6 +116,15 @@ export const qk = {
     all: (orgId: string) => ["org", orgId, "workspaces"] as const,
     members: (orgId: string, workspaceId: string) =>
       ["org", orgId, "workspaces", "members", workspaceId] as const,
+  },
+  /** Members, seats, invitations and join requests (work package 2.1). */
+  members: {
+    all: (orgId: string) => ["org", orgId, "members"] as const,
+    list: (orgId: string) => ["org", orgId, "members", "list"] as const,
+    seats: (orgId: string) => ["org", orgId, "members", "seats"] as const,
+    invites: (orgId: string) => ["org", orgId, "members", "invites"] as const,
+    joinSettings: (orgId: string) => ["org", orgId, "members", "join-settings"] as const,
+    joinRequests: (orgId: string) => ["org", orgId, "members", "join-requests"] as const,
   },
   phases: (orgId: string) => ["org", orgId, "phases"] as const,
   /** When stored health was last refreshed (max computed_at). */
