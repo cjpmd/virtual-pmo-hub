@@ -406,22 +406,28 @@ export async function saveOrgSettings(
   await saveJsonb(orgId, data, previous, next);
   for (const [name, listKey] of Object.entries(LIST_KEYS) as Array<[ListName, string]>)
     if (!same(previous.lists[name], next.lists[name]))
-      await saveList(listKey, data.lookups, next.lists[name]);
+      await saveList(orgId, listKey, data.lookups, next.lists[name]);
   if (!same(previous.benefits.categories, next.benefits.categories))
-    await saveList("benefit_category", data.lookups, next.benefits.categories);
+    await saveList(orgId, "benefit_category", data.lookups, next.benefits.categories);
   const { ids } = context;
   if (!same(previous.lifecycle.phases, next.lifecycle.phases))
-    await savePhases(ids, previous.lifecycle.phases, next.lifecycle.phases);
+    await savePhases(orgId, ids, previous.lifecycle.phases, next.lifecycle.phases);
   if (!same(previous.regional.exchangeRates, next.regional.exchangeRates))
-    await saveRates(ids, previous.regional.exchangeRates, next.regional.exchangeRates);
+    await saveRates(orgId, ids, previous.regional.exchangeRates, next.regional.exchangeRates);
   if (!same(previous.workingTime.holidayCalendars, next.workingTime.holidayCalendars))
     await saveCalendars(
+      orgId,
       ids,
       previous.workingTime.holidayCalendars,
       next.workingTime.holidayCalendars,
     );
   if (!same(previous.templates.projectTemplates, next.templates.projectTemplates))
-    await saveTemplates(ids, previous.templates.projectTemplates, next.templates.projectTemplates);
+    await saveTemplates(
+      orgId,
+      ids,
+      previous.templates.projectTemplates,
+      next.templates.projectTemplates,
+    );
   if (!same(previous.users, next.users)) await saveMembers(orgId, previous.users, next.users);
 }
 
@@ -531,7 +537,7 @@ const slug = (label: string) =>
     .replace(/^_|_$/g, "")
     .slice(0, 60) || "value";
 
-async function saveList(listKey: string, lookups: LookupValue[], labels: string[]) {
+async function saveList(orgId: string, listKey: string, lookups: LookupValue[], labels: string[]) {
   const rows = lookups.filter((row) => row.listKey === listKey);
   const wanted = labels.map((label) => label.trim()).filter(Boolean);
   for (const row of rows)
@@ -559,7 +565,15 @@ async function saveList(listKey: string, lookups: LookupValue[], labels: string[
     for (let suffix = 2; taken.has(value); suffix += 1) value = `${slug(label)}_${suffix}`;
     await insertRow(
       "lookup_values",
-      { list_key: listKey, value, label, sort_order: index, is_active: true },
+      // Org-level table: no parent row for the tenant trigger to copy from, so send the org.
+      {
+        organisation_id: orgId,
+        list_key: listKey,
+        value,
+        label,
+        sort_order: index,
+        is_active: true,
+      } as never,
       "Adding a list value",
     );
   }
@@ -573,6 +587,7 @@ const isUuid = (value: string) =>
  * database id yet (remembering their new id), update rows whose fields changed.
  */
 async function syncRows<T extends { id: string }, R extends TableName>(
+  orgId: string,
   table: R,
   ids: Map<string, string>,
   previous: T[],
@@ -592,7 +607,12 @@ async function syncRows<T extends { id: string }, R extends TableName>(
     const before = previous.find((candidate) => candidate.id === item.id);
     let id = resolveId(ids, item.id);
     if (!id) {
-      id = (await insertRow(table, fields as never, `Adding a ${label}`)).id;
+      // Root settings tables (phases, rates, calendars, templates) have no parent row for the
+      // tenant trigger to copy organisation_id from, so it is sent here. On child tables
+      // (gate_criteria) the trigger overwrites it from the parent, so sending it is harmless.
+      id = (
+        await insertRow(table, { organisation_id: orgId, ...fields } as never, `Adding a ${label}`)
+      ).id;
       ids.set(item.id, id);
     } else if (!before || !same(toFields(before, previous.indexOf(before)), fields))
       await updateRow(table, id, fields as never, { context: `Saving a ${label}` });
@@ -600,8 +620,14 @@ async function syncRows<T extends { id: string }, R extends TableName>(
   }
 }
 
-const savePhases = (ids: Map<string, string>, previous: LifecyclePhase[], next: LifecyclePhase[]) =>
+const savePhases = (
+  orgId: string,
+  ids: Map<string, string>,
+  previous: LifecyclePhase[],
+  next: LifecyclePhase[],
+) =>
   syncRows(
+    orgId,
     "lifecycle_phases",
     ids,
     previous,
@@ -618,6 +644,7 @@ const savePhases = (ids: Map<string, string>, previous: LifecyclePhase[], next: 
       same(before?.criteria, phase.criteria)
         ? Promise.resolve()
         : syncRows(
+            orgId,
             "gate_criteria",
             ids,
             before?.criteria ?? [],
@@ -633,8 +660,14 @@ const savePhases = (ids: Map<string, string>, previous: LifecyclePhase[], next: 
           ),
   );
 
-const saveRates = (ids: Map<string, string>, previous: ExchangeRate[], next: ExchangeRate[]) =>
+const saveRates = (
+  orgId: string,
+  ids: Map<string, string>,
+  previous: ExchangeRate[],
+  next: ExchangeRate[],
+) =>
   syncRows(
+    orgId,
     "exchange_rates",
     ids,
     previous,
@@ -649,11 +682,13 @@ const saveRates = (ids: Map<string, string>, previous: ExchangeRate[], next: Exc
   );
 
 const saveCalendars = (
+  orgId: string,
   ids: Map<string, string>,
   previous: HolidayCalendar[],
   next: HolidayCalendar[],
 ) =>
   syncRows(
+    orgId,
     "holiday_calendars",
     ids,
     previous,
@@ -678,11 +713,13 @@ const saveCalendars = (
   );
 
 const saveTemplates = (
+  orgId: string,
   ids: Map<string, string>,
   previous: ProjectTemplate[],
   next: ProjectTemplate[],
 ) =>
   syncRows(
+    orgId,
     "project_templates",
     ids,
     previous,
