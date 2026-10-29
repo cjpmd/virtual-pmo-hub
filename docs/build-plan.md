@@ -24,7 +24,7 @@ one work package per session; finish with `npx tsc --noEmit`, `npx tsc --noEmit 
 | # | Decision | Needed by | Decided |
 |---|---|---|---|
 | D1 | Pricing model: per seat, per organisation tier, or both; trial length | 2.3 | £10 per paid seat per month, GBP only, excluding VAT (Stripe Tax adds VAT where due). Monthly or annual (annual = 10× monthly, £100 per seat per year). Card only, through Stripe Checkout; no invoice option. Paid seats = contributor and above; viewers are free. |
-| D2 | Email provider: Resend (recommended) or Supabase custom SMTP | 2.1, 4.1 | Supabase Auth custom SMTP backed by Resend (SMTP credentials). Edge functions send through the same SMTP credentials (invites in 2.1, notification email in 4.1). |
+| D2 | Email provider: Resend (recommended) or Supabase custom SMTP | 2.1, 4.1 | Supabase Auth custom SMTP backed by Resend (SMTP credentials). App emails from edge functions (invites and join requests in 2.1, notification email in 4.1) use the Resend HTTP API with a `RESEND_API_KEY` edge-function secret, sending from originoverthrow.com (changed in 2.1). |
 | D3 | Self-service sign-up: switch on with a free trial, or invite-only | 2.2 | Open self sign-up with a 14-day free trial, no card. On expiry the organisation becomes read-only; nothing is deleted. Cloudflare Turnstile CAPTCHA on sign-up; email confirmation required. Optional "start with sample data". |
 | D4 | Board automations: hide until 4.3, or leave visible meanwhile | 1.4 | Hide until 4.3 |
 | D5 | Committee pack export: PDF only, or PDF and PowerPoint | 1.2 | PDF only for now |
