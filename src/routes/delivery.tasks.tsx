@@ -9,12 +9,12 @@ import { openIssueTask } from "@/components/issue-task-sheet";
 export const Route = createFileRoute("/delivery/tasks")({
   head: () => ({
     meta: [
-      { title: "Portfolio Task Overview — Virtual PMO" },
+      { title: "Portfolio Task Overview — ORMO PMO" },
       {
         name: "description",
         content: "Portfolio-wide task status, effort, workload and delivery timelines.",
       },
-      { property: "og:title", content: "Portfolio Task Overview — Virtual PMO" },
+      { property: "og:title", content: "Portfolio Task Overview — ORMO PMO" },
       {
         property: "og:description",
         content: "Portfolio-wide task status, effort, workload and delivery timelines.",

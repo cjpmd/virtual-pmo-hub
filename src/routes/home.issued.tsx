@@ -5,7 +5,7 @@ import { IssuedTaskTracker } from "@/components/issued-task-tracker";
 import { openIssueTask } from "@/components/issue-task-sheet";
 import { PageHeader } from "@/components/pmo-ui";
 import { Button } from "@/components/ui/button";
-const title = "Issued to me — Virtual PMO",
+const title = "Issued to me — ORMO PMO",
   description = "Work issued to you by others, and the work you have issued.";
 export const Route = createFileRoute("/home/issued")({
   head: () => ({

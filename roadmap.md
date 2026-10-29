@@ -1,4 +1,4 @@
-# Virtual PMO prototype
+# ORMO PMO prototype
 
 ## View demo
 - [x] Add home-page and no-organisation demo entry buttons.

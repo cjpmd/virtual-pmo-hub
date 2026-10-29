@@ -71,12 +71,12 @@ export const Route = createFileRoute("/delivery/milestones")({
   },
   head: () => ({
     meta: [
-      { title: "Portfolio Milestones — Virtual PMO" },
+      { title: "Portfolio Milestones — ORMO PMO" },
       {
         name: "description",
         content: "Track portfolio milestones, stage gates, slippage and forecast trends.",
       },
-      { property: "og:title", content: "Portfolio Milestones — Virtual PMO" },
+      { property: "og:title", content: "Portfolio Milestones — ORMO PMO" },
       {
         property: "og:description",
         content: "Track portfolio milestones, stage gates, slippage and forecast trends.",

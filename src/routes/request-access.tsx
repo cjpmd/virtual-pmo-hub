@@ -5,9 +5,9 @@ import { siteFontLinks } from "@/components/marketing/site-fonts";
 import { contactEmail } from "@/lib/features";
 import { cn } from "@/lib/utils";
 
-const title = "Request access — Virtual PMO";
+const title = "Request access — ORMO PMO";
 const description =
-  "Ask for access to Virtual PMO for your organisation, or book a demo with the team.";
+  "Ask for access to ORMO PMO for your organisation, or book a demo with the team.";
 
 export const Route = createFileRoute("/request-access")({
   validateSearch: (search: Record<string, unknown>): { demo?: boolean } =>
@@ -53,8 +53,8 @@ function RequestAccessPage() {
 
   const subject =
     interest === "demo"
-      ? `Demo request: ${form.organisation || "Virtual PMO"}`
-      : `Access request: ${form.organisation || "Virtual PMO"}`;
+      ? `Demo request: ${form.organisation || "ORMO PMO"}`
+      : `Access request: ${form.organisation || "ORMO PMO"}`;
   const body = [
     `Name: ${form.name}`,
     `Work email: ${form.email}`,
@@ -72,7 +72,7 @@ function RequestAccessPage() {
         <SiteHeader />
         <div className="mx-auto max-w-[1240px] px-7 pt-14 pb-16">
           <h1 className="m-0 max-w-[20ch] text-[clamp(2.2rem,4.4vw,3.4rem)] leading-[1.08] font-semibold tracking-[-0.03em]">
-            {interest === "demo" ? "Book a demo." : "Get started with Virtual PMO."}
+            {interest === "demo" ? "Book a demo." : "Get started with ORMO PMO."}
           </h1>
           <p className="mt-4 max-w-[40rem] text-[1.1rem] leading-[1.6] text-site-on-ink-muted">
             We're setting organisations up one at a time. Tell us a little about yours and we'll
@@ -180,7 +180,7 @@ function RequestAccessPage() {
               role="status"
               className="rounded-lg border border-site-line bg-site-tint-blue p-4 text-[0.95rem] text-site-text-soft"
             >
-              Requests aren't being taken online yet. Please contact the Virtual PMO team directly.
+              Requests aren't being taken online yet. Please contact the ORMO PMO team directly.
             </p>
           )}
           <p className="text-[0.95rem] text-site-text-muted">

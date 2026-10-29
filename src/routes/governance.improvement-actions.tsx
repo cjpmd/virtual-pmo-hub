@@ -13,7 +13,7 @@ import {
   improvementActionsToRows,
 } from "@/lib/lesson-board-data";
 import type { ActionInput, LessonsData } from "@/services/lessons";
-const title = "Improvement Actions — Virtual PMO",
+const title = "Improvement Actions — ORMO PMO",
   description =
     "Improvement actions arising from lessons, with owners, due dates and where each one is embedded.";
 export const Route = createFileRoute("/governance/improvement-actions")({

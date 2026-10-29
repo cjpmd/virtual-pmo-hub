@@ -38,12 +38,12 @@ import { useSettings } from "@/services/settings";
 export const Route = createFileRoute("/insights/dashboards")({
   head: () => ({
     meta: [
-      { title: "Portfolio Dashboard — Virtual PMO" },
+      { title: "Portfolio Dashboard — ORMO PMO" },
       {
         name: "description",
         content: "Custom portfolio dashboard with delivery, risk, finance and workload widgets.",
       },
-      { property: "og:title", content: "Portfolio Dashboard — Virtual PMO" },
+      { property: "og:title", content: "Portfolio Dashboard — ORMO PMO" },
       {
         property: "og:description",
         content: "Custom portfolio dashboard with delivery, risk, finance and workload widgets.",

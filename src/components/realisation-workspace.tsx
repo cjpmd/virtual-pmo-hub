@@ -105,7 +105,7 @@ function Realisation({ data }: { data: BenefitsData }) {
     dueDate: string;
   }) => {
     const subject = `Benefit measurement due: ${item.benefit.reference} ${item.measure.name}`;
-    const body = `Hello ${item.benefit.owner || ""},\n\nThe ${item.measure.name} measurement for ${item.benefit.reference} ${item.benefit.title} was due on ${formatDate(item.dueDate)}. Please submit it in Virtual PMO.\n`;
+    const body = `Hello ${item.benefit.owner || ""},\n\nThe ${item.measure.name} measurement for ${item.benefit.reference} ${item.benefit.title} was due on ${formatDate(item.dueDate)}. Please submit it in ORMO PMO.\n`;
     return `mailto:${emails.get(item.benefit.owner) ?? ""}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 

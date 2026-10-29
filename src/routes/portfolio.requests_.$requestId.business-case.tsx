@@ -5,7 +5,7 @@ import { BusinessCasePage } from "@/components/business-case/business-case-page"
 import { useCan } from "@/hooks/use-permissions";
 import { useRequests } from "@/hooks/use-requests";
 
-const title = "Request business case — Virtual PMO",
+const title = "Request business case — ORMO PMO",
   description =
     "The request's business case: Five Case Model sections, options, benefits and documents.";
 

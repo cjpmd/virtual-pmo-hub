@@ -3,12 +3,12 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 export const Route = createFileRoute("/portfolio/collections")({
   head: () => ({
     meta: [
-      { title: "Collections Workspace — Virtual PMO" },
+      { title: "Collections Workspace — ORMO PMO" },
       {
         name: "description",
         content: "Browse governance, priority and funding collections across the DTS portfolio.",
       },
-      { property: "og:title", content: "Collections Workspace — Virtual PMO" },
+      { property: "og:title", content: "Collections Workspace — ORMO PMO" },
       {
         property: "og:description",
         content: "Browse governance, priority and funding collections across the DTS portfolio.",

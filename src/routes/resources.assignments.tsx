@@ -5,12 +5,12 @@ import { PageHeader } from "@/components/pmo-ui";
 export const Route = createFileRoute("/resources/assignments")({
   head: () => ({
     meta: [
-      { title: "Resource Assignments — Virtual PMO" },
+      { title: "Resource Assignments — ORMO PMO" },
       {
         name: "description",
         content: "Review resource, project and task assignments across the portfolio.",
       },
-      { property: "og:title", content: "Resource Assignments — Virtual PMO" },
+      { property: "og:title", content: "Resource Assignments — ORMO PMO" },
       {
         property: "og:description",
         content: "Review resource, project and task assignments across the portfolio.",

@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { DependencyWorkspace } from "@/components/dependency-workspace";
 import { PageHeader } from "@/components/pmo-ui";
 import { DependencyViewTabs } from "@/components/dependency-view-tabs";
-const title = "Dependency Register — Virtual PMO",
+const title = "Dependency Register — ORMO PMO",
   description = "Cross-programme and cross-PM dependencies, ownership, confirmation and health.";
 export const Route = createFileRoute("/delivery/dependencies/")({
   head: () => ({

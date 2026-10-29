@@ -1,6 +1,6 @@
-# Virtual PMO Hub
+# ORMO PMO Hub
 
-Build a clickable prototype of a web app called "Virtual PMO": a modern project, programme and portfolio management (PPM) platform for university IT/PMO teams. It replaces Microsoft's Project Accelerator (a Power Apps tool) with a much better-designed product that feels like monday.com, while syncing tasks with Microsoft Planner. This is a prototype for demos and user research, so use realistic mock data only. No authentication and no backend yet.
+Build a clickable prototype of a web app called "ORMO PMO": a modern project, programme and portfolio management (PPM) platform for university IT/PMO teams. It replaces Microsoft's Project Accelerator (a Power Apps tool) with a much better-designed product that feels like monday.com, while syncing tasks with Microsoft Planner. This is a prototype for demos and user research, so use realistic mock data only. No authentication and no backend yet.
 
 ## Tech and structure
 

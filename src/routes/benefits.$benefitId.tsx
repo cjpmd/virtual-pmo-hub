@@ -7,9 +7,9 @@ import { useBenefits } from "@/hooks/use-benefits";
 export const Route = createFileRoute("/benefits/$benefitId")({
   head: () => ({
     meta: [
-      { title: "Benefit — Virtual PMO" },
+      { title: "Benefit — ORMO PMO" },
       { name: "description", content: "Benefit profile and realisation evidence." },
-      { property: "og:title", content: "Benefit — Virtual PMO" },
+      { property: "og:title", content: "Benefit — ORMO PMO" },
       { property: "og:description", content: "Benefit profile and realisation evidence." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

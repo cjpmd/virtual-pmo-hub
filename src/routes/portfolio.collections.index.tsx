@@ -11,9 +11,9 @@ import { collectionMetrics } from "@/services/collections";
 export const Route = createFileRoute("/portfolio/collections/")({
   head: () => ({
     meta: [
-      { title: "Collections — Virtual PMO" },
+      { title: "Collections — ORMO PMO" },
       { name: "description", content: "Cross-cutting governance, priority and funding views." },
-      { property: "og:title", content: "Collections — Virtual PMO" },
+      { property: "og:title", content: "Collections — ORMO PMO" },
       {
         property: "og:description",
         content: "Cross-cutting governance, priority and funding views.",

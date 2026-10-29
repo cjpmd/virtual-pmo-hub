@@ -26,7 +26,7 @@ const tabs = [
 ] as const;
 type TabId = (typeof tabs)[number]["id"];
 
-const title = "RAIDD — Virtual PMO",
+const title = "RAIDD — ORMO PMO",
   description = "Risks, assumptions, issues and decisions across the portfolio.";
 export const Route = createFileRoute("/governance/raidd")({
   validateSearch: (search: Record<string, unknown>): { tab?: TabId } => {

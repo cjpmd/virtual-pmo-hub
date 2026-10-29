@@ -19,7 +19,7 @@ import type { Person } from "@/services/hierarchy";
 import type { RequestInput, RequestView } from "@/services/requests";
 import { cn } from "@/lib/utils";
 
-const title = "Requests — Virtual PMO",
+const title = "Requests — ORMO PMO",
   description =
     "Review, appraise and prioritise project requests using adjusted benefit value and strategic alignment.";
 export const Route = createFileRoute("/portfolio/requests")({

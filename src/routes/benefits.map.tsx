@@ -2,7 +2,7 @@ import { AutoBreadcrumbs } from "@/components/section-nav";
 import { createFileRoute } from "@tanstack/react-router";
 import { BenefitsMapCanvas } from "@/components/benefits-map-canvas";
 import { PageHeader } from "@/components/pmo-ui";
-const title = "Benefits Map — Virtual PMO",
+const title = "Benefits Map — ORMO PMO",
   description =
     "Trace projects through capabilities, outcomes and benefits to strategic objectives.";
 export const Route = createFileRoute("/benefits/map")({

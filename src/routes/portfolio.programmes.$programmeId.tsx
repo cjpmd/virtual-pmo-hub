@@ -35,7 +35,7 @@ import { term, useSettings } from "@/services/settings";
 export const Route = createFileRoute("/portfolio/programmes/$programmeId")({
   head: () => ({
     meta: [
-      { title: "Programme — Virtual PMO" },
+      { title: "Programme — ORMO PMO" },
       { name: "description", content: "Programme detail." },
     ],
   }),

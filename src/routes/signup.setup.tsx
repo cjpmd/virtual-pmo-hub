@@ -22,12 +22,12 @@ export const Route = createFileRoute("/signup/setup")({
   },
   head: () => ({
     meta: [
-      { title: "Set up your organisation — Virtual PMO" },
+      { title: "Set up your organisation — ORMO PMO" },
       {
         name: "description",
         content: "Name your organisation and choose your region, currency and financial year.",
       },
-      { property: "og:title", content: "Set up your organisation — Virtual PMO" },
+      { property: "og:title", content: "Set up your organisation — ORMO PMO" },
       { property: "og:description", content: "A short setup with sensible defaults." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

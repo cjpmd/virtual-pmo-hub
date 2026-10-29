@@ -2,7 +2,7 @@ import { AutoBreadcrumbs } from "@/components/section-nav";
 import { createFileRoute } from "@tanstack/react-router";
 import { DecisionForumView } from "@/components/decision-forum";
 import { PageHeader } from "@/components/pmo-ui";
-const title = "Boards — Virtual PMO",
+const title = "Boards — ORMO PMO",
   description = "Decision forums, their members and meetings.";
 export const Route = createFileRoute("/governance/forum")({
   validateSearch: (search: Record<string, unknown>): { forum?: string; meeting?: string } => ({

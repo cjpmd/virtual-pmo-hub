@@ -19,7 +19,7 @@ import { useSettings } from "@/services/settings";
 import { cn } from "@/lib/utils";
 import { todayIso } from "@/lib/today";
 
-const title = "Reports — Virtual PMO",
+const title = "Reports — ORMO PMO",
   description = "Standard portfolio reports, ready to run and export.";
 export const Route = createFileRoute("/insights/reports")({
   head: () => ({

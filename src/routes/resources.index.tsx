@@ -5,9 +5,9 @@ import { ResourceDashboard } from "@/components/resource-dashboard";
 export const Route = createFileRoute("/resources/")({
   head: () => ({
     meta: [
-      { title: "Resource Dashboard — Virtual PMO" },
+      { title: "Resource Dashboard — ORMO PMO" },
       { name: "description", content: "Portfolio capacity, utilisation and staffing insight." },
-      { property: "og:title", content: "Resource Dashboard — Virtual PMO" },
+      { property: "og:title", content: "Resource Dashboard — ORMO PMO" },
       {
         property: "og:description",
         content: "Portfolio capacity, utilisation and staffing insight.",

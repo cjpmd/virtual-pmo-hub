@@ -5,9 +5,9 @@ import { PageHeader } from "@/components/pmo-ui";
 export const Route = createFileRoute("/resources/scenarios")({
   head: () => ({
     meta: [
-      { title: "Resource Scenarios — Virtual PMO" },
+      { title: "Resource Scenarios — ORMO PMO" },
       { name: "description", content: "Model proposed project demand before portfolio approval." },
-      { property: "og:title", content: "Resource Scenarios — Virtual PMO" },
+      { property: "og:title", content: "Resource Scenarios — ORMO PMO" },
       {
         property: "og:description",
         content: "Model proposed project demand before portfolio approval.",

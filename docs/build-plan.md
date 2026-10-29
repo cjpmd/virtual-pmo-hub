@@ -1,4 +1,4 @@
-# Virtual PMO — build plan for Claude Code
+# ORMO PMO — build plan for Claude Code
 
 Audit baseline: commit `9408ecd` (19/10/2026). Supabase project `xvdlmtkzfmbcegkmampz`.
 Commit this file as `docs/build-plan.md` so Claude Code can read it, and tick packages off as they land.

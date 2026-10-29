@@ -10,9 +10,9 @@ import { personalTaskGroup } from "@/services/work-items";
 export const Route = createFileRoute("/home/my-timeline")({
   head: () => ({
     meta: [
-      { title: "My Timeline — Virtual PMO" },
+      { title: "My Timeline — ORMO PMO" },
       { name: "description", content: "Your personal task schedule across portfolio projects." },
-      { property: "og:title", content: "My Timeline — Virtual PMO" },
+      { property: "og:title", content: "My Timeline — ORMO PMO" },
       {
         property: "og:description",
         content: "Your personal task schedule across portfolio projects.",

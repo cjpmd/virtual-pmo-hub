@@ -10,9 +10,9 @@ import { usePortfolioNames, useProgrammes, useProjects } from "@/hooks/use-hiera
 export const Route = createFileRoute("/portfolio/programmes/")({
   head: () => ({
     meta: [
-      { title: "Programmes — Virtual PMO" },
+      { title: "Programmes — ORMO PMO" },
       { name: "description", content: "Browse every programme in the portfolio." },
-      { property: "og:title", content: "Programmes — Virtual PMO" },
+      { property: "og:title", content: "Programmes — ORMO PMO" },
       { property: "og:description", content: "Browse every programme in the portfolio." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

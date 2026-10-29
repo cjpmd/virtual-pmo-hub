@@ -18,10 +18,10 @@ export const Route = createFileRoute("/auth/callback")({
   }),
   head: () => ({
     meta: [
-      { title: "Signing in — Virtual PMO" },
-      { name: "description", content: "Completing your secure Virtual PMO sign-in." },
-      { property: "og:title", content: "Signing in — Virtual PMO" },
-      { property: "og:description", content: "Completing your secure Virtual PMO sign-in." },
+      { title: "Signing in — ORMO PMO" },
+      { name: "description", content: "Completing your secure ORMO PMO sign-in." },
+      { property: "og:title", content: "Signing in — ORMO PMO" },
+      { property: "og:description", content: "Completing your secure ORMO PMO sign-in." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -64,7 +64,7 @@ function AuthCallback() {
     <CentredCard
       title={
         consent
-          ? "Your organisation needs to approve Virtual PMO"
+          ? "Your organisation needs to approve ORMO PMO"
           : urlError?.kind === "cancelled"
             ? "Sign-in cancelled"
             : "We couldn't sign you in"
@@ -78,7 +78,7 @@ function AuthCallback() {
       </p>
       {consent && (
         <p className="mt-3 text-xs text-muted-foreground">
-          Administrators can approve Virtual PMO for everyone by signing in with Microsoft once and
+          Administrators can approve ORMO PMO for everyone by signing in with Microsoft once and
           accepting the permissions request on behalf of the organisation.
         </p>
       )}

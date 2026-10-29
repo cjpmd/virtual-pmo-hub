@@ -44,6 +44,6 @@ test("callback explains a missing Microsoft admin consent", async ({ page }) => 
   await page.goto(
     "/auth/callback?error=access_denied&error_description=AADSTS65001%3A+The+user+or+administrator+has+not+consented",
   );
-  await expect(page.getByRole("heading", { name: /needs to approve Virtual PMO/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /needs to approve ORMO PMO/ })).toBeVisible();
   await expect(page.getByText(/IT administrator/)).toBeVisible();
 });

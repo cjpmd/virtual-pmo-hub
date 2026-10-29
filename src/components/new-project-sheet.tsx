@@ -264,7 +264,7 @@ export function NewProjectSheet({ open, onOpenChange, onCreated }: NewProjectShe
               <Choice
                 active={sourceMode === "native"}
                 title="Native tasks"
-                description="Manage tasks directly in Virtual PMO."
+                description="Manage tasks directly in ORMO PMO."
                 onClick={() => setSourceMode("native")}
               />
               <Choice

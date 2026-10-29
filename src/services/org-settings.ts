@@ -311,7 +311,7 @@ export async function loadOrgSettings(orgId: string, userId: string): Promise<Or
     auditLog: auditRows.map((row): AuditEntry => ({
       id: row.id,
       timestamp: row.created_at,
-      actor: (row.actor_id && names.get(row.actor_id)) || "Virtual PMO",
+      actor: (row.actor_id && names.get(row.actor_id)) || "ORMO PMO",
       action:
         AUDIT_EVENT_LABELS[row.action] ?? `${row.action} ${row.entity_table.replaceAll("_", " ")}`,
       detail: describeAudit(row.detail),

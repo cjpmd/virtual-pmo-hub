@@ -4,7 +4,7 @@ import { useSession } from "@/components/auth/session-provider";
 import { siteFontLinks } from "@/components/marketing/site-fonts";
 import { PublicHome } from "@/components/public-home";
 
-const title = "Virtual PMO — know which projects are really on track";
+const title = "ORMO PMO — know which projects are really on track";
 const description =
   "Portfolios, programmes and projects in one place, with health calculated from delivery data and every status report checked against the evidence.";
 

@@ -130,7 +130,18 @@ export function CentredCard({ title, children }: { title: string; children: Reac
   return (
     <div className="grid min-h-screen place-items-center bg-muted/40 p-6">
       <div className="w-full max-w-md rounded-xl border border-border/70 bg-card p-8 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wide text-primary">Virtual PMO</p>
+        {/* The wordmark's text is dark navy, so dark mode shows the mark with live text. */}
+        <img
+          src="/brand/ormo-logo.png"
+          alt="ORMO PMO"
+          width={160}
+          height={64}
+          className="h-16 w-auto dark:hidden"
+        />
+        <p className="hidden items-center gap-2 text-sm font-semibold dark:flex">
+          <img src="/brand/ormo-mark.png" alt="" width={24} height={24} className="size-6" />
+          ORMO PMO
+        </p>
         <h1 className="mt-2 font-display text-2xl font-semibold">{title}</h1>
         <div className="mt-3">{children}</div>
       </div>

@@ -307,7 +307,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 )}
               </span>
               <div className={cn("ml-2.5 min-w-0", collapsed && "min-[900px]:hidden")}>
-                <p className="truncate text-sm font-semibold">Virtual PMO</p>
+                <p className="truncate text-sm font-semibold">ORMO PMO</p>
                 <p className="truncate text-[11px] text-pmo-muted">
                   {settings.organisation.shortName} portfolio office
                 </p>

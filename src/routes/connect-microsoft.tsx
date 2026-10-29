@@ -5,12 +5,12 @@ import { ConnectFlow } from "@/components/integrations/connect-flow";
 export const Route = createFileRoute("/connect-microsoft")({
   head: () => ({
     meta: [
-      { title: "Connect Microsoft 365 — Virtual PMO" },
+      { title: "Connect Microsoft 365 — ORMO PMO" },
       {
         name: "description",
         content: "Approve access, discover Planner plans and link them to your projects.",
       },
-      { property: "og:title", content: "Connect Microsoft 365 — Virtual PMO" },
+      { property: "og:title", content: "Connect Microsoft 365 — ORMO PMO" },
       {
         property: "og:description",
         content: "Approve access, discover Planner plans and link them to your projects.",

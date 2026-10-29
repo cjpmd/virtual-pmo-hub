@@ -15,8 +15,8 @@ import {
   updatePassword,
 } from "@/services/auth";
 
-const title = "Set a new password — Virtual PMO";
-const description = "Choose a new password for your Virtual PMO account.";
+const title = "Set a new password — ORMO PMO";
+const description = "Choose a new password for your ORMO PMO account.";
 
 // The reset email links here. supabase-js reads the recovery tokens from the URL, signs the
 // user in and raises PASSWORD_RECOVERY (services/auth.ts remembers it in case it fired before

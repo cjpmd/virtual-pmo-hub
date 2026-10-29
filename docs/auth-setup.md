@@ -1,6 +1,6 @@
 # Auth setup: email + password and Sign in with Microsoft
 
-Virtual PMO signs people in with Supabase Auth in two ways:
+ORMO PMO signs people in with Supabase Auth in two ways:
 
 - **Email and password**, for anyone. Email confirmation is required before the first sign-in.
 - **Sign in with Microsoft** (Entra ID), through the Supabase `azure` provider and the `/common`
@@ -66,7 +66,7 @@ from their own organisation's tenant.
 
 **Entra admin center → Identity → Applications → App registrations → New registration**:
 
-- **Name:** `Virtual PMO`. This is shown on Microsoft's consent screen.
+- **Name:** `ORMO PMO`. This is shown on Microsoft's consent screen.
 - **Supported account types:** *Accounts in any organizational directory (Any Microsoft Entra
   ID tenant – Multitenant)*. Optionally choose *…and personal Microsoft accounts (e.g. Skype,
   Xbox)* to let outlook.com and hotmail.com users in too. See the note on personal accounts
@@ -98,7 +98,7 @@ Copy the **Application (client) ID** from the Overview page.
 
 None of these need admin consent in a default tenant. Click **Grant admin consent for <your
 tenant>** for your own tenant anyway. In customer tenants that only allow admin consent, users
-see the app's "Your organisation needs to approve Virtual PMO" page until their IT admin
+see the app's "Your organisation needs to approve ORMO PMO" page until their IT admin
 approves it (below).
 
 ### 5. Optional claims: `email` and `xms_edov` (needed for account linking)
@@ -132,10 +132,10 @@ terms of service and privacy statement URLs. These appear on the consent screen.
 
 ### How a customer's IT admin approves the app
 
-If a customer tenant blocks user consent, their admin can approve Virtual PMO for everyone in
+If a customer tenant blocks user consent, their admin can approve ORMO PMO for everyone in
 either of these ways:
 
-- Sign in to Virtual PMO with Microsoft and, on the consent screen, tick **Consent on behalf of
+- Sign in to ORMO PMO with Microsoft and, on the consent screen, tick **Consent on behalf of
   your organization**.
 - Open `https://login.microsoftonline.com/<their-tenant-id>/adminconsent?client_id=<client id>`.
 
@@ -199,9 +199,9 @@ email (below) needs no setting.
 
 | Template | File | Subject |
 |---|---|---|
-| Confirm signup | `supabase/templates/confirm-signup.html` | Confirm your email for Virtual PMO |
-| Reset password | `supabase/templates/reset-password.html` | Reset your Virtual PMO password |
-| Change email address | `supabase/templates/change-email.html` | Confirm your new email address for Virtual PMO |
+| Confirm signup | `supabase/templates/confirm-signup.html` | Confirm your email for ORMO PMO |
+| Reset password | `supabase/templates/reset-password.html` | Reset your ORMO PMO password |
+| Change email address | `supabase/templates/change-email.html` | Confirm your new email address for ORMO PMO |
 
 The templates use `{{ .ConfirmationURL }}`, `{{ .Email }}`, `{{ .NewEmail }}` and
 `{{ .SiteURL }}`. Leave *Magic link*, *Invite user* and *Reauthentication* as they are; the app
@@ -247,7 +247,7 @@ and DNS records.
    | Username | `resend` |
    | Password | the Resend API key |
    | Sender email | `no-reply@originoverthrow.com` |
-   | Sender name | `Virtual PMO` |
+   | Sender name | `ORMO PMO` |
 
 5. Send yourself a sign-up confirmation. In the received message's headers, check
    `spf=pass`, `dkim=pass` and `dmarc=pass`.
@@ -290,7 +290,7 @@ mismatch or a missing role).
 
 ## Account linking
 
-**Goal:** one person, one Virtual PMO account, whether they use email + password, Microsoft,
+**Goal:** one person, one ORMO PMO account, whether they use email + password, Microsoft,
 or both with the same address.
 
 How Supabase handles it:
@@ -382,7 +382,7 @@ Use a private window for each test. Use a real inbox, or a `+tag` address (e.g.
 5. Open the same reset link again: "That reset link didn't work".
 
 **T4 Microsoft sign-in, new user**
-1. `/login` → *Sign in with Microsoft*, using an Entra user who has never used Virtual PMO.
+1. `/login` → *Sign in with Microsoft*, using an Entra user who has never used ORMO PMO.
 2. Consent screen (first time), then `/auth/callback`, then `/signup/setup`.
 3. In Supabase, the profile has the Microsoft display name and email, and
    `auth.identities.provider = 'azure'`.
@@ -403,7 +403,7 @@ Use a private window for each test. Use a real inbox, or a `+tag` address (e.g.
 **T7 Admin consent message**
 - In a tenant where user consent is off (Entra → Enterprise applications → Consent and
   permissions → *Do not allow user consent*), sign in with Microsoft as a normal user.
-- You see "Your organisation needs to approve Virtual PMO" with *Details for your IT team*,
+- You see "Your organisation needs to approve ORMO PMO" with *Details for your IT team*,
   never a raw `AADSTS` error page.
 - Quick check without a tenant:
   `/auth/callback?error=access_denied&error_description=AADSTS65001` shows the same page.

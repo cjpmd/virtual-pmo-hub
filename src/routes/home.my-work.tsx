@@ -10,12 +10,12 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/home/my-work")({
   head: () => ({
     meta: [
-      { title: "My Work — Virtual PMO" },
+      { title: "My Work — ORMO PMO" },
       {
         name: "description",
         content: "Your tasks, acknowledgements and issued work across the portfolio.",
       },
-      { property: "og:title", content: "My Work — Virtual PMO" },
+      { property: "og:title", content: "My Work — ORMO PMO" },
       {
         property: "og:description",
         content: "Your tasks, acknowledgements and issued work across the portfolio.",

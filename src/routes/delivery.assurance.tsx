@@ -15,13 +15,13 @@ import type { Health } from "@/data/types";
 export const Route = createFileRoute("/delivery/assurance")({
   head: () => ({
     meta: [
-      { title: "Assurance — Virtual PMO" },
+      { title: "Assurance — ORMO PMO" },
       {
         name: "description",
         content:
           "Declared versus evidenced RAG, forecast slippage and stale evidence across the portfolio.",
       },
-      { property: "og:title", content: "Assurance — Virtual PMO" },
+      { property: "og:title", content: "Assurance — ORMO PMO" },
       {
         property: "og:description",
         content:
@@ -255,7 +255,7 @@ function Assurance({ rows }: { rows: AssuranceRow[] }) {
           empty={{
             title: "No sprint data yet",
             detail:
-              "Forecast accuracy compares sprint forecasts with actual finishes, and returns once sprints are recorded in Virtual PMO.",
+              "Forecast accuracy compares sprint forecasts with actual finishes, and returns once sprints are recorded in ORMO PMO.",
           }}
         >
           {null}
