@@ -63,7 +63,7 @@ export function SiteCtas({ className }: { className?: string }) {
   return (
     <div className={cn("flex flex-wrap gap-3", className)}>
       <Link
-        to="/request-access"
+        to="/signup"
         className={cn(ctaBase, "bg-site-accent text-white hover:bg-site-accent-strong")}
       >
         Get started
