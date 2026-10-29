@@ -1,6 +1,6 @@
 -- Work package 2.1: member invites, seats and same-domain join requests.
--- PROPOSAL, not applied. After approval it becomes one migration (2_1_invites_seats), then
--- src/integrations/supabase/types.ts is regenerated.
+-- Applied on live as migration 20261029171524_2_1_invites_seats (29/10/2026); this file is the reviewed and tested copy.
+-- Rollback reference: docs/sql/2-1-rollback.sql.
 --
 -- No destructive statements: no drop, delete or truncate in the migration. Everything is new
 -- tables, new columns, create or replace of existing helpers (bodies shown in full), alter policy
