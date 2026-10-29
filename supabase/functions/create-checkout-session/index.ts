@@ -22,6 +22,31 @@ const LOOKUP_KEYS = { month: "ormo_seat_monthly", year: "ormo_seat_annual" } as 
 const LIVE_STATUSES = ["active", "trialing", "past_due", "unpaid", "incomplete"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// The full Stripe error stays in the function logs; the browser gets a safe message and a code.
+function failure(err: unknown) {
+  if (err instanceof Stripe.errors.StripeError) {
+    console.error("create-checkout-session: stripe", {
+      type: err.type,
+      code: err.code,
+      param: err.param,
+      message: err.message,
+      requestId: err.requestId,
+    });
+    if (err instanceof Stripe.errors.StripeAuthenticationError || err instanceof Stripe.errors.StripePermissionError) {
+      return json({ error: "Billing is not available right now. Please contact support.", code: "billing_unavailable" }, 502);
+    }
+    if (err instanceof Stripe.errors.StripeInvalidRequestError) {
+      return json({ error: "Billing is not set up correctly yet. Please contact support.", code: "billing_misconfigured" }, 502);
+    }
+    if (err instanceof Stripe.errors.StripeRateLimitError || err instanceof Stripe.errors.StripeConnectionError || err instanceof Stripe.errors.StripeAPIError) {
+      return json({ error: "Stripe didn't respond. Please try again in a minute.", code: "stripe_unavailable" }, 503);
+    }
+    return json({ error: "Couldn't start checkout. Please try again.", code: "stripe_error" }, 502);
+  }
+  console.error("create-checkout-session", err);
+  return json({ error: "Couldn't start checkout. Please try again.", code: "checkout_failed" }, 500);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -76,7 +101,10 @@ Deno.serve(async (req) => {
 
     const prices = await stripe.prices.list({ lookup_keys: [LOOKUP_KEYS[interval]], active: true, limit: 1 });
     const price = prices.data[0];
-    if (!price) return json({ error: "Billing is not configured yet. Please try again later." }, 500);
+    if (!price) {
+      console.error("create-checkout-session: no active price for lookup key", LOOKUP_KEYS[interval]);
+      return json({ error: "Billing is not configured yet. Please try again later.", code: "price_not_found" }, 500);
+    }
 
     let customerId = sub?.stripe_customer_id ?? null;
     if (!customerId) {
@@ -102,7 +130,11 @@ Deno.serve(async (req) => {
       subscriptionData.trial_end = trialEnd;
     }
 
-    const session = await stripe.checkout.sessions.create({
+    // Managed Payments (Stripe as merchant of record) is on by default for the account and
+    // refuses payment_method_types, automatic_tax, tax_id_collection and customer_update. ORMO
+    // is the seller and accounts for VAT through Stripe Tax (D1), so switch it off per session.
+    // stripe@16 has no type for managed_payments; the parameter is sent as given.
+    const params: Stripe.Checkout.SessionCreateParams = {
       mode: "subscription",
       customer: customerId,
       client_reference_id: organisationId,
@@ -118,10 +150,13 @@ Deno.serve(async (req) => {
       subscription_data: subscriptionData,
       success_url: `${APP_URL}/settings/subscription?checkout=success`,
       cancel_url: `${APP_URL}/settings/subscription?checkout=cancelled`,
-    });
+    };
+    const session = await stripe.checkout.sessions.create({
+      ...params,
+      managed_payments: { enabled: false },
+    } as Stripe.Checkout.SessionCreateParams);
     return json({ url: session.url });
   } catch (err) {
-    console.error("create-checkout-session", err);
-    return json({ error: "Couldn't start checkout. Please try again." }, 500);
+    return failure(err);
   }
 });
