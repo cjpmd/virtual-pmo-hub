@@ -347,6 +347,13 @@ SQL to docs/sql/2-1-invites.sql and stop. Plan the edge function separately befo
 `public.join_demo_organisation()` RPC (and `settings.demoAdmins`) is still in the database.
 Decide in 2.1 whether invites replace it, and drop it then in a new migration.
 
+**Backlog (found in 2.1, not fixed):** adding an organisation member runs
+`private.link_profile_to_resource`, which links a matching resource or creates a non-bookable one;
+removing the member (`remove_member`) only unlinks it (`resources.profile_id` set to null), so an
+auto-created resource stays behind. Removing a member should delete the resource it auto-created
+when nothing references it (otherwise keep it unlinked). Found in the 2.1 email test, where the
+leftover was deleted by hand.
+
 **Notes from the auth package (28/10/2026, outside the numbered plan):** magic links are gone.
 Sign-in is email + password (confirmation required) or Microsoft (Supabase `azure` provider,
 `/common`), on `/login`; `/signin` redirects there. Anyone can create an account;
