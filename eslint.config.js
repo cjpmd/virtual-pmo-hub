@@ -18,6 +18,8 @@ export default tseslint.config(
       "test-results",
       "src/integrations/supabase/types.ts",
       "src/integrations/supabase/previewAuthStorage.ts",
+      // Deno edge functions, copied from the deployed versions; not part of the app build.
+      "supabase/functions",
     ],
   },
   {

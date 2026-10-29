@@ -218,11 +218,24 @@ export interface DataSettings {
 
 // ---- 14. Subscription ----
 export interface SubscriptionSettings {
+  /** The current user is an organisation admin; only admins can read or change billing. */
+  canManage: boolean;
+  /** trial, monthly, annual or demo; "" when there is no subscription row. */
   plan: string;
-  seatsUsed: number;
+  /** Stripe subscription status (active, trialing, past_due, …); "" = never subscribed. */
+  status: string;
+  billingInterval: "month" | "year" | "";
+  /** Members with a paid role (contributor and above). Viewers are free. */
+  paidSeatsUsed: number;
+  viewers: number;
+  /** Paid seats bought on the Stripe subscription. */
   seatsTotal: number;
-  renewalDate: string;
+  trialEndsAt: string;
+  currentPeriodEnd: string;
+  cancelAtPeriodEnd: boolean;
   billingContact: string;
+  /** A Stripe customer exists, so the billing portal (invoices, card) can open. */
+  hasBillingAccount: boolean;
 }
 
 export interface AppSettings {

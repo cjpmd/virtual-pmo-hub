@@ -7219,31 +7219,52 @@ export type Database = {
       organisation_subscriptions: {
         Row: {
           billing_contact: string | null
+          billing_interval: string | null
+          cancel_at_period_end: boolean
           created_at: string
+          current_period_end: string | null
           organisation_id: string
           plan: string
+          price_id: string | null
           renewal_date: string | null
           seats_total: number
+          status: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
           trial_ends_at: string | null
           updated_at: string
         }
         Insert: {
           billing_contact?: string | null
+          billing_interval?: string | null
+          cancel_at_period_end?: boolean
           created_at?: string
+          current_period_end?: string | null
           organisation_id: string
           plan?: string
+          price_id?: string | null
           renewal_date?: string | null
           seats_total?: number
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           trial_ends_at?: string | null
           updated_at?: string
         }
         Update: {
           billing_contact?: string | null
+          billing_interval?: string | null
+          cancel_at_period_end?: boolean
           created_at?: string
+          current_period_end?: string | null
           organisation_id?: string
           plan?: string
+          price_id?: string | null
           renewal_date?: string | null
           seats_total?: number
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           trial_ends_at?: string | null
           updated_at?: string
         }
@@ -10981,6 +11002,30 @@ export type Database = {
             referencedColumns: ["id", "organisation_id"]
           },
         ]
+      }
+      stripe_webhook_events: {
+        Row: {
+          error: string | null
+          id: string
+          processed_at: string | null
+          received_at: string
+          type: string
+        }
+        Insert: {
+          error?: string | null
+          id: string
+          processed_at?: string | null
+          received_at?: string
+          type: string
+        }
+        Update: {
+          error?: string | null
+          id?: string
+          processed_at?: string | null
+          received_at?: string
+          type?: string
+        }
+        Relationships: []
       }
       sync_conflicts: {
         Row: {
@@ -15473,3 +15518,4 @@ export const Constants = {
     },
   },
 } as const
+
