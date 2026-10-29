@@ -7167,6 +7167,273 @@ export type Database = {
           },
         ]
       }
+      organisation_invite_workspaces: {
+        Row: {
+          invite_id: string
+          organisation_id: string
+          workspace_id: string
+        }
+        Insert: {
+          invite_id: string
+          organisation_id: string
+          workspace_id: string
+        }
+        Update: {
+          invite_id?: string
+          organisation_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organisation_invite_workspace_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "organisation_invite_workspaces_invite_id_organisation_id_fkey"
+            columns: ["invite_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_invites"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      organisation_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          last_sent_at: string | null
+          organisation_id: string
+          revoked_at: string | null
+          revoked_by: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          send_count: number
+          token_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          last_sent_at?: string | null
+          organisation_id: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          send_count?: number
+          token_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          last_sent_at?: string | null
+          organisation_id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          send_count?: number
+          token_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organisation_invites_accepted_by_fkey"
+            columns: ["accepted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organisation_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organisation_invites_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organisation_invites_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organisation_join_domains: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          organisation_id: string
+          value: string
+          verified_by: string | null
+          verified_via: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          organisation_id: string
+          value: string
+          verified_by?: string | null
+          verified_via: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          organisation_id?: string
+          value?: string
+          verified_by?: string | null
+          verified_via?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organisation_join_domains_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organisation_join_domains_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organisation_join_requests: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decided_role: Database["public"]["Enums"]["app_role"] | null
+          email: string
+          id: string
+          matched_by: string
+          message: string | null
+          notified_at: string | null
+          organisation_id: string
+          profile_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decided_role?: Database["public"]["Enums"]["app_role"] | null
+          email: string
+          id?: string
+          matched_by: string
+          message?: string | null
+          notified_at?: string | null
+          organisation_id: string
+          profile_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decided_role?: Database["public"]["Enums"]["app_role"] | null
+          email?: string
+          id?: string
+          matched_by?: string
+          message?: string | null
+          notified_at?: string | null
+          organisation_id?: string
+          profile_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organisation_join_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organisation_join_requests_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organisation_join_requests_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organisation_join_settings: {
+        Row: {
+          organisation_id: string
+          requests_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          organisation_id: string
+          requests_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          organisation_id?: string
+          requests_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organisation_join_settings_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: true
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organisation_join_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organisation_members: {
         Row: {
           created_at: string
@@ -7227,11 +7494,17 @@ export type Database = {
           plan: string
           price_id: string | null
           renewal_date: string | null
+          scheduled_change_at: string | null
+          scheduled_interval: string | null
+          scheduled_price_id: string | null
+          scheduled_seats: number | null
           seats_total: number
           status: string | null
           stripe_customer_id: string | null
+          stripe_schedule_id: string | null
           stripe_subscription_id: string | null
           trial_ends_at: string | null
+          trial_seat_allowance: number
           updated_at: string
         }
         Insert: {
@@ -7244,11 +7517,17 @@ export type Database = {
           plan?: string
           price_id?: string | null
           renewal_date?: string | null
+          scheduled_change_at?: string | null
+          scheduled_interval?: string | null
+          scheduled_price_id?: string | null
+          scheduled_seats?: number | null
           seats_total?: number
           status?: string | null
           stripe_customer_id?: string | null
+          stripe_schedule_id?: string | null
           stripe_subscription_id?: string | null
           trial_ends_at?: string | null
+          trial_seat_allowance?: number
           updated_at?: string
         }
         Update: {
@@ -7261,11 +7540,17 @@ export type Database = {
           plan?: string
           price_id?: string | null
           renewal_date?: string | null
+          scheduled_change_at?: string | null
+          scheduled_interval?: string | null
+          scheduled_price_id?: string | null
+          scheduled_seats?: number | null
           seats_total?: number
           status?: string | null
           stripe_customer_id?: string | null
+          stripe_schedule_id?: string | null
           stripe_subscription_id?: string | null
           trial_ends_at?: string | null
+          trial_seat_allowance?: number
           updated_at?: string
         }
         Relationships: [
@@ -14552,6 +14837,23 @@ export type Database = {
       }
     }
     Functions: {
+      accept_invite: { Args: { p_token: string }; Returns: Json }
+      add_join_domain: {
+        Args: { p_kind: string; p_organisation_id: string }
+        Returns: string
+      }
+      change_member_role: {
+        Args: {
+          p_organisation_id: string
+          p_profile_id: string
+          p_role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: undefined
+      }
+      claim_join_request_notification: {
+        Args: { p_request_id: string; p_requester: string }
+        Returns: Json
+      }
       close_financial_period: {
         Args: { p_month: string; p_organisation_id: string }
         Returns: {
@@ -14581,6 +14883,14 @@ export type Database = {
         }
         Returns: Json
       }
+      create_invites: {
+        Args: {
+          p_invites: Json
+          p_organisation_id: string
+          p_workspace_ids?: string[]
+        }
+        Returns: Json
+      }
       create_organisation: {
         Args: {
           p_currency?: string
@@ -14591,6 +14901,15 @@ export type Database = {
           p_workspace_name?: string
         }
         Returns: string
+      }
+      decide_join_request: {
+        Args: {
+          p_approve: boolean
+          p_request_id: string
+          p_role?: Database["public"]["Enums"]["app_role"]
+          p_workspace_ids?: string[]
+        }
+        Returns: undefined
       }
       defer_decision: {
         Args: {
@@ -14645,6 +14964,17 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      find_joinable_organisations: {
+        Args: never
+        Returns: {
+          matched_by: string
+          organisation_id: string
+          organisation_name: string
+          request_status: string
+          requested_at: string
+        }[]
+      }
+      get_invite_preview: { Args: { p_token: string }; Returns: Json }
       get_portfolio_overview: {
         Args: {
           p_portfolio?: string
@@ -14655,8 +14985,30 @@ export type Database = {
         Returns: Json
       }
       get_project_overview: { Args: { p_project: string }; Returns: Json }
+      get_seat_usage: { Args: { p_organisation_id: string }; Returns: Json }
+      issue_invite_token: {
+        Args: { p_actor: string; p_invite_id: string; p_token_hash: string }
+        Returns: Json
+      }
       join_demo_as_viewer: { Args: never; Returns: string }
       join_demo_organisation: { Args: never; Returns: string }
+      list_organisation_members: {
+        Args: { p_organisation_id: string }
+        Returns: {
+          display_name: string
+          email: string
+          joined_at: string
+          last_sign_in_at: string
+          profile_id: string
+          providers: string[]
+          role: Database["public"]["Enums"]["app_role"]
+          tier: string
+        }[]
+      }
+      mark_invite_sent: {
+        Args: { p_actor: string; p_error?: string; p_invite_id: string }
+        Returns: undefined
+      }
       my_workspace_roles: {
         Args: never
         Returns: {
@@ -14680,6 +15032,10 @@ export type Database = {
           can_edit: boolean
           can_manage_project: boolean
         }[]
+      }
+      record_billing_request: {
+        Args: { p_action: string; p_detail: Json; p_organisation_id: string }
+        Returns: undefined
       }
       record_decision: {
         Args: {
@@ -14736,6 +15092,11 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      remove_join_domain: { Args: { p_domain_id: string }; Returns: undefined }
+      remove_member: {
+        Args: { p_organisation_id: string; p_profile_id: string }
+        Returns: undefined
+      }
       reopen_financial_period: {
         Args: { p_month: string; p_organisation_id: string; p_reason: string }
         Returns: {
@@ -14756,6 +15117,11 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      request_to_join: {
+        Args: { p_message?: string; p_organisation_id: string }
+        Returns: string
+      }
+      resend_invite: { Args: { p_invite_id: string }; Returns: undefined }
       reverse_decision: {
         Args: {
           p_decision_id: string
@@ -14807,6 +15173,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      revoke_invite: { Args: { p_invite_id: string }; Returns: undefined }
       save_status_report_draft: {
         Args: {
           p_decision_ids?: string[]
@@ -14854,6 +15221,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      set_join_requests_enabled: {
+        Args: { p_enabled: boolean; p_organisation_id: string }
+        Returns: undefined
       }
       start_business_case_version: {
         Args: { p_business_case_id: string }
@@ -15086,6 +15457,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      withdraw_join_request: {
+        Args: { p_request_id: string }
+        Returns: undefined
       }
     }
     Enums: {
