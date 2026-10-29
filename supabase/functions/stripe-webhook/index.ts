@@ -16,6 +16,38 @@ const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE
 });
 const ENDED = ["canceled", "incomplete_expired"];
 
+const NO_SCHEDULED_CHANGE = {
+  stripe_schedule_id: null,
+  scheduled_seats: null,
+  scheduled_price_id: null,
+  scheduled_interval: null,
+  scheduled_change_at: null,
+};
+
+// Work package 2.1: the change waiting for the next renewal (seat reduction and/or monthly <->
+// annual switch), read from the subscription's attached schedule. No schedule, or no later phase,
+// means nothing is scheduled.
+async function scheduledChange(sub: Stripe.Subscription, periodEndUnix: number | undefined) {
+  const scheduleId = typeof sub.schedule === "string" ? sub.schedule : sub.schedule?.id;
+  if (!scheduleId || ENDED.includes(sub.status)) return NO_SCHEDULED_CHANGE;
+  const schedule = await stripe.subscriptionSchedules.retrieve(scheduleId, { expand: ["phases.items.price"] });
+  if (!["active", "not_started"].includes(schedule.status)) return NO_SCHEDULED_CHANGE;
+  const next = schedule.phases.find((phase) => phase.start_date >= (periodEndUnix ?? 0));
+  const nextItem = next?.items[0];
+  if (!next || !nextItem) return { ...NO_SCHEDULED_CHANGE, stripe_schedule_id: scheduleId };
+  const price =
+    typeof nextItem.price === "string" ? await stripe.prices.retrieve(nextItem.price) : (nextItem.price as Stripe.Price);
+  const recurring = price.recurring;
+  const yearly = recurring?.interval === "year" || (recurring?.interval === "month" && recurring.interval_count === 12);
+  return {
+    stripe_schedule_id: scheduleId,
+    scheduled_seats: nextItem.quantity ?? null,
+    scheduled_price_id: price.id,
+    scheduled_interval: yearly ? "year" : "month",
+    scheduled_change_at: new Date(next.start_date * 1000).toISOString(),
+  };
+}
+
 async function syncSubscription(subscriptionId: string) {
   const sub = await stripe.subscriptions.retrieve(subscriptionId, { expand: ["customer"] });
   const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
@@ -72,6 +104,7 @@ async function syncSubscription(subscriptionId: string) {
     renewal_date: periodEnd ? periodEnd.slice(0, 10) : null,
     cancel_at_period_end: Boolean(sub.cancel_at_period_end || sub.cancel_at),
     ...(customer?.email ? { billing_contact: customer.email } : {}),
+    ...(await scheduledChange(sub, periodEndUnix)),
   };
   const { error } = await admin.from("organisation_subscriptions").upsert(row, { onConflict: "organisation_id" });
   if (error) throw error;
@@ -121,6 +154,21 @@ Deno.serve(async (req) => {
       case "customer.subscription.resumed":
         await syncSubscription((event.data.object as Stripe.Subscription).id);
         break;
+      // Work package 2.1: seat reductions and plan switches at renewal live on a schedule.
+      // Re-read the whole subscription so the row always matches Stripe, whatever the order.
+      case "subscription_schedule.created":
+      case "subscription_schedule.updated":
+      case "subscription_schedule.released":
+      case "subscription_schedule.completed":
+      case "subscription_schedule.canceled":
+      case "subscription_schedule.aborted": {
+        const schedule = event.data.object as Stripe.SubscriptionSchedule;
+        const subId =
+          (typeof schedule.subscription === "string" ? schedule.subscription : schedule.subscription?.id) ??
+          schedule.released_subscription;
+        if (subId) await syncSubscription(subId);
+        break;
+      }
       case "invoice.paid":
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
