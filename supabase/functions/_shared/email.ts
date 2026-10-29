@@ -14,7 +14,7 @@ export type EmailMessage = {
   subject: string;
   html: string;
   text: string;
-  /** <email-type>/<entity-id>/<send number>: a retry never sends twice; a new number sends again. */
+  /** <email-type>/<entity-id>/<per-send part>: a retry never sends twice; a new send gets a new key. */
   idempotencyKey: string;
   tags?: Array<{ name: string; value: string }>;
 };

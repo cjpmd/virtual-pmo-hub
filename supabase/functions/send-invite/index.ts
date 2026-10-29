@@ -27,8 +27,6 @@ async function deliver(admin: SupabaseClient, inviteId: string, actorId: string)
     console.error("send-invite: issue_invite_token", issueError);
     return { emailStatus: "failed", emailError: issueError?.message ?? "The invitation can't be sent." };
   }
-  const { data: row } = await admin.from("organisation_invites").select("send_count").eq("id", inviteId).single();
-  const sendNumber = (row?.send_count ?? 0) + 1;
 
   const email = inviteEmail({
     organisationName: info.organisation_name,
@@ -40,7 +38,8 @@ async function deliver(admin: SupabaseClient, inviteId: string, actorId: string)
   const { error } = await sendEmail({
     to: info.email,
     ...email,
-    idempotencyKey: `invite/${inviteId}/${sendNumber}`,
+    // Each send has a new token, so a resend never reuses the key of an earlier (failed) send.
+    idempotencyKey: `invite/${inviteId}/${hash.slice(0, 16)}`,
     tags: [{ name: "type", value: "invite" }],
   });
 
@@ -50,7 +49,7 @@ async function deliver(admin: SupabaseClient, inviteId: string, actorId: string)
     p_error: error ? `${error.status} ${error.name}: ${error.message}` : null,
   });
   if (markError) console.error("send-invite: mark_invite_sent", markError);
-  return error ? { emailStatus: "failed", emailError: "The email couldn't be sent. Try Resend." } : { emailStatus: "sent" };
+  return error ? { emailStatus: "failed", emailError: "The email couldn’t be sent. Use Resend invite to try again." } : { emailStatus: "sent" };
 }
 
 serve("send-invite", async (req) => {
