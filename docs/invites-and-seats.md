@@ -47,8 +47,10 @@ edge-function secrets `RESEND_API_KEY` and `RESEND_FROM`
    and Cancel subscription on.
 2. Webhook endpoint for `stripe-webhook`: add the events `subscription_schedule.created`,
    `subscription_schedule.updated`, `subscription_schedule.released`,
-   `subscription_schedule.completed`, `subscription_schedule.canceled` and
-   `subscription_schedule.aborted`, next to the existing checkout, subscription and invoice events.
+   `subscription_schedule.completed`, `subscription_schedule.canceled`,
+   `subscription_schedule.aborted`, `customer.subscription.pending_update_applied` and
+   `customer.subscription.pending_update_expired`, next to the existing checkout, subscription and
+   invoice events.
 3. Prices: keep the lookup keys `ormo_seat_monthly` and `ormo_seat_annual` on the active prices;
    `manage-subscription` finds the switch target by lookup key.
 
@@ -97,7 +99,14 @@ providers. Run the Stripe steps in test mode, with a test clock to move past ren
 
 - [ ] **Add seats with proration**: monthly subscription, add 2 seats mid-period → the preview
       shows the prorated amount and VAT; confirm → charged now, Members page shows the new total.
-- [ ] Add seats with a declining test card → "The payment didn't go through", seat count unchanged.
+- [ ] Add seats with a declining test card → "The payment didn't go through", seat count unchanged,
+      the proration invoice is void, and any scheduled change is still there.
+- [ ] **3D Secure**: on a test clock, subscribe with `4000 0025 0000 3155` (3DS required), schedule
+      a switch to annual, then add seats → 402 `requires_action` with the hosted invoice link;
+      seats unchanged and the schedule released. Complete 3DS on the invoice page → seats added
+      and the annual switch rescheduled at the new seat count. Repeat without completing 3DS and
+      advance the clock 23 hours → the pending update expires, seats unchanged, and the original
+      schedule is back.
 - [ ] **Reduce at renewal**: schedule a reduction → "Reduces to N on <date>"; the portal can't
       cancel meanwhile; advance the test clock past renewal → seats_total = N and the schedule
       is gone.

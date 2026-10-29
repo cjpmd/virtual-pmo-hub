@@ -9,15 +9,16 @@
 // phase 2 = the new price and quantity for one period, then the subscription is released. The
 // customer portal can't update or cancel a subscription while a schedule is attached, so plan
 // switching lives here. Stripe's webhook stays the source of truth for organisation_subscriptions.
+// Strong customer authentication: if the card needs 3D Secure, add_seats returns 402
+// "requires_action" with the invoice's payment page. The seats are added once the admin
+// authenticates; stripe-webhook then puts back any pending plan switch (or, if the payment
+// window expires, the whole earlier schedule) from the invoice metadata.
 // Secrets: STRIPE_SECRET_KEY. SUPABASE_* are provided by the platform.
+// Stripe API version: pinned in _shared/billing.ts (see the note there before upgrading).
 import Stripe from "npm:stripe@16.12.0";
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.45.4";
 import { UUID, adminClient, json, serve, signedIn } from "../_shared/http.ts";
-
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
-  apiVersion: "2024-06-20",
-  httpClient: Stripe.createFetchHttpClient(),
-});
+import { RESTORE_KEYS, priceId, scheduleNextPhase, stripe } from "../_shared/billing.ts";
 const LOOKUP_KEYS = { month: "ormo_seat_monthly", year: "ormo_seat_annual" } as const;
 const CHANGEABLE = ["active", "trialing"];
 const PREVIEW_MAX_AGE_S = 600;
@@ -34,7 +35,6 @@ type Context = {
 
 type Pending = { scheduleId: string; price: string; quantity: number; startsAt: number };
 
-const priceId = (price: string | Stripe.Price | Stripe.DeletedPrice) => (typeof price === "string" ? price : price.id);
 const now = () => Math.floor(Date.now() / 1000);
 const iso = (unix: number) => new Date(unix * 1000).toISOString();
 
@@ -111,42 +111,6 @@ async function pendingChange(sub: Stripe.Subscription): Promise<Pending | null> 
   const nextItem = next?.items[0];
   if (!next || !nextItem) return { scheduleId, price: priceId(sub.items.data[0].price), quantity: sub.items.data[0].quantity ?? 1, startsAt: sub.current_period_end };
   return { scheduleId, price: priceId(nextItem.price), quantity: nextItem.quantity ?? 1, startsAt: next.start_date };
-}
-
-/** Attaches (or rewrites) the schedule so the next renewal uses this price and quantity. */
-async function scheduleNextPhase(ctx: Context, price: string, quantity: number) {
-  const { sub, item } = ctx;
-  const existing = typeof sub.schedule === "string" ? sub.schedule : sub.schedule?.id;
-  const schedule = existing
-    ? await stripe.subscriptionSchedules.retrieve(existing)
-    : await stripe.subscriptionSchedules.create({ from_subscription: sub.id });
-  const currentStart = schedule.current_phase?.start_date ?? schedule.phases[0]?.start_date ?? sub.current_period_start;
-  try {
-    await stripe.subscriptionSchedules.update(schedule.id, {
-      end_behavior: "release",
-      metadata: { organisation_id: ctx.organisationId },
-      phases: [
-        {
-          items: [{ price: priceId(item.price), quantity: item.quantity ?? 1 }],
-          start_date: currentStart,
-          end_date: sub.current_period_end,
-          automatic_tax: { enabled: true },
-          proration_behavior: "none",
-          ...(sub.status === "trialing" && sub.trial_end ? { trial_end: sub.trial_end } : {}),
-        },
-        {
-          items: [{ price, quantity }],
-          iterations: 1,
-          automatic_tax: { enabled: true },
-          proration_behavior: "none",
-        },
-      ],
-    });
-  } catch (err) {
-    // Don't leave a fresh schedule attached (it would block the portal) if the update failed.
-    if (!existing) await stripe.subscriptionSchedules.release(schedule.id).catch(() => undefined);
-    throw err;
-  }
 }
 
 async function priceFor(interval: "month" | "year") {
@@ -232,14 +196,44 @@ serve("manage-subscription", async (req) => {
           proration_behavior: "always_invoice",
           proration_date: prorationDate,
           payment_behavior: "pending_if_incomplete",
+          expand: ["latest_invoice.payment_intent"],
         });
         const switchPending = pending && pending.price !== priceId(item.price);
         if (updated.pending_update) {
-          // Payment didn't go through: nothing changed. Put the earlier schedule back as it was.
-          if (pending) await scheduleNextPhase({ ...ctx, sub: updated }, pending.price, pending.quantity);
-          return json({ error: "The payment didn't go through, so no seats were added. Update your card in Manage billing and try again.", code: "payment_failed" }, 402);
+          // The seats aren't added until the proration invoice is paid.
+          const invoice = updated.latest_invoice as Stripe.Invoice | null;
+          const intent = invoice?.payment_intent as Stripe.PaymentIntent | null | undefined;
+          const declined = !intent || intent.status === "requires_payment_method" || intent.status === "canceled";
+          if (declined) {
+            // Void the invoice so the pending update can never apply later, then put the earlier
+            // schedule back as it was.
+            if (invoice?.status === "open") await stripe.invoices.voidInvoice(invoice.id);
+            if (pending) await scheduleNextPhase(updated, pending.price, pending.quantity, ctx.organisationId);
+            return json({ error: "The payment didn't go through, so no seats were added. Update your card in Manage billing and try again.", code: "payment_failed" }, 402);
+          }
+          // 3D Secure (or a payment still processing): the update applies once it's paid. Leave
+          // the schedule released for now; stripe-webhook restores it from this metadata when the
+          // update is applied or expires.
+          if (pending && invoice) {
+            await stripe.invoices.update(invoice.id, {
+              metadata: {
+                organisation_id: ctx.organisationId,
+                [RESTORE_KEYS.price]: pending.price,
+                [RESTORE_KEYS.quantity]: String(pending.quantity),
+              },
+            });
+          }
+          await audit(ctx, "billing.seats_added", { from: current, to: seats, awaiting_payment: true });
+          return json(
+            {
+              error: "Your bank needs you to confirm this payment. The seats are added as soon as you do.",
+              code: intent.status === "requires_action" ? "requires_action" : "payment_processing",
+              hostedInvoiceUrl: invoice?.hosted_invoice_url ?? null,
+            },
+            402,
+          );
         }
-        if (switchPending) await scheduleNextPhase({ ...ctx, sub: updated, item: updated.items.data[0] }, pending.price, seats);
+        if (switchPending) await scheduleNextPhase(updated, pending.price, seats, ctx.organisationId);
         await audit(ctx, "billing.seats_added", {
           from: current,
           to: seats,
@@ -255,7 +249,7 @@ serve("manage-subscription", async (req) => {
           return json({ error: `You're using ${ctx.seatsUsed} seats. Remove members or make them viewers first.`, code: "below_seats_in_use" }, 400);
         }
         const pending = await pendingChange(sub);
-        await scheduleNextPhase(ctx, pending?.price ?? priceId(item.price), seats);
+        await scheduleNextPhase(sub, pending?.price ?? priceId(item.price), seats, ctx.organisationId);
         await audit(ctx, "billing.seat_reduction_scheduled", { from: current, to: seats, at: iso(sub.current_period_end) });
         return json({ seats, effectiveAt: iso(sub.current_period_end) });
       }
@@ -273,10 +267,10 @@ serve("manage-subscription", async (req) => {
         if (target.id === priceId(item.price)) {
           // Back to the current plan: keep only a pending reduction, if there is one.
           if (!pending || pending.price === target.id) return json({ error: `You're already billed ${interval === "year" ? "annually" : "monthly"}.` }, 400);
-          if (quantity < current) await scheduleNextPhase(ctx, target.id, quantity);
+          if (quantity < current) await scheduleNextPhase(sub, target.id, quantity, ctx.organisationId);
           else await stripe.subscriptionSchedules.release(pending.scheduleId);
         } else {
-          await scheduleNextPhase(ctx, target.id, quantity);
+          await scheduleNextPhase(sub, target.id, quantity, ctx.organisationId);
         }
         await audit(ctx, "billing.interval_switch_scheduled", {
           from: intervalOf(item.price),

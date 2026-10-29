@@ -5,11 +5,8 @@
 // Secrets: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET.
 import Stripe from "npm:stripe@16.12.0";
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
-
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
-  apiVersion: "2024-06-20",
-  httpClient: Stripe.createFetchHttpClient(),
-});
+// Shared client: the API version is pinned there (see the note before upgrading).
+import { RESTORE_KEYS, priceId, scheduleNextPhase, stripe } from "../_shared/billing.ts";
 const cryptoProvider = Stripe.createSubtleCryptoProvider();
 const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
   auth: { persistSession: false },
@@ -46,6 +43,32 @@ async function scheduledChange(sub: Stripe.Subscription, periodEndUnix: number |
     scheduled_interval: yearly ? "year" : "month",
     scheduled_change_at: new Date(next.start_date * 1000).toISOString(),
   };
+}
+
+// Work package 2.1: after add_seats needed 3D Secure, manage-subscription left the schedule
+// released and saved the earlier pending change on the proration invoice's metadata. When the
+// seats are applied (paid), put back a pending plan switch at the new seat count (a pending
+// reduction is dropped, as when no authentication is needed). When the pending update expires
+// (Stripe voids the invoice), put back the earlier schedule exactly. Once only per invoice.
+async function restoreAfterPendingUpdate(subscriptionId: string, applied: boolean) {
+  const sub = await stripe.subscriptions.retrieve(subscriptionId, { expand: ["latest_invoice"] });
+  const invoice = sub.latest_invoice as Stripe.Invoice | null;
+  const price = invoice?.metadata?.[RESTORE_KEYS.price];
+  const quantity = Number(invoice?.metadata?.[RESTORE_KEYS.quantity]);
+  const organisationId = invoice?.metadata?.organisation_id ?? sub.metadata?.organisation_id;
+  if (!invoice || !price || !Number.isInteger(quantity) || !organisationId) return;
+  if (invoice.metadata?.[RESTORE_KEYS.done] || sub.schedule || ENDED.includes(sub.status)) return;
+  const current = sub.items.data[0];
+  if (applied && price !== priceId(current.price)) {
+    await scheduleNextPhase(sub, price, current.quantity ?? 1, organisationId);
+  } else if (!applied) {
+    await scheduleNextPhase(sub, price, quantity, organisationId);
+  }
+  // Best effort: a voided invoice may refuse the update. The sub.schedule check above already
+  // stops a second restore, so a failure here mustn't make Stripe retry the event forever.
+  await stripe.invoices
+    .update(invoice.id, { metadata: { [RESTORE_KEYS.done]: "1" } })
+    .catch((err) => console.warn("stripe-webhook: mark restore done", invoice.id, (err as Error).message));
 }
 
 async function syncSubscription(subscriptionId: string) {
@@ -167,6 +190,13 @@ Deno.serve(async (req) => {
           (typeof schedule.subscription === "string" ? schedule.subscription : schedule.subscription?.id) ??
           schedule.released_subscription;
         if (subId) await syncSubscription(subId);
+        break;
+      }
+      case "customer.subscription.pending_update_applied":
+      case "customer.subscription.pending_update_expired": {
+        const sub = event.data.object as Stripe.Subscription;
+        await restoreAfterPendingUpdate(sub.id, event.type === "customer.subscription.pending_update_applied");
+        await syncSubscription(sub.id);
         break;
       }
       case "invoice.paid":
