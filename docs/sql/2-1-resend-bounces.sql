@@ -1,4 +1,5 @@
--- Work package 2.1: invitation bounces from Resend. PROPOSAL, not applied.
+-- Work package 2.1: invitation bounces from Resend. Applied on live as migration
+-- 20261029192147_2_1_resend_bounces (29/10/2026).
 -- Apply after docs/sql/2-1-audit-fix.sql (it uses private.write_audit's fixed version).
 -- Additive only: new columns, one new table, three new functions.
 --

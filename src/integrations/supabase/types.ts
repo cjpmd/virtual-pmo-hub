@@ -7206,9 +7206,13 @@ export type Database = {
           accepted_by: string | null
           created_at: string
           email: string
+          email_status: string | null
+          email_status_at: string | null
+          email_status_note: string | null
           expires_at: string
           id: string
           invited_by: string | null
+          last_email_id: string | null
           last_sent_at: string | null
           organisation_id: string
           revoked_at: string | null
@@ -7223,9 +7227,13 @@ export type Database = {
           accepted_by?: string | null
           created_at?: string
           email: string
+          email_status?: string | null
+          email_status_at?: string | null
+          email_status_note?: string | null
           expires_at?: string
           id?: string
           invited_by?: string | null
+          last_email_id?: string | null
           last_sent_at?: string | null
           organisation_id: string
           revoked_at?: string | null
@@ -7240,9 +7248,13 @@ export type Database = {
           accepted_by?: string | null
           created_at?: string
           email?: string
+          email_status?: string | null
+          email_status_at?: string | null
+          email_status_note?: string | null
           expires_at?: string
           id?: string
           invited_by?: string | null
+          last_email_id?: string | null
           last_sent_at?: string | null
           organisation_id?: string
           revoked_at?: string | null
@@ -9841,6 +9853,33 @@ export type Database = {
             referencedColumns: ["id", "organisation_id"]
           },
         ]
+      }
+      resend_webhook_events: {
+        Row: {
+          email_id: string | null
+          error: string | null
+          id: string
+          processed_at: string | null
+          received_at: string
+          type: string
+        }
+        Insert: {
+          email_id?: string | null
+          error?: string | null
+          id: string
+          processed_at?: string | null
+          received_at?: string
+          type: string
+        }
+        Update: {
+          email_id?: string | null
+          error?: string | null
+          id?: string
+          processed_at?: string | null
+          received_at?: string
+          type?: string
+        }
+        Relationships: []
       }
       resource_assignments: {
         Row: {
@@ -15091,6 +15130,14 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      record_invite_email_event: {
+        Args: { p_email_id: string; p_event: string; p_note?: string }
+        Returns: boolean
+      }
+      record_invite_email_id: {
+        Args: { p_email_id: string; p_invite_id: string }
+        Returns: undefined
       }
       remove_join_domain: { Args: { p_domain_id: string }; Returns: undefined }
       remove_member: {

@@ -1,99 +1,37 @@
--- Work package 2.1 fix: audit entries from the 2.1 RPCs break public.audit_log_action_check.
--- PROPOSAL, not applied.
+-- Work package 2.1 fix: let audit_log hold the 2.1 event names.
+-- Applied on live as migration 20261029192122_2_1_audit_actions (29/10/2026), approved as written:
+-- widen the constraint; write_audit and the rate-limit counts unchanged.
 --
--- The problem: audit_log.action is constrained to 'insert' | 'update' | 'delete' (the row-change
--- trigger's operations). private.write_audit wrote the 2.1 events ('invite.created',
--- 'member.role_changed', 'seats.changed', ...) into action, so every RPC that audits fails with
--- 23514 and rolls back: create_invites, resend/revoke/accept_invite, change_member_role,
--- remove_member, the join-request and join-domain RPCs, record_billing_request, and the
--- organisation_subscriptions seat-audit trigger (so a Stripe webhook that changes seats_total
--- would fail too). Found by the deploy test of send-invite; no partial data was written.
+-- The problem: audit_log_action_check allowed only 'insert' | 'update' | 'delete' (the row-change
+-- trigger's operations). private.write_audit records the 2.1 events in action ('invite.created',
+-- 'member.role_changed', 'seats.changed', ...), so every RPC that audits failed with 23514 and
+-- rolled back: create_invites, resend/revoke/accept_invite, change_member_role, remove_member, the
+-- join-request and join-domain RPCs, record_billing_request, and the organisation_subscriptions
+-- seat-audit trigger (a Stripe webhook that changes seats_total or a scheduled change would fail
+-- too). Found by the deploy test of send-invite; no partial data was written.
 --
--- The fix (additive: create or replace only, no drop, constraint unchanged):
---   * private.write_audit keeps action within the constraint (an event ending .created / .added
---     is 'insert', .removed is 'delete', everything else 'update') and records the event name in
---     detail.event, e.g. {"event": "invite.sent", "email": ..., "role": ...}.
---   * The two rate-limit counts look for detail ->> 'event' = 'invite.sent' instead of action.
--- Settings › Audit shows "<action> <table>" plus the detail, so these entries read like
--- "update organisation invites — event: invite.sent, email: …".
---
--- Alternative (not proposed): widen the check constraint to accept the event names. That needs
--- `alter table ... drop constraint`, so it would have to be run by hand.
+-- The fix replaces the constraint with one that also allows the 2.1 events, as an explicit list.
+-- Contains `drop constraint` (schema only: no rows are removed). Existing rows all use
+-- insert/update/delete, so the new constraint validates immediately. Run as one transaction.
 
--- 1. write_audit: same signature and grants (create or replace keeps them) ----------------------
-create or replace function private.write_audit(p_org uuid, p_action text, p_table text, p_entity uuid, p_detail jsonb,
-                                               p_actor uuid default null)
-returns void
-language sql
-security definer
-set search_path = ''
-as $$
-  insert into public.audit_log (organisation_id, actor_id, action, entity_table, entity_id, detail)
-  values (
-    p_org,
-    coalesce(p_actor, (select auth.uid())),
-    case when p_action ~ '\.(created|added)$' then 'insert'
-         when p_action ~ '\.removed$' then 'delete'
-         else 'update' end,
-    p_table,
-    p_entity,
-    coalesce(p_detail, '{}'::jsonb) || jsonb_build_object('event', p_action)
-  );
-$$;
+alter table public.audit_log drop constraint audit_log_action_check;
 
--- 2. Rate-limit counts read the event from detail -------------------------------------------------
-create or replace function private.invite_emails_last_day(p_org uuid)
-returns integer
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select count(*)::integer from public.audit_log a
-  where a.organisation_id = p_org and a.entity_table = 'organisation_invites'
-    and a.detail ->> 'event' = 'invite.sent' and a.created_at > now() - interval '1 day';
-$$;
+alter table public.audit_log add constraint audit_log_action_check check (action in (
+  -- row changes (private.audit_row_change)
+  'insert', 'update', 'delete',
+  -- invitations
+  'invite.created', 'invite.sent', 'invite.send_failed', 'invite.revoked', 'invite.accepted',
+  'invite.bounced', 'invite.suppressed', 'invite.complained',
+  -- members
+  'member.role_changed', 'member.removed',
+  -- join requests and domains
+  'join_settings.changed', 'join_domain.added', 'join_domain.removed',
+  'join_request.created', 'join_request.withdrawn', 'join_request.approved', 'join_request.declined',
+  -- billing requests (record_billing_request) and what Stripe applied (seat-audit trigger)
+  'billing.seats_added', 'billing.seat_reduction_scheduled', 'billing.scheduled_change_cancelled',
+  'billing.interval_switch_scheduled',
+  'seats.changed', 'seats.change_scheduled', 'seats.scheduled_change_cleared'
+));
 
--- Same body as 2_1_invites_seats except the per-invitation count (detail ->> 'event').
-create or replace function public.resend_invite(p_invite_id uuid)
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_inv public.organisation_invites;
-begin
-  select * into v_inv from public.organisation_invites i where i.id = p_invite_id;
-  if not found then
-    raise exception 'Invitation not found' using errcode = 'P0002';
-  end if;
-  perform private.assert_org_admin(v_inv.organisation_id);
-  perform private.lock_seats(v_inv.organisation_id);
-  select * into v_inv from public.organisation_invites i where i.id = p_invite_id for update;
-  if v_inv.accepted_at is not null then
-    raise exception 'This invitation has already been accepted' using errcode = 'P0001', hint = 'invite_used';
-  end if;
-  if v_inv.revoked_at is not null then
-    raise exception 'This invitation was revoked' using errcode = 'P0001', hint = 'invite_revoked';
-  end if;
-  if private.invite_emails_last_day(v_inv.organisation_id) >= 50 then
-    raise exception 'This organisation can send 50 invitations a day. Try again tomorrow.'
-      using errcode = 'P0001', hint = 'rate_limited';
-  end if;
-  if (select count(*) from public.audit_log a
-      where a.organisation_id = v_inv.organisation_id and a.entity_table = 'organisation_invites'
-        and a.entity_id = p_invite_id and a.detail ->> 'event' = 'invite.sent'
-        and a.created_at > now() - interval '1 day') >= 3 then
-    raise exception 'This invitation has been emailed 3 times today. Try again tomorrow.'
-      using errcode = 'P0001', hint = 'rate_limited';
-  end if;
-  -- An expired paid invitation isn't holding a seat; renewing it takes one again.
-  if v_inv.expires_at <= now() and v_inv.role >= 'contributor' then
-    perform private.assert_seats_for(v_inv.organisation_id, 1);
-  end if;
-  update public.organisation_invites i
-  set expires_at = now() + interval '7 days', token_hash = null
-  where i.id = p_invite_id;
-end;
-$$;
+comment on constraint audit_log_action_check on public.audit_log is
+  'Row operations from audit_row_change plus the work package 2.1 events written by private.write_audit. Add new event names here.';
