@@ -76,18 +76,16 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (member?.role !== "admin") return json({ error: "Only organisation admins can manage billing." }, 403);
 
-    const [{ data: org }, { data: sub }, { count: paidSeats }] = await Promise.all([
+    // Seats in use (work package 2.1): paid members, including viewers with a paid workspace
+    // role, plus pending paid invitations. Checkout can't go below it.
+    const [{ data: org }, { data: sub }, { data: usage }] = await Promise.all([
       admin.from("organisations").select("name, is_demo").eq("id", organisationId).single(),
       admin
         .from("organisation_subscriptions")
         .select("plan, status, stripe_customer_id, stripe_subscription_id, trial_ends_at")
         .eq("organisation_id", organisationId)
         .maybeSingle(),
-      admin
-        .from("organisation_members")
-        .select("profile_id", { count: "exact", head: true })
-        .eq("organisation_id", organisationId)
-        .neq("role", "viewer"),
+      userClient.rpc("get_seat_usage", { p_organisation_id: organisationId }),
     ]);
     if (!org) return json({ error: "Organisation not found." }, 404);
     if (org.is_demo || sub?.plan === "demo") return json({ error: "The demo organisation can't be subscribed." }, 400);
@@ -95,7 +93,7 @@ Deno.serve(async (req) => {
       return json({ error: "This organisation already has a subscription. Use Manage billing instead.", code: "already_subscribed" }, 409);
     }
 
-    const minSeats = Math.max(1, paidSeats ?? 0);
+    const minSeats = Math.max(1, Number(usage?.used ?? 0));
     const requested = Number.isInteger(body.seats) ? Number(body.seats) : minSeats;
     const quantity = Math.min(5000, Math.max(minSeats, requested));
 

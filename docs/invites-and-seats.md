@@ -1,8 +1,164 @@
 # Invites, seats and join requests (work package 2.1)
 
-Status: the database design is in `docs/sql/2-1-invites-seats.sql` (proposal, awaiting approval).
-The rest of this document (Stripe and Resend settings, the manual test checklist) is written
-with the build.
+Database: migration `20261029171524_2_1_invites_seats` (`docs/sql/2-1-invites-seats.sql`, rollback
+reference `docs/sql/2-1-rollback.sql`). Edge functions: `send-invite`, `notify-join-request`,
+`manage-subscription`, `resend-webhook`, and schedule handling in `stripe-webhook` (shared code in
+`supabase/functions/_shared/`). Later migrations: `2_1_audit_actions` (audit action list) and
+`2_1_resend_bounces` (email delivery status on invitations).
+
+## Screens
+
+- **Settings › Members & invitations** (`components/settings/members-settings.tsx`, hooks in
+  `hooks/use-members.ts`, service `services/members.ts`). Everyone sees the seat summary and the
+  member list. Admins also get: the role select and Remove on each member; Invite people
+  (addresses, role, with manager and PMO under "More roles", workspaces ticked by default, and
+  the seat check before sending); open invitations with Sent / Delivered / Not sent / Not
+  delivered / Expired, Resend invite and Revoke; Requests to join (approve with role and
+  workspaces, or decline); and the join settings (switch, add own email domain or Microsoft
+  organisation, remove). Pending requests show as a count on Settings in the sidebar.
+- **Settings › Roles & permissions** (was "Users, roles & permissions"): home pages and the
+  permissions matrix. The old Members card is gone.
+- **Settings › Subscription**: with a live subscription, "Seats and billing period" previews the
+  prorated charge, confirms, schedules reductions and period switches for renewal, shows and
+  cancels a scheduled change, and links to Stripe's invoice page when the bank asks for 3D
+  Secure. Checkout's minimum seats now include pending paid invitations.
+- **`/invite?token=…`** (public): shows who invited you to which organisation and role. Signed
+  out, Create an account / Sign in return to the invitation (`next` keeps the query string:
+  `lib/safe-next.ts` `nextLocation`). Signed in, it checks the address and confirmation, then
+  Accept and join opens the organisation.
+- **`/signup/setup`**: "Ask to join" for organisations that accept requests from the user's
+  domain or Microsoft organisation, with an optional message and Withdraw.
+
+## How it works
+
+- **Invites.** An admin invites up to 20 addresses at a time, each with a role, into chosen
+  workspaces. `send-invite` calls `create_invites` as the admin (all checks run in the database),
+  then for each invite makes a 32-byte token, stores only its SHA-256 hash
+  (`issue_invite_token`), emails the link `APP_URL/invite?token=…` through Resend, and records
+  the result (`mark_invite_sent`). If Resend refuses the email the token is cleared and the
+  invite shows "Not sent"; Resend invite issues a new token, so older links stop working.
+  Invitations last 7 days and work once. Accepting needs the signed-in user's confirmed
+  `auth.users` email to match the invited address (case-insensitive).
+- **Seats.** Seats used = paid members + unexpired paid-role invites. The limit is 10 during the
+  free trial, the purchased quantity with a subscription (the lower number once a reduction is
+  scheduled), and 0 after a subscription has ended. A database trigger refuses any change that
+  needs a seat when none is free; every path locks the organisation's subscription row first, so
+  simultaneous invites or role changes can't overshoot.
+- **Join requests.** Off by default. An admin can add only their own confirmed email domain
+  (personal domains refused) or the Microsoft tenant they signed in from. Matching users who
+  aren't members can ask to join; `notify-join-request` emails each admin once. Nobody joins
+  until an admin approves with a role.
+- **Billing changes in the app** (`manage-subscription`). Adding seats shows the prorated cost
+  (incl. VAT) and charges it immediately on confirmation; seats are only added if the payment
+  succeeds. Reducing seats and switching monthly ↔ annual take effect at the next renewal,
+  through one Stripe subscription schedule; "Cancel scheduled change" releases it. While a
+  schedule is attached, the Stripe customer portal can't update or cancel the subscription
+  (Stripe's rule), so the app explains this and offers Cancel scheduled change.
+- **Audit.** Invites, acceptances, revocations, role changes, removals, join requests, join
+  domains and seat changes are written to `audit_log` (admins and PMO can read them).
+
+## Settings to configure by hand
+
+**Resend** (done): verified sending domain `ormo-pmo.originoverthrow.com` (EU, eu-west-1);
+edge-function secrets `RESEND_API_KEY` and `RESEND_FROM`
+(`ORMO PMO <invites@ormo-pmo.originoverthrow.com>`). The sender is always read from
+`RESEND_FROM`; any other domain is refused by Resend with a 403.
+
+**Resend webhook** (done 29/10/2026; the bounce test with `bounced@resend.dev` passed): Resend ›
+Webhooks has the endpoint `https://xvdlmtkzfmbcegkmampz.supabase.co/functions/v1/resend-webhook`
+with the events `email.delivered`, `email.delivery_delayed`, `email.bounced`, `email.complained`
+and `email.suppressed`, and its signing secret (`whsec_…`) is the edge-function secret
+`RESEND_WEBHOOK_SECRET`. Every request is checked against that signature (Svix) and requests more
+than 5 minutes old are refused. If the secret is rotated in Resend, update the edge-function secret.
+
+**Stripe** (test mode first, then live):
+
+1. Customer portal (Settings › Billing › Customer portal): under Subscriptions, turn **off**
+   "Update quantities" and "Switch plan". Keep payment methods, billing details, invoice history
+   and Cancel subscription on.
+2. Webhook endpoint for `stripe-webhook`: add the events `subscription_schedule.created`,
+   `subscription_schedule.updated`, `subscription_schedule.released`,
+   `subscription_schedule.completed`, `subscription_schedule.canceled`,
+   `subscription_schedule.aborted`, `customer.subscription.pending_update_applied` and
+   `customer.subscription.pending_update_expired`, next to the existing checkout, subscription and
+   invoice events.
+3. Prices: keep the lookup keys `ormo_seat_monthly` and `ormo_seat_annual` on the active prices;
+   `manage-subscription` finds the switch target by lookup key.
+
+## Manual test checklist
+
+Use `delivered@resend.dev` for invites that should arrive, never made-up addresses at real
+providers. Run the Stripe steps in test mode, with a test clock to move past renewal.
+
+**Invites and accepting**
+
+- [ ] Invite `delivered@resend.dev` as a viewer: the invite shows as sent; Resend's log shows the
+      email from `invites@ormo-pmo.originoverthrow.com` with the idempotency key
+      `invite/<id>/<hash prefix>`.
+- [ ] Invite a real test mailbox you control as a member; accept with **email + password**
+      (new account): after confirming the email you land in the organisation.
+- [ ] Same with **Microsoft** sign-in (a different mailbox): accept, land in the organisation,
+      sign-in method shows Microsoft on the Members page.
+- [ ] Signed out: open the link → sign in or sign up → you come back to the invite and accept.
+- [ ] **Wrong email**: open an invite while signed in as another address → "sent to a different
+      email address", nothing joined.
+- [ ] **Expired**: set an invite's `expires_at` in the past (SQL editor) → "expired"; Resend
+      invite makes it work again with a new link and the old link stops working.
+- [ ] **Revoked** link → "withdrawn by an admin". **Already used** link (second person) →
+      "already been used".
+- [ ] **Not sent**: temporarily set `RESEND_FROM` to an address on another domain, invite
+      someone → the invite shows "Not sent" with "The email couldn’t be sent. Use Resend invite to
+      try again."; put `RESEND_FROM` back and Resend invite → sent.
+- [ ] **Bounced**: invite `bounced@resend.dev` → sent at first; within a minute the bounce arrives
+      through `resend-webhook`, the invite shows "Not delivered" and its link stops working;
+      Settings › Audit shows "Invitation email bounced". Invite `delivered@resend.dev` → status
+      "delivered". Resend's webhook log shows 200 responses.
+- [ ] A request to `resend-webhook` without a valid signature gets 400.
+- [ ] Rate limits: a 21st address in one request is refused; the 4th email of one invite in a
+      day is refused.
+
+**Seats and roles**
+
+- [ ] Trial organisation: "Using X of 10 seats". Invite paid members up to 10, then an 11th paid
+      invite is refused with "Not enough paid seats"; a viewer invite still works.
+- [ ] Change a viewer to member when seats are full → refused. Free a seat (remove a member or
+      make one a viewer) → the change now works immediately.
+- [ ] **Last admin**: demote or remove the only admin → refused.
+- [ ] **Viewer read-only**: as a viewer, editing a project, RAIDD item, meeting or programme note
+      fails; recording a decision where you are the named decision maker, a business case on
+      your own request, your own leave, and your personal dashboards and saved views still work;
+      sharing a dashboard or saved view fails.
+
+**Billing (Stripe test mode)**
+
+- [ ] **Add seats with proration**: monthly subscription, add 2 seats mid-period → the preview
+      shows the prorated amount and VAT; confirm → charged now, Members page shows the new total.
+- [ ] Add seats with a declining test card → "The payment didn't go through", seat count unchanged,
+      the proration invoice is void, and any scheduled change is still there.
+- [ ] **3D Secure**: on a test clock, subscribe with `4000 0025 0000 3155` (3DS required), schedule
+      a switch to annual, then add seats → 402 `requires_action` with the hosted invoice link;
+      seats unchanged and the schedule released. Complete 3DS on the invoice page → seats added
+      and the annual switch rescheduled at the new seat count. Repeat without completing 3DS and
+      advance the clock 23 hours → the pending update expires, seats unchanged, and the original
+      schedule is back.
+- [ ] **Reduce at renewal**: schedule a reduction → "Reduces to N on <date>"; the portal can't
+      cancel meanwhile; advance the test clock past renewal → seats_total = N and the schedule
+      is gone.
+- [ ] Reduction below seats in use → refused.
+- [ ] Switch monthly → annual (and back) at renewal; combine with a reduction; Cancel scheduled
+      change releases both.
+- [ ] Add seats while a reduction is scheduled → the reduction is dropped (the UI says so first);
+      with a pending annual switch, the switch is kept at the new count.
+- [ ] Annual plan: repeat add seats (prorated on the £100 price) and reduce at renewal.
+
+**Join requests**
+
+- [ ] Admin adds their own email domain; a personal domain (gmail.com) is refused.
+- [ ] Admin signed in with Microsoft adds the tenant; a personal Microsoft account is refused.
+- [ ] A matching user with no organisation sees "Request to join <Org>", requests, and each admin
+      gets one email; the Members page shows the badge.
+- [ ] Approve as member when seats are full → refused; approve as viewer → joins. Decline →
+      the user can ask again after 7 days.
 
 ## Seats
 

@@ -312,7 +312,8 @@ export async function loadOrgSettings(orgId: string, userId: string): Promise<Or
       id: row.id,
       timestamp: row.created_at,
       actor: (row.actor_id && names.get(row.actor_id)) || "Virtual PMO",
-      action: `${row.action} ${row.entity_table.replaceAll("_", " ")}`,
+      action:
+        AUDIT_EVENT_LABELS[row.action] ?? `${row.action} ${row.entity_table.replaceAll("_", " ")}`,
       detail: describeAudit(row.detail),
     })),
   };
@@ -346,12 +347,48 @@ export async function loadOrgSettings(orgId: string, userId: string): Promise<Or
   };
 }
 
+/** Work package 2.1 events (private.write_audit); row changes keep "<operation> <table>". */
+const AUDIT_EVENT_LABELS: Record<string, string> = {
+  "invite.created": "Invitation created",
+  "invite.sent": "Invitation emailed",
+  "invite.send_failed": "Invitation email failed",
+  "invite.revoked": "Invitation revoked",
+  "invite.accepted": "Invitation accepted",
+  "invite.bounced": "Invitation email bounced",
+  "invite.suppressed": "Invitation email suppressed",
+  "invite.complained": "Invitation marked as spam",
+  "member.role_changed": "Member role changed",
+  "member.removed": "Member removed",
+  "join_settings.changed": "Join requests setting changed",
+  "join_domain.added": "Join domain added",
+  "join_domain.removed": "Join domain removed",
+  "join_request.created": "Request to join",
+  "join_request.withdrawn": "Join request withdrawn",
+  "join_request.approved": "Join request approved",
+  "join_request.declined": "Join request declined",
+  "billing.seats_added": "Seats added",
+  "billing.seat_reduction_scheduled": "Seat reduction scheduled",
+  "billing.scheduled_change_cancelled": "Scheduled billing change cancelled",
+  "billing.interval_switch_scheduled": "Plan switch scheduled",
+  "seats.changed": "Paid seats changed",
+  "seats.change_scheduled": "Seat or plan change scheduled",
+  "seats.scheduled_change_cleared": "Scheduled seat or plan change cleared",
+};
+
 function describeAudit(detail: Json): string {
   if (!isObject(detail)) return "";
   const changed = detail["changed"];
   if (Array.isArray(changed)) return `Changed ${changed.join(", ")}`;
   const title = detail["title"] ?? detail["name"];
-  return typeof title === "string" ? title : "";
+  if (typeof title === "string") return title;
+  // 2.1 events: who it concerns and what changed.
+  const parts = [detail["email"], detail["value"]].filter(
+    (part) => typeof part === "string",
+  ) as string[];
+  if (detail["from"] !== undefined && detail["to"] !== undefined)
+    parts.push(`${String(detail["from"])} → ${String(detail["to"])}`);
+  else if (typeof detail["role"] === "string") parts.push(detail["role"]);
+  return parts.join(", ");
 }
 
 /** The fixed role ladder (see defaultRoles) with each role's configured default home page. */
@@ -640,8 +677,15 @@ const savePhases = async (
   previous: LifecyclePhase[],
   next: LifecyclePhase[],
 ) => {
+  // First renumber in the previous order, so rows a failed save left on parking values are
+  // back at 1..n before this save parks its new rows.
+  await reorderPhases(orgId, ids, previous);
   await savePhaseRows(orgId, ids, previous, next);
-  const ordered = next
+  await reorderPhases(orgId, ids, next);
+};
+
+const reorderPhases = async (orgId: string, ids: Map<string, string>, phases: LifecyclePhase[]) => {
+  const ordered = phases
     .map((phase) => resolveId(ids, phase.id))
     .filter((id): id is string => Boolean(id));
   unwrapMaybe(

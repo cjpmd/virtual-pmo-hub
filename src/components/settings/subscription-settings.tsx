@@ -3,13 +3,14 @@
 // admins can read organisation_subscriptions, so everyone else sees a notice. Stripe returns
 // here with ?checkout=success|cancelled; the webhook updates the row, so a success refetches.
 import { useEffect, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { CreditCard, ExternalLink } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { CalendarClock, CreditCard, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useOrgId } from "@/components/auth/organisation-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { SubscriptionSettings as Subscription } from "@/data/settings-types";
+import { useSeatChangeMutations, useSeatUsage } from "@/hooks/use-members";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
@@ -22,6 +23,8 @@ import {
   trialDaysLeft,
   type BillingInterval,
 } from "@/services/billing";
+import { FunctionCallError } from "@/services/functions";
+import { formatMinor, previewSeats, type SeatPreview } from "@/services/members";
 import { qk } from "@/services/query-keys";
 import { errorMessage } from "@/services/service-error";
 import { useSettings } from "@/services/settings";
@@ -157,7 +160,7 @@ export function SubscriptionSettings() {
       <SettingsCard
         requires="self"
         title="Subscription"
-        description="Plan, seat usage and renewal. Paid seats are contributors and above; viewers are free."
+        description="Plan, seat usage and renewal. Admins and members use a paid seat; viewers are free."
         actions={
           subscription.hasBillingAccount ? (
             <Button variant="outline" disabled={opening} onClick={() => void openPortal()}>
@@ -229,8 +232,12 @@ export function SubscriptionSettings() {
             This is the demo organisation, so it can't be subscribed.
           </p>
         </SettingsCard>
+      ) : live ? (
+        !subscription.cancelAtPeriodEnd && (
+          <SeatPlanCard subscription={subscription} orgId={orgId} />
+        )
       ) : (
-        !live && <SubscribeCard subscription={subscription} orgId={orgId} />
+        <SubscribeCard subscription={subscription} orgId={orgId} />
       )}
     </>
   );
@@ -238,7 +245,9 @@ export function SubscriptionSettings() {
 
 function SubscribeCard({ subscription, orgId }: { subscription: Subscription; orgId: string }) {
   const settings = useSettings();
-  const minSeats = Math.max(1, subscription.paidSeatsUsed);
+  // Paid members plus pending paid invitations (get_seat_usage), as create-checkout-session checks.
+  const seatsInUse = useSeatUsage().data?.used ?? subscription.paidSeatsUsed;
+  const minSeats = Math.max(1, seatsInUse);
   const [interval, setBillingInterval] = useState<BillingInterval>("year");
   const [seatsText, setSeatsText] = useState(String(minSeats));
   const [starting, setStarting] = useState(false);
@@ -326,7 +335,7 @@ function SubscribeCard({ subscription, orgId }: { subscription: Subscription; or
         </div>
         <p className={cn("text-xs", seatsValid ? "text-muted-foreground" : "text-health-bad")}>
           {seatsValid
-            ? `At least ${minSeats}: one for each member who isn't a viewer. You can change seats later in Manage billing.`
+            ? `At least ${minSeats}: one for each paid member and pending paid invitation. You can change seats later on this page.`
             : `Enter a whole number of seats from ${minSeats} to 5,000.`}
         </p>
         {keepsTrialDays(subscription.trialEndsAt) && (
@@ -339,6 +348,211 @@ function SubscribeCard({ subscription, orgId }: { subscription: Subscription; or
           <CreditCard className="h-4 w-4" />
           {starting ? "Opening checkout…" : "Continue to payment"}
         </Button>
+      </div>
+    </SettingsCard>
+  );
+}
+
+/**
+ * Seats and billing period on a live subscription (work package 2.1), through manage-subscription.
+ * More seats: preview the prorated charge, confirm, and it's charged now (3D Secure sends the
+ * admin to Stripe's invoice page). Fewer seats or a different period: scheduled for the renewal
+ * date. The customer portal can't change seats or plan (turned off there).
+ */
+function SeatPlanCard({ subscription, orgId }: { subscription: Subscription; orgId: string }) {
+  const settings = useSettings();
+  const usage = useSeatUsage().data ?? null;
+  const changes = useSeatChangeMutations();
+  const [seatsText, setSeatsText] = useState(String(subscription.seatsTotal));
+  const [authUrl, setAuthUrl] = useState<string | null>(null);
+  const preview = useMutation({
+    meta: { silent: true },
+    mutationFn: (seats: number) => previewSeats(orgId, seats),
+  });
+  const seats = Number(seatsText);
+  const minSeats = Math.max(1, usage?.used ?? subscription.paidSeatsUsed);
+  const seatsValid =
+    Number.isInteger(seats) &&
+    seats >= minSeats &&
+    seats <= 5000 &&
+    seats !== subscription.seatsTotal;
+  const quote = preview.data && preview.data.newSeats === seats ? preview.data : null;
+  const date = (iso: string) => formatDate(iso.slice(0, 10), settings);
+  const otherInterval = subscription.billingInterval === "year" ? "month" : "year";
+  const busy =
+    changes.add.isPending ||
+    changes.reduce.isPending ||
+    changes.switchInterval.isPending ||
+    changes.cancelScheduled.isPending;
+
+  const done = (message: string) => {
+    toast.success(message);
+    preview.reset();
+  };
+  const failed = (error: unknown) => {
+    if (error instanceof FunctionCallError && error.code === "requires_action") {
+      const url = error.body?.["hostedInvoiceUrl"];
+      setAuthUrl(typeof url === "string" ? url : null);
+    }
+    if (error instanceof FunctionCallError && error.code === "preview_expired") preview.reset();
+    toast.error(errorMessage(error));
+  };
+
+  const confirm = (value: SeatPreview) => {
+    if (value.direction === "increase")
+      changes.add.mutate(
+        { seats: value.newSeats, prorationDate: value.prorationDate },
+        { onSuccess: () => done(`You now have ${value.newSeats} seats.`), onError: failed },
+      );
+    else
+      changes.reduce.mutate(value.newSeats, {
+        onSuccess: (result) =>
+          done(`You'll have ${result.seats} seats from ${date(result.effectiveAt)}.`),
+        onError: failed,
+      });
+  };
+
+  const scheduled =
+    usage?.scheduledChangeAt && (usage.scheduledSeats !== null || usage.scheduledInterval)
+      ? usage
+      : null;
+
+  return (
+    <SettingsCard
+      requires="self"
+      title="Seats and billing period"
+      description="Added seats are charged now for the rest of the period. Fewer seats and a change of billing period start at renewal. Prices exclude VAT."
+    >
+      <div className="space-y-5">
+        {scheduled && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-muted/40 px-3 py-2 text-sm">
+            <span className="flex items-center gap-2">
+              <CalendarClock className="size-4 text-muted-foreground" />
+              From {date(scheduled.scheduledChangeAt!)}:{" "}
+              {[
+                scheduled.scheduledSeats !== null &&
+                  scheduled.scheduledSeats !== subscription.seatsTotal &&
+                  `${scheduled.scheduledSeats} seats`,
+                scheduled.scheduledInterval &&
+                  scheduled.scheduledInterval !== subscription.billingInterval &&
+                  (scheduled.scheduledInterval === "year" ? "billed annually" : "billed monthly"),
+              ]
+                .filter(Boolean)
+                .join(", ") || "no change"}
+            </span>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={busy}
+              onClick={() =>
+                changes.cancelScheduled.mutate(undefined, {
+                  onSuccess: () => done("The scheduled change was cancelled."),
+                  onError: failed,
+                })
+              }
+            >
+              Cancel change
+            </Button>
+          </div>
+        )}
+        {authUrl && (
+          <p className="rounded-md border border-health-warn/40 bg-health-warn/10 px-3 py-2 text-sm">
+            Your bank needs you to confirm the payment.{" "}
+            <a href={authUrl} target="_blank" rel="noreferrer" className="font-medium underline">
+              Confirm the payment with Stripe
+            </a>
+            . The seats are added as soon as it's paid.
+          </p>
+        )}
+        <div className="flex flex-wrap items-end gap-4">
+          <label className="block text-sm">
+            <span className="font-medium">Paid seats</span>
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={minSeats}
+              max={5000}
+              step={1}
+              value={seatsText}
+              onChange={(event) => {
+                setSeatsText(event.target.value);
+                setAuthUrl(null);
+              }}
+              className="mt-1.5 w-32"
+            />
+          </label>
+          <Button
+            variant="outline"
+            disabled={!seatsValid || preview.isPending || busy}
+            onClick={() => preview.mutate(seats, { onError: failed })}
+          >
+            {preview.isPending ? "Working it out…" : "Check the cost"}
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          You have {subscription.seatsTotal} seats and {minSeats} in use (members and pending
+          invitations). You can't go below the seats in use.
+        </p>
+        {quote && (
+          <div className="space-y-3 rounded-md border p-4 text-sm">
+            {quote.direction === "increase" ? (
+              <>
+                <p>
+                  {quote.currentSeats} → {quote.newSeats} seats.{" "}
+                  {quote.trialing
+                    ? "You're in the free trial, so nothing is charged now."
+                    : `Charged now for the rest of this period: ${formatMinor(quote.amountExclVat, quote.currency)} + ${formatMinor(quote.vat, quote.currency)} VAT = ${formatMinor(quote.totalNow, quote.currency)}.`}
+                </p>
+                {quote.dropsScheduledReduction && (
+                  <p className="text-xs text-muted-foreground">
+                    This replaces the seat reduction scheduled for renewal.
+                  </p>
+                )}
+              </>
+            ) : (
+              <p>
+                {quote.currentSeats} → {quote.newSeats} seats from {date(quote.effectiveAt)}, when
+                the subscription renews. Nothing changes until then and there's no refund for the
+                current period.
+              </p>
+            )}
+            <Button disabled={busy} onClick={() => confirm(quote)}>
+              {busy
+                ? "Saving…"
+                : quote.direction === "increase" && !quote.trialing
+                  ? `Add seats and pay ${formatMinor(quote.totalNow, quote.currency)}`
+                  : quote.direction === "increase"
+                    ? "Add seats"
+                    : "Schedule the change"}
+            </Button>
+          </div>
+        )}
+        {subscription.billingInterval && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4 text-sm">
+            <span>
+              Billed {subscription.billingInterval === "year" ? "annually" : "monthly"}.{" "}
+              {otherInterval === "year"
+                ? `Annual billing is ${gbp(SEAT_PRICE_GBP.year)} per seat a year (two months free).`
+                : `Monthly billing is ${gbp(SEAT_PRICE_GBP.month)} per seat a month.`}
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy || scheduled?.scheduledInterval === otherInterval}
+              onClick={() =>
+                changes.switchInterval.mutate(otherInterval, {
+                  onSuccess: (result) =>
+                    done(
+                      `You'll be billed ${otherInterval === "year" ? "annually" : "monthly"} from ${date(result.effectiveAt)}.`,
+                    ),
+                  onError: failed,
+                })
+              }
+            >
+              Switch to {otherInterval === "year" ? "annual" : "monthly"} at renewal
+            </Button>
+          </div>
+        )}
       </div>
     </SettingsCard>
   );

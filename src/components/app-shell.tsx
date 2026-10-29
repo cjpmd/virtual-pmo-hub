@@ -48,6 +48,7 @@ import { errorMessage } from "@/services/service-error";
 import { toast } from "sonner";
 import { allPages, findSection, sections, settingsSection } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
+import { useJoinRequests } from "@/hooks/use-members";
 import { openIssueTask } from "@/components/issue-task-sheet";
 
 // The rail's expanded choice, remembered per user on this device.
@@ -106,6 +107,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const activeSection = findSection(path);
   const { profile, organisation, organisations, switchOrganisation, switching } = useOrganisation();
+  // Pending requests to join, for admins (empty for everyone else).
+  const joinRequests = useJoinRequests().data?.length ?? 0;
   // Header: the effective role in the workspace being viewed (the selected portfolio's), which is
   // what decides the buttons on screen. The organisation role is shown in the profile menu.
   const { portfolio: currentPortfolio } = useCurrentPortfolio();
@@ -506,6 +509,17 @@ export function AppShell({ children }: { children: ReactNode }) {
                     )}
                     <Settings className="size-[18px] shrink-0" />
                     <span className={cn(collapsed && "min-[900px]:sr-only")}>Settings</span>
+                    {joinRequests > 0 && (
+                      <span
+                        className={cn(
+                          "ml-auto rounded-full bg-pmo-accent px-1.5 text-[11px] font-semibold leading-5 text-white",
+                          collapsed && "min-[900px]:absolute min-[900px]:right-1 min-[900px]:top-1",
+                        )}
+                        aria-label={`${joinRequests} request${joinRequests === 1 ? "" : "s"} to join`}
+                      >
+                        {joinRequests}
+                      </span>
+                    )}
                   </Link>
                 );
                 return collapsed ? (

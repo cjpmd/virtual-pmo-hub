@@ -12,6 +12,7 @@ import { qk } from "@/services/query-keys";
 import { errorMessage } from "@/services/service-error";
 import { cn } from "@/lib/utils";
 import { orgFromDomain } from "@/lib/org-name";
+import { JoinableOrganisations } from "@/components/auth/joinable-organisations";
 import { defaultLifecyclePhases } from "@/data/lifecycle";
 
 export const Route = createFileRoute("/signup/setup")({
@@ -148,6 +149,7 @@ function Setup({ userId, email }: { userId: string; email: string }) {
         <div className="mt-6 min-h-56 space-y-4">
           {step === 0 && (
             <>
+              <JoinableOrganisations userId={userId} />
               <h1 className="text-2xl font-semibold">Name your organisation</h1>
               <p className="text-sm text-muted-foreground">
                 {suggestedName && "Suggested from your email address. "}Colleagues see this name

@@ -22,6 +22,7 @@ import { Route as DependenciesRouteImport } from './routes/dependencies'
 import { Route as GovernanceRouteImport } from './routes/governance'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as InsightsRouteImport } from './routes/insights'
+import { Route as InviteRouteImport } from './routes/invite'
 import { Route as LessonsRouteImport } from './routes/lessons'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MilestonesRouteImport } from './routes/milestones'
@@ -174,6 +175,11 @@ const HomeRoute = HomeRouteImport.update({
 const InsightsRoute = InsightsRouteImport.update({
   id: '/insights',
   path: '/insights',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteRoute = InviteRouteImport.update({
+  id: '/invite',
+  path: '/invite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LessonsRoute = LessonsRouteImport.update({
@@ -641,6 +647,7 @@ export interface FileRoutesByFullPath {
   '/governance': typeof GovernanceRouteWithChildren
   '/home': typeof HomeRouteWithChildren
   '/insights': typeof InsightsRouteWithChildren
+  '/invite': typeof InviteRoute
   '/lessons': typeof LessonsRouteWithChildren
   '/login': typeof LoginRoute
   '/milestones': typeof MilestonesRoute
@@ -736,6 +743,7 @@ export interface FileRoutesByTo {
   '/assumptions': typeof AssumptionsRoute
   '/connect-microsoft': typeof ConnectMicrosoftRoute
   '/dashboards': typeof DashboardsRoute
+  '/invite': typeof InviteRoute
   '/login': typeof LoginRoute
   '/milestones': typeof MilestonesRoute
   '/my-timeline': typeof MyTimelineRoute
@@ -830,6 +838,7 @@ export interface FileRoutesById {
   '/governance': typeof GovernanceRouteWithChildren
   '/home': typeof HomeRouteWithChildren
   '/insights': typeof InsightsRouteWithChildren
+  '/invite': typeof InviteRoute
   '/lessons': typeof LessonsRouteWithChildren
   '/login': typeof LoginRoute
   '/milestones': typeof MilestonesRoute
@@ -935,6 +944,7 @@ export interface FileRouteTypes {
     | '/governance'
     | '/home'
     | '/insights'
+    | '/invite'
     | '/lessons'
     | '/login'
     | '/milestones'
@@ -1030,6 +1040,7 @@ export interface FileRouteTypes {
     | '/assumptions'
     | '/connect-microsoft'
     | '/dashboards'
+    | '/invite'
     | '/login'
     | '/milestones'
     | '/my-timeline'
@@ -1123,6 +1134,7 @@ export interface FileRouteTypes {
     | '/governance'
     | '/home'
     | '/insights'
+    | '/invite'
     | '/lessons'
     | '/login'
     | '/milestones'
@@ -1227,6 +1239,7 @@ export interface RootRouteChildren {
   GovernanceRoute: typeof GovernanceRouteWithChildren
   HomeRoute: typeof HomeRouteWithChildren
   InsightsRoute: typeof InsightsRouteWithChildren
+  InviteRoute: typeof InviteRoute
   LessonsRoute: typeof LessonsRouteWithChildren
   LoginRoute: typeof LoginRoute
   MilestonesRoute: typeof MilestonesRoute
@@ -1345,6 +1358,13 @@ declare module '@tanstack/react-router' {
       path: '/insights'
       fullPath: '/insights'
       preLoaderRoute: typeof InsightsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite': {
+      id: '/invite'
+      path: '/invite'
+      fullPath: '/invite'
+      preLoaderRoute: typeof InviteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lessons': {
@@ -2281,6 +2301,7 @@ const rootRouteChildren: RootRouteChildren = {
   GovernanceRoute: GovernanceRouteWithChildren,
   HomeRoute: HomeRouteWithChildren,
   InsightsRoute: InsightsRouteWithChildren,
+  InviteRoute: InviteRoute,
   LessonsRoute: LessonsRouteWithChildren,
   LoginRoute: LoginRoute,
   MilestonesRoute: MilestonesRoute,

@@ -9,7 +9,7 @@ import { OrDivider, ProviderButtons } from "@/components/auth/provider-buttons";
 import { useSession } from "@/components/auth/session-provider";
 import { Button } from "@/components/ui/button";
 import { checkPassword } from "@/lib/password";
-import { safeNext } from "@/lib/safe-next";
+import { nextLocation, safeNext } from "@/lib/safe-next";
 import { signUpWithPassword } from "@/services/auth";
 
 const title = "Create your account — Virtual PMO";
@@ -52,7 +52,8 @@ function SignupPage() {
   });
 
   if (session.status === "loading") return <Splash label="Checking your session…" />;
-  if (session.status === "signed_in") return <Navigate to={next ?? "/signup/setup"} replace />;
+  if (session.status === "signed_in")
+    return <Navigate {...nextLocation(next ?? "/signup/setup")} replace />;
 
   if (create.isSuccess)
     return (

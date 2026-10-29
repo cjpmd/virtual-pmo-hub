@@ -17,6 +17,7 @@ import {
   LayoutList,
   Plug,
   ShieldAlert,
+  UserPlus,
   UserRound,
   Users,
 } from "lucide-react";
@@ -99,10 +100,16 @@ export const settingsSections: SettingsSectionDefinition[] = [
     blurb: "Month-end close and actuals import.",
   },
   {
+    id: "members",
+    label: "Members & invitations",
+    icon: UserPlus,
+    blurb: "Members, seats, invitations and requests to join.",
+  },
+  {
     id: "users",
-    label: "Users, roles & permissions",
+    label: "Roles & permissions",
     icon: Users,
-    blurb: "People, roles, default home pages and permissions.",
+    blurb: "What each role can do and its default home page.",
   },
   {
     id: "notifications",

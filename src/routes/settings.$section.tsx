@@ -9,6 +9,7 @@ import {
 } from "@/components/settings/settings-shell";
 import { AccountSettings } from "@/components/settings/account-settings";
 import { FinanceSettings } from "@/components/settings/finance-settings";
+import { MembersSettings } from "@/components/settings/members-settings";
 import { SubscriptionSettings } from "@/components/settings/subscription-settings";
 import { WorkspaceSettings } from "@/components/settings/workspace-settings";
 import {
@@ -61,6 +62,7 @@ const panels: Record<string, () => JSX.Element> = {
   benefits: BenefitSettingsSection,
   lists: ListsSettings,
   finance: FinanceSettings,
+  members: MembersSettings,
   users: UserSettings,
   notifications: NotificationSettings,
   templates: TemplateSettings,
