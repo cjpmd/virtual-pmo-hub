@@ -78,14 +78,18 @@
 --   Stripe's webhook made the change) and billing.* (requests recorded by the edge functions as
 --   the admin). The existing row trigger on organisation_members keeps logging raw changes too.
 --
--- VIEWERS ARE READ-ONLY
---   Record writes already need contributor in the workspace. The paths that let a viewer write
---   without a role are closed by requiring a paid member (private.is_paid_member):
---     forum chair (meetings, recording decisions), decision maker (record / defer / reverse),
---     programme manager (office note), request author / requester (business case), task offer
---     recipient (accept / decline), own leave (resource_leave), and creating or updating a
---     *shared* dashboard or saved view. Viewers keep their own personal dashboards, saved
---     views, favourites and profile. join_demo_organisation() loses execute for everyone.
+-- VIEWERS
+--   Principle: a viewer can act on items personally assigned to them, but can't run or edit
+--   shared work. Record writes already need contributor in the workspace. Of the paths that let
+--   someone write without a role:
+--     stay free for viewers   record / defer / reverse a decision where they are the named
+--                             decision maker; create, edit and submit business cases on their own
+--                             requests (demand intake); their own leave entries; their own
+--                             personal dashboards, saved views, favourites and profile.
+--     now need a paid seat    forum chair (editing meetings, recording decisions as chair),
+--                             programme manager (office note), accepting / declining task offers,
+--                             creating or updating a *shared* dashboard or saved view.
+--   join_demo_organisation() loses execute for everyone.
 
 -- =================================================================================================
 -- 1. Subscription columns
@@ -1378,7 +1382,7 @@ create trigger organisation_subscriptions_audit_seats
   for each row execute function private.audit_seat_change();
 
 -- =================================================================================================
--- 10. Viewers are read-only: close the role-free write paths
+-- 10. Viewers: personal items stay free, shared work needs a paid seat
 -- =================================================================================================
 
 -- Resources linked to me in organisations where I hold a paid seat. Replaces my_resource_ids()
@@ -1413,29 +1417,9 @@ as $$
   );
 $$;
 
--- Was: workspace PMO, or (any workspace role and decision maker / chair). The decision-maker
--- branch now also needs a paid seat.
-create or replace function private.can_record_decision(p_decision public.decisions)
-returns boolean
-language sql
-stable
-security definer
-set search_path to ''
-as $$
-  select p_decision.workspace_id = any (private.my_workspace_ids('pmo'))
-    or (
-      p_decision.workspace_id = any (private.my_workspace_ids())
-      and private.workspace_is_active(p_decision.workspace_id)
-      and private.is_paid_member(p_decision.organisation_id, (select auth.uid()))
-      and (
-        exists (
-          select 1 from public.resources r
-          where r.id = p_decision.decision_maker_id and r.profile_id = (select auth.uid())
-        )
-        or private.is_forum_chair(p_decision.forum_id)
-      )
-    );
-$$;
+-- Not changed: private.can_record_decision (workspace PMO, or a workspace member who is the
+-- decision maker or the forum chair). The decision maker stays free for viewers; the chair branch
+-- goes through is_forum_chair above, so it now needs a paid seat.
 
 -- Was: my_resource_ids(). Now my_writable_resource_ids().
 create or replace function private.can_edit_programme_note(p_programme uuid)
@@ -1456,33 +1440,10 @@ as $$
   ), false);
 $$;
 
--- Was: created by me or requested by my resource. Now also a paid member of the request's org.
-create or replace function private.my_authored_request_ids()
-returns uuid[]
-language sql
-stable
-security definer
-set search_path to ''
-as $$
-  select coalesce(array_agg(r.id), '{}')
-  from public.project_requests r
-  where (r.created_by = (select auth.uid()) or r.requester_id = any (private.my_resource_ids()))
-    and private.workspace_is_active(r.workspace_id)
-    and private.is_paid_member(r.organisation_id, (select auth.uid()));
-$$;
+-- Not changed: private.my_authored_request_ids (business cases on my own requests) and the
+-- resource_leave policies (my own leave). Both stay free for viewers.
 
-alter policy resource_leave_insert on public.resource_leave
-  with check ((organisation_id = any ((select private.my_org_ids('pmo'::public.app_role))::uuid[]))
-              or (resource_id = any ((select private.my_writable_resource_ids())::uuid[])));
-alter policy resource_leave_update on public.resource_leave
-  using ((organisation_id = any ((select private.my_org_ids('pmo'::public.app_role))::uuid[]))
-         or (resource_id = any ((select private.my_writable_resource_ids())::uuid[])))
-  with check ((organisation_id = any ((select private.my_org_ids('pmo'::public.app_role))::uuid[]))
-              or (resource_id = any ((select private.my_writable_resource_ids())::uuid[])));
-alter policy resource_leave_delete on public.resource_leave
-  using ((organisation_id = any ((select private.my_org_ids('pmo'::public.app_role))::uuid[]))
-         or (resource_id = any ((select private.my_writable_resource_ids())::uuid[])));
-
+-- Accepting or declining a task offer is shared delivery work: paid seat.
 alter policy work_item_offers_update on public.work_item_offers
   using ((response is null)
          and (select private.workspace_is_active(work_item_offers.workspace_id))

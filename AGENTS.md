@@ -25,6 +25,7 @@
 - Make every schema change in a new migration and never edit an existing migration.
 - Before any database change, present the proposed SQL to the user and stop; apply it only after explicit approval.
 - Every new tenant table must include `organisation_id` and `workspace_id`, use composite foreign keys to tenant-scoped parents, enable RLS, and follow the existing `private.my_workspace_ids(...)` workspace policy pattern.
+  - Exception (approved in 2.1): organisation-scoped tables that describe the organisation itself rather than work inside a workspace have `organisation_id` only and use `private.my_org_ids(...)` policies. These are `organisation_members`, `organisation_subscriptions`, `organisation_invites`, `organisation_join_settings`, `organisation_join_domains` and `organisation_join_requests`. Don't add `workspace_id` to them; any workspace link goes in a child table with composite foreign keys (e.g. `organisation_invite_workspaces`).
 - Revoke execute from `public` and `anon` for every new private database function.
 - Regenerate `src/integrations/supabase/types.ts` after an approved schema change; never hand-edit generated database types.
 - Keep changes focused; do not rewrite whole files or restyle pages outside the requested scope.
