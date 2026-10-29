@@ -23,19 +23,19 @@ export function SiteLogo({ className }: { className?: string }) {
 const navLink =
   "inline-flex min-h-11 items-center px-3.5 text-[0.95rem] text-site-on-ink-nav no-underline hover:text-site-on-ink";
 
-/** Dark header. Product and Security jump to sections on the homepage. */
+/** Dark header, linking to the public pages. */
 export function SiteHeader() {
   return (
     <header className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-4 px-7 py-5">
       <SiteLogo />
       <nav aria-label="Main" className="flex flex-wrap items-center gap-1">
-        <a href="/#product" className={navLink}>
+        <Link to="/product" className={navLink}>
           Product
-        </a>
-        <a href="/#security" className={navLink}>
+        </Link>
+        <Link to="/security" className={navLink}>
           Security
-        </a>
-        <Link to="/request-access" className={navLink}>
+        </Link>
+        <Link to="/pricing" className={navLink}>
           Pricing
         </Link>
         <Link
@@ -59,14 +59,20 @@ const ctaBase =
   "inline-flex min-h-[50px] items-center rounded-[10px] px-6 font-semibold no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-site-link";
 
 /** Public calls to action, including self-serve demo entry. */
-export function SiteCtas({ className }: { className?: string }) {
+export function SiteCtas({
+  className,
+  primaryLabel = "Get started",
+}: {
+  className?: string;
+  primaryLabel?: string;
+}) {
   return (
     <div className={cn("flex flex-wrap gap-3", className)}>
       <Link
         to="/signup"
         className={cn(ctaBase, "bg-site-accent text-white hover:bg-site-accent-strong")}
       >
-        Get started
+        {primaryLabel}
       </Link>
       <Button
         asChild
@@ -85,9 +91,47 @@ export function SiteCtas({ className }: { className?: string }) {
   );
 }
 
+const footerColumns = [
+  {
+    title: "ORMO PMO",
+    links: [
+      { to: "/product", label: "Product" },
+      { to: "/pricing", label: "Pricing" },
+      { to: "/security", label: "Security" },
+    ],
+  },
+  {
+    title: "Company",
+    links: [
+      { to: "/request-access", label: "Contact" },
+      { to: "/privacy", label: "Privacy" },
+      { to: "/terms", label: "Terms" },
+    ],
+  },
+] as const;
+
 export function SiteFooter() {
   return (
     <footer className="border-t border-site-line">
+      <nav
+        aria-label="Footer"
+        className="mx-auto flex max-w-[1240px] flex-wrap gap-x-20 gap-y-6 px-7 pt-9"
+      >
+        {footerColumns.map((column) => (
+          <div key={column.title} className="flex min-w-[10rem] flex-col gap-1">
+            <h2 className="m-0 mb-1 text-[0.85rem] font-semibold text-site-text">{column.title}</h2>
+            {column.links.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className="inline-flex min-h-9 items-center text-[0.9rem] text-site-text-muted no-underline hover:text-site-accent-strong"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        ))}
+      </nav>
       <div className="mx-auto flex max-w-[1240px] flex-wrap justify-between gap-3 p-7 text-[0.9rem] text-site-text-muted">
         <span>
           © ORMO PMO · <SupportLink />

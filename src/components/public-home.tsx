@@ -1,5 +1,6 @@
 // The public homepage at / (design G, docs/design/homepage-g.html). Signed-in users are sent
 // straight to their workspace (see routes/index.tsx).
+import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { ProductPreview } from "@/components/marketing/product-preview";
 import { SiteCtas, SiteFooter, SiteHeader, SitePage } from "@/components/marketing/site-chrome";
@@ -16,7 +17,7 @@ const iconProps = {
 
 const assurances: { text: string; icon: ReactNode }[] = [
   {
-    text: "Hosted in the UK",
+    text: "Data stored in the UK",
     icon: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
   },
   {
@@ -60,6 +61,31 @@ const features: { title: string; text: string; tint: string; stroke: string; ico
     ),
   },
   {
+    title: "Delivery you can follow",
+    text: "Milestones, stage gates, tasks and a shared dependency map show what each project depends on and what is slipping.",
+    tint: "bg-site-tint-blue",
+    stroke: "stroke-site-accent-strong",
+    icon: (
+      <>
+        <circle cx="6" cy="6" r="2.5" />
+        <circle cx="18" cy="18" r="2.5" />
+        <path d="M8.5 6H14a4 4 0 0 1 4 4v5.5" />
+      </>
+    ),
+  },
+  {
+    title: "Governance without the chasing",
+    text: "One RAIDD register, change control and boards feed committee packs built from live data and exported to PDF.",
+    tint: "bg-site-tint-green",
+    stroke: "stroke-site-icon-green",
+    icon: (
+      <>
+        <path d="M7 3h7l5 5v13H7z" />
+        <path d="M14 3v5h5M10 13h6M10 17h6" />
+      </>
+    ),
+  },
+  {
     title: "Benefits, measured",
     text: "Track what each investment promised and measure it through to realisation, long after go-live.",
     tint: "bg-site-tint-violet",
@@ -68,6 +94,18 @@ const features: { title: string; text: string; tint: string; stroke: string; ico
       <>
         <circle cx="12" cy="12" r="9" />
         <circle cx="12" cy="12" r="4" />
+      </>
+    ),
+  },
+  {
+    title: "Capacity before commitment",
+    text: "See who is allocated where for the next 26 weeks, and model a proposed project's demand before it is approved.",
+    tint: "bg-site-tint-violet",
+    stroke: "stroke-site-icon-violet",
+    icon: (
+      <>
+        <circle cx="9" cy="8" r="3.5" />
+        <path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6" />
       </>
     ),
   },
@@ -105,6 +143,12 @@ export function PublicHome() {
               {item.text}
             </span>
           ))}
+          <Link
+            to="/security"
+            className="inline-flex items-center font-medium text-site-accent-strong no-underline hover:underline"
+          >
+            How we protect your data →
+          </Link>
         </div>
       </section>
 
@@ -131,6 +175,12 @@ export function PublicHome() {
               </div>
             ))}
           </div>
+          <Link
+            to="/product"
+            className="w-fit text-[1.05rem] font-medium text-site-accent-strong no-underline hover:underline"
+          >
+            See everything ORMO does →
+          </Link>
         </div>
       </section>
 

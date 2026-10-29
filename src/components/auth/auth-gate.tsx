@@ -18,6 +18,11 @@ export const isPublicPath = (path: string) =>
   path === "/signin" ||
   path.startsWith("/auth/") ||
   path === "/request-access" ||
+  path === "/pricing" ||
+  path === "/product" ||
+  path === "/security" ||
+  path === "/privacy" ||
+  path === "/terms" ||
   path === "/invite" ||
   path === "/signup" ||
   path.startsWith("/signup/");

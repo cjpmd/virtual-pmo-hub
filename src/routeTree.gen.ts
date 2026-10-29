@@ -29,6 +29,9 @@ import { Route as MilestonesRouteImport } from './routes/milestones'
 import { Route as MyTimelineRouteImport } from './routes/my-timeline'
 import { Route as MyWorkRouteImport } from './routes/my-work'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
+import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ProductRouteImport } from './routes/product'
 import { Route as ProgrammesRouteImport } from './routes/programmes'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as RequestAccessRouteImport } from './routes/request-access'
@@ -39,9 +42,11 @@ import { Route as ResourceScenariosRouteImport } from './routes/resource-scenari
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as RisksRouteImport } from './routes/risks'
 import { Route as RoadmapsRouteImport } from './routes/roadmaps'
+import { Route as SecurityRouteImport } from './routes/security'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SigninRouteImport } from './routes/signin'
 import { Route as TaskOverviewRouteImport } from './routes/task-overview'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthDemoRouteImport } from './routes/auth.demo'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
@@ -212,6 +217,21 @@ const PortfolioRoute = PortfolioRouteImport.update({
   path: '/portfolio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProductRoute = ProductRouteImport.update({
+  id: '/product',
+  path: '/product',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProgrammesRoute = ProgrammesRouteImport.update({
   id: '/programmes',
   path: '/programmes',
@@ -262,6 +282,11 @@ const RoadmapsRoute = RoadmapsRouteImport.update({
   path: '/roadmaps',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SecurityRoute = SecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -275,6 +300,11 @@ const SigninRoute = SigninRouteImport.update({
 const TaskOverviewRoute = TaskOverviewRouteImport.update({
   id: '/task-overview',
   path: '/task-overview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
@@ -654,6 +684,9 @@ export interface FileRoutesByFullPath {
   '/my-timeline': typeof MyTimelineRoute
   '/my-work': typeof MyWorkRoute
   '/portfolio': typeof PortfolioRouteWithChildren
+  '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/product': typeof ProductRoute
   '/programmes': typeof ProgrammesRouteWithChildren
   '/projects': typeof ProjectsRouteWithChildren
   '/request-access': typeof RequestAccessRoute
@@ -664,9 +697,11 @@ export interface FileRoutesByFullPath {
   '/resources': typeof ResourcesRouteWithChildren
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
+  '/security': typeof SecurityRoute
   '/settings': typeof SettingsRouteWithChildren
   '/signin': typeof SigninRoute
   '/task-overview': typeof TaskOverviewRoute
+  '/terms': typeof TermsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/demo': typeof AuthDemoRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -748,6 +783,9 @@ export interface FileRoutesByTo {
   '/milestones': typeof MilestonesRoute
   '/my-timeline': typeof MyTimelineRoute
   '/my-work': typeof MyWorkRoute
+  '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/product': typeof ProductRoute
   '/request-access': typeof RequestAccessRoute
   '/requests': typeof RequestsRoute
   '/resource-allocation': typeof ResourceAllocationRoute
@@ -755,8 +793,10 @@ export interface FileRoutesByTo {
   '/resource-scenarios': typeof ResourceScenariosRoute
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
+  '/security': typeof SecurityRoute
   '/signin': typeof SigninRoute
   '/task-overview': typeof TaskOverviewRoute
+  '/terms': typeof TermsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/demo': typeof AuthDemoRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -845,6 +885,9 @@ export interface FileRoutesById {
   '/my-timeline': typeof MyTimelineRoute
   '/my-work': typeof MyWorkRoute
   '/portfolio': typeof PortfolioRouteWithChildren
+  '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/product': typeof ProductRoute
   '/programmes': typeof ProgrammesRouteWithChildren
   '/projects': typeof ProjectsRouteWithChildren
   '/request-access': typeof RequestAccessRoute
@@ -855,9 +898,11 @@ export interface FileRoutesById {
   '/resources': typeof ResourcesRouteWithChildren
   '/risks': typeof RisksRoute
   '/roadmaps': typeof RoadmapsRoute
+  '/security': typeof SecurityRoute
   '/settings': typeof SettingsRouteWithChildren
   '/signin': typeof SigninRoute
   '/task-overview': typeof TaskOverviewRoute
+  '/terms': typeof TermsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/demo': typeof AuthDemoRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -951,6 +996,9 @@ export interface FileRouteTypes {
     | '/my-timeline'
     | '/my-work'
     | '/portfolio'
+    | '/pricing'
+    | '/privacy'
+    | '/product'
     | '/programmes'
     | '/projects'
     | '/request-access'
@@ -961,9 +1009,11 @@ export interface FileRouteTypes {
     | '/resources'
     | '/risks'
     | '/roadmaps'
+    | '/security'
     | '/settings'
     | '/signin'
     | '/task-overview'
+    | '/terms'
     | '/auth/callback'
     | '/auth/demo'
     | '/auth/forgot-password'
@@ -1045,6 +1095,9 @@ export interface FileRouteTypes {
     | '/milestones'
     | '/my-timeline'
     | '/my-work'
+    | '/pricing'
+    | '/privacy'
+    | '/product'
     | '/request-access'
     | '/requests'
     | '/resource-allocation'
@@ -1052,8 +1105,10 @@ export interface FileRouteTypes {
     | '/resource-scenarios'
     | '/risks'
     | '/roadmaps'
+    | '/security'
     | '/signin'
     | '/task-overview'
+    | '/terms'
     | '/auth/callback'
     | '/auth/demo'
     | '/auth/forgot-password'
@@ -1141,6 +1196,9 @@ export interface FileRouteTypes {
     | '/my-timeline'
     | '/my-work'
     | '/portfolio'
+    | '/pricing'
+    | '/privacy'
+    | '/product'
     | '/programmes'
     | '/projects'
     | '/request-access'
@@ -1151,9 +1209,11 @@ export interface FileRouteTypes {
     | '/resources'
     | '/risks'
     | '/roadmaps'
+    | '/security'
     | '/settings'
     | '/signin'
     | '/task-overview'
+    | '/terms'
     | '/auth/callback'
     | '/auth/demo'
     | '/auth/forgot-password'
@@ -1246,6 +1306,9 @@ export interface RootRouteChildren {
   MyTimelineRoute: typeof MyTimelineRoute
   MyWorkRoute: typeof MyWorkRoute
   PortfolioRoute: typeof PortfolioRouteWithChildren
+  PricingRoute: typeof PricingRoute
+  PrivacyRoute: typeof PrivacyRoute
+  ProductRoute: typeof ProductRoute
   ProgrammesRoute: typeof ProgrammesRouteWithChildren
   ProjectsRoute: typeof ProjectsRouteWithChildren
   RequestAccessRoute: typeof RequestAccessRoute
@@ -1256,9 +1319,11 @@ export interface RootRouteChildren {
   ResourcesRoute: typeof ResourcesRouteWithChildren
   RisksRoute: typeof RisksRoute
   RoadmapsRoute: typeof RoadmapsRoute
+  SecurityRoute: typeof SecurityRoute
   SettingsRoute: typeof SettingsRouteWithChildren
   SigninRoute: typeof SigninRoute
   TaskOverviewRoute: typeof TaskOverviewRoute
+  TermsRoute: typeof TermsRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthDemoRoute: typeof AuthDemoRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
@@ -1409,6 +1474,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortfolioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/product': {
+      id: '/product'
+      path: '/product'
+      fullPath: '/product'
+      preLoaderRoute: typeof ProductRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/programmes': {
       id: '/programmes'
       path: '/programmes'
@@ -1479,6 +1565,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoadmapsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/security': {
+      id: '/security'
+      path: '/security'
+      fullPath: '/security'
+      preLoaderRoute: typeof SecurityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -1498,6 +1591,13 @@ declare module '@tanstack/react-router' {
       path: '/task-overview'
       fullPath: '/task-overview'
       preLoaderRoute: typeof TaskOverviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
@@ -2308,6 +2408,9 @@ const rootRouteChildren: RootRouteChildren = {
   MyTimelineRoute: MyTimelineRoute,
   MyWorkRoute: MyWorkRoute,
   PortfolioRoute: PortfolioRouteWithChildren,
+  PricingRoute: PricingRoute,
+  PrivacyRoute: PrivacyRoute,
+  ProductRoute: ProductRoute,
   ProgrammesRoute: ProgrammesRouteWithChildren,
   ProjectsRoute: ProjectsRouteWithChildren,
   RequestAccessRoute: RequestAccessRoute,
@@ -2318,9 +2421,11 @@ const rootRouteChildren: RootRouteChildren = {
   ResourcesRoute: ResourcesRouteWithChildren,
   RisksRoute: RisksRoute,
   RoadmapsRoute: RoadmapsRoute,
+  SecurityRoute: SecurityRoute,
   SettingsRoute: SettingsRouteWithChildren,
   SigninRoute: SigninRoute,
   TaskOverviewRoute: TaskOverviewRoute,
+  TermsRoute: TermsRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthDemoRoute: AuthDemoRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
