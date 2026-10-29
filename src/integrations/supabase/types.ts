@@ -15117,6 +15117,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      reorder_lifecycle_phases: {
+        Args: { p_organisation_id: string; p_phase_ids: string[] }
+        Returns: undefined
+      }
       request_to_join: {
         Args: { p_message?: string; p_organisation_id: string }
         Returns: string

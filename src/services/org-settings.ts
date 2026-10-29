@@ -595,6 +595,7 @@ async function syncRows<T extends { id: string }, R extends TableName>(
   toFields: (item: T, index: number) => Record<string, unknown> | undefined,
   label: string,
   after?: (item: T, id: string, before: T | undefined) => Promise<void>,
+  insertOnly?: (item: T, index: number) => Record<string, unknown>,
 ) {
   const removed = previous
     .filter((item) => !next.some((candidate) => candidate.id === item.id))
@@ -611,7 +612,11 @@ async function syncRows<T extends { id: string }, R extends TableName>(
       // tenant trigger to copy organisation_id from, so it is sent here. On child tables
       // (gate_criteria) the trigger overwrites it from the parent, so sending it is harmless.
       id = (
-        await insertRow(table, { organisation_id: orgId, ...fields } as never, `Adding a ${label}`)
+        await insertRow(
+          table,
+          { organisation_id: orgId, ...fields, ...insertOnly?.(item, index) } as never,
+          `Adding a ${label}`,
+        )
       ).id;
       ids.set(item.id, id);
     } else if (!before || !same(toFields(before, previous.indexOf(before)), fields))
@@ -620,7 +625,35 @@ async function syncRows<T extends { id: string }, R extends TableName>(
   }
 }
 
-const savePhases = (
+/**
+ * Phase order is unique per organisation, and each row write is its own request, so writing
+ * sort_order row by row collides with a neighbour (seeded orders start at 1; a new phase or a
+ * swap lands on a number another phase still holds). So rows are saved without their order,
+ * new rows take a parking slot, and reorder_lifecycle_phases renumbers them all 1..n in one
+ * transaction, where the deferred unique check only runs at the end.
+ */
+const PARKED_SORT_ORDER = 100_000;
+
+const savePhases = async (
+  orgId: string,
+  ids: Map<string, string>,
+  previous: LifecyclePhase[],
+  next: LifecyclePhase[],
+) => {
+  await savePhaseRows(orgId, ids, previous, next);
+  const ordered = next
+    .map((phase) => resolveId(ids, phase.id))
+    .filter((id): id is string => Boolean(id));
+  unwrapMaybe(
+    await supabase.rpc("reorder_lifecycle_phases", {
+      p_organisation_id: orgId,
+      p_phase_ids: ordered,
+    }),
+    "Ordering the phases",
+  );
+};
+
+const savePhaseRows = (
   orgId: string,
   ids: Map<string, string>,
   previous: LifecyclePhase[],
@@ -637,7 +670,6 @@ const savePhases = (
       short_name: phase.shortName.trim() || `Phase ${index + 1}`,
       description: phase.description,
       gate_name: phase.gateName,
-      sort_order: index,
     }),
     "phase",
     (phase, phaseId, before) =>
@@ -658,6 +690,7 @@ const savePhases = (
             }),
             "gate criterion",
           ),
+    (_phase, index) => ({ sort_order: PARKED_SORT_ORDER + index }),
   );
 
 const saveRates = (
