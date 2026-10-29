@@ -3,6 +3,7 @@
 import { Link } from "@tanstack/react-router";
 import { Eye } from "lucide-react";
 import type { ReactNode } from "react";
+import { SupportLink } from "@/components/support-link";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { contactEmail } from "@/lib/features";
@@ -88,7 +89,9 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-site-line">
       <div className="mx-auto flex max-w-[1240px] flex-wrap justify-between gap-3 p-7 text-[0.9rem] text-site-text-muted">
-        <span>© ORMO PMO</span>
+        <span>
+          © ORMO PMO · <SupportLink />
+        </span>
         {contactEmail && (
           <a href={`mailto:${contactEmail}`} className="text-site-accent-strong">
             {contactEmail}

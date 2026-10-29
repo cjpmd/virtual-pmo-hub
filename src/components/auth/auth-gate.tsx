@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Link, Navigate, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Eye, LoaderCircle, LogOut } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
+import { SupportLink } from "@/components/support-link";
 import { Button } from "@/components/ui/button";
 import { selfSignup } from "@/lib/features";
 import { consumeSigningOut, signOut } from "@/services/auth";
@@ -128,7 +129,7 @@ export function SignOutButton() {
 
 export function CentredCard({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="grid min-h-screen place-items-center bg-muted/40 p-6">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-6">
       <div className="w-full max-w-md rounded-xl border border-border/70 bg-card p-8 shadow-sm">
         {/* The wordmark's text is dark navy, so dark mode shows the mark with live text. */}
         <img
@@ -145,6 +146,9 @@ export function CentredCard({ title, children }: { title: string; children: Reac
         <h1 className="mt-2 font-display text-2xl font-semibold">{title}</h1>
         <div className="mt-3">{children}</div>
       </div>
+      <footer className="mt-6 text-center text-xs text-muted-foreground">
+        © ORMO PMO · <SupportLink />
+      </footer>
     </div>
   );
 }
