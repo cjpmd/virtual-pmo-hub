@@ -696,23 +696,22 @@ const saveTemplates = (
     "template",
   );
 
-/** Role changes for existing members. Admins only (RLS); the last admin cannot be demoted (trigger). */
+/**
+ * Role changes for existing members, through change_member_role (admins only, paid-seat limit,
+ * last admin kept). Direct writes to organisation_members are revoked (work package 2.1).
+ */
 async function saveMembers(orgId: string, previous: UserAccount[], next: UserAccount[]) {
   for (const user of next) {
     const before = previous.find((item) => item.id === user.id);
     if (!before || before.role === user.role) continue;
-    const result = await supabase
-      .from("organisation_members")
-      .update({ role: appRoleValue[user.role] })
-      .eq("organisation_id", orgId)
-      .eq("profile_id", user.id)
-      .select("profile_id");
-    const rows = unwrapMaybe(result, `Changing ${user.name}'s role`);
-    if (!rows?.length)
-      throw new ServiceError(
-        "forbidden",
-        `Changing ${user.name}'s role: only an admin can change roles.`,
-      );
+    unwrapMaybe(
+      await supabase.rpc("change_member_role", {
+        p_organisation_id: orgId,
+        p_profile_id: user.id,
+        p_role: appRoleValue[user.role],
+      }),
+      `Changing ${user.name}'s role`,
+    );
   }
 }
 
