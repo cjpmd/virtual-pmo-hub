@@ -79,7 +79,9 @@
   --color-viz-axis: var(--viz-axis);
   --color-viz-track: var(--viz-track);
 
-  /* Public site (homepage and request access): design G, see docs/design/homepage-g.html. */
+  /* Public site: the ORMO brand restyle (Montserrat headings, Plus Jakarta Sans text). */
+  --font-site: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-site-display: "Montserrat", "Plus Jakarta Sans", sans-serif;
   --font-geist: "Geist", "Helvetica Neue", sans-serif;
   --font-geist-mono: "Geist Mono", ui-monospace, monospace;
   --color-site-ink: var(--site-ink);
@@ -114,6 +116,15 @@
   --color-site-icon-green: var(--site-icon-green);
   --color-site-tint-violet: var(--site-tint-violet);
   --color-site-icon-violet: var(--site-icon-violet);
+  --color-site-surface: var(--site-surface);
+  --color-site-text-faint: var(--site-text-faint);
+  --color-site-rule: var(--site-rule);
+  --color-site-navy: var(--site-navy);
+  --color-site-cyan: var(--site-cyan);
+  --color-site-violet: var(--site-violet);
+  --color-site-orange: var(--site-orange);
+  --color-site-orange-soft: var(--site-orange-soft);
+  --color-site-on-ink-sky: var(--site-on-ink-sky);
 
   /* App frame and overview (docs/design/portfolio-overview-spec.md §2). */
   --color-pmo-bg: var(--pmo-bg);
@@ -212,42 +223,52 @@
   --table-head: oklch(0.96 0.008 250);
   --overlay: oklch(0.15 0.02 255 / 45%);
 
-  /* ---- Public site (design G) ------------------------------------------------
-   * A fixed scheme: the dark hero and white body are the design in both app themes,
-   * so these are not redefined under .dark.
+  /* ---- Public site (ORMO brand restyle) ---------------------------------------
+   * A fixed scheme: the gradient hero, navy sections and light body are the design in both
+   * app themes, so these are not redefined under .dark. The signature gradients are the
+   * site-*-bg utilities below.
    */
-  --site-ink: #0a1120;
-  --site-ink-raised: #101a2e;
-  --site-ink-sunken: #0c1527;
-  --site-ink-active: #1a2640;
-  --site-ink-line: #1e2b44;
-  --site-ink-edge: #22304a;
-  --site-ink-outline: #33425f;
-  --site-ink-pill: #263452;
-  --site-ink-dot: #2a3753;
-  --site-on-ink: #f2f5fa;
-  --site-on-ink-table: #d5dce8;
-  --site-on-ink-nav: #c3ccdb;
-  --site-on-ink-muted: #aeb9cb;
-  --site-on-ink-menu: #a3afc3;
-  --site-on-ink-faint: #8592a8;
-  --site-accent: #2f6bff;
-  --site-accent-strong: #2457e6;
-  --site-link: #9db9ff;
-  --site-link-hover: #c9d8ff;
+  --site-ink: #06163a;
+  --site-ink-raised: #0a2a6b;
+  --site-ink-sunken: #051230;
+  --site-ink-active: #12357a;
+  --site-ink-line: rgb(255 255 255 / 14%);
+  --site-ink-edge: rgb(255 255 255 / 22%);
+  --site-ink-outline: rgb(255 255 255 / 40%);
+  --site-ink-pill: rgb(255 255 255 / 25%);
+  --site-ink-dot: rgb(255 255 255 / 12%);
+  --site-on-ink: #ffffff;
+  --site-on-ink-table: #dbe8ff;
+  --site-on-ink-nav: rgb(255 255 255 / 82%);
+  --site-on-ink-muted: #d6e5ff;
+  --site-on-ink-menu: #cfe2ff;
+  --site-on-ink-faint: #bccbe6;
+  --site-on-ink-sky: #7cc8f5;
+  --site-accent: #0a2a6b;
+  --site-accent-strong: #1d6fd8;
+  --site-link: #a9d4ff;
+  --site-link-hover: #ffffff;
   --site-good: #3dd68c;
   --site-warn: #f5b841;
   --site-bad: #f7686c;
-  --site-paper: #ffffff;
-  --site-text: #0e1526;
-  --site-text-muted: #4a5468;
-  --site-text-soft: #3a4458;
-  --site-line: #e6e9ef;
-  --site-tint-blue: #e8efff;
+  --site-paper: #f5f7fb;
+  --site-surface: #ffffff;
+  --site-text: #0b1530;
+  --site-text-muted: #46536f;
+  --site-text-soft: #36425e;
+  --site-text-faint: #7a86a0;
+  --site-line: #e3e8f1;
+  --site-rule: #d6dcea;
+  --site-navy: #0a2a6b;
+  --site-cyan: #16b8f3;
+  --site-violet: #5b4bff;
+  --site-orange: #ff8a2a;
+  --site-orange-soft: #ffb070;
+  --site-tint-blue: #e8f1ff;
   --site-tint-green: #ddf6ec;
   --site-icon-green: #0e7a55;
-  --site-tint-violet: #f1e8ff;
-  --site-icon-violet: #6b3fd4;
+  --site-tint-violet: #efedff;
+  --site-icon-violet: #4a3be0;
 
   /* ---- Data visualisation tokens (see src/lib/chart-theme.ts) ---------------
    * Categorical hues are assigned in fixed order and never cycled; the ramp is a
@@ -539,4 +560,55 @@
     min-height: 0;
     padding: 0;
   }
+}
+
+/* ---- Public site gradients (ORMO brand restyle) ------------------------------ */
+@utility site-hero-bg {
+  background:
+    radial-gradient(
+      60% 70% at 88% 108%,
+      rgb(255 170 90 / 85%) 0%,
+      rgb(255 140 60 / 35%) 30%,
+      rgb(255 140 60 / 0%) 62%
+    ),
+    radial-gradient(50% 60% at 10% -10%, rgb(4 10 35 / 70%), rgb(4 10 35 / 0%) 70%),
+    linear-gradient(118deg, #06163a 0%, #0a2a6b 38%, #1466c4 72%, #36a9ec 100%);
+}
+
+@utility site-cta-bg {
+  background:
+    radial-gradient(45% 90% at 100% 110%, rgb(255 160 80 / 80%), rgb(255 160 80 / 0%) 65%),
+    linear-gradient(118deg, #0a2a6b 0%, #1466c4 55%, #36a9ec 100%);
+}
+
+@utility site-brand-bar {
+  background: linear-gradient(90deg, #16b8f3, #5b4bff 55%, #ff8a2a);
+}
+
+@utility site-brand-frame {
+  background: linear-gradient(135deg, #16b8f3, #5b4bff 55%, #ff8a2a);
+}
+
+/* The light theme for the sign-in and sign-up cards, whatever the app theme is: the shared
+   form components read these variables. */
+.site-auth {
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #0b1530;
+  --card: #ffffff;
+  --card-foreground: #0b1530;
+  --popover: #ffffff;
+  --popover-foreground: #0b1530;
+  --primary: #0a2a6b;
+  --primary-foreground: #ffffff;
+  --secondary: #eef2f9;
+  --secondary-foreground: #0b1530;
+  --muted: #f5f7fb;
+  --muted-foreground: #46536f;
+  --accent: #e8f1ff;
+  --accent-foreground: #0a2a6b;
+  --border: #e3e8f1;
+  --input: #e3e8f1;
+  --ring: #1d6fd8;
+  --radius: 0.75rem;
 }

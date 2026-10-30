@@ -2,7 +2,8 @@ import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CheckCircle2, LoaderCircle, Mail } from "lucide-react";
 import { useState } from "react";
-import { CentredCard } from "@/components/auth/auth-gate";
+import { AuthSplit } from "@/components/marketing/auth-split";
+import { siteFontLinks } from "@/components/marketing/site-fonts";
 import { Field, FormError } from "@/components/auth/auth-fields";
 import { useCaptcha } from "@/components/auth/captcha";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/auth/forgot-password")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
+    links: siteFontLinks,
   }),
   component: ForgotPassword,
 });
@@ -40,7 +42,7 @@ function ForgotPassword() {
 
   if (send.isSuccess)
     return (
-      <CentredCard title="Check your email">
+      <AuthSplit title="Check your email">
         <p className="flex gap-2 text-sm text-muted-foreground">
           <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-health-good" />
           <span>
@@ -54,11 +56,11 @@ function ForgotPassword() {
         <Button asChild variant="ghost" className="mt-4">
           <Link to="/login">Back to sign in</Link>
         </Button>
-      </CentredCard>
+      </AuthSplit>
     );
 
   return (
-    <CentredCard title="Reset your password">
+    <AuthSplit title="Reset your password">
       <p className="text-sm text-muted-foreground">
         Enter your email and we'll send you a link to set a new password.
       </p>
@@ -95,6 +97,6 @@ function ForgotPassword() {
           Back to sign in
         </Link>
       </p>
-    </CentredCard>
+    </AuthSplit>
   );
 }

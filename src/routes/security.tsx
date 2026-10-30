@@ -90,16 +90,17 @@ function SecurityPage() {
         safe.
       </SiteHero>
 
-      <main className="mx-auto flex max-w-[1240px] flex-col gap-14 px-7 py-14">
+      <main className="mx-auto flex w-full max-w-[1240px] flex-col gap-14 px-4 py-16 sm:px-8 sm:py-20">
         <div className="grid gap-5 md:grid-cols-2">
           {sections.map((section) => (
             <section
               key={section.title}
-              className="flex flex-col gap-3 rounded-2xl border border-site-line p-7"
+              className="flex flex-col gap-3 rounded-[18px] border border-site-line bg-site-surface p-8"
             >
-              <h2 className="m-0 text-[1.2rem] font-semibold">{section.title}</h2>
+              <div aria-hidden="true" className="mb-3 h-1 w-10 rounded-sm site-brand-bar" />
+              <h2 className="m-0 text-[20px] font-bold tracking-[-0.01em]">{section.title}</h2>
               {section.text.map((paragraph) => (
-                <p key={paragraph} className="m-0 leading-[1.6] text-site-text-muted">
+                <p key={paragraph} className="m-0 text-[15px] leading-[1.65] text-site-text-muted">
                   {paragraph}
                 </p>
               ))}
@@ -111,7 +112,7 @@ function SecurityPage() {
           <SiteSectionHeading title="Subprocessors">
             The companies that process data on our behalf to run ORMO PMO.
           </SiteSectionHeading>
-          <div className="overflow-x-auto rounded-2xl border border-site-line">
+          <div className="overflow-x-auto rounded-[18px] border border-site-line bg-site-surface">
             <table className="w-full min-w-[520px] border-collapse text-left text-[0.95rem]">
               <caption id="subprocessors" className="sr-only">
                 Subprocessors
@@ -144,7 +145,7 @@ function SecurityPage() {
           </div>
         </section>
 
-        <p className="m-0 max-w-[44rem] leading-[1.6] text-site-text-muted">
+        <p className="m-0 max-w-[44rem] leading-[1.65] text-site-text-muted">
           Questions about security, or found a problem?{" "}
           <SupportLink className="text-site-accent-strong" />
         </p>

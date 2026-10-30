@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import { SiteCtas, SiteFooter, SitePage } from "@/components/marketing/site-chrome";
+import { SiteCtaBand, SiteFooter, SitePage } from "@/components/marketing/site-chrome";
+import { sitePill } from "@/components/marketing/site-styles";
 import { siteHead } from "@/components/marketing/site-head";
 import { SiteHero, SiteSectionHeading } from "@/components/marketing/site-page-parts";
 import { annualMonthsFree, seatPrice, trialDays, trialSeats } from "@/lib/pricing";
@@ -67,12 +68,12 @@ function PricingPage() {
         Pay only for the people who make changes. Viewers are always free.
       </SiteHero>
 
-      <main className="mx-auto flex max-w-[1240px] flex-col gap-16 px-7 py-14">
+      <main className="mx-auto flex w-full max-w-[1240px] flex-col gap-16 px-4 py-16 sm:px-8 sm:py-20">
         <section className="flex flex-col gap-6" aria-labelledby="plan-heading">
           <div
             role="group"
             aria-label="Billing period"
-            className="inline-flex w-fit rounded-lg border border-site-line p-1"
+            className="inline-flex w-fit rounded-full border border-site-line bg-site-surface p-1.5"
           >
             {(
               [
@@ -86,10 +87,10 @@ function PricingPage() {
                 aria-pressed={interval === value}
                 onClick={() => setBillingInterval(value)}
                 className={cn(
-                  "inline-flex min-h-10 items-center gap-2 rounded-md px-4 text-[0.95rem] font-medium",
+                  "inline-flex min-h-10 items-center gap-2 rounded-full px-[18px] text-[14px] font-semibold",
                   interval === value
-                    ? "bg-site-ink text-site-on-ink"
-                    : "text-site-text-soft hover:text-site-text",
+                    ? "bg-site-navy text-white"
+                    : "text-site-text-muted hover:text-site-text",
                 )}
               >
                 {label}
@@ -110,12 +111,13 @@ function PricingPage() {
           </div>
 
           <div className="flex flex-wrap gap-5">
-            <div className="flex flex-[1_1_360px] flex-col gap-5 rounded-2xl border border-site-line p-8">
-              <h2 id="plan-heading" className="m-0 text-[1.2rem] font-semibold">
+            <div className="flex flex-[1_1_360px] flex-col gap-5 rounded-[20px] border border-site-line bg-site-surface p-9">
+              <div aria-hidden="true" className="h-1 w-10 rounded-sm site-brand-bar" />
+              <h2 id="plan-heading" className="m-0 text-[20px] font-bold tracking-[-0.01em]">
                 ORMO PMO
               </h2>
               <p className="m-0 flex flex-wrap items-baseline gap-x-2" aria-live="polite">
-                <span className="text-[3rem] leading-none font-semibold tracking-[-0.03em]">
+                <span className="font-site-display text-[52px] leading-none font-extrabold tracking-[-0.025em]">
                   £{interval === "month" ? seatPrice.month : seatPrice.year}
                 </span>
                 <span className="text-site-text-muted">
@@ -128,22 +130,24 @@ function PricingPage() {
                   : `The same as £${seatPrice.month} a month for ${12 - annualMonthsFree} months.`}{" "}
                 VAT is added at checkout where it applies.
               </p>
-              <Link
-                to="/signup"
-                className="inline-flex min-h-[50px] w-fit items-center rounded-[10px] bg-site-accent px-6 font-semibold text-white no-underline hover:bg-site-accent-strong"
-              >
+              <Link to="/signup" className={cn(sitePill.light, "w-fit")}>
                 Start free trial
               </Link>
               <p className="m-0 text-[0.9rem] text-site-text-muted">
                 {trialDays} days free, up to {trialSeats} paid seats. No card needed.
               </p>
             </div>
-            <div className="flex flex-[1_1_360px] flex-col gap-4 rounded-2xl bg-site-tint-blue p-8">
-              <h3 className="m-0 text-[1.05rem] font-semibold">Everything is included</h3>
+            <div className="flex flex-[1_1_360px] flex-col gap-4 rounded-[20px] bg-site-ink p-9 text-white">
+              <h3 className="m-0 text-[12px] font-bold tracking-[0.16em] text-site-on-ink-sky uppercase">
+                Everything is included
+              </h3>
               <ul className="m-0 flex list-none flex-col gap-3 p-0">
                 {included.map((item) => (
-                  <li key={item} className="flex gap-2.5 leading-[1.5] text-site-text-soft">
-                    <Check className="mt-0.5 size-[18px] shrink-0 text-site-accent-strong" />
+                  <li
+                    key={item}
+                    className="flex gap-2.5 text-[15px] leading-[1.5] text-site-on-ink-muted"
+                  >
+                    <Check className="mt-0.5 size-[18px] shrink-0 text-site-orange-soft" />
                     {item}
                   </li>
                 ))}
@@ -169,7 +173,7 @@ function PricingPage() {
 
         <section className="flex flex-col gap-6">
           <SiteSectionHeading title="Questions" />
-          <div className="flex max-w-[52rem] flex-col divide-y divide-site-line border-y border-site-line">
+          <div className="flex max-w-[52rem] flex-col divide-y divide-site-line rounded-[18px] border border-site-line bg-site-surface px-6">
             {faqs.map((faq) => (
               <details key={faq.q} className="group py-4">
                 <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 font-medium">
@@ -197,17 +201,9 @@ function PricingPage() {
           </p>
         </section>
 
-        <section className="flex flex-wrap items-center justify-between gap-6 rounded-[20px] bg-site-ink p-12 text-site-on-ink max-sm:p-8">
-          <div className="flex flex-[1_1_420px] flex-col gap-2.5">
-            <h2 className="m-0 text-[2rem] font-semibold tracking-[-0.025em]">
-              Try it with your own portfolio.
-            </h2>
-            <p className="m-0 text-[1.05rem] text-site-on-ink-muted">
-              {trialDays} days free. No card needed.
-            </p>
-          </div>
-          <SiteCtas primaryLabel="Start free trial" />
-        </section>
+        <SiteCtaBand title="Try it with your own portfolio." primaryLabel="Start free trial">
+          {trialDays} days free. No card needed.
+        </SiteCtaBand>
       </main>
 
       <SiteFooter />
@@ -217,9 +213,9 @@ function PricingPage() {
 
 function InfoCard({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-2 rounded-2xl border border-site-line p-6">
-      <h3 className="m-0 text-[1.05rem] font-semibold">{title}</h3>
-      <p className="m-0 leading-[1.6] text-site-text-muted">{children}</p>
+    <div className="flex flex-col gap-2 rounded-[18px] border border-site-line bg-site-surface p-7">
+      <h3 className="m-0 text-[18px] font-bold tracking-[-0.01em]">{title}</h3>
+      <p className="m-0 text-[15px] leading-[1.65] text-site-text-muted">{children}</p>
     </div>
   );
 }
