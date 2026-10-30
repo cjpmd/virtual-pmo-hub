@@ -2,7 +2,9 @@ import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { KeyRound, LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
-import { CentredCard, Splash } from "@/components/auth/auth-gate";
+import { Splash } from "@/components/auth/auth-gate";
+import { AuthSplit } from "@/components/marketing/auth-split";
+import { siteFontLinks } from "@/components/marketing/site-fonts";
 import { Field, FormError, PasswordStrength } from "@/components/auth/auth-fields";
 import { useSession } from "@/components/auth/session-provider";
 import { Button } from "@/components/ui/button";
@@ -32,6 +34,7 @@ export const Route = createFileRoute("/auth/reset-password")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
+    links: siteFontLinks,
   }),
   component: ResetPassword,
 });
@@ -69,21 +72,21 @@ function ResetPassword() {
   // Signed in without a recovery link (e.g. opened directly) may still change their password.
   if (session.status !== "signed_in")
     return (
-      <CentredCard title="That reset link didn't work">
+      <AuthSplit title="That reset link didn't work">
         <p className="text-sm text-muted-foreground">
           {urlError?.message ?? "The link has expired or has already been used."}
         </p>
         <Button asChild className="mt-4">
           <Link to="/auth/forgot-password">Send a new link</Link>
         </Button>
-      </CentredCard>
+      </AuthSplit>
     );
 
   const email = session.user.email ?? "";
   const valid = checkPassword(password, email).acceptable && password === confirm;
   const mismatch = confirm.length > 0 && confirm !== password;
   return (
-    <CentredCard title={recovery ? "Set a new password" : "Change your password"}>
+    <AuthSplit title={recovery ? "Set a new password" : "Change your password"}>
       <p className="text-sm text-muted-foreground">
         For <strong className="text-foreground">{email}</strong>. You'll stay signed in on this
         device.
@@ -124,6 +127,6 @@ function ResetPassword() {
           {save.isPending ? <LoaderCircle className="animate-spin" /> : <KeyRound />}Save password
         </Button>
       </form>
-    </CentredCard>
+    </AuthSplit>
   );
 }

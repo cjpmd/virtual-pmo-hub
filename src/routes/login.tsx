@@ -2,7 +2,9 @@ import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { LoaderCircle, LogIn, RotateCw } from "lucide-react";
 import { useState } from "react";
-import { CentredCard, Splash } from "@/components/auth/auth-gate";
+import { Splash } from "@/components/auth/auth-gate";
+import { AuthSplit } from "@/components/marketing/auth-split";
+import { siteFontLinks } from "@/components/marketing/site-fonts";
 import { Field, FormError } from "@/components/auth/auth-fields";
 import { useCaptcha } from "@/components/auth/captcha";
 import { OrDivider, ProviderButtons } from "@/components/auth/provider-buttons";
@@ -27,6 +29,7 @@ export const Route = createFileRoute("/login")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
+    links: siteFontLinks,
   }),
   component: LoginPage,
 });
@@ -54,7 +57,7 @@ function LoginPage() {
 
   const unconfirmed = isUnconfirmedEmail(signIn.error);
   return (
-    <CentredCard title={demo ? "Sign in to view the demo" : "Sign in"}>
+    <AuthSplit title={demo ? "Sign in to view the demo" : "Sign in"}>
       <p className="text-sm text-muted-foreground">
         {demo
           ? "Sign in or create a free account to explore the demo portfolio, read-only."
@@ -138,6 +141,6 @@ function LoginPage() {
           Create an account
         </Link>
       </p>
-    </CentredCard>
+    </AuthSplit>
   );
 }

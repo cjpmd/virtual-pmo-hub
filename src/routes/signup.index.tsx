@@ -2,7 +2,9 @@ import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { LoaderCircle, UserPlus } from "lucide-react";
 import { useState } from "react";
-import { CentredCard, Splash } from "@/components/auth/auth-gate";
+import { Splash } from "@/components/auth/auth-gate";
+import { AuthSplit } from "@/components/marketing/auth-split";
+import { siteFontLinks } from "@/components/marketing/site-fonts";
 import { CheckEmail, Field, FormError, PasswordStrength } from "@/components/auth/auth-fields";
 import { useCaptcha } from "@/components/auth/captcha";
 import { OrDivider, ProviderButtons } from "@/components/auth/provider-buttons";
@@ -31,6 +33,7 @@ export const Route = createFileRoute("/signup/")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
+    links: siteFontLinks,
   }),
   component: SignupPage,
 });
@@ -57,16 +60,16 @@ function SignupPage() {
 
   if (create.isSuccess)
     return (
-      <CentredCard title="Check your email">
+      <AuthSplit title="Check your email">
         <CheckEmail email={email.trim()} next={next} onBack={() => create.reset()} />
-      </CentredCard>
+      </AuthSplit>
     );
 
   const passwordOk = checkPassword(password, email).acceptable;
   const mismatch = confirm.length > 0 && confirm !== password;
   const valid = name.trim() !== "" && passwordOk && confirm === password;
   return (
-    <CentredCard title="Create your account">
+    <AuthSplit title="Create your account">
       <p className="text-sm text-muted-foreground">
         Portfolio, programme and project management for PMOs and change teams. Free for 14 days, no
         card needed.
@@ -147,6 +150,6 @@ function SignupPage() {
           Sign in
         </Link>
       </p>
-    </CentredCard>
+    </AuthSplit>
   );
 }

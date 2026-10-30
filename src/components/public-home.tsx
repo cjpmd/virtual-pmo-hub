@@ -1,9 +1,17 @@
-// The public homepage at / (design G, docs/design/homepage-g.html). Signed-in users are sent
-// straight to their workspace (see routes/index.tsx).
+// The public homepage at / (ORMO brand restyle, design handoff "ORMO PMO Website"). Signed-in
+// users are sent straight to their workspace (see routes/index.tsx).
 import { Link } from "@tanstack/react-router";
-import type { ReactNode } from "react";
-import { ProductPreview } from "@/components/marketing/product-preview";
-import { SiteCtas, SiteFooter, SiteHeader, SitePage } from "@/components/marketing/site-chrome";
+import { useState, type KeyboardEvent, type ReactNode } from "react";
+import {
+  SiteCtaBand,
+  SiteCtas,
+  SiteEyebrow,
+  SiteFooter,
+  SiteGradientBand,
+  SiteHeader,
+  SitePage,
+} from "@/components/marketing/site-chrome";
+import { SiteHeroEyebrow } from "@/components/marketing/site-page-parts";
 import { cn } from "@/lib/utils";
 
 const iconProps = {
@@ -35,109 +43,135 @@ const assurances: { text: string; icon: ReactNode }[] = [
   },
 ];
 
-const features: { title: string; text: string; tint: string; stroke: string; icon: ReactNode }[] = [
+// Copy follows the design, kept to what the product does today: health dimensions are the
+// stored ones, and there are no tool integrations yet (Planner sync is Phase 5).
+const pillars = [
   {
-    title: "Health that rolls up",
-    text: "Schedule, finance, effort, issues and benefits combine into one rating, from project to programme to portfolio.",
-    tint: "bg-site-tint-blue",
-    stroke: "stroke-site-accent-strong",
-    icon: (
-      <>
-        <path d="M3 3v18h18" />
-        <path d="M7 15l4-4 3 3 5-6" />
-      </>
-    ),
+    title: "One place for the whole portfolio",
+    body: "Portfolios, programmes and projects in a single structure, so leaders see the same picture as delivery teams.",
   },
   {
-    title: "Reports you can trust",
-    text: "Each status report records the declared position next to the evidenced one, so committees see where they differ.",
-    tint: "bg-site-tint-green",
-    stroke: "stroke-site-icon-green",
-    icon: (
-      <>
-        <path d="M9 12l2 2 4-4" />
-        <path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z" />
-      </>
-    ),
+    title: "Health calculated, not declared",
+    body: "Schedule, finance, effort, issues and benefits roll up into a health rating that updates as the work does.",
   },
   {
-    title: "Delivery you can follow",
-    text: "Milestones, stage gates, tasks and a shared dependency map show what each project depends on and what is slipping.",
-    tint: "bg-site-tint-blue",
-    stroke: "stroke-site-accent-strong",
-    icon: (
-      <>
-        <circle cx="6" cy="6" r="2.5" />
-        <circle cx="18" cy="18" r="2.5" />
-        <path d="M8.5 6H14a4 4 0 0 1 4 4v5.5" />
-      </>
-    ),
-  },
-  {
-    title: "Governance without the chasing",
-    text: "One RAIDD register, change control and boards feed committee packs built from live data and exported to PDF.",
-    tint: "bg-site-tint-green",
-    stroke: "stroke-site-icon-green",
-    icon: (
-      <>
-        <path d="M7 3h7l5 5v13H7z" />
-        <path d="M14 3v5h5M10 13h6M10 17h6" />
-      </>
-    ),
-  },
-  {
-    title: "Benefits, measured",
-    text: "Track what each investment promised and measure it through to realisation, long after go-live.",
-    tint: "bg-site-tint-violet",
-    stroke: "stroke-site-icon-violet",
-    icon: (
-      <>
-        <circle cx="12" cy="12" r="9" />
-        <circle cx="12" cy="12" r="4" />
-      </>
-    ),
-  },
-  {
-    title: "Capacity before commitment",
-    text: "See who is allocated where for the next 26 weeks, and model a proposed project's demand before it is approved.",
-    tint: "bg-site-tint-violet",
-    stroke: "stroke-site-icon-violet",
-    icon: (
-      <>
-        <circle cx="9" cy="8" r="3.5" />
-        <path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6" />
-      </>
-    ),
+    title: "Every report checked",
+    body: "Submitted RAG statuses are compared against the evidence, and mismatches are flagged before they reach the board.",
   },
 ];
+
+const shots = [
+  {
+    label: "Assurance",
+    eyebrow: "Portfolio assurance",
+    title: "Every report, next to the evidence",
+    body: "See what status reports declare beside what delivery data shows. Divergence alerts surface the projects reporting better than reality.",
+    src: "/brand/site/shot-assurance.png",
+    width: 1323,
+    height: 552,
+  },
+  {
+    label: "Projects",
+    eyebrow: "Project overview",
+    title: "Health by dimension, month by month",
+    body: "Schedule, finance, effort, issues and benefits health tracked at every month-end, with milestone slippage and the last highlight report in one view.",
+    src: "/brand/site/shot-project-summary.png",
+    width: 1347,
+    height: 756,
+  },
+  {
+    label: "Schedule",
+    eyebrow: "Schedule forecast",
+    title: "Slippage you can see coming",
+    body: "Every milestone plotted baseline against actual or forecast, with a delivery profile that shows exactly where the plan is drifting.",
+    src: "/brand/site/shot-schedule.png",
+    width: 1289,
+    height: 797,
+  },
+  {
+    label: "Dependencies",
+    eyebrow: "Dependency map",
+    title: "Follow the chain across programmes",
+    body: "Programmes, projects, milestones and external parties on one map, with links coloured by health and styled by type.",
+    src: "/brand/site/shot-dependency-map.png",
+    width: 1315,
+    height: 784,
+  },
+  {
+    label: "Benefits",
+    eyebrow: "Benefits map",
+    title: "From project to strategic objective",
+    body: "Trace how projects deliver capabilities, outcomes and benefits, and spot the gaps where a benefit has no owner or measure.",
+    src: "/brand/site/shot-benefits-map.png",
+    width: 1285,
+    height: 781,
+  },
+];
+
+const steps = [
+  {
+    n: "01",
+    title: "Set up",
+    body: "Create your portfolios, programmes and projects, or import them from a spreadsheet.",
+  },
+  {
+    n: "02",
+    title: "Calculate",
+    body: "ORMO derives health for every project and rolls it up through programmes and portfolios.",
+  },
+  {
+    n: "03",
+    title: "Challenge",
+    body: "Status reports are checked against the evidence, so reviews focus on what needs a decision.",
+  },
+];
+
+const h2 =
+  "m-0 font-site-display text-[clamp(30px,3.2vw,40px)] leading-[1.1] font-extrabold tracking-[-0.02em] text-balance";
 
 export function PublicHome() {
   return (
     <SitePage>
-      <section className="bg-site-ink text-site-on-ink">
+      <SiteGradientBand>
         <SiteHeader />
-        <div className="mx-auto flex max-w-[1240px] flex-col items-center gap-6 px-7 pt-[72px] text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-site-ink-pill px-3.5 py-1.5 text-[0.88rem] text-site-on-ink-nav">
-            <span className="size-[7px] rounded-full bg-site-good" />
-            Portfolio management with built-in assurance
-          </span>
-          <h1 className="m-0 max-w-[17ch] text-[clamp(2.6rem,5.6vw,4.6rem)] leading-[1.04] font-semibold tracking-[-0.035em]">
-            Know which projects are really on track.
-          </h1>
-          <p className="m-0 max-w-[40rem] text-[1.18rem] leading-[1.6] text-site-on-ink-muted">
-            Portfolios, programmes and projects in one place, with health calculated from delivery
-            data and every status report checked against the evidence.
-          </p>
-          <SiteCtas className="justify-center pt-1" />
-          <ProductPreview />
+        <div className="mx-auto max-w-[1240px] px-4 pt-12 sm:px-8 sm:pt-[72px]">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,460px),1fr))] items-end gap-x-16 gap-y-10">
+            <div>
+              <SiteHeroEyebrow>Portfolio · Programme · Project</SiteHeroEyebrow>
+              <h1 className="m-0 mt-[26px] font-site-display text-[clamp(40px,5.4vw,68px)] leading-[1.04] font-extrabold tracking-[-0.025em] text-balance">
+                Know which projects are really on track.
+              </h1>
+            </div>
+            <div>
+              <p className="m-0 mb-7 max-w-[540px] text-[19px] leading-[1.6] text-pretty text-site-on-ink-muted">
+                Portfolios, programmes and projects in one place, with health calculated from
+                delivery data and every status report checked against the evidence.
+              </p>
+              <SiteCtas />
+            </div>
+          </div>
+          <div className="mt-12 rounded-t-2xl border border-b-0 border-white/22 bg-white/12 px-2.5 pt-2.5 shadow-[0_-20px_80px_-20px_rgba(3,12,40,0.6)] sm:mt-[72px]">
+            <img
+              src="/brand/site/shot-project-dark.png"
+              alt="ORMO project view showing declared amber against evidenced red, with progress against plan"
+              width={1377}
+              height={819}
+              fetchPriority="high"
+              className="block h-auto w-full rounded-t-[10px]"
+            />
+          </div>
         </div>
-      </section>
+      </SiteGradientBand>
 
-      <section id="security" className="scroll-mt-4 border-b border-site-line">
-        <div className="mx-auto flex max-w-[1240px] flex-wrap justify-center gap-x-12 gap-y-4 p-7 text-[0.95rem] font-medium text-site-text-soft">
+      <section
+        id="security"
+        aria-label="Security"
+        className="scroll-mt-4 border-b border-site-line"
+      >
+        <div className="mx-auto flex max-w-[1240px] flex-wrap justify-center gap-x-12 gap-y-4 px-4 py-6 text-[14px] font-medium text-site-text-soft sm:px-8">
           {assurances.map((item) => (
             <span key={item.text} className="inline-flex items-center gap-2.5">
-              <svg width="18" height="18" className="stroke-site-accent" {...iconProps}>
+              <svg width="18" height="18" className="stroke-site-accent-strong" {...iconProps}>
                 {item.icon}
               </svg>
               {item.text}
@@ -145,60 +179,203 @@ export function PublicHome() {
           ))}
           <Link
             to="/security"
-            className="inline-flex items-center font-medium text-site-accent-strong no-underline hover:underline"
+            className="inline-flex items-center font-semibold text-site-accent-strong no-underline hover:text-[#0b4fb0]"
           >
             How we protect your data →
           </Link>
         </div>
       </section>
 
-      <section id="product" className="scroll-mt-4">
-        <div className="mx-auto flex max-w-[1240px] flex-col gap-12 px-7 py-[88px]">
-          <h2 className="m-0 max-w-[20ch] text-[clamp(2rem,3.4vw,2.8rem)] leading-[1.1] font-semibold tracking-[-0.03em]">
-            Everything a PMO needs, without the spreadsheets.
+      <section
+        id="product"
+        className="mx-auto w-full max-w-[1240px] scroll-mt-4 px-4 pt-[88px] pb-10 sm:px-8 sm:pt-[104px]"
+      >
+        <div className="mb-14 grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] items-end gap-12">
+          <h2 className="m-0 font-site-display text-[clamp(32px,3.6vw,46px)] leading-[1.1] font-extrabold tracking-[-0.02em] text-balance">
+            Status reports tell you what people think. ORMO shows you what's happening.
           </h2>
-          <div className="flex flex-wrap gap-5">
-            {features.map((feature) => (
-              <div
-                key={feature.title}
-                className="flex flex-[1_1_300px] flex-col gap-3.5 rounded-2xl border border-site-line p-7"
-              >
-                <span
-                  className={cn("grid size-[42px] place-items-center rounded-[10px]", feature.tint)}
-                >
-                  <svg width="20" height="20" className={feature.stroke} {...iconProps}>
-                    {feature.icon}
-                  </svg>
-                </span>
-                <h3 className="m-0 text-[1.2rem] font-semibold">{feature.title}</h3>
-                <p className="m-0 leading-[1.6] text-site-text-muted">{feature.text}</p>
+          <p className="m-0 text-[17px] leading-[1.65] text-pretty text-site-text-muted">
+            Green-until-red reporting is the most expensive habit in delivery. ORMO calculates
+            health from the work itself, so the conversation starts with facts.
+          </p>
+        </div>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] gap-5">
+          {pillars.map((pillar) => (
+            <div
+              key={pillar.title}
+              className="rounded-[18px] border border-site-line bg-site-surface p-8"
+            >
+              <div aria-hidden="true" className="mb-7 h-1 w-10 rounded-sm site-brand-bar" />
+              <h3 className="m-0 mb-2.5 text-[20px] font-bold tracking-[-0.01em]">
+                {pillar.title}
+              </h3>
+              <p className="m-0 text-[15px] leading-[1.65] text-site-text-muted">{pillar.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <ProductTour />
+
+      <section id="how" className="mx-auto w-full max-w-[1240px] scroll-mt-4 px-4 py-24 sm:px-8">
+        <SiteEyebrow className="mb-3.5">How it works</SiteEyebrow>
+        <h2 className={cn(h2, "mb-12")}>Three steps to an honest portfolio view.</h2>
+        <ol className="m-0 grid list-none grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] border-t border-site-rule p-0">
+          {steps.map((step) => (
+            <li key={step.n} className="pt-8 pr-8">
+              <div className="mb-[18px] font-site-display text-[15px] font-extrabold text-site-violet">
+                {step.n}
               </div>
-            ))}
-          </div>
+              <h3 className="m-0 mb-2.5 text-[20px] font-bold">{step.title}</h3>
+              <p className="m-0 max-w-[340px] text-[15px] leading-[1.65] text-site-text-muted">
+                {step.body}
+              </p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section id="teams" className="scroll-mt-4 bg-site-ink text-white">
+        <div className="mx-auto grid max-w-[1240px] grid-cols-[repeat(auto-fit,minmax(min(100%,360px),1fr))] gap-6 px-4 py-[88px] sm:px-8 sm:py-[104px]">
+          <h2 className={cn(h2, "col-span-full mb-6")}>
+            Scales from your first programme to your fiftieth.
+          </h2>
+          <TeamCard
+            eyebrow="Growing teams"
+            eyebrowClass="text-site-on-ink-sky"
+            washClass="bg-[linear-gradient(160deg,rgba(54,169,236,0.16),rgba(54,169,236,0)_60%)]"
+            title="Set up in an afternoon"
+          >
+            Create your portfolio, or import your projects from a spreadsheet, and get a working
+            portfolio view without a PMO consultancy or months of configuration.
+          </TeamCard>
+          <TeamCard
+            eyebrow="Enterprise"
+            eyebrowClass="text-site-orange-soft"
+            washClass="bg-[linear-gradient(160deg,rgba(255,138,42,0.16),rgba(255,138,42,0)_60%)]"
+            title="Governance that holds up"
+          >
+            Portfolio and programme hierarchies, role-based access and a full audit trail behind
+            every status, ready for the board.
+          </TeamCard>
+        </div>
+      </section>
+
+      <div
+        id="get-started"
+        className="mx-auto w-full max-w-[1240px] px-4 py-[88px] sm:px-8 sm:py-[104px]"
+      >
+        <SiteCtaBand title="See your portfolio as it really is." />
+      </div>
+
+      <SiteFooter />
+    </SitePage>
+  );
+}
+
+function TeamCard({
+  eyebrow,
+  eyebrowClass,
+  washClass,
+  title,
+  children,
+}: {
+  eyebrow: string;
+  eyebrowClass: string;
+  washClass: string;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className={cn("rounded-[20px] border border-site-ink-line p-9", washClass)}>
+      <p className={cn("m-0 mb-4 text-[12px] font-bold tracking-[0.16em] uppercase", eyebrowClass)}>
+        {eyebrow}
+      </p>
+      <h3 className="m-0 mb-3 text-[22px] font-bold">{title}</h3>
+      <p className="m-0 text-[15px] leading-[1.65] text-site-on-ink-faint">{children}</p>
+    </div>
+  );
+}
+
+/** Tabbed screenshots of the product, one area at a time. */
+function ProductTour() {
+  const [active, setActive] = useState(0);
+  const shot = shots[active] ?? shots[0]!;
+
+  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+    if (!step) return;
+    event.preventDefault();
+    const next = (active + step + shots.length) % shots.length;
+    setActive(next);
+    document.getElementById(`tour-tab-${next}`)?.focus();
+  }
+
+  return (
+    <section
+      id="tour"
+      aria-label="Product tour"
+      className="mx-auto w-full max-w-[1240px] scroll-mt-4 px-4 pt-[72px] pb-6 sm:px-8"
+    >
+      <div
+        role="tablist"
+        aria-label="Product areas"
+        onKeyDown={onKeyDown}
+        className="mb-7 flex w-fit max-w-full flex-wrap gap-2 rounded-[28px] border border-site-line bg-site-surface p-1.5"
+      >
+        {shots.map((item, index) => (
+          <button
+            key={item.label}
+            id={`tour-tab-${index}`}
+            type="button"
+            role="tab"
+            aria-selected={index === active}
+            aria-controls="tour-panel"
+            tabIndex={index === active ? 0 : -1}
+            onClick={() => setActive(index)}
+            className={cn(
+              "min-h-10 cursor-pointer rounded-full px-[18px] text-[14px] font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-site-accent-strong",
+              index === active
+                ? "bg-site-navy text-white"
+                : "text-site-text-muted hover:text-site-text",
+            )}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <div
+        id="tour-panel"
+        role="tabpanel"
+        aria-labelledby={`tour-tab-${active}`}
+        className="flex flex-wrap items-start gap-10"
+      >
+        <div className="max-w-[380px] flex-[1_1_280px]">
+          <SiteEyebrow className="mb-3.5">{shot.eyebrow}</SiteEyebrow>
+          <h3 className="m-0 mb-3.5 font-site-display text-[28px] leading-[1.15] font-extrabold tracking-[-0.02em] text-balance">
+            {shot.title}
+          </h3>
+          <p className="m-0 text-[16px] leading-[1.65] text-pretty text-site-text-muted">
+            {shot.body}
+          </p>
           <Link
             to="/product"
-            className="w-fit text-[1.05rem] font-medium text-site-accent-strong no-underline hover:underline"
+            className="mt-6 inline-flex font-semibold text-site-accent-strong no-underline hover:text-[#0b4fb0]"
           >
             See everything ORMO does →
           </Link>
         </div>
-      </section>
-
-      <section className="mx-auto mb-[72px] max-w-[1240px] px-7">
-        <div className="flex flex-wrap items-center justify-between gap-6 rounded-[20px] bg-site-ink p-12 text-site-on-ink max-sm:p-8">
-          <div className="flex flex-[1_1_420px] flex-col gap-2.5">
-            <h2 className="m-0 text-[2rem] font-semibold tracking-[-0.025em]">
-              Bring your portfolio into focus.
-            </h2>
-            <p className="m-0 text-[1.05rem] text-site-on-ink-muted">
-              Set up your first portfolio in minutes. No spreadsheets to migrate by hand.
-            </p>
-          </div>
-          <SiteCtas />
+        <div className="min-w-0 flex-[2_1_560px] rounded-2xl p-2 shadow-[0_30px_60px_-30px_rgba(10,42,107,0.45)] site-brand-frame">
+          <img
+            key={shot.src}
+            src={shot.src}
+            alt={shot.title}
+            width={shot.width}
+            height={shot.height}
+            className="block h-auto w-full rounded-[10px] bg-white motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150"
+          />
         </div>
-      </section>
-
-      <SiteFooter />
-    </SitePage>
+      </div>
+    </section>
   );
 }

@@ -6,7 +6,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Check, LoaderCircle, LogIn, UserPlus } from "lucide-react";
 import type { ReactNode } from "react";
-import { CentredCard, SignOutButton, Splash } from "@/components/auth/auth-gate";
+import { SignOutButton, Splash } from "@/components/auth/auth-gate";
+import { AuthSplit } from "@/components/marketing/auth-split";
+import { siteFontLinks } from "@/components/marketing/site-fonts";
 import { FormError } from "@/components/auth/auth-fields";
 import { useSession } from "@/components/auth/session-provider";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,7 @@ export const Route = createFileRoute("/invite")({
       { name: "description", content: "Join your organisation in ORMO PMO." },
       { name: "robots", content: "noindex" },
     ],
+    links: siteFontLinks,
   }),
   component: InvitePage,
 });
@@ -50,38 +53,38 @@ function InvitePage() {
 
   if (!token)
     return (
-      <CentredCard title="This invitation link isn't complete">
+      <AuthSplit title="This invitation link isn't complete">
         <p className="text-sm text-muted-foreground">
           Open the link from your invitation email again, or copy the whole address into your
           browser.
         </p>
-      </CentredCard>
+      </AuthSplit>
     );
   if (session.status === "loading" || preview.isPending)
     return <Splash label="Checking your invitation…" />;
   if (preview.isError)
     return (
-      <CentredCard title="We couldn't check your invitation">
+      <AuthSplit title="We couldn't check your invitation">
         <p className="text-sm text-muted-foreground">{errorMessage(preview.error)}</p>
         <Button className="mt-4" onClick={() => void preview.refetch()}>
           Try again
         </Button>
-      </CentredCard>
+      </AuthSplit>
     );
 
   const invite = preview.data;
   if (invite.status === "accepted" && invite.acceptedByMe)
     return (
-      <CentredCard title={`You're in ${invite.organisationName ?? "the organisation"}`}>
+      <AuthSplit title={`You're in ${invite.organisationName ?? "the organisation"}`}>
         <p className="text-sm text-muted-foreground">You've already accepted this invitation.</p>
         <Button asChild className="mt-4">
           <Link to="/">Open ORMO PMO</Link>
         </Button>
-      </CentredCard>
+      </AuthSplit>
     );
   if (invite.status !== "valid")
     return (
-      <CentredCard
+      <AuthSplit
         title={
           invite.status === "expired"
             ? "This invitation has expired"
@@ -106,7 +109,7 @@ function InvitePage() {
             </Button>
           </div>
         )}
-      </CentredCard>
+      </AuthSplit>
     );
 
   const next = `/invite?token=${encodeURIComponent(token)}`;
@@ -127,7 +130,7 @@ function InvitePage() {
 
   if (session.status !== "signed_in")
     return (
-      <CentredCard title={`Join ${invite.organisationName ?? "your organisation"}`}>
+      <AuthSplit title={`Join ${invite.organisationName ?? "your organisation"}`}>
         {summary}
         <p className="mt-4 text-sm text-muted-foreground">
           Sign in or create an account with the address the invitation was sent to.
@@ -145,7 +148,7 @@ function InvitePage() {
             </Link>
           </Button>
         </div>
-      </CentredCard>
+      </AuthSplit>
     );
 
   return (
@@ -192,7 +195,7 @@ function AcceptCard(props: {
 
   if (!props.emailMatches)
     return (
-      <CentredCard title="This invitation is for a different address">
+      <AuthSplit title="This invitation is for a different address">
         {props.children}
         <p className="mt-4 text-sm text-muted-foreground">
           You're signed in as <span className="font-medium text-foreground">{props.email}</span>,
@@ -202,21 +205,21 @@ function AcceptCard(props: {
         <div className="mt-4">
           <SignOutButton />
         </div>
-      </CentredCard>
+      </AuthSplit>
     );
 
   if (!props.emailConfirmed)
     return (
-      <CentredCard title="Confirm your email address first">
+      <AuthSplit title="Confirm your email address first">
         {props.children}
         <p className="mt-4 text-sm text-muted-foreground">
           Open the confirmation link we sent to {props.email}, then come back to this invitation.
         </p>
-      </CentredCard>
+      </AuthSplit>
     );
 
   return (
-    <CentredCard title={`Join ${props.organisationName}`}>
+    <AuthSplit title={`Join ${props.organisationName}`}>
       {props.children}
       <p className="mt-4 text-sm text-muted-foreground">Signed in as {props.email}.</p>
       <div className="mt-4 space-y-3">
@@ -231,6 +234,6 @@ function AcceptCard(props: {
           Accept and join
         </Button>
       </div>
-    </CentredCard>
+    </AuthSplit>
   );
 }

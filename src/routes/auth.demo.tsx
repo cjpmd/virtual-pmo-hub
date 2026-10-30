@@ -1,5 +1,7 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { CentredCard, Splash } from "@/components/auth/auth-gate";
+import { Splash } from "@/components/auth/auth-gate";
+import { AuthSplit } from "@/components/marketing/auth-split";
+import { siteFontLinks } from "@/components/marketing/site-fonts";
 import { DemoEntry } from "@/components/auth/demo-entry";
 import { useSession } from "@/components/auth/session-provider";
 
@@ -18,6 +20,7 @@ export const Route = createFileRoute("/auth/demo")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
+    links: siteFontLinks,
   }),
   component: ViewDemo,
 });
@@ -28,8 +31,8 @@ function ViewDemo() {
   if (session.status === "signed_out")
     return <Navigate to="/login" search={{ next: "/auth/demo" }} replace />;
   return (
-    <CentredCard title="View demo">
+    <AuthSplit title="View demo">
       <DemoEntry key={session.user.id} userId={session.user.id} />
-    </CentredCard>
+    </AuthSplit>
   );
 }

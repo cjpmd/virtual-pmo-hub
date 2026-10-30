@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SiteCtas, SiteFooter, SitePage } from "@/components/marketing/site-chrome";
+import { SiteCtaBand, SiteFooter, SitePage } from "@/components/marketing/site-chrome";
 import { siteHead } from "@/components/marketing/site-head";
 import { SiteHero, SiteSectionHeading } from "@/components/marketing/site-page-parts";
 
@@ -115,13 +115,13 @@ function ProductPage() {
         status report checked against the evidence.
       </SiteHero>
 
-      <main className="mx-auto flex max-w-[1240px] flex-col gap-14 px-7 py-14">
+      <main className="mx-auto flex w-full max-w-[1240px] flex-col gap-14 px-4 py-16 sm:px-8 sm:py-20">
         <nav aria-label="On this page" className="flex flex-wrap gap-2">
           {areas.map((area) => (
             <a
               key={area.id}
               href={`#${area.id}`}
-              className="inline-flex min-h-10 items-center rounded-full border border-site-line px-4 text-[0.9rem] text-site-text-soft no-underline hover:border-site-accent hover:text-site-accent-strong"
+              className="inline-flex min-h-10 items-center rounded-full border border-site-line bg-site-surface px-4 text-[14px] font-semibold text-site-text-muted no-underline hover:border-site-accent-strong hover:text-site-accent-strong"
             >
               {area.title}
             </a>
@@ -132,10 +132,10 @@ function ProductPage() {
           <section
             key={area.id}
             id={area.id}
-            className="grid scroll-mt-4 gap-6 border-t border-site-line pt-10 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"
+            className="grid scroll-mt-4 gap-6 rounded-[18px] border border-site-line bg-site-surface p-8 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:p-9"
           >
             <SiteSectionHeading title={area.title}>{area.intro}</SiteSectionHeading>
-            <ul className="m-0 flex list-disc flex-col gap-2.5 pl-5 leading-[1.6] text-site-text-soft marker:text-site-accent">
+            <ul className="m-0 flex list-disc flex-col gap-2.5 pl-5 text-[15px] leading-[1.65] text-site-text-soft marker:text-site-violet">
               {area.points.map((point) => (
                 <li key={point}>{point}</li>
               ))}
@@ -143,17 +143,9 @@ function ProductPage() {
           </section>
         ))}
 
-        <section className="flex flex-wrap items-center justify-between gap-6 rounded-[20px] bg-site-ink p-12 text-site-on-ink max-sm:p-8">
-          <div className="flex flex-[1_1_420px] flex-col gap-2.5">
-            <h2 className="m-0 text-[2rem] font-semibold tracking-[-0.025em]">
-              See it with real data.
-            </h2>
-            <p className="m-0 text-[1.05rem] text-site-on-ink-muted">
-              Explore the demo portfolio, or start a free trial with your own.
-            </p>
-          </div>
-          <SiteCtas primaryLabel="Start free trial" />
-        </section>
+        <SiteCtaBand title="See it with real data." primaryLabel="Start free trial">
+          Explore the demo portfolio, or start a free trial with your own.
+        </SiteCtaBand>
       </main>
 
       <SiteFooter />

@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
-import { SiteFooter, SiteHeader, SitePage } from "@/components/marketing/site-chrome";
+import { SiteFooter, SitePage } from "@/components/marketing/site-chrome";
+import { sitePill } from "@/components/marketing/site-styles";
 import { siteFontLinks } from "@/components/marketing/site-fonts";
+import { SiteHero } from "@/components/marketing/site-page-parts";
 import { contactEmail } from "@/lib/features";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +30,7 @@ export const Route = createFileRoute("/request-access")({
 type Interest = "access" | "demo";
 
 const fieldClass =
-  "mt-1.5 block w-full rounded-lg border border-site-line bg-site-paper px-3 py-2.5 text-base text-site-text outline-none focus:border-site-accent focus:ring-2 focus:ring-site-accent/25";
+  "mt-1.5 block w-full rounded-[10px] border border-site-line bg-site-surface px-3 py-2.5 text-base text-site-text outline-none focus:border-site-accent-strong focus:ring-2 focus:ring-site-accent-strong/25";
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -67,26 +69,18 @@ function RequestAccessPage() {
 
   return (
     <SitePage>
-      <div className="bg-site-ink text-site-on-ink">
-        <SiteHeader />
-        <div className="mx-auto max-w-[1240px] px-7 pt-14 pb-16">
-          <h1 className="m-0 max-w-[20ch] text-[clamp(2.2rem,4.4vw,3.4rem)] leading-[1.08] font-semibold tracking-[-0.03em]">
-            Contact sales or book a demo.
-          </h1>
-          <p className="mt-4 max-w-[40rem] text-[1.1rem] leading-[1.6] text-site-on-ink-muted">
-            Tell us a little about your organisation and we'll get back to you, or arrange a
-            walkthrough with your team. Want to try it yourself?{" "}
-            <Link to="/signup" className="font-medium text-site-link hover:text-site-link-hover">
-              Start a free trial
-            </Link>
-            .
-          </p>
-        </div>
-      </div>
+      <SiteHero eyebrow="Contact" title="Contact sales or book a demo.">
+        Tell us a little about your organisation and we'll get back to you, or arrange a walkthrough
+        with your team. Want to try it yourself?{" "}
+        <Link to="/signup" className="font-semibold text-site-link hover:text-site-link-hover">
+          Start a free trial
+        </Link>
+        .
+      </SiteHero>
 
-      <main className="mx-auto max-w-[1240px] px-7 py-14">
+      <main className="mx-auto w-full max-w-[1240px] px-4 py-16 sm:px-8 sm:py-20">
         <form
-          className="grid max-w-[44rem] gap-5"
+          className="grid max-w-[44rem] gap-5 rounded-[20px] border border-site-line bg-site-surface p-6 sm:p-9"
           onSubmit={(event) => {
             event.preventDefault();
             if (contactEmail) window.location.href = mailto;
@@ -103,9 +97,9 @@ function RequestAccessPage() {
               <label
                 key={value}
                 className={cn(
-                  "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border px-4 text-[0.95rem]",
+                  "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-4 text-[0.95rem]",
                   interest === value
-                    ? "border-site-accent bg-site-tint-blue text-site-accent-strong"
+                    ? "border-site-accent-strong bg-site-tint-blue text-site-navy"
                     : "border-site-line text-site-text-soft",
                 )}
               >
@@ -115,7 +109,7 @@ function RequestAccessPage() {
                   value={value}
                   checked={interest === value}
                   onChange={() => setInterest(value)}
-                  className="accent-site-accent"
+                  className="accent-site-accent-strong"
                 />
                 {label}
               </label>
@@ -168,10 +162,7 @@ function RequestAccessPage() {
           </Field>
           {contactEmail ? (
             <div className="flex flex-wrap items-center gap-4">
-              <button
-                type="submit"
-                className="inline-flex min-h-[50px] items-center rounded-[10px] bg-site-accent px-6 font-semibold text-white hover:bg-site-accent-strong"
-              >
+              <button type="submit" className={cn(sitePill.light, "cursor-pointer")}>
                 {interest === "demo" ? "Request a demo" : "Contact sales"}
               </button>
               <p className="text-[0.9rem] text-site-text-muted">
@@ -189,7 +180,7 @@ function RequestAccessPage() {
           <p className="text-[0.95rem] text-site-text-muted">
             Already have an account?{" "}
             <Link to="/login" className="font-medium text-site-accent-strong hover:underline">
-              Log in
+              Sign in
             </Link>
           </p>
         </form>

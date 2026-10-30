@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
-import { CentredCard, Splash } from "@/components/auth/auth-gate";
+import { Splash } from "@/components/auth/auth-gate";
+import { AuthSplit } from "@/components/marketing/auth-split";
+import { siteFontLinks } from "@/components/marketing/site-fonts";
 import { Button } from "@/components/ui/button";
 import { authUrlParams, readAuthUrlError } from "@/lib/auth-url";
 import { selfSignup } from "@/lib/features";
@@ -25,6 +27,7 @@ export const Route = createFileRoute("/auth/callback")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
+    links: siteFontLinks,
   }),
   ssr: false,
   component: AuthCallback,
@@ -61,7 +64,7 @@ function AuthCallback() {
   const urlError = result.data?.urlError;
   const consent = urlError?.kind === "consent";
   return (
-    <CentredCard
+    <AuthSplit
       title={
         consent
           ? "Your organisation needs to approve ORMO PMO"
@@ -100,6 +103,6 @@ function AuthCallback() {
           </Button>
         )}
       </div>
-    </CentredCard>
+    </AuthSplit>
   );
 }
