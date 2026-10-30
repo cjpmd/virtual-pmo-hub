@@ -366,14 +366,19 @@ function ProductTour() {
           </Link>
         </div>
         <div className="min-w-0 flex-[2_1_560px] rounded-2xl p-2 shadow-[0_30px_60px_-30px_rgba(10,42,107,0.45)] site-brand-frame">
-          <img
-            key={shot.src}
-            src={shot.src}
-            alt={shot.title}
-            width={shot.width}
-            height={shot.height}
-            className="block h-auto w-full rounded-[10px] bg-white motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150"
-          />
+          {/* Every screenshot loads with the page and stays mounted, so switching tabs shows
+              an image that is already decoded instead of an empty frame while it downloads. */}
+          {shots.map((item, index) => (
+            <img
+              key={item.src}
+              src={item.src}
+              alt={item.title}
+              width={item.width}
+              height={item.height}
+              hidden={index !== active}
+              className="block h-auto w-full rounded-[10px] bg-white"
+            />
+          ))}
         </div>
       </div>
     </section>
