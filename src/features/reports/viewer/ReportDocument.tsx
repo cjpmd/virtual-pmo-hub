@@ -122,19 +122,58 @@ export function UnavailableBlock({ blockKey }: { blockKey: string }) {
   );
 }
 
-function BlockBody({
-  instance,
-  entityId,
-  props,
-}: {
-  instance: BlockInstance;
-  entityId: string | null;
-  props: DocumentProps;
-}) {
+type BodyProps = { instance: BlockInstance; entityId: string | null; props: DocumentProps };
+
+/** Snapshot (published) and live (draft) bodies are separate so a snapshot needs no session. */
+function BlockBody(p: BodyProps) {
+  return p.props.snapshot ? <SnapshotBody {...p} /> : <LiveBody {...p} />;
+}
+
+function SnapshotBody({ instance, entityId, props }: BodyProps) {
   const definition = getBlock(instance.blockKey);
-  const live = props.live && !props.snapshot ? props.live : null;
-  const query = useBlockData(live, instance, entityId, !!definition && !definition.static);
   if (!definition) return <UnavailableBlock blockKey={instance.blockKey} />;
+  if (definition.static)
+    return <Rendered instance={instance} entityId={entityId} props={props} data={null} />;
+  const data = props.snapshot!(instance.id, entityId);
+  if (data === undefined)
+    return <p className="text-sm text-muted-foreground">Not stored in this snapshot.</p>;
+  return <Rendered instance={instance} entityId={entityId} props={props} data={data} />;
+}
+
+function LiveBody({ instance, entityId, props }: BodyProps) {
+  const definition = getBlock(instance.blockKey);
+  const query = useBlockData(
+    props.live ?? null,
+    instance,
+    entityId,
+    !!definition && !definition.static,
+  );
+  if (!definition) return <UnavailableBlock blockKey={instance.blockKey} />;
+  if (definition.static)
+    return <Rendered instance={instance} entityId={entityId} props={props} data={null} />;
+  if (query.isError)
+    return (
+      <div
+        role="alert"
+        className="flex flex-wrap items-center gap-2 text-sm text-health-bad-foreground"
+      >
+        <AlertTriangle className="size-4" /> {errorMessage(query.error)}
+        <Button size="sm" variant="outline" onClick={() => void query.refetch()}>
+          Retry
+        </Button>
+      </div>
+    );
+  if (!query.data)
+    return (
+      <div aria-busy aria-label="Loading" className="h-20 animate-pulse rounded-md bg-muted/50" />
+    );
+  return <Rendered instance={instance} entityId={entityId} props={props} data={query.data} />;
+}
+
+function Rendered({ instance, entityId, props, data }: BodyProps & { data: unknown }) {
+  const definition = getBlock(instance.blockKey)!;
+  if (data && typeof data === "object" && (data as { unavailable?: boolean }).unavailable)
+    return <UnavailableBlock blockKey={instance.blockKey} />;
   const ctx: RenderContext = {
     scheme: props.scheme,
     mode: props.mode,
@@ -148,32 +187,6 @@ function BlockBody({
     ...(props.movement && { movement: props.movement }),
   };
   const config = resolveConfig(definition, instance);
-  let data: unknown = null;
-  if (!definition.static) {
-    if (props.snapshot) {
-      data = props.snapshot(instance.id, entityId);
-      if (data === undefined)
-        return <p className="text-sm text-muted-foreground">Not stored in this snapshot.</p>;
-    } else if (query.isError) {
-      return (
-        <div
-          role="alert"
-          className="flex flex-wrap items-center gap-2 text-sm text-health-bad-foreground"
-        >
-          <AlertTriangle className="size-4" /> {errorMessage(query.error)}
-          <Button size="sm" variant="outline" onClick={() => void query.refetch()}>
-            Retry
-          </Button>
-        </div>
-      );
-    } else if (!query.data) {
-      return (
-        <div aria-busy aria-label="Loading" className="h-20 animate-pulse rounded-md bg-muted/50" />
-      );
-    } else data = query.data;
-    if (data && typeof data === "object" && (data as { unavailable?: boolean }).unavailable)
-      return <UnavailableBlock blockKey={instance.blockKey} />;
-  }
   const Renderer = (props.mode === "print" && definition.PrintRenderer) || definition.Renderer;
   return (
     <BlockBoundary name={definition.name}>

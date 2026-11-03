@@ -1562,10 +1562,12 @@ as $$
       order by date_trunc('month', hs.snapshot_date), hs.snapshot_date desc) t
   ),
   scope as (
-    select count(*) filter (where h.evidenced = 'green') as green, count(*) filter (where h.evidenced = 'amber') as amber,
-      count(*) filter (where h.evidenced = 'red') as red, count(*) filter (where coalesce(h.evidenced, 'not_set') = 'not_set') as not_set,
-      count(*) filter (where h.divergent) as divergent
-    from public.project_health_current h where h.project_id = any (private.rb_projects(ctx))
+    select count(*) filter (where pm.metrics ->> 'evidenced_rating' = 'green') as green,
+      count(*) filter (where pm.metrics ->> 'evidenced_rating' = 'amber') as amber,
+      count(*) filter (where pm.metrics ->> 'evidenced_rating' = 'red') as red,
+      count(*) filter (where coalesce(pm.metrics ->> 'evidenced_rating', 'not_set') = 'not_set') as not_set,
+      count(*) filter (where (pm.metrics ->> 'rating_rank_delta')::int > 0) as divergent
+    from public.project_metrics(private.rb_projects(ctx), (ctx ->> 'as_at')::date) pm
   )
   select case when (select id from one) is not null then
     (select jsonb_build_object('mode', 'project', 'declared', m.metrics ->> 'declared_rating', 'evidenced', m.metrics ->> 'evidenced_rating',

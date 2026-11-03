@@ -6,7 +6,7 @@ types: `supabase/tests/local/gen-types.sh`.
 
 ## Current phase
 
-Phase 2 — done. Next: Phase 3.
+Phase 3 — done. Next: Phase 4.
 
 ## Completed
 
@@ -31,14 +31,26 @@ Phase 2 — done. Next: Phase 3.
   18 block renderers (SVG charts), gate editor and escalations panel on the project page;
   component tests for Phase 2 fixtures.
 
+- Phase 3: migration `20261103160000_rb3_governance_snapshots.sql` (snapshots and metric
+  snapshots with immutability triggers and partner-aware RLS, lifecycle RPCs, atomic
+  publish_report, changes_since_last / raid_movement data, decisions_taken fix, meeting capture
+  RPCs, distribution list, print tokens, report-pdfs bucket); seed publishes a previous pack
+  from wound-back data; SQL tests `reports_phase3.sql` (lifecycle permissions, snapshots frozen
+  after edits, immutability, second pack changes, decisions reach the next pack, distribution
+  idempotency and recipients, print tokens, partner snapshot filtering); diff engine + tests;
+  snapshot viewer with movement markers; lifecycle actions and history; presentation drawer
+  (decisions, actions); public print route; edge functions `report-publish`,
+  `report-distribute` with a tested shared module; Netlify `report-pdf` behind the flag; E2E
+  spec `e2e/reports.e2e.ts` (branch only); print verified to PDF locally.
+
 ## Next steps
 
-- Phase 3: lifecycle RPCs and review UI, report_snapshots / report_metric_snapshots with
-  immutability triggers, publish_report + report-publish edge function, snapshot viewer,
-  changes_since_last and movement markers, raid_movement, presentation capture (decisions,
-  actions), report-distribute (Resend, idempotent), data_quality by cycle, server PDF
-  (Netlify function behind REPORT_SERVER_PDF), E2E spec.
+- Phase 4: AI executive summary (`report-ai-summary`, ANTHROPIC_MODEL), un-acknowledged AI
+  draft gate, template versioning UI ("Update to latest template"), scheduled pack creation
+  when a cycle closes, `lessons_learned`, `linked_records` + Links panel, optional PPTX.
 
 ## Known issues
 
 - Browser E2E can't run here (RB-25); run `e2e/reports.e2e.ts` on a seeded Supabase branch.
+- Edge functions (`report-publish`, `report-distribute`) and the Netlify `report-pdf` function
+  are unit-tested through their shared module but not run end to end (no Deno / Netlify here).

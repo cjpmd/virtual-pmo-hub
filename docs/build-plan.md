@@ -638,6 +638,14 @@ and Portfolio Board / Committee templates. Selection panel with reason chips, pi
 reorder; gate editor (Plan › Gates) and escalation control (RAID › Risks / Issues) on the
 project page. SQL parity test runs the TS rule engine's cases.
 
+**RB Phase 3 (03/11/2026):** migration `20261103160000_rb3_governance_snapshots`: immutable
+`report_snapshots` / `report_metric_snapshots`, lifecycle RPCs (submit, return, approve,
+publish, withdraw) with `report_events`, atomic `publish_report`, changes since the last pack and
+RAID movement, presentation-mode capture (`record_meeting_decision`, `add_meeting_action`),
+distribution list and print tokens. Edge functions `report-publish` and `report-distribute`
+(Resend, idempotent), Netlify `report-pdf` behind `REPORT_SERVER_PDF` (off), public
+`/report-print/<id>?token=`. E2E spec for the full cycle runs on a seeded branch only.
+
 ## Progress
 
 - [x] 0.1 Test harness  - [ ] 0.2 Clean-up  - [x] 0.3 Migration history and indexes  - [x] 0.4 Copy  - [x] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email

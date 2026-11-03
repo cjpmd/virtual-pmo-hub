@@ -1,7 +1,13 @@
-// Published report snapshots (Phase 3 fills this in; until then nothing is published).
+// Published report snapshots (spec §4: published reports render only from snapshots). The
+// '__meta' row carries the scheme, forum, meeting and deep-dives as published; '__changes'
+// carries the comparison with the previous pack, turned into movement markers here.
+import { useQuery } from "@tanstack/react-query";
+import { useOrgId } from "@/components/auth/organisation-provider";
 import type { ProjectMovement } from "@/features/reports/blocks/types";
+import { toMovement, type ChangesData } from "@/features/reports/engine/diff";
 import type { DeepDiveProject, SnapshotLookup } from "@/features/reports/viewer/ReportDocument";
-import type { ReportContextData } from "@/services/reports";
+import { qk } from "@/services/query-keys";
+import { listSnapshots, type ReportContextData, type SnapshotRow } from "@/services/reports";
 
 export interface ReportSnapshot {
   meta: {
@@ -12,11 +18,34 @@ export interface ReportSnapshot {
   };
   lookup: SnapshotLookup;
   movement: Record<string, ProjectMovement>;
+  changes: ChangesData | null;
 }
 
-export function useReportSnapshot(_reportId: string | null): {
-  data: ReportSnapshot | null;
-  error: unknown;
-} {
-  return { data: null, error: null };
+export function snapshotFrom(rows: SnapshotRow[]): ReportSnapshot {
+  const map = new Map(
+    rows.map((row) => [`${row.blockInstanceId}:${row.entityId ?? ""}`, row.data]),
+  );
+  const meta = (map.get("__meta:") ?? {}) as Partial<ReportSnapshot["meta"]>;
+  const changes = (map.get("__changes:") ?? null) as ChangesData | null;
+  return {
+    meta: {
+      scheme: meta.scheme ?? null,
+      deep_dives: meta.deep_dives ?? [],
+      forum: meta.forum ?? null,
+      meeting: meta.meeting ?? null,
+    },
+    lookup: (blockId, entityId) => map.get(`${blockId}:${entityId ?? ""}`),
+    movement: toMovement(changes),
+    changes,
+  };
+}
+
+export function useReportSnapshot(reportId: string | null) {
+  const orgId = useOrgId();
+  return useQuery({
+    queryKey: qk.reports.snapshots(orgId, reportId ?? ""),
+    queryFn: async () => snapshotFrom(await listSnapshots(reportId!)),
+    enabled: !!reportId,
+    staleTime: Infinity,
+  });
 }

@@ -10490,6 +10490,51 @@ export type Database = {
           },
         ]
       }
+      report_metric_snapshots: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: string
+          metrics: Json
+          organisation_id: string
+          report_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          metrics: Json
+          organisation_id: string
+          report_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          metrics?: Json
+          organisation_id?: string
+          report_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_metric_snapshots_report_id_organisation_id_fkey"
+            columns: ["report_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "report_metric_snapshots_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       report_narratives: {
         Row: {
           block_instance_id: string
@@ -10547,6 +10592,63 @@ export type Database = {
           },
           {
             foreignKeyName: "report_narratives_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      report_snapshots: {
+        Row: {
+          block_instance_id: string
+          block_key: string
+          created_at: string
+          data: Json
+          entity_id: string | null
+          hidden_from_partners: boolean
+          id: string
+          metrics: Json | null
+          organisation_id: string
+          report_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          block_instance_id: string
+          block_key: string
+          created_at?: string
+          data: Json
+          entity_id?: string | null
+          hidden_from_partners?: boolean
+          id?: string
+          metrics?: Json | null
+          organisation_id: string
+          report_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          block_instance_id?: string
+          block_key?: string
+          created_at?: string
+          data?: Json
+          entity_id?: string | null
+          hidden_from_partners?: boolean
+          id?: string
+          metrics?: Json | null
+          organisation_id?: string
+          report_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_snapshots_report_id_organisation_id_fkey"
+            columns: ["report_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "report_snapshots_workspace_id_organisation_id_fkey"
             columns: ["workspace_id", "organisation_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -14332,6 +14434,13 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "decisions_chosen_option_fkey"
+            columns: ["chosen_option_id", "id"]
+            isOneToOne: false
+            referencedRelation: "decision_options"
+            referencedColumns: ["id", "decision_id"]
+          },
+          {
+            foreignKeyName: "decisions_chosen_option_fkey"
             columns: ["chosen_option_id", "superseded_by_id"]
             isOneToOne: false
             referencedRelation: "decision_options"
@@ -14340,13 +14449,6 @@ export type Database = {
           {
             foreignKeyName: "decisions_chosen_option_fkey"
             columns: ["chosen_option_id", "pending_successor_id"]
-            isOneToOne: false
-            referencedRelation: "decision_options"
-            referencedColumns: ["id", "decision_id"]
-          },
-          {
-            foreignKeyName: "decisions_chosen_option_fkey"
-            columns: ["chosen_option_id", "id"]
             isOneToOne: false
             referencedRelation: "decision_options"
             referencedColumns: ["id", "decision_id"]
@@ -16047,6 +16149,76 @@ export type Database = {
         Args: { p_kind: string; p_organisation_id: string }
         Returns: string
       }
+      add_meeting_action: {
+        Args: {
+          p_due_date: string
+          p_owner_id: string
+          p_project_id?: string
+          p_report_id: string
+          p_title: string
+        }
+        Returns: {
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          due_date: string | null
+          forum_id: string
+          id: string
+          meeting_id: string | null
+          organisation_id: string
+          owner_id: string | null
+          project_id: string | null
+          report_id: string | null
+          status: string
+          title: string
+          updated_at: string
+          workspace_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "forum_actions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      approve_report: {
+        Args: { p_report_id: string }
+        Returns: {
+          approved_at: string | null
+          approved_by: string | null
+          as_at: string
+          blocks: Json
+          created_at: string
+          created_by: string | null
+          forum_id: string | null
+          id: string
+          meeting_id: string | null
+          organisation_id: string
+          overall_rating: string | null
+          overall_rating_rationale: string | null
+          previous_report_id: string | null
+          published_at: string | null
+          published_by: string | null
+          rating_scheme_id: string | null
+          scope_entity_id: string | null
+          scope_items: Json | null
+          scope_type: string
+          selection_rules: Json
+          status: Database["public"]["Enums"]["report_status"]
+          submitted_at: string | null
+          template_id: string | null
+          template_version: number | null
+          title: string
+          updated_at: string
+          workspace_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "reports"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       change_member_role: {
         Args: {
           p_organisation_id: string
@@ -16221,6 +16393,10 @@ export type Database = {
         Args: { p_actor: string; p_invite_id: string; p_token_hash: string }
         Returns: Json
       }
+      issue_report_print_token: {
+        Args: { p_report_id: string }
+        Returns: string
+      }
       join_demo_as_viewer: { Args: never; Returns: string }
       join_demo_organisation: { Args: never; Returns: string }
       list_organisation_members: {
@@ -16276,6 +16452,7 @@ export type Database = {
           can_manage_project: boolean
         }[]
       }
+      publish_report: { Args: { p_report_id: string }; Returns: Json }
       record_billing_request: {
         Args: { p_action: string; p_detail: Json; p_organisation_id: string }
         Returns: undefined
@@ -16345,6 +16522,64 @@ export type Database = {
         Args: { p_email_id: string; p_invite_id: string }
         Returns: undefined
       }
+      record_meeting_decision: {
+        Args: {
+          p_actions?: Json
+          p_decision_id: string
+          p_option_id: string
+          p_outcome: string
+          p_report_id: string
+        }
+        Returns: {
+          chosen_option_id: string | null
+          context: string | null
+          created_at: string
+          created_by: string | null
+          decided_by_forum_id: string | null
+          decided_by_resource_id: string | null
+          decided_meeting_id: string | null
+          decision_date: string | null
+          decision_maker_id: string | null
+          evidence_link: string | null
+          forum_id: string | null
+          forum_list: string
+          id: string
+          impact_benefits: boolean
+          impact_benefits_note: string | null
+          impact_cost: boolean
+          impact_cost_note: string | null
+          impact_scope: boolean
+          impact_scope_note: string | null
+          impact_time: boolean
+          impact_time_note: string | null
+          needed_by_date: string | null
+          organisation_id: string
+          portfolio_id: string | null
+          programme_id: string | null
+          project_id: string | null
+          rationale: string | null
+          recorded_at: string | null
+          recorded_by: string | null
+          ref: string
+          report_id: string | null
+          status: Database["public"]["Enums"]["decision_status"]
+          supersedes_id: string | null
+          target_meeting_id: string | null
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "decisions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      record_report_event: {
+        Args: { p_event: string; p_payload: Json; p_report_id: string }
+        Returns: undefined
+      }
       refresh_report_selection: {
         Args: { p_report_id: string }
         Returns: undefined
@@ -16387,13 +16622,56 @@ export type Database = {
         Returns: Json
       }
       report_context: { Args: { p_input: Json }; Returns: Json }
+      report_distribution: { Args: { p_report_id: string }; Returns: Json }
       report_permissions: { Args: { p_report_id: string }; Returns: Json }
       report_scope_metrics: { Args: { p_input: Json }; Returns: Json }
+      report_snapshot_by_token: {
+        Args: { p_report_id: string; p_token: string }
+        Returns: Json
+      }
       request_to_join: {
         Args: { p_message?: string; p_organisation_id: string }
         Returns: string
       }
       resend_invite: { Args: { p_invite_id: string }; Returns: undefined }
+      return_report: {
+        Args: { p_comment: string; p_report_id: string }
+        Returns: {
+          approved_at: string | null
+          approved_by: string | null
+          as_at: string
+          blocks: Json
+          created_at: string
+          created_by: string | null
+          forum_id: string | null
+          id: string
+          meeting_id: string | null
+          organisation_id: string
+          overall_rating: string | null
+          overall_rating_rationale: string | null
+          previous_report_id: string | null
+          published_at: string | null
+          published_by: string | null
+          rating_scheme_id: string | null
+          scope_entity_id: string | null
+          scope_items: Json | null
+          scope_type: string
+          selection_rules: Json
+          status: Database["public"]["Enums"]["report_status"]
+          submitted_at: string | null
+          template_id: string | null
+          template_version: number | null
+          title: string
+          updated_at: string
+          workspace_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "reports"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       reverse_decision: {
         Args: {
           p_decision_id: string
@@ -16538,6 +16816,44 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "business_case_versions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      submit_report: {
+        Args: { p_report_id: string }
+        Returns: {
+          approved_at: string | null
+          approved_by: string | null
+          as_at: string
+          blocks: Json
+          created_at: string
+          created_by: string | null
+          forum_id: string | null
+          id: string
+          meeting_id: string | null
+          organisation_id: string
+          overall_rating: string | null
+          overall_rating_rationale: string | null
+          previous_report_id: string | null
+          published_at: string | null
+          published_by: string | null
+          rating_scheme_id: string | null
+          scope_entity_id: string | null
+          scope_items: Json | null
+          scope_type: string
+          selection_rules: Json
+          status: Database["public"]["Enums"]["report_status"]
+          submitted_at: string | null
+          template_id: string | null
+          template_version: number | null
+          title: string
+          updated_at: string
+          workspace_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "reports"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -16751,6 +17067,44 @@ export type Database = {
       withdraw_join_request: {
         Args: { p_request_id: string }
         Returns: undefined
+      }
+      withdraw_report: {
+        Args: { p_reason: string; p_report_id: string }
+        Returns: {
+          approved_at: string | null
+          approved_by: string | null
+          as_at: string
+          blocks: Json
+          created_at: string
+          created_by: string | null
+          forum_id: string | null
+          id: string
+          meeting_id: string | null
+          organisation_id: string
+          overall_rating: string | null
+          overall_rating_rationale: string | null
+          previous_report_id: string | null
+          published_at: string | null
+          published_by: string | null
+          rating_scheme_id: string | null
+          scope_entity_id: string | null
+          scope_items: Json | null
+          scope_type: string
+          selection_rules: Json
+          status: Database["public"]["Enums"]["report_status"]
+          submitted_at: string | null
+          template_id: string | null
+          template_version: number | null
+          title: string
+          updated_at: string
+          workspace_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "reports"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {

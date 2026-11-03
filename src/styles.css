@@ -620,10 +620,6 @@
 .report-print-root {
   display: none;
 }
-.report-print-header,
-.report-print-footer {
-  display: none;
-}
 
 @media print {
   body:has(> .report-print-root) > :not(.report-print-root) {
@@ -647,20 +643,9 @@
       color: #555;
     }
   }
-  .report-print-root .report-print-header,
-  .report-print-root .report-print-footer {
-    display: block;
-    position: fixed;
-    left: 0;
-    right: 0;
-    font-size: 8pt;
-    color: #555;
-  }
-  .report-print-root .report-print-header {
-    top: -10mm;
-  }
-  .report-print-root .report-print-footer {
-    bottom: -9mm;
+  .report-print-root .report-deep-dive {
+    border: none;
+    padding: 0;
   }
   .report-print-root .report-page-break {
     break-before: page;
@@ -686,4 +671,9 @@
   .report-print-root .lg\:grid-cols-5 {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
+}
+
+/* The server print route renders the pack on its own (no app shell): always visible. */
+.report-print-root.report-print-server {
+  display: block;
 }

@@ -99,6 +99,7 @@ import { Route as ProgrammesIndexRouteImport } from './routes/programmes.index'
 import { Route as ProgrammesProgrammeIdRouteImport } from './routes/programmes.$programmeId'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as ProjectsProjectCodeRouteImport } from './routes/projects.$projectCode'
+import { Route as ReportPrintReportIdRouteImport } from './routes/report-print.$reportId'
 import { Route as ResourcesIndexRouteImport } from './routes/resources.index'
 import { Route as ResourcesAllocationRouteImport } from './routes/resources.allocation'
 import { Route as ResourcesAssignmentsRouteImport } from './routes/resources.assignments'
@@ -577,6 +578,11 @@ const ProjectsProjectCodeRoute = ProjectsProjectCodeRouteImport.update({
   path: '/$projectCode',
   getParentRoute: () => ProjectsRoute,
 } as any)
+const ReportPrintReportIdRoute = ReportPrintReportIdRouteImport.update({
+  id: '/report-print/$reportId',
+  path: '/report-print/$reportId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResourcesIndexRoute = ResourcesIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -796,6 +802,7 @@ export interface FileRoutesByFullPath {
   '/portfolio/roadmap': typeof PortfolioRoadmapRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectCode': typeof ProjectsProjectCodeRoute
+  '/report-print/$reportId': typeof ReportPrintReportIdRoute
   '/resources/allocation': typeof ResourcesAllocationRoute
   '/resources/assignments': typeof ResourcesAssignmentsRoute
   '/resources/scenarios': typeof ResourcesScenariosRoute
@@ -894,6 +901,7 @@ export interface FileRoutesByTo {
   '/portfolio/roadmap': typeof PortfolioRoadmapRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectCode': typeof ProjectsProjectCodeRoute
+  '/report-print/$reportId': typeof ReportPrintReportIdRoute
   '/resources/allocation': typeof ResourcesAllocationRoute
   '/resources/assignments': typeof ResourcesAssignmentsRoute
   '/resources/scenarios': typeof ResourcesScenariosRoute
@@ -1012,6 +1020,7 @@ export interface FileRoutesById {
   '/portfolio/roadmap': typeof PortfolioRoadmapRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectCode': typeof ProjectsProjectCodeRoute
+  '/report-print/$reportId': typeof ReportPrintReportIdRoute
   '/resources/allocation': typeof ResourcesAllocationRoute
   '/resources/assignments': typeof ResourcesAssignmentsRoute
   '/resources/scenarios': typeof ResourcesScenariosRoute
@@ -1131,6 +1140,7 @@ export interface FileRouteTypes {
     | '/portfolio/roadmap'
     | '/programmes/$programmeId'
     | '/projects/$projectCode'
+    | '/report-print/$reportId'
     | '/resources/allocation'
     | '/resources/assignments'
     | '/resources/scenarios'
@@ -1229,6 +1239,7 @@ export interface FileRouteTypes {
     | '/portfolio/roadmap'
     | '/programmes/$programmeId'
     | '/projects/$projectCode'
+    | '/report-print/$reportId'
     | '/resources/allocation'
     | '/resources/assignments'
     | '/resources/scenarios'
@@ -1346,6 +1357,7 @@ export interface FileRouteTypes {
     | '/portfolio/roadmap'
     | '/programmes/$programmeId'
     | '/projects/$projectCode'
+    | '/report-print/$reportId'
     | '/resources/allocation'
     | '/resources/assignments'
     | '/resources/scenarios'
@@ -1428,6 +1440,7 @@ export interface RootRouteChildren {
   AuthDemoRoute: typeof AuthDemoRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
+  ReportPrintReportIdRoute: typeof ReportPrintReportIdRoute
   SignupSetupRoute: typeof SignupSetupRoute
   SignupIndexRoute: typeof SignupIndexRoute
 }
@@ -2064,6 +2077,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsProjectCodeRouteImport
       parentRoute: typeof ProjectsRoute
     }
+    '/report-print/$reportId': {
+      id: '/report-print/$reportId'
+      path: '/report-print/$reportId'
+      fullPath: '/report-print/$reportId'
+      preLoaderRoute: typeof ReportPrintReportIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/resources/': {
       id: '/resources/'
       path: '/'
@@ -2612,6 +2632,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthDemoRoute: AuthDemoRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,
+  ReportPrintReportIdRoute: ReportPrintReportIdRoute,
   SignupSetupRoute: SignupSetupRoute,
   SignupIndexRoute: SignupIndexRoute,
 }

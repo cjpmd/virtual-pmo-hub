@@ -1,0 +1,6 @@
+# Only used if the app moves to Netlify: the report-pdf function (report builder server PDF,
+# off unless REPORT_SERVER_PDF=true). The app itself is built and hosted as before.
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["@sparticuz/chromium"]

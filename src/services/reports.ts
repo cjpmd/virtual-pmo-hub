@@ -818,3 +818,154 @@ export async function latestHighlightSummary(
     .filter(Boolean)
     .join("\n\n");
 }
+
+// ------------------------------------------------------------------ lifecycle (§10)
+const rpcVoid = async (
+  result: PromiseLike<{
+    data: unknown;
+    error: import("@supabase/supabase-js").PostgrestError | null;
+    status?: number;
+  }>,
+  context: string,
+) => {
+  unwrapMaybe(await result, context);
+};
+
+export const submitReport = (id: string) =>
+  rpcVoid(supabase.rpc("submit_report", { p_report_id: id }), "Submitting for review");
+export const returnReport = (id: string, comment: string) =>
+  rpcVoid(
+    supabase.rpc("return_report", { p_report_id: id, p_comment: comment }),
+    "Returning the report",
+  );
+export const approveReport = (id: string) =>
+  rpcVoid(supabase.rpc("approve_report", { p_report_id: id }), "Approving");
+export const withdrawReport = (id: string, reason: string) =>
+  rpcVoid(supabase.rpc("withdraw_report", { p_report_id: id, p_reason: reason }), "Withdrawing");
+
+export interface PublishResult {
+  published: boolean;
+  /** Distribution outcome from the report-publish function, when it ran. */
+  distribution: { sent: number; skipped?: string; failed?: number } | null;
+  pdf: { path: string } | { skipped: string } | null;
+}
+
+/**
+ * Publish: the report-publish edge function (publish, then email and server PDF). Where the
+ * function isn't deployed (local development), publish through the RPC and say the email
+ * wasn't sent.
+ */
+export async function publishReport(id: string): Promise<PublishResult> {
+  const { data, error } = await supabase.functions.invoke("report-publish", {
+    body: { report_id: id },
+  });
+  if (!error && data && typeof data === "object") return data as PublishResult;
+  const status = (error as { context?: { status?: number } } | null)?.context?.status;
+  if (error && status && status !== 404) {
+    const body = await (error as { context?: Response }).context?.json?.().catch(() => null);
+    throw new Error((body as { error?: string } | null)?.error ?? "Publishing failed.");
+  }
+  unwrapMaybe(await supabase.rpc("publish_report", { p_report_id: id }), "Publishing");
+  return { published: true, distribution: null, pdf: null };
+}
+
+// ------------------------------------------------------------------ snapshots
+export interface SnapshotRow {
+  blockInstanceId: string;
+  blockKey: string;
+  entityId: string | null;
+  data: unknown;
+}
+
+export async function listSnapshots(reportId: string): Promise<SnapshotRow[]> {
+  const rows = unwrap(
+    await supabase
+      .from("report_snapshots")
+      .select("block_instance_id, block_key, entity_id, data")
+      .eq("report_id", reportId),
+    "Loading the published pack",
+  );
+  return rows.map((row) => ({
+    blockInstanceId: row.block_instance_id,
+    blockKey: row.block_key,
+    entityId: row.entity_id,
+    data: row.data,
+  }));
+}
+
+/** The print route's read with a server print token (no session). */
+export async function snapshotByToken(reportId: string, token: string) {
+  const data = unwrapMaybe(
+    await supabase.rpc("report_snapshot_by_token", { p_report_id: reportId, p_token: token }),
+    "Loading the pack",
+  ) as {
+    report: Record<string, unknown>;
+    snapshots: Array<{ block_instance_id: string; entity_id: string | null; data: unknown }>;
+  } | null;
+  return data;
+}
+
+// ------------------------------------------------------------------ meeting capture (§9.3)
+export async function recordMeetingDecision(input: {
+  reportId: string;
+  decisionId: string;
+  optionId: string;
+  outcome: string;
+}) {
+  unwrapMaybe(
+    await supabase.rpc("record_meeting_decision", {
+      p_report_id: input.reportId,
+      p_decision_id: input.decisionId,
+      p_option_id: input.optionId,
+      p_outcome: input.outcome,
+    }),
+    "Recording the decision",
+  );
+}
+
+export async function addMeetingAction(input: {
+  reportId: string;
+  title: string;
+  ownerId: string | null;
+  dueDate: string | null;
+  projectId: string | null;
+}) {
+  unwrapMaybe(
+    await supabase.rpc("add_meeting_action", {
+      p_report_id: input.reportId,
+      p_title: input.title,
+      p_owner_id: input.ownerId as string,
+      p_due_date: input.dueDate as string,
+      ...(input.projectId ? { p_project_id: input.projectId } : {}),
+    }),
+    "Adding the action",
+  );
+}
+
+export interface MeetingAction {
+  id: string;
+  title: string;
+  dueDate: string | null;
+  status: string;
+  ownerId: string | null;
+  projectId: string | null;
+}
+
+export async function listReportActions(reportId: string): Promise<MeetingAction[]> {
+  const rows = unwrap(
+    await supabase
+      .from("forum_actions")
+      .select("id, title, due_date, status, owner_id, project_id")
+      .eq("report_id", reportId)
+      .order("created_at"),
+    "Loading actions",
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    dueDate: row.due_date,
+    status: row.status,
+    ownerId: row.owner_id,
+    projectId: row.project_id,
+  }));
+}

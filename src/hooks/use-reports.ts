@@ -199,6 +199,7 @@ export function useReportMutations() {
         queryKey: qk.reports.live(orgId, inputKey({ report_id: reportId })),
       }),
       queryClient.invalidateQueries({ queryKey: qk.reports.list(orgId) }),
+      queryClient.invalidateQueries({ queryKey: qk.reports.snapshots(orgId, reportId) }),
     ]);
   return {
     invalidateReport,

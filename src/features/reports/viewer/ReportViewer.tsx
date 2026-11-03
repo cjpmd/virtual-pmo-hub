@@ -13,7 +13,14 @@ import {
   useScopeMetrics,
 } from "@/hooks/use-reports";
 import { useReportSnapshot } from "@/hooks/use-report-snapshots";
-import { toScheme, type ReportInput, type ReportRecord } from "@/services/reports";
+import { useBlockData } from "@/hooks/use-reports";
+import { toMovement, type ChangesData } from "../engine/diff";
+import {
+  toScheme,
+  type ReportInput,
+  type ReportPermissions,
+  type ReportRecord,
+} from "@/services/reports";
 import { errorMessage } from "@/services/service-error";
 import { useReportFormat } from "../blocks/primitives";
 import type { RatingScheme } from "../blocks/types";
@@ -36,7 +43,17 @@ export interface ViewModel {
   isSnapshot: boolean;
   canEdit: boolean;
   isPartner: boolean;
+  permissions: ReportPermissions;
 }
+
+/** The comparison with the previous pack, resolved for drafts (published packs store it). */
+const CHANGES_BLOCK = {
+  id: "__changes",
+  blockKey: "changes_since_last",
+  blockVersion: 1,
+  config: {},
+  placement: "report" as const,
+};
 
 /** Everything a view of a report needs: live for drafts, snapshot for published packs. */
 export function useReportView(reportId: string): {
@@ -55,6 +72,12 @@ export function useReportView(reportId: string): {
   const metrics = useScopeMetrics(input);
   const inclusions = useInclusions(report.data && !published ? reportId : null);
   const snapshot = useReportSnapshot(published ? reportId : null);
+  const changes = useBlockData(
+    input,
+    CHANGES_BLOCK,
+    null,
+    !!input && !!report.data?.previousReportId,
+  );
   const error = report.error ?? context.error ?? snapshot.error ?? null;
   if (!report.data || !permissions.data) return { data: null, error, loading: !error };
   const isPartner = permissions.data.is_partner;
@@ -74,6 +97,7 @@ export function useReportView(reportId: string): {
         isSnapshot: true,
         canEdit: false,
         isPartner,
+        permissions: permissions.data,
         doc: {
           blocks: report.data.blocks,
           deepDives: s.meta.deep_dives,
@@ -114,6 +138,7 @@ export function useReportView(reportId: string): {
       isSnapshot: false,
       canEdit: permissions.data.can_edit,
       isPartner,
+      permissions: permissions.data,
       doc: {
         blocks: report.data.blocks,
         deepDives,
@@ -124,6 +149,7 @@ export function useReportView(reportId: string): {
         editable: false,
         live: input,
         showPartnerPlaceholders: true,
+        movement: toMovement(changes.data as ChangesData | undefined),
       },
     },
   };
@@ -227,6 +253,20 @@ function usePrintTheme(title: string) {
   }, [title]);
 }
 
+/**
+ * Running header and footer in the page margins (@page margin boxes, with the page number).
+ * Generated per report because margin boxes only take literal strings.
+ */
+export function PrintPageStyle({ header, footer }: { header: string; footer: string }) {
+  const css = (text: string) => JSON.stringify(text.replace(/[\n\r]/g, " "));
+  return (
+    <style>{`@media print { @page { size: A4 landscape; margin: 14mm 10mm 12mm;
+      @top-left { content: ${css(header)}; font-size: 8pt; color: #555; }
+      @bottom-left { content: ${css(footer)}; font-size: 8pt; color: #555; }
+      @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size: 8pt; color: #555; } } }`}</style>
+  );
+}
+
 /** Print layout. The portal is what prints; the page shows the same layout as a preview. */
 export function ReportPrint({ view, autoPrint }: { view: ViewModel; autoPrint: boolean }) {
   const f = useReportFormat();
@@ -242,8 +282,7 @@ export function ReportPrint({ view, autoPrint }: { view: ViewModel; autoPrint: b
   const footer = view.isSnapshot ? "Published snapshot" : "Draft · live data";
   const body = (
     <div className="report-print light bg-white text-black">
-      <div className="report-print-header">{header}</div>
-      <div className="report-print-footer">{footer}</div>
+      <PrintPageStyle header={header} footer={footer} />
       <ReportDocument {...view.doc} mode="print" />
     </div>
   );

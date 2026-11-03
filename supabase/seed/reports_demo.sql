@@ -259,6 +259,35 @@ begin
   values (org, ws, f_prog, 'd0000000-0000-4000-8000-000000000601', pid[3], 'Recovery plan for remote monitoring', r_pm, today - 3);
 
   perform private.refresh_health_current(org);
+
+  -- One previous published programme board pack (for the held meeting five weeks ago), so the
+  -- next pack shows "changes since last". The data is wound back to how it stood then (RD04's
+  -- go-live 5 days late, RD05 on budget, RD02's risk low), the pack is published as the PMO
+  -- through the real RPCs, then the data moves on to today's position.
+  if to_regprocedure('public.publish_report(uuid)') is not null then
+    update public.milestones set forecast_date = today + 25 where project_id = pid[4] and title = 'Go-live';
+    update public.financial_values set amount = 690000 where project_id = pid[5] and kind = 'forecast';
+    update public.risks set probability = 1 where project_id = pid[2];
+    perform private.refresh_health_current(org);
+    perform set_config('request.jwt.claims', json_build_object('sub', u_pmo, 'role', 'authenticated')::text, true);
+    p := public.create_report(jsonb_build_object('forum_id', f_prog, 'meeting_id', 'd0000000-0000-4000-8000-000000000601',
+      'title', 'Digital Care Programme Board — previous pack', 'as_at', today - 35));
+    insert into public.report_narratives (report_id, block_instance_id, body)
+    values (p, 'exec', '{"format":"markdown","text":"Programme broadly on track. Virtual Wards remote monitoring is the main watch item."}');
+    update public.reports set status = 'approved', approved_at = now() - interval '36 days', overall_rating = 'amber',
+      overall_rating_rationale = 'Two projects need attention; no decisions outstanding.' where id = p;
+    perform public.publish_report(p);
+    update public.reports set published_at = now() - interval '35 days' where id = p;
+    perform set_config('request.jwt.claims', '', true);
+    update public.milestones set forecast_date = today + 60 where project_id = pid[4] and title = 'Go-live';
+    update public.financial_values set amount = 780000 where project_id = pid[5] and kind = 'forecast';
+    update public.risks set probability = 4 where project_id = pid[2];
+  end if;
+  -- The last fortnight's snapshots show today's position (packs as at a recent papers deadline
+  -- read evidenced health from them).
+  perform private.capture_health_snapshots(org, today - 7);
+  perform private.capture_health_snapshots(org, today - 1);
+  perform private.refresh_health_current(org);
 end $$;
 
 commit;

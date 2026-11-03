@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.resend-webhook]
 verify_jwt = false
+
+[functions.report-publish]
+verify_jwt = true
+
+[functions.report-distribute]
+verify_jwt = true
