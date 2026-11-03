@@ -10,7 +10,17 @@ export function reportSender(): Sender | null {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   const from = Deno.env.get("REPORTS_FROM") ?? Deno.env.get("RESEND_FROM");
   if (!apiKey || !from) return null;
+  // REPORTS_TEST_RECIPIENTS (test branches): only these addresses receive mail; the rest are
+  // skipped (not sent, not counted as failures) and logged.
+  const allow = (Deno.env.get("REPORTS_TEST_RECIPIENTS") ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
   return async (email) => {
+    if (allow.length && !allow.includes(email.to.toLowerCase())) {
+      console.log(`report email to ${email.to} skipped: not in REPORTS_TEST_RECIPIENTS`);
+      return { id: "skipped-test-allowlist", error: null };
+    }
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       await sleep(550); // Resend's default limit is 2 requests a second
       const response = await fetch(RESEND_URL, {

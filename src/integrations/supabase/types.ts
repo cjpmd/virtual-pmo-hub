@@ -6013,7 +6013,9 @@ export type Database = {
           organisation_id: string
           papers_deadline_days: number
           parent_forum_id: string | null
+          published_pack_visibility: string
           rating_scheme_id: string | null
+          risk_matrix_id: string | null
           scope_entity_id: string | null
           scope_type: string | null
           sort_order: number
@@ -6039,7 +6041,9 @@ export type Database = {
           organisation_id: string
           papers_deadline_days?: number
           parent_forum_id?: string | null
+          published_pack_visibility?: string
           rating_scheme_id?: string | null
+          risk_matrix_id?: string | null
           scope_entity_id?: string | null
           scope_type?: string | null
           sort_order?: number
@@ -6065,7 +6069,9 @@ export type Database = {
           organisation_id?: string
           papers_deadline_days?: number
           parent_forum_id?: string | null
+          published_pack_visibility?: string
           rating_scheme_id?: string | null
+          risk_matrix_id?: string | null
           scope_entity_id?: string | null
           scope_type?: string | null
           sort_order?: number
@@ -6121,6 +6127,13 @@ export type Database = {
             columns: ["rating_scheme_id"]
             isOneToOne: false
             referencedRelation: "rating_schemes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forums_risk_matrix_id_fkey"
+            columns: ["risk_matrix_id"]
+            isOneToOne: false
+            referencedRelation: "risk_matrices"
             referencedColumns: ["id"]
           },
           {
@@ -9680,6 +9693,93 @@ export type Database = {
           },
         ]
       }
+      project_metric_history: {
+        Row: {
+          as_of: string
+          created_at: string
+          id: string
+          metrics: Json
+          organisation_id: string
+          project_id: string
+          workspace_id: string
+        }
+        Insert: {
+          as_of: string
+          created_at?: string
+          id?: string
+          metrics: Json
+          organisation_id: string
+          project_id: string
+          workspace_id: string
+        }
+        Update: {
+          as_of?: string
+          created_at?: string
+          id?: string
+          metrics?: Json
+          organisation_id?: string
+          project_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_metric_history_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "project_metric_history_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "project_metric_history_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "project_metric_history_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_financials"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "project_metric_history_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "project_metric_history_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_task_stats"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "project_metric_history_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "project_metric_history_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       project_plan_links: {
         Row: {
           created_at: string
@@ -10602,6 +10702,57 @@ export type Database = {
           },
         ]
       }
+      report_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          organisation_id: string
+          recipients: Json
+          report_id: string
+          result: Json | null
+          sent_at: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          organisation_id: string
+          recipients?: Json
+          report_id: string
+          result?: Json | null
+          sent_at?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          organisation_id?: string
+          recipients?: Json
+          report_id?: string
+          result?: Json | null
+          sent_at?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_notifications_report_id_organisation_id_fkey"
+            columns: ["report_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "report_notifications_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       report_snapshots: {
         Row: {
           block_instance_id: string
@@ -10672,6 +10823,7 @@ export type Database = {
           name: string
           organisation_id: string | null
           rating_scheme_key: string | null
+          risk_matrix_key: string | null
           scope_type: string
           selection_rules: Json
           updated_at: string
@@ -10690,6 +10842,7 @@ export type Database = {
           name: string
           organisation_id?: string | null
           rating_scheme_key?: string | null
+          risk_matrix_key?: string | null
           scope_type?: string
           selection_rules?: Json
           updated_at?: string
@@ -10708,6 +10861,7 @@ export type Database = {
           name?: string
           organisation_id?: string | null
           rating_scheme_key?: string | null
+          risk_matrix_key?: string | null
           scope_type?: string
           selection_rules?: Json
           updated_at?: string
@@ -16424,6 +16578,18 @@ export type Database = {
         Args: { p_actor: string; p_error?: string; p_invite_id: string }
         Returns: undefined
       }
+      mark_report_notification_sent: {
+        Args: { p_id: string; p_result: Json }
+        Returns: undefined
+      }
+      my_system_drafted_packs: {
+        Args: never
+        Returns: {
+          created_at: string
+          report_id: string
+          title: string
+        }[]
+      }
       my_workspace_roles: {
         Args: never
         Returns: {
@@ -16432,6 +16598,7 @@ export type Database = {
           workspace_id: string
         }[]
       }
+      pending_report_notifications: { Args: never; Returns: Json }
       project_metrics: {
         Args: {
           p_as_at: string

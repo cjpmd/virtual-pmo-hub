@@ -52,11 +52,10 @@ function Page() {
       className="report-print-root report-print-server bg-white p-0 text-black"
       data-ready="true"
     >
-      <div className="report-print-header">
-        {snapshot.meta.forum?.name ?? "Ad hoc report"} · {report.title} · as at{" "}
-        {formatDate(report.asAt)}
-      </div>
-      <div className="report-print-footer">Published snapshot</div>
+      <PrintPageStyle
+        header={`${snapshot.meta.forum?.name ?? "Ad hoc report"} · ${report.title} · as at ${formatDate(report.asAt)}`}
+        footer={`Published snapshot${snapshot.dataBasis ? ` · ${snapshot.dataBasis}` : ""}`}
+      />
       <ReportDocument
         blocks={report.blocks}
         deepDives={snapshot.meta.deep_dives}

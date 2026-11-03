@@ -13,15 +13,21 @@ serve("report-distribute", async (req) => {
   const caller = await signedIn(req);
   if (!caller) return json({ error: "Sign in again." }, 401);
   const body = await req.json().catch(() => ({}));
-  const reportId = typeof body?.report_id === "string" && UUID.test(body.report_id) ? body.report_id : null;
+  const reportId =
+    typeof body?.report_id === "string" && UUID.test(body.report_id) ? body.report_id : null;
   if (!reportId) return json({ error: "report_id is required" }, 400);
-  const { data: permissions } = await caller.client.rpc("report_permissions", { p_report_id: reportId });
-  if (!permissions?.can_publish) return json({ error: "PMO or the forum's secretary sends packs." }, 403);
+  const { data: permissions } = await caller.client.rpc("report_permissions", {
+    p_report_id: reportId,
+  });
+  if (!permissions?.can_publish)
+    return json({ error: "PMO or the forum's secretary sends packs." }, 403);
   const admin = adminClient();
   const result = await distributeReport(
     {
       rpc: (fn, args) => admin.rpc(fn, args),
-      signedPdfUrl: async (path) => (await admin.storage.from("report-pdfs").createSignedUrl(path, 7 * 24 * 3600)).data?.signedUrl ?? null,
+      signedPdfUrl: async (path) =>
+        (await admin.storage.from("report-pdfs").createSignedUrl(path, 7 * 24 * 3600)).data
+          ?.signedUrl ?? null,
     },
     reportId,
     APP_URL,

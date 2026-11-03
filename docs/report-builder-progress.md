@@ -6,7 +6,7 @@ types: `supabase/tests/local/gen-types.sh`.
 
 ## Current phase
 
-All phases (0–4) done. See `docs/report-builder-handover.md`.
+Follow-up run (04/11/2026): Part A done; Part B stopped (no `.env.local`, RB-45); Part C done. See `docs/report-builder-handover.md`.
 
 ## Completed
 
@@ -51,12 +51,28 @@ All phases (0–4) done. See `docs/report-builder-handover.md`.
   version and update, auto-draft toggle, Links panel, two new blocks with component tests.
   PPTX deferred (RB-40).
 
+- Follow-up Part A (04/11/2026): migration `20261104090000_rb5_visibility_history_guards.sql`
+  — A1 `forums.published_pack_visibility` and new `can_view_report` (members / organisation;
+  ad hoc to creator + PMO); A2 `project_metric_history` + nightly capture (02:40 UTC),
+  `project_metrics` uses history for past as-at with `_basis`, `report_data_basis`, cover /
+  viewer / print note, `__basis` snapshot at publish, history fallback in changes_since_last;
+  A3 org-default matrix guard, `forums.risk_matrix_id`, `report_templates.risk_matrix_key`;
+  A7 system creator marker, `report_notifications` outbox, `report-notify` edge function,
+  "Draft pack ready" in the bell. A4 Chromium deps pinned and bundled with Netlify's bundler;
+  A5 `ANTHROPIC_MODEL=claude-sonnet-5-5`; A6 "Funding packs" in the UI; A8 debt logged.
+  SQL tests `reports_phase5.sql`; Phase 1 matrix test updated to the guard.
+- Part B: not run — no `.env.local` (no branch credentials) and no Docker for a local Supabase
+  stack. Stopped per the instruction (RB-45); nothing touched any hosted project.
+
 ## Next steps
 
-- Apply the four migrations to a Supabase branch, seed it, set passwords for the seed users,
-  run `e2e/reports.e2e.ts`; then production (handover).
+- Provide branch credentials in `.env.local` and run Part B (handover §5): apply the five
+  migrations, regenerate types with the CLI and diff, seed with passwords, SQL/RLS suites with
+  real auth, deploy the four report functions, publish checks, E2E, manual cycle.
 
 ## Known issues
+
+- Part B (branch test pass) not run: no credentials / local stack here (RB-45).
 
 - Browser E2E can't run here (RB-25); run `e2e/reports.e2e.ts` on a seeded Supabase branch.
 - Edge functions (`report-publish`, `report-distribute`) and the Netlify `report-pdf` function

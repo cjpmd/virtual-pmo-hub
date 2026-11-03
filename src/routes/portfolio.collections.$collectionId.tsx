@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/portfolio/collections/$collectionId")({
   head: () => {
     const title = "Collection — ORMO PMO";
-    const description = "Governance view and committee packs for a portfolio collection.";
+    const description = "Governance view and funding packs for a portfolio collection.";
     return {
       meta: [
         { title },
@@ -88,7 +88,7 @@ function CollectionBody({ collection, projects }: { collection: Collection; proj
           canGenerate ? (
             <Button onClick={() => setPreview(true)}>
               <Presentation className="size-4" />
-              Generate committee pack
+              Generate funding pack
             </Button>
           ) : undefined
         }

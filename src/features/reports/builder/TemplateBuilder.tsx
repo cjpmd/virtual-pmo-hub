@@ -14,6 +14,7 @@ import { useOrgId } from "@/components/auth/organisation-provider";
 import { usePortfolioNames, useProgrammeNames, useProjectNames } from "@/hooks/use-hierarchy";
 import {
   useRatingSchemes,
+  useRiskMatrices,
   useReportContext,
   useScopeMetrics,
   useTemplate,
@@ -44,6 +45,7 @@ interface Draft {
   blocks: BlockInstance[];
   selectionRules: SelectionRuleSet;
   ratingSchemeKey: string | null;
+  riskMatrixKey: string | null;
 }
 
 export function TemplateBuilder({ templateId }: { templateId: string }) {
@@ -60,6 +62,7 @@ function Builder({ template }: { template: TemplateRecord }) {
   const role = useOrgRole();
   const mutations = useTemplateMutations();
   const schemes = useRatingSchemes();
+  const matrices = useRiskMatrices();
   const editable = !template.isSystem && atLeast(role, "pmo");
   const [draft, setDraft] = useState<Draft>({
     name: template.name,
@@ -69,6 +72,7 @@ function Builder({ template }: { template: TemplateRecord }) {
     blocks: template.blocks,
     selectionRules: template.selectionRules,
     ratingSchemeKey: template.ratingSchemeKey,
+    riskMatrixKey: template.riskMatrixKey,
   });
   const [lastSeen, setLastSeen] = useState(template.updatedAt);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -96,10 +100,11 @@ function Builder({ template }: { template: TemplateRecord }) {
             scope_type: sample.type,
             scope_entity_id: sample.id,
             rating_scheme_key: draft.ratingSchemeKey,
+            template_id: template.id,
             title: draft.name,
           }
         : null,
-    [orgId, sample, draft.ratingSchemeKey, draft.name],
+    [orgId, sample, draft.ratingSchemeKey, draft.name, template.id],
   );
   const context = useReportContext(input);
   const metrics = useScopeMetrics(input);
@@ -215,6 +220,24 @@ function Builder({ template }: { template: TemplateRecord }) {
             {(schemes.data ?? []).map((s) => (
               <option key={s.key} value={s.key}>
                 {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="t-matrix">Risk matrix</Label>
+          <select
+            id="t-matrix"
+            className="h-9 rounded-md border bg-background px-2"
+            disabled={!editable}
+            value={draft.riskMatrixKey ?? ""}
+            title="Organisation matrices can be chosen here or on a forum; they can't be the organisation default while the register scores from Settings › Risk."
+            onChange={(e) => setDraft({ ...draft, riskMatrixKey: e.target.value || null })}
+          >
+            <option value="">The forum's, else the default</option>
+            {[...new Map((matrices.data ?? []).map((m) => [m.key, m])).values()].map((m) => (
+              <option key={m.key} value={m.key}>
+                {m.name}
               </option>
             ))}
           </select>

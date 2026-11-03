@@ -66,6 +66,7 @@ export interface TemplateRecord {
   blocks: BlockInstance[];
   selectionRules: SelectionRuleSet;
   ratingSchemeKey: string | null;
+  riskMatrixKey: string | null;
   version: number;
   isSystem: boolean;
   archivedAt: string | null;
@@ -274,6 +275,7 @@ export type ReportInput =
       as_at?: string | null;
       forum_id?: string | null;
       rating_scheme_key?: string | null;
+      template_id?: string | null;
       title?: string;
     };
 
@@ -310,6 +312,8 @@ export interface ReportContextData {
     is_assurance: boolean;
   } | null;
   matrix: { name: string; bands: RiskMatrix["bands"] } | null;
+  /** What the figures are as at (history, current, or mixed). */
+  data_basis: DataBasis | null;
   currency: string;
   included: string[];
   forum: {
@@ -320,6 +324,11 @@ export interface ReportContextData {
     approval_required: boolean;
   } | null;
   meeting: { id: string; meeting_date: string; papers_deadline: string; status: string } | null;
+}
+
+export interface DataBasis {
+  source: "history" | "current" | "mixed";
+  text: string;
 }
 
 export async function fetchReportContext(input: ReportInput): Promise<ReportContextData> {
@@ -485,6 +494,7 @@ type TemplateRow = {
   blocks: Json;
   selection_rules: Json;
   rating_scheme_key: string | null;
+  risk_matrix_key: string | null;
   version: number;
   is_system: boolean;
   archived_at: string | null;
@@ -502,6 +512,7 @@ const toTemplate = (row: TemplateRow): TemplateRecord => ({
   blocks: asBlocks(row.blocks),
   selectionRules: asRuleSet(row.selection_rules),
   ratingSchemeKey: row.rating_scheme_key,
+  riskMatrixKey: row.risk_matrix_key,
   version: row.version,
   isSystem: row.is_system,
   archivedAt: row.archived_at,
@@ -509,7 +520,7 @@ const toTemplate = (row: TemplateRow): TemplateRecord => ({
 });
 
 const TEMPLATE_COLUMNS =
-  "id, organisation_id, workspace_id, name, description, forum_type, scope_type, blocks, selection_rules, rating_scheme_key, version, is_system, archived_at, updated_at";
+  "id, organisation_id, workspace_id, name, description, forum_type, scope_type, blocks, selection_rules, rating_scheme_key, risk_matrix_key, version, is_system, archived_at, updated_at";
 
 /** System templates and the organisation's own (archived included; filter in the UI). */
 export async function listTemplates(orgId: string): Promise<TemplateRecord[]> {
@@ -541,6 +552,7 @@ export interface TemplateInput {
   blocks: BlockInstance[];
   selectionRules: SelectionRuleSet;
   ratingSchemeKey?: string | null;
+  riskMatrixKey?: string | null;
 }
 
 const templateFields = (input: Partial<TemplateInput>) => ({
@@ -553,6 +565,7 @@ const templateFields = (input: Partial<TemplateInput>) => ({
     selection_rules: input.selectionRules as unknown as Json,
   }),
   ...(input.ratingSchemeKey !== undefined && { rating_scheme_key: input.ratingSchemeKey }),
+  ...(input.riskMatrixKey !== undefined && { risk_matrix_key: input.riskMatrixKey }),
 });
 
 export async function createTemplate(orgId: string, input: TemplateInput) {
@@ -573,6 +586,7 @@ export async function copyTemplate(orgId: string, template: TemplateRecord, name
     blocks: template.blocks,
     selectionRules: template.selectionRules,
     ratingSchemeKey: template.ratingSchemeKey,
+    riskMatrixKey: template.riskMatrixKey,
   });
 }
 
@@ -666,6 +680,9 @@ export interface ForumReporting {
   parentForumId: string | null;
   approvalRequired: boolean;
   autoCreatePacks: boolean;
+  /** Who reads published packs besides PMO / chair / secretary: members, or the organisation. */
+  publishedPackVisibility: "members" | "organisation";
+  riskMatrixId: string | null;
   updatedAt: string;
 }
 
@@ -674,7 +691,7 @@ export async function listForumReporting(orgId: string): Promise<ForumReporting[
     await supabase
       .from("forums")
       .select(
-        "id, workspace_id, forum_type, description, scope_type, scope_entity_id, rating_scheme_id, tolerances, default_template_id, parent_forum_id, approval_required, auto_create_packs, updated_at",
+        "id, workspace_id, forum_type, description, scope_type, scope_entity_id, rating_scheme_id, tolerances, default_template_id, parent_forum_id, approval_required, auto_create_packs, published_pack_visibility, risk_matrix_id, updated_at",
       )
       .eq("organisation_id", orgId),
     "Loading forum report settings",
@@ -692,6 +709,9 @@ export async function listForumReporting(orgId: string): Promise<ForumReporting[
     parentForumId: row.parent_forum_id,
     approvalRequired: row.approval_required,
     autoCreatePacks: row.auto_create_packs,
+    publishedPackVisibility:
+      row.published_pack_visibility as ForumReporting["publishedPackVisibility"],
+    riskMatrixId: row.risk_matrix_id,
     updatedAt: row.updated_at,
   }));
 }
@@ -707,6 +727,8 @@ export type ForumReportingPatch = Partial<{
   parent_forum_id: string | null;
   approval_required: boolean;
   auto_create_packs: boolean;
+  published_pack_visibility: "members" | "organisation";
+  risk_matrix_id: string | null;
 }>;
 
 export async function updateForumReporting(
@@ -1004,4 +1026,14 @@ export async function updateReportToTemplate(reportId: string) {
     await supabase.rpc("update_report_to_template", { p_report_id: reportId }),
     "Updating to the latest template",
   );
+}
+
+/** Packs the system drafted that the signed-in user can edit (notification feed). */
+export async function listSystemDraftedPacks() {
+  const rows = unwrap(await supabase.rpc("my_system_drafted_packs"), "Loading drafted packs");
+  return rows.map((row) => ({
+    reportId: row.report_id,
+    title: row.title,
+    createdAt: row.created_at,
+  }));
 }

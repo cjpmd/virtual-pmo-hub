@@ -57,12 +57,12 @@ async function exportOpenPack(page: Page, dialog: Locator) {
   await expectNoErrorBoundary(page);
 }
 
-test.describe("Committee packs", () => {
+test.describe("Funding packs", () => {
   test.beforeEach(async ({ page }) => {
     await stubPrint(page);
     await page.goto(PACKS);
     await settle(page);
-    await expect(page.getByRole("heading", { name: "Committee packs", level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Funding packs", level: 1 })).toBeVisible();
     await setTheme(page, "dark");
   });
 
@@ -70,7 +70,7 @@ test.describe("Committee packs", () => {
     const generate = page.getByRole("button", { name: "Generate pack" });
     test.skip((await generate.count()) === 0, "No governance collections in the demo organisation");
     await generate.first().click();
-    const dialog = page.getByRole("dialog", { name: "Committee pack preview" });
+    const dialog = page.getByRole("dialog", { name: "Funding pack preview" });
     await expect(dialog.getByText(/Preview · \d+ pages/)).toBeVisible();
     await expect(dialog.getByRole("button", { name: "Export to PowerPoint" })).toHaveCount(0);
     await settle(page);
@@ -81,7 +81,7 @@ test.describe("Committee packs", () => {
     const exports = page.locator("main").getByRole("button", { name: "Export to PDF" });
     test.skip((await exports.count()) === 0, "No issued packs in the demo organisation");
     await exports.first().click();
-    const dialog = page.getByRole("dialog", { name: "Committee pack preview" });
+    const dialog = page.getByRole("dialog", { name: "Funding pack preview" });
     await expect(dialog.getByText(/Issued · read-only · \d+ pages/)).toBeVisible();
     await expect(dialog.getByRole("button", { name: "Issue pack" })).toHaveCount(0);
     await settle(page);

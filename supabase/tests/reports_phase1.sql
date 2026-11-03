@@ -38,24 +38,37 @@ begin
   assert private.matrix_band((select to_jsonb(m) from public.risk_matrices m where key = 'nhs_5x5'), 3) ->> 'key' = 'low', 'nhs 3 low';
 end $$;
 
--- Changing the org default matrix changes top_raid ordering and labels (Phase 1 acceptance).
+-- A matrix chosen for the forum changes top_raid ordering and labels without code changes
+-- (Phase 1 acceptance; RB-13a: an organisation's own matrix can't be the default).
 do $$
 declare
   before jsonb;
   after jsonb;
+  m uuid;
   inp jsonb := jsonb_build_object('organisation_id', 'd0000000-0000-4000-8000-000000000100', 'scope_type', 'project',
-    'scope_entity_id', pg_temp.pid(1));
+    'scope_entity_id', pg_temp.pid(1), 'forum_id', 'd0000000-0000-4000-8000-000000000501');
 begin
   before := public.report_block_data(inp, '{"id":"r","blockKey":"top_raid","config":{"limit":5,"types":["risk"]}}');
   assert before -> 'rows' -> 0 ->> 'title' = 'Data migration defects', 'default: 5×4 risk first';
   assert before -> 'rows' -> 0 -> 'band' ->> 'label' = 'Critical', 'default label';
-  insert into public.risk_matrices (organisation_id, key, name, likelihood_levels, consequence_levels, score_method, score_lookup, bands, is_default)
+  begin
+    insert into public.risk_matrices (organisation_id, key, name, likelihood_levels, consequence_levels, bands, is_default)
+    values ('d0000000-0000-4000-8000-000000000100', 'org_default', 'Org default', '[]', '[]', '[{"min":1,"max":25,"key":"x","label":"X","colour":"#000"}]', true);
+    assert false, 'an organisation default matrix must be refused';
+  exception when check_violation then null;
+  end;
+  insert into public.risk_matrices (organisation_id, key, name, likelihood_levels, consequence_levels, score_method, score_lookup, bands)
   values ('d0000000-0000-4000-8000-000000000100', 'lookup_test', 'Lookup', '[]', '[]', 'lookup',
     '[[1,1,1,1,1],[1,1,1,1,1],[1,1,1,25,1],[1,1,1,1,1],[1,1,1,2,1]]',
-    '[{"min":1,"max":9,"key":"minor","label":"Minor","colour":"#999"},{"min":10,"max":25,"key":"serious","label":"Serious","colour":"#c00"}]', true);
+    '[{"min":1,"max":9,"key":"minor","label":"Minor","colour":"#999"},{"min":10,"max":25,"key":"serious","label":"Serious","colour":"#c00"}]')
+  returning id into m;
+  update public.forums set risk_matrix_id = m where id = 'd0000000-0000-4000-8000-000000000501';
   after := public.report_block_data(inp, '{"id":"r","blockKey":"top_raid","config":{"limit":5,"types":["risk"]}}');
-  assert after -> 'rows' -> 0 ->> 'title' = 'Clinical safety sign-off delayed', 'org lookup matrix reorders';
-  assert after -> 'rows' -> 0 -> 'band' ->> 'label' = 'Serious', 'org matrix relabels';
+  assert after -> 'rows' -> 0 ->> 'title' = 'Clinical safety sign-off delayed', 'forum matrix reorders';
+  assert after -> 'rows' -> 0 -> 'band' ->> 'label' = 'Serious', 'forum matrix relabels';
+  assert (select (pm.metrics ->> 'max_risk_score')::int from public.project_metrics(array[pg_temp.pid(1)], current_date,
+    'd0000000-0000-4000-8000-000000000501') pm) = 25, 'metrics follow the forum matrix';
+  update public.forums set risk_matrix_id = null where id = 'd0000000-0000-4000-8000-000000000501';
   delete from public.risk_matrices where key = 'lookup_test';
 end $$;
 

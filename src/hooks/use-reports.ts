@@ -20,6 +20,7 @@ import {
   listRatingSchemes,
   listReportEvents,
   listReports,
+  listSystemDraftedPacks,
   listRiskMatrices,
   listTemplates,
   refreshSelection,
@@ -63,6 +64,16 @@ export function useReportPermissions(reportId: string | null | undefined) {
     queryKey: [...qk.reports.detail(orgId, reportId ?? ""), "permissions"],
     queryFn: () => fetchReportPermissions(reportId!),
     enabled: !!reportId,
+  });
+}
+
+/** Packs the system drafted that the user can edit (notification feed; light, cached). */
+export function useSystemDraftedPacks() {
+  const orgId = useOrgId();
+  return useQuery({
+    queryKey: [...qk.reports.list(orgId), "system-drafted"],
+    queryFn: listSystemDraftedPacks,
+    staleTime: 5 * 60_000,
   });
 }
 

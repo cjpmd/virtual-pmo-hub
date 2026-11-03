@@ -19,6 +19,8 @@ export interface ReportSnapshot {
   lookup: SnapshotLookup;
   movement: Record<string, ProjectMovement>;
   changes: ChangesData | null;
+  /** The data-basis note stored when the pack was published. */
+  dataBasis: string | null;
 }
 
 export function snapshotFrom(rows: SnapshotRow[]): ReportSnapshot {
@@ -37,6 +39,7 @@ export function snapshotFrom(rows: SnapshotRow[]): ReportSnapshot {
     lookup: (blockId, entityId) => map.get(`${blockId}:${entityId ?? ""}`),
     movement: toMovement(changes),
     changes,
+    dataBasis: ((map.get("__basis:") ?? null) as { text?: string } | null)?.text ?? null,
   };
 }
 

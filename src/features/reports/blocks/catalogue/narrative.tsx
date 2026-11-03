@@ -24,6 +24,8 @@ interface CoverData {
   author: string | null;
   scope_label: string | null;
   project_count: number;
+  /** What the figures are as at (e.g. "All figures as at 31 Oct 2026"). */
+  data_basis?: string | null;
 }
 
 function Cover({
@@ -50,6 +52,11 @@ function Cover({
           {f.date(data.as_at)}
           {data.author && ` · Prepared by ${data.author}`}
         </p>
+        {data.data_basis && (
+          <p className="mt-1 text-xs text-muted-foreground" data-basis>
+            Data basis: {data.data_basis}
+          </p>
+        )}
       </div>
       <div className="flex flex-wrap items-start gap-3">
         <div>

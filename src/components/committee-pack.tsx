@@ -843,7 +843,7 @@ export function CommitteePack({
       className="fixed inset-0 z-[100] flex flex-col bg-background"
       role="dialog"
       aria-modal="true"
-      aria-label="Committee pack preview"
+      aria-label="Funding pack preview"
     >
       <header className="flex min-h-16 flex-wrap items-center gap-2 border-b border-border px-3 py-2 sm:px-5">
         <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close pack preview">

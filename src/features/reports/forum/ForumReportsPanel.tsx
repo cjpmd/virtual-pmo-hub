@@ -25,6 +25,7 @@ import {
   useForumReporting,
   useForumReportingMutations,
   useRatingSchemes,
+  useRiskMatrices,
   useReportMutations,
   useReports,
   useTemplates,
@@ -164,6 +165,7 @@ function ForumSettingsSheet({
   settings: ForumReporting;
 }) {
   const schemes = useRatingSchemes();
+  const matrices = useRiskMatrices();
   const templates = useTemplates();
   const forums = useForums();
   const members = useForumMembers(forum.id);
@@ -181,6 +183,8 @@ function ForumSettingsSheet({
     parentForumId: settings.parentForumId ?? "",
     approvalRequired: settings.approvalRequired,
     autoCreatePacks: settings.autoCreatePacks,
+    visibility: settings.publishedPackVisibility,
+    riskMatrixId: settings.riskMatrixId ?? "",
     tolerances: settings.tolerances as Tolerances,
   }));
   const entities =
@@ -212,6 +216,8 @@ function ForumSettingsSheet({
           parent_forum_id: form.parentForumId || null,
           approval_required: form.approvalRequired,
           auto_create_packs: form.autoCreatePacks,
+          published_pack_visibility: form.visibility,
+          risk_matrix_id: form.riskMatrixId || null,
           tolerances: form.tolerances,
         },
       });
@@ -354,6 +360,46 @@ function ForumSettingsSheet({
               checked={form.approvalRequired}
               onCheckedChange={(approvalRequired) => setForm({ ...form, approvalRequired })}
             />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="fs-visibility">Who can read published packs</Label>
+            <select
+              id="fs-visibility"
+              className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+              value={form.visibility}
+              onChange={(e) =>
+                setForm({ ...form, visibility: e.target.value as "members" | "organisation" })
+              }
+            >
+              <option value="members">Forum members only</option>
+              <option value="organisation">Everyone in the organisation</option>
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Packs may contain sensitive material (finances, people, risks, decisions in progress).
+              PMO, the chair and the secretary always see them; drafts are never shared.
+            </p>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="fs-matrix">Risk matrix for this forum's packs</Label>
+            <select
+              id="fs-matrix"
+              className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+              value={form.riskMatrixId}
+              onChange={(e) => setForm({ ...form, riskMatrixId: e.target.value })}
+            >
+              <option value="">The default (the same scoring as the risk register)</option>
+              {(matrices.data ?? []).map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                  {m.organisationId ? " (your organisation)" : ""}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Your organisation's own matrices can be used here, but can't become the organisation
+              default yet: the risk register still scores from Settings › Risk, so reports and the
+              register would score the same risk differently.
+            </p>
           </div>
           <div className="flex items-center justify-between gap-2">
             <Label htmlFor="fs-auto">

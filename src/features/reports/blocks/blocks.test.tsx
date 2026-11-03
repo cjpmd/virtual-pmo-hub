@@ -435,3 +435,14 @@ describe("Phase 3 and 4 blocks", () => {
     expect(Object.keys(EMPTY34).sort()).toEqual(keys);
   });
 });
+
+describe("data basis (A2)", () => {
+  it("the cover shows what the figures are as at", () => {
+    renderBlock("report_cover", {
+      ...fixtures.scope.report_cover,
+      data_basis:
+        "Ratings as at 31 Oct 2026; financials and RAID current at publish (no history before 4 Nov 2026)",
+    });
+    expect(screen.getByText(/Data basis: Ratings as at 31 Oct 2026/)).toBeTruthy();
+  });
+});

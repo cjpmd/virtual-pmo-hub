@@ -44,6 +44,8 @@ export interface ViewModel {
   canEdit: boolean;
   isPartner: boolean;
   permissions: ReportPermissions;
+  /** What the figures are as at (live: from the context; published: as stored). */
+  dataBasis: string | null;
 }
 
 /** The comparison with the previous pack, resolved for drafts (published packs store it). */
@@ -98,6 +100,7 @@ export function useReportView(reportId: string): {
         canEdit: false,
         isPartner,
         permissions: permissions.data,
+        dataBasis: s.dataBasis,
         doc: {
           blocks: report.data.blocks,
           deepDives: s.meta.deep_dives,
@@ -139,6 +142,7 @@ export function useReportView(reportId: string): {
       canEdit: permissions.data.can_edit,
       isPartner,
       permissions: permissions.data,
+      dataBasis: context.data.data_basis?.text ?? null,
       doc: {
         blocks: report.data.blocks,
         deepDives,
@@ -171,6 +175,9 @@ export function Banner({ view }: { view: ViewModel }) {
         ? `${STATUS_LABEL[r.status]} ${f.date(r.publishedAt?.slice(0, 10))} · as at ${f.date(r.asAt)} · Snapshot`
         : `${STATUS_LABEL[r.status]} · live data · as at ${f.date(r.asAt)}`}
       {r.status === "withdrawn" && " · withdrawn: kept for the record, not for decisions"}
+      {view.dataBasis && (
+        <span className="block text-xs text-muted-foreground">Data basis: {view.dataBasis}</span>
+      )}
     </p>
   );
 }
@@ -279,7 +286,7 @@ export function ReportPrint({ view, autoPrint }: { view: ViewModel; autoPrint: b
     return () => window.clearTimeout(timer);
   }, [autoPrint]);
   const header = `${view.forumName ?? "Ad hoc report"} · ${view.report.title} · as at ${f.date(view.report.asAt)}`;
-  const footer = view.isSnapshot ? "Published snapshot" : "Draft · live data";
+  const footer = `${view.isSnapshot ? "Published snapshot" : "Draft · live data"}${view.dataBasis ? ` · ${view.dataBasis}` : ""}`;
   const body = (
     <div className="report-print light bg-white text-black">
       <PrintPageStyle header={header} footer={footer} />

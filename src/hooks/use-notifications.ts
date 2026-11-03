@@ -8,6 +8,7 @@ import { useDependencies } from "@/hooks/use-dependencies";
 import { useGovernance } from "@/hooks/use-governance";
 import { useMyResourceId } from "@/hooks/use-hierarchy";
 import { useIssuedTasks } from "@/hooks/use-issued-tasks";
+import { useSystemDraftedPacks } from "@/hooks/use-reports";
 import { usePortfolioTasks } from "@/hooks/use-work-items";
 import { todayIso } from "@/lib/today";
 import { measurementDaysOverdue } from "@/services/benefits-value";
@@ -47,6 +48,8 @@ export function useNotifications() {
   // every page.
   const measurements = useMeasurementsDue(me).data;
   const dependencies = useDependencies().data?.dependencies;
+  // Packs the system drafted that this user can edit (secretary, chair, PMO).
+  const draftedPacks = useSystemDraftedPacks().data;
   const read = useSyncExternalStore(subscribe, readIds, () => EMPTY);
   const feed = useMemo((): FeedItem[] => {
     const today = todayIso();
@@ -102,8 +105,16 @@ export function useNotifications() {
         text: `${dependency.reference} is off track: ${dependency.healthReason}`,
         channel: "In-app",
       });
+    for (const pack of draftedPacks ?? [])
+      items.push({
+        id: `drafted-pack:${pack.reportId}`,
+        date: pack.createdAt.slice(0, 10),
+        kind: "Draft pack ready",
+        text: `“${pack.title}” was drafted when the papers deadline passed. Review it and submit it for approval.`,
+        channel: "In-app",
+      });
     return items.sort((a, b) => b.date.localeCompare(a.date));
-  }, [me, tasks, issued, decisions, measurements, dependencies]);
+  }, [me, tasks, issued, decisions, measurements, dependencies, draftedPacks]);
   const markRead = useCallback((ids: string[]) => {
     cache = Array.from(new Set([...readIds(), ...ids]));
     try {
