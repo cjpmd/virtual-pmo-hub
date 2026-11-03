@@ -1,7 +1,7 @@
 // Report builder RB-39a: emails "draft pack ready" notices queued by the scheduled pack job
 // (report_notifications) to the forum's secretary and chair, else PMO / admins. Idempotent per
-// report. Service role only: call it from a Supabase Cron job (e.g. every 15 minutes, POST
-// with the service role key) — see docs/report-builder-handover.md.
+// report. Service role only: called every 15 minutes by the pg_cron + pg_net job in migration
+// 20261104120000_rb6_report_notify_cron (URL and key from Vault; see the handover).
 // Secrets: RESEND_API_KEY, REPORTS_FROM (or RESEND_FROM), APP_URL; optional
 // REPORTS_TEST_RECIPIENTS (comma-separated allowlist: on a test branch, only these receive mail).
 import { APP_URL, adminClient, json, serve } from "../_shared/http.ts";

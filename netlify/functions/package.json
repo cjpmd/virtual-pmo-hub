@@ -1,0 +1,11 @@
+{
+  "name": "ormo-pmo-netlify-functions",
+  "private": true,
+  "description": "Dependencies for the Netlify functions only (report-pdf). Installed separately from the app: `npm --prefix netlify/functions ci`. Not part of the app build.",
+  "type": "module",
+  "dependencies": {
+    "@sparticuz/chromium-min": "153.0.0",
+    "@supabase/supabase-js": "2.117.2",
+    "puppeteer-core": "25.15.0"
+  }
+}

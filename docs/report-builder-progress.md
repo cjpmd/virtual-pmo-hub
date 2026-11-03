@@ -64,6 +64,12 @@ Follow-up run (04/11/2026): Part A done; Part B stopped (no `.env.local`, RB-45)
 - Part B: not run — no `.env.local` (no branch credentials) and no Docker for a local Supabase
   stack. Stopped per the instruction (RB-45); nothing touched any hosted project.
 
+- 04/11/2026 (second follow-up): server PDF on `@sparticuz/chromium-min` with the pack from
+  `REPORT_CHROMIUM_PACK_URL`, its deps in `netlify/functions/package.json` (removed from the
+  root); migration `20261104120000_rb6_report_notify_cron.sql` (pg_cron + pg_net job, Vault
+  secrets) with `supabase/tests/reports_phase6.sql`. Part B against the test project blocked:
+  no credentials in this session (RB-46).
+
 ## Next steps
 
 - Provide branch credentials in `.env.local` and run Part B (handover §5): apply the five
@@ -72,7 +78,7 @@ Follow-up run (04/11/2026): Part A done; Part B stopped (no `.env.local`, RB-45)
 
 ## Known issues
 
-- Part B (branch test pass) not run: no credentials / local stack here (RB-45).
+- Part B not run: no credentials in the session (RB-45, RB-46).
 
 - Browser E2E can't run here (RB-25); run `e2e/reports.e2e.ts` on a seeded Supabase branch.
 - Edge functions (`report-publish`, `report-distribute`) and the Netlify `report-pdf` function

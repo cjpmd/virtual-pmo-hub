@@ -95,6 +95,7 @@ against a throwaway local Postgres 16 with a small Supabase shim (`supabase/test
 3. `supabase/migrations/20261103160000_rb3_governance_snapshots.sql`
 4. `supabase/migrations/20261103170000_rb4_enhancements.sql`
 5. `supabase/migrations/20261104090000_rb5_visibility_history_guards.sql`
+6. `supabase/migrations/20261104120000_rb6_report_notify_cron.sql`
 
 All additive. Notes:
 - Migration 2 renames `public.project_metrics` (created in migration 1) to
@@ -109,7 +110,13 @@ All additive. Notes:
   risk matrix (none exist in production unless created since); schedules
   `vpmo-capture-project-metric-history` (02:40 UTC). Before the first nightly run there is no
   history, so past as-at packs say so in their data-basis note.
-- Apply to a Supabase branch first; then run `supabase/tests/reports_phase1..5.sql` there after
+- Migration 6 enables pg_net where available and schedules `vpmo-report-notify` (every 15
+  minutes): it calls `report-notify` only when a notice is waiting, with the URL and service role
+  key from Vault. **One-off per project, in the SQL editor:**
+  `select vault.create_secret('https://<ref>.supabase.co/functions/v1/report-notify', 'report_notify_url');`
+  `select vault.create_secret('<service role key>', 'report_notify_service_key');`
+  Without them the job does nothing (and logs a warning when a notice is waiting).
+- Apply to a Supabase branch first; then run `supabase/tests/reports_phase1..6.sql` there after
   loading `supabase/seed/reports_demo.sql` (the tests roll back). The seed creates its own
   organisations; don't load it on production unless you want the demo organisation there.
 - After applying, regenerate `types.ts` from the project (it should match the committed file).
@@ -132,15 +139,18 @@ Supabase edge-function secrets:
 | `REPORT_SERVER_PDF` | report-publish | `true` to request a server PDF; default off. |
 | `REPORT_PDF_URL` | report-publish | The Netlify function URL, e.g. `https://<site>/api/report-pdf`. |
 | `REPORT_PDF_SECRET` | report-publish | Shared bearer secret with the Netlify function. |
+| Vault `report_notify_url`, `report_notify_service_key` | pg_cron job `vpmo-report-notify` | Database Vault secrets (not function secrets); see §2. |
 
 Netlify (only if server PDF is enabled): `REPORT_SERVER_PDF=true`, `REPORT_PDF_SECRET`,
-`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. `@sparticuz/chromium` 153.0.0 and `puppeteer-core`
-25.15.0 are now in the root `package.json`; the function bundle is 71.5 MB zipped (RB-35).
+`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `REPORT_CHROMIUM_PACK_URL` (the Chromium pack
+`chromium-v153.0.0-pack.x64.tar` from the @sparticuz/chromium 153.0.0 release, hosted on storage
+you control). The function's dependencies (`@sparticuz/chromium-min`, `puppeteer-core`,
+`@supabase/supabase-js`) are in `netlify/functions/package.json`; `netlify.toml` installs them
+before the build. The app's `package.json` no longer contains them. Bundle: 1.5 MB (RB-35).
 
 Deploy the edge functions `report-publish`, `report-distribute`, `report-ai-summary` and
-`report-notify` (`supabase/config.toml` keeps `verify_jwt = true` for them). Schedule
-`report-notify` in Supabase Cron (Integrations › Cron): every 15 minutes, HTTP POST to
-`<project>/functions/v1/report-notify` with `Authorization: Bearer <service role key>`. Without them the app still
+`report-notify` (`supabase/config.toml` keeps `verify_jwt = true` for them). `report-notify` is
+called by migration 6's pg_cron job once the two Vault secrets above exist. Without them the app still
 publishes through the RPC and says the emails weren't sent; "Draft with AI" reports that it
 isn't deployed.
 
@@ -176,6 +186,10 @@ From `docs/report-builder-decisions.md` (all are logged with alternatives):
 
 ## 5. Known issues
 
+- **Part B against the test project was not run either (RB-46, 04/11/2026):** this cloud session
+  had no `.env.local` (it's gitignored) and no `TEST_*` environment values, so nothing could
+  reach `ormo-report-builder-test`. Nothing touched production. Provide the values as
+  environment variables or secrets of the cloud environment and start a new session.
 - **Part B (branch test pass) was not run (RB-45).** This environment has no `.env.local` (the
   only Supabase settings, in `.env`, point at the production project) and no Docker for a local
   Supabase stack, so B1–B7 stopped per the instruction. Nothing was applied, deployed or sent.
@@ -203,7 +217,9 @@ From `docs/report-builder-decisions.md` (all are logged with alternatives):
 
 ## 6. Remaining release steps
 
-1. Put branch credentials in `.env.local` (never production) and run Part B: apply the five
+1. Make the test project's credentials available to the session (RB-46) and run Part B against
+   `ormo-report-builder-test` only: `supabase db push --db-url "$TEST_DB_URL"` (never `link` /
+   `--linked`), functions with `--project-ref afbmohzvyzblwbfsxpnx`; apply the six
    migrations in order; `supabase gen types typescript` and diff with the committed `types.ts`;
    load `supabase/seed/reports_demo.sql`; set passwords for the seed users; run
    `supabase/tests/reports_phase1..5.sql` (with `-v cases="$(cat
@@ -213,7 +229,8 @@ From `docs/report-builder-decisions.md` (all are logged with alternatives):
 2. Decide the items in §4; then open a PR from `feature/report-builder`.
 3. Production: apply the migrations in order; regenerate types; set the secrets (no
    `REPORTS_TEST_RECIPIENTS`); deploy the functions; schedule `report-notify`; check pg_cron has
-   the two new jobs; leave `REPORT_SERVER_PDF` off until Netlify is set up.
+   the three new jobs (metric history, scheduled packs, report-notify); create the two Vault
+   secrets; leave `REPORT_SERVER_PDF` off until Netlify and the Chromium pack are set up.
 
 ## 7. Manual test — a full pack cycle
 

@@ -8,8 +8,10 @@
 // the Supabase function secrets; off by default, and browser print stays the fallback.
 // Netlify environment: REPORT_SERVER_PDF, REPORT_PDF_SECRET (shared with report-publish),
 // SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
-// Dependencies (install when enabling; kept out of the app's package.json because Chromium is
-// ~60 MB): npm i @sparticuz/chromium puppeteer-core
+// REPORT_CHROMIUM_PACK_URL: where the Chromium pack (chromium-v<version>-pack.<arch>.tar from
+// the @sparticuz/chromium release matching @sparticuz/chromium-min) is downloaded from at cold
+// start; host it on storage you control. Dependencies live in netlify/functions/package.json
+// (`npm --prefix netlify/functions ci`), not in the app's package.json (RB-35).
 import { createClient } from "@supabase/supabase-js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -43,11 +45,14 @@ export default async (req: Request) => {
     return json({ error: "Published report not found" }, 404);
 
   // Loaded on demand so the app build never needs Chromium.
-  const chromium = (await import("@sparticuz/chromium")).default;
+  const packUrl = process.env.REPORT_CHROMIUM_PACK_URL;
+  if (!packUrl) return json({ error: "REPORT_CHROMIUM_PACK_URL is not set." }, 500);
+  const chromium = (await import("@sparticuz/chromium-min")).default;
   const puppeteer = (await import("puppeteer-core")).default;
   const browser = await puppeteer.launch({
     args: chromium.args,
-    executablePath: await chromium.executablePath(),
+    // chromium-min ships no binary: it downloads and unpacks the pack into /tmp (cached per instance).
+    executablePath: await chromium.executablePath(packUrl),
     headless: true,
   });
   try {
