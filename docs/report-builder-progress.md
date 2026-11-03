@@ -75,14 +75,20 @@ Third follow-up (04/11/2026): Part B run against `ormo-report-builder-test` — 
   20 formatting-only differences (no semantic change); stray CLI upgrade notice removed from
   `types.ts`. All six SQL/RLS test suites passed with real Supabase auth. Four report edge
   functions deployed. Snapshot immutability, `changes_since_last`, re-publish prevention, and
-  the full 10-step manual test cycle all verified. B7 (Playwright E2E) blocked: `client.ts` is
-  hardcoded to production by Lovable; test project session not recognised (RB-47); see handover
-  §5 for details.
+  the full 10-step manual test cycle all verified (through the RPCs). B7 (Playwright E2E)
+  blocked: `client.ts` was hard-coded to production; test project session not recognised
+  (RB-47); see handover §5 for details.
+
+- 04/11/2026 (third follow-up): RB-47 — the Supabase client reads `VITE_SUPABASE_URL` /
+  `VITE_SUPABASE_PUBLISHABLE_KEY` with production as fallback and logs the project ref in dev.
+  B7 / B8 not run: the dev console showed the production ref (no test values in this session),
+  so the browser steps stopped (RB-48).
 
 ## Current phase
 
-Part B complete (B1–B6, B8 pass; B7 blocked by RB-47). Ready for PR review (§4 decisions
-in handover) and production release (handover §6).
+Part B: B1–B6 and B8 (via RPCs) pass. B7 and the browser run of B8 still to do: RB-47 makes the
+client follow `VITE_SUPABASE_*`, but they need the test project's values in the session (RB-48).
+Then PR review (§4 decisions in handover) and production release (handover §6).
 
 ## Next steps
 
@@ -95,7 +101,7 @@ in handover) and production release (handover §6).
 
 ## Known issues
 
-- B7 Playwright E2E blocked: `client.ts` hardcoded to production project (RB-47).
-- Browser E2E needs a branch with regenerated `client.ts` (RB-25, RB-47).
+- B7 Playwright E2E and the browser run of B8 not yet done: need the test project's
+  `VITE_SUPABASE_*` in the session (RB-47 fixed the client; RB-48).
 - Edge functions (`report-publish`, `report-distribute`) and the Netlify `report-pdf` function
   are unit-tested through their shared module but not run end to end (no Deno / Netlify here).
