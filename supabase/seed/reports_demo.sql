@@ -105,7 +105,7 @@ begin
     pid := pid || p;
     insert into public.projects (id, organisation_id, workspace_id, programme_id, name, code, tier, state, priority,
       start_date, finish_date, baseline_finish_date, manager_id, sponsor_id, phase_id, reporting_cadence)
-    values (p, org, ws, case when i <= 6 then pg_digital else pg_estates end,
+    values (p, org, ws, case when i in (7, 8, 10) then pg_estates else pg_digital end,
       (array['Electronic Patient Record','Patient Portal','Virtual Wards','Clinical Messaging','Digital Pathology',
              'Theatre Scheduling','Car Park Rebuild','Energy Retrofit','New Outpatients Wing','Wayfinding Signage'])[i],
       'RD' || lpad(i::text, 2, '0'),
@@ -151,9 +151,9 @@ begin
   end loop;
 
   -- RD01 Electronic Patient Record: evidenced red (25% forecast overspend) — "Evidenced red", budget rule.
-  -- RD02 Patient Portal: worsened since last report — a critical risk now, green a month ago.
+  -- RD02 Patient Portal: worsened since last report — an elevated risk now (amber), green a month ago.
   insert into public.risks (organisation_id, workspace_id, project_id, title, probability, impact, response, status, owner_id, review_date)
-  values (org, ws, pid[2], 'Identity provider contract may lapse', 4, 4, 'reduce', 'open', r_pm, today + 14);
+  values (org, ws, pid[2], 'Identity provider contract may lapse', 4, 3, 'reduce', 'open', r_pm, today + 14);
   -- RD03 Virtual Wards: report better than evidence for 6 weeks (declared green, evidenced amber).
   update public.health_snapshots set overall = 'amber', schedule = 'amber' where project_id = pid[3] and snapshot_date >= today - 45;
   update public.status_reports set reporting_date = today - 60, submitted_at = now() - interval '60 days' where project_id = pid[3];
@@ -170,7 +170,7 @@ begin
   -- RD08 Energy Retrofit: stage gate due in 12 days.
   insert into public.milestones (organisation_id, workspace_id, project_id, title, type, baseline_date, forecast_date, phase_id, owner_id)
   values (org, ws, pid[8], 'Gate 4: ready to deploy', 'gate', today + 12, today + 12, phases[3], r_chair);
-  -- RD09, RD10: clean.
+  -- RD09 (Digital Care), RD10 (Estates): clean.
   insert into public.risks (organisation_id, workspace_id, project_id, title, probability, impact, response, status, owner_id)
   values (org, ws, pid[9], 'Steel price volatility', 2, 2, 'accept', 'open', r_chair),
          (org, ws, pid[1], 'Data migration defects', 5, 4, 'reduce', 'open', r_pm),
@@ -191,6 +191,8 @@ begin
     (f_port, org, ws, 'Transformation Portfolio Board', 'portfolio', 'portfolio_board', r_admin, 'monthly', 7, 'portfolio', pf,
      '{"divergence_days":{"op":">","value":14},"max_milestone_slip_days":{"op":">","value":30},"budget_variance_pct":{"op":">","value":10},"days_to_next_gate":{"op":"<=","value":30}}',
      'Quarterly portfolio board.');
+  update public.forums set default_template_id = (select id from public.report_templates where is_system and name = 'Programme Board') where id = f_prog;
+  update public.forums set default_template_id = (select id from public.report_templates where is_system and name = 'Portfolio Board / Committee') where id = f_port;
   insert into public.forum_members (organisation_id, workspace_id, forum_id, resource_id, role) values
     (org, ws, f_prog, r_chair, 'chair'), (org, ws, f_prog, r_pmo, 'secretary'), (org, ws, f_prog, r_viewer, 'member'),
     (org, ws, f_prog, r_pm, 'contributor'), (org, ws, f_port, r_admin, 'chair'), (org, ws, f_port, r_pmo, 'secretary'),
@@ -213,6 +215,48 @@ begin
   -- Partner share: the partner organisation reads the Digital Care programme's published packs.
   insert into public.entity_shares (organisation_id, workspace_id, entity_type, entity_id, partner_organisation_id, hidden_block_keys)
   values (org, ws, 'programme', pg_digital, partner, '{budget_movers}');
+
+  -- Phase 2 fixtures --------------------------------------------------------------------
+  -- RD07: the planning issue is escalated to the portfolio board.
+  update public.issues set escalated_to_forum_id = f_port where project_id = pid[7];
+  -- RD04 waits on RD03's remote monitoring milestone (at risk: the giver slipped past need-by).
+  insert into public.dependencies (organisation_id, workspace_id, giver_milestone_id, receiver_project_id, type, description, required_by_date, criticality, validation)
+  select org, ws, m.id, pid[4], 'sequencing', 'Messaging needs remote monitoring live first', today + 5, 'high', 'confirmed'
+  from public.milestones m where m.project_id = pid[3] and m.title = 'Remote monitoring live';
+  insert into public.dependencies (organisation_id, workspace_id, giver_external_name, receiver_project_id, type, description, required_by_date, criticality, validation)
+  values (org, ws, 'NHS England API', pid[2], 'external', 'National login API onboarding', today + 45, 'medium', 'confirmed');
+  -- People: the PM is over-allocated across RD01 and RD02; one unfilled placeholder role.
+  insert into public.resource_assignments (organisation_id, workspace_id, project_id, resource_id, role, start_date, finish_date, hours_per_week)
+  values (org, ws, pid[1], r_pm, 'Project manager', today - 60, today + 120, 30),
+         (org, ws, pid[2], r_pm, 'Project manager', today - 30, today + 90, 20),
+         (org, ws, pid[1], r_chair, 'Clinical lead', today - 60, today + 120, 8);
+  insert into public.resources (organisation_id, name, is_placeholder, placeholder_role, needs_staffing, is_bookable)
+  values (org, 'Integration architect (TBC)', true, 'Integration architect', true, true) returning id into p;
+  insert into public.resource_assignments (organisation_id, workspace_id, project_id, resource_id, role, start_date, finish_date, hours_per_week)
+  values (org, ws, pid[1], p, 'Integration architect', today, today + 120, 22);
+  -- A benefit on RD01, and a request in the portfolio pipeline.
+  insert into public.benefits (organisation_id, workspace_id, portfolio_id, programme_id, title, classification, planned_total_value, category_id)
+  select org, ws, pf, pg_digital, 'Reduced paper records storage', 'cash_releasing', 450000,
+    (select id from public.lookup_values where organisation_id = org and list_key like '%benefit%categor%' order by sort_order limit 1)
+  returning id into p;
+  insert into public.benefit_projects (organisation_id, workspace_id, benefit_id, project_id, attribution_percent) values (org, ws, p, pid[1], 100);
+  insert into public.project_requests (organisation_id, workspace_id, portfolio_id, title, status, estimated_cost, priority)
+  values (org, ws, pf, 'Robotic process automation pilot', 'in_review', 250000, 'high');
+  -- RD01 work items: 12 created over six months, 7 done, for the burn-up.
+  insert into public.work_items (organisation_id, workspace_id, project_id, title, status, created_at)
+  select org, ws, pid[1], 'Work package ' || n, case when n <= 7 then 'done' else 'in_progress' end::public.work_item_status,
+    now() - make_interval(days => 180 - n * 12)
+  from generate_series(1, 12) n;
+  update public.work_items set done_at = created_at + interval '20 days' where project_id = pid[1] and status = 'done';
+  -- RD01: a clinical safety approval gate with two steps, one approved.
+  insert into public.approval_gates (organisation_id, workspace_id, project_id, entity_type, entity_id, gate_type, name, due_date)
+  values (org, ws, pid[1], 'project', pid[1], 'dcb0160', 'Clinical safety case sign-off', today + 20) returning id into p;
+  insert into public.approval_steps (organisation_id, workspace_id, gate_id, step_order, required_role, decision, decided_at, approver_id)
+  values (org, ws, p, 1, 'Clinical safety officer', 'approved', now() - interval '3 days', u_chair),
+         (org, ws, p, 2, 'Medical director', null, null, null);
+  -- An open action from the last programme board, overdue.
+  insert into public.forum_actions (organisation_id, workspace_id, forum_id, meeting_id, project_id, title, owner_id, due_date)
+  values (org, ws, f_prog, 'd0000000-0000-4000-8000-000000000601', pid[3], 'Recovery plan for remote monitoring', r_pm, today - 3);
 
   perform private.refresh_health_current(org);
 end $$;

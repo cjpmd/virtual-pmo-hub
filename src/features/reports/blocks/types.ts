@@ -28,7 +28,8 @@ export interface RatingLevel {
   label: string;
   colour: string;
   rank: number;
-  rag: "green" | "amber" | "red" | "not_set";
+  /** Null for a declared-only level (e.g. "No assurance"). */
+  rag: "green" | "amber" | "red" | "not_set" | null;
 }
 
 export interface RatingScheme {

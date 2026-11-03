@@ -5768,6 +5768,117 @@ export type Database = {
           },
         ]
       }
+      forum_actions: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          due_date: string | null
+          forum_id: string
+          id: string
+          meeting_id: string | null
+          organisation_id: string
+          owner_id: string | null
+          project_id: string | null
+          report_id: string | null
+          status: string
+          title: string
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          forum_id: string
+          id?: string
+          meeting_id?: string | null
+          organisation_id: string
+          owner_id?: string | null
+          project_id?: string | null
+          report_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          forum_id?: string
+          id?: string
+          meeting_id?: string | null
+          organisation_id?: string
+          owner_id?: string | null
+          project_id?: string | null
+          report_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_actions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_actions_forum_id_organisation_id_fkey"
+            columns: ["forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "forum_actions_forum_id_organisation_id_fkey"
+            columns: ["forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "forum_actions_meeting_id_organisation_id_fkey"
+            columns: ["meeting_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "forum_actions_meeting_id_organisation_id_fkey"
+            columns: ["meeting_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_meetings"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "forum_actions_owner_id_organisation_id_fkey"
+            columns: ["owner_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "forum_actions_report_id_organisation_id_fkey"
+            columns: ["report_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "forum_actions_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       forum_members: {
         Row: {
           created_at: string
@@ -6605,6 +6716,8 @@ export type Database = {
           created_by: string | null
           description: string | null
           due_date: string | null
+          escalated_at: string | null
+          escalated_to_forum_id: string | null
           id: string
           organisation_id: string
           owner_id: string | null
@@ -6624,6 +6737,8 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           due_date?: string | null
+          escalated_at?: string | null
+          escalated_to_forum_id?: string | null
           id?: string
           organisation_id: string
           owner_id?: string | null
@@ -6643,6 +6758,8 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           due_date?: string | null
+          escalated_at?: string | null
+          escalated_to_forum_id?: string | null
           id?: string
           organisation_id?: string
           owner_id?: string | null
@@ -6663,6 +6780,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "issues_escalated_forum_fkey"
+            columns: ["escalated_to_forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "issues_escalated_forum_fkey"
+            columns: ["escalated_to_forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_forums"
+            referencedColumns: ["id", "organisation_id"]
           },
           {
             foreignKeyName: "issues_owner_id_organisation_id_fkey"
@@ -11234,6 +11365,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          escalated_at: string | null
+          escalated_to_forum_id: string | null
           id: string
           impact: number
           organisation_id: string
@@ -11257,6 +11390,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          escalated_at?: string | null
+          escalated_to_forum_id?: string | null
           id?: string
           impact: number
           organisation_id: string
@@ -11280,6 +11415,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          escalated_at?: string | null
+          escalated_to_forum_id?: string | null
           id?: string
           impact?: number
           organisation_id?: string
@@ -11305,6 +11442,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "risks_escalated_forum_fkey"
+            columns: ["escalated_to_forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "risks_escalated_forum_fkey"
+            columns: ["escalated_to_forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_forums"
+            referencedColumns: ["id", "organisation_id"]
           },
           {
             foreignKeyName: "risks_owner_id_organisation_id_fkey"

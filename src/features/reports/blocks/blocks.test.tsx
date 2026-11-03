@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { z } from "zod";
 import fixtures from "./__fixtures__/phase1.json";
+import fixtures2 from "./__fixtures__/phase2.json";
 import "./catalogue";
 import { getBlock, listBlocks, registerBlock, resolveConfig } from "./registry";
 import type { BlockInstance, RenderContext } from "./types";
@@ -139,7 +140,112 @@ describe("Phase 1 blocks render fixture data", () => {
   });
 });
 
+const EMPTY2: Record<string, unknown> = {
+  rating_distribution: { total: 0, declared: null, evidenced: null },
+  divergence_list: { rows: [] },
+  milestone_timeline: {
+    from: "2026-10-01",
+    to: "2027-04-01",
+    as_at: "2026-11-03",
+    multi: false,
+    rows: [],
+  },
+  roadmap: { from: "2026-08-01", to: "2027-11-01", as_at: "2026-11-03", rows: [] },
+  burnup_forecast: null,
+  stage_gates: { rows: [] },
+  spend_profile: { rows: [], actuals_through: null },
+  budget_movers: { overspend: [], movers: [] },
+  resource_summary: { people: [], over_allocated: 0, unfilled: 0, team_size: 0 },
+  decisions_taken: { since: "2026-10-01", rows: [] },
+  risk_heatmap: {
+    matrix: { name: "M", bands: [], likelihood: null, consequence: null },
+    cells: [],
+    total: 0,
+  },
+  escalations: { rows: [] },
+  dependencies: { rows: [] },
+  benefits_summary: { rows: [], planned: null, realised: null, capabilities: null, outcomes: null },
+  requests_pipeline: { rows: [] },
+  actions_log: { since: "2026-10-01", open: [], closed: [], overdue_count: 0 },
+  data_quality: { since: "2026-10-01", stale_days: 30, rows: [], clean: 0 },
+  approvals_status: { rows: [] },
+};
+
+describe("Phase 2 blocks render fixture data", () => {
+  for (const [key, data] of Object.entries(fixtures2.scope)) {
+    it(`${key} (portfolio scope)`, () => {
+      const { container } = renderBlock(key, data);
+      expect(container.textContent?.length).toBeGreaterThan(0);
+    });
+  }
+  for (const [key, data] of Object.entries(fixtures2.project)) {
+    it(`${key} (deep-dive project)`, () => {
+      const { container } = renderBlock(key, data, "d0000000-0000-4000-8000-000000001001");
+      expect(container.textContent?.length).toBeGreaterThan(0);
+    });
+  }
+  it("resource summary flags the over-allocated PM", () => {
+    renderBlock("resource_summary", fixtures2.scope.resource_summary);
+    expect(screen.getByText("Pete Manager")).toBeTruthy();
+  });
+  it("NHS assurance relabels ratings", () => {
+    const definition = getBlock("rating_distribution")!;
+    const Renderer = definition.Renderer;
+    const nhs = {
+      id: "nhs",
+      key: "nhs_assurance",
+      name: "NHS",
+      isAssurance: true,
+      levels: [
+        {
+          key: "substantial",
+          label: "Substantial assurance",
+          colour: "#2e7d52",
+          rank: 1,
+          rag: "green" as const,
+        },
+        {
+          key: "reasonable",
+          label: "Reasonable assurance",
+          colour: "#ca8a04",
+          rank: 2,
+          rag: "amber" as const,
+        },
+        {
+          key: "limited",
+          label: "Limited assurance",
+          colour: "#c2410c",
+          rank: 3,
+          rag: "red" as const,
+        },
+        { key: "no_assurance", label: "No assurance", colour: "#7f1d1d", rank: 4, rag: null },
+      ],
+    };
+    wrap(
+      <Renderer
+        data={fixtures2.scope.rating_distribution}
+        config={{}}
+        ctx={{ ...ctx("rating_distribution"), scheme: nhs }}
+      />,
+    );
+    expect(screen.getAllByText(/Limited assurance/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/\bRed\b/)).toBeNull();
+  });
+});
+
 describe("blocks render empty data", () => {
+  for (const [key, data] of Object.entries(EMPTY2)) {
+    it(`${key} (phase 2)`, () => {
+      expect(() => renderBlock(key, data)).not.toThrow();
+    });
+  }
+  it("covers every Phase 2 block", () => {
+    const phase2 = listBlocks()
+      .filter((b) => b.phase === 2)
+      .map((b) => b.key)
+      .sort();
+    expect(Object.keys(EMPTY2).sort()).toEqual(phase2);
+  });
   for (const [key, data] of Object.entries(EMPTY)) {
     it(key, () => {
       expect(() => renderBlock(key, data)).not.toThrow();

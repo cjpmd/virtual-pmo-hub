@@ -42,7 +42,7 @@ seed() { psql -q -v ON_ERROR_STOP=1 -d vpmo -f "$ROOT/supabase/seed/reports_demo
 tests() {
   local fail=0
   for f in "$ROOT"/supabase/tests/reports_*.sql; do
-    if out=$(psql -v ON_ERROR_STOP=1 -At -d vpmo -f "$f" 2>&1); then echo "PASS $(basename "$f")"; else echo "FAIL $(basename "$f")"; echo "$out" | tail -15; fail=1; fi
+    if out=$(psql -v ON_ERROR_STOP=1 -v cases="$(cat "$ROOT/src/features/reports/engine/selection-cases.json")" -At -d vpmo -f "$f" 2>&1); then echo "PASS $(basename "$f")"; else echo "FAIL $(basename "$f")"; echo "$out" | tail -15; fail=1; fi
   done
   return $fail
 }

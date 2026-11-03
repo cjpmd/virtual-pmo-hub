@@ -96,7 +96,7 @@ begin
   out := public.report_block_data(inp, '{"id":"x","blockKey":"no_such_block"}');
   assert (out ->> 'unavailable')::boolean, 'unknown key is unavailable';
   out := public.report_block_data(inp, '{"id":"g","blockKey":"project_status_grid","config":{}}');
-  assert jsonb_array_length(out -> 'rows') = 6, 'programme grid has 6 projects';
+  assert jsonb_array_length(out -> 'rows') = 7, 'programme grid has 7 projects';
   out := public.report_block_data(inp, '{"id":"d","blockKey":"decisions_required","config":{}}');
   assert jsonb_array_length(out -> 'rows') = 1 and jsonb_array_length(out -> 'rows' -> 0 -> 'options') = 2, 'decision with options';
   out := public.report_block_data(inp, '{"id":"o","blockKey":"overall_status","config":{}}', pg_temp.pid(3));

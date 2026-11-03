@@ -1,4 +1,6 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ApprovalGatesPanel } from "@/features/reports/project/ApprovalGatesPanel";
+import { EscalationsPanel } from "@/features/reports/project/EscalationsPanel";
 import { CheckCircle2, Circle, Gavel } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { AppraisalPanel } from "@/components/appraisal-panel";
@@ -375,6 +377,12 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
         />
       )}
       {tab === "raid" && sub === "risks" && <ProjectRaid projectId={project.id} />}
+      {tab === "raid" && sub === "risks" && (
+        <EscalationsPanel projectId={project.id} canEdit={permissions.canEdit} />
+      )}
+      {tab === "plan" && sub === "gates" && (
+        <ApprovalGatesPanel projectId={project.id} canEdit={permissions.canEdit} />
+      )}
       {tab === "financials" && <ProjectFinancials project={project} />}
 
       {/* The remaining tabs: status, plan, delivery, resources, benefits, RAID and business case. */}
