@@ -77,6 +77,7 @@ import { Route as GovernanceForumRouteImport } from './routes/governance.forum'
 import { Route as GovernanceImprovementActionsRouteImport } from './routes/governance.improvement-actions'
 import { Route as GovernanceLessonsRouteImport } from './routes/governance.lessons'
 import { Route as GovernanceRaiddRouteImport } from './routes/governance.raidd'
+import { Route as GovernanceReportsRouteImport } from './routes/governance.reports'
 import { Route as HomeIndexRouteImport } from './routes/home.index'
 import { Route as HomeApprovalsRouteImport } from './routes/home.approvals'
 import { Route as HomeIssuedRouteImport } from './routes/home.issued'
@@ -98,6 +99,7 @@ import { Route as ProgrammesIndexRouteImport } from './routes/programmes.index'
 import { Route as ProgrammesProgrammeIdRouteImport } from './routes/programmes.$programmeId'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as ProjectsProjectCodeRouteImport } from './routes/projects.$projectCode'
+import { Route as ReportPrintReportIdRouteImport } from './routes/report-print.$reportId'
 import { Route as ResourcesIndexRouteImport } from './routes/resources.index'
 import { Route as ResourcesAllocationRouteImport } from './routes/resources.allocation'
 import { Route as ResourcesAssignmentsRouteImport } from './routes/resources.assignments'
@@ -108,14 +110,21 @@ import { Route as SignupIndexRouteImport } from './routes/signup.index'
 import { Route as SignupSetupRouteImport } from './routes/signup.setup'
 import { Route as DeliveryDependenciesIndexRouteImport } from './routes/delivery.dependencies.index'
 import { Route as DeliveryDependenciesMapRouteImport } from './routes/delivery.dependencies.map'
+import { Route as GovernanceReportsIndexRouteImport } from './routes/governance.reports.index'
 import { Route as PortfolioCollectionsIndexRouteImport } from './routes/portfolio.collections.index'
 import { Route as PortfolioCollectionsCollectionIdRouteImport } from './routes/portfolio.collections.$collectionId'
 import { Route as PortfolioProgrammesIndexRouteImport } from './routes/portfolio.programmes.index'
 import { Route as PortfolioProgrammesProgrammeIdRouteImport } from './routes/portfolio.programmes.$programmeId'
 import { Route as PortfolioProjectsIndexRouteImport } from './routes/portfolio.projects.index'
 import { Route as PortfolioProjectsProjectCodeRouteImport } from './routes/portfolio.projects.$projectCode'
+import { Route as GovernanceReportsReportIdIndexRouteImport } from './routes/governance.reports.$reportId.index'
+import { Route as GovernanceReportsReportIdEditRouteImport } from './routes/governance.reports.$reportId.edit'
+import { Route as GovernanceReportsReportIdPresentRouteImport } from './routes/governance.reports.$reportId.present'
+import { Route as GovernanceReportsReportIdPrintRouteImport } from './routes/governance.reports.$reportId.print'
+import { Route as GovernanceReportsTemplatesIndexRouteImport } from './routes/governance.reports.templates.index'
 import { Route as PortfolioProjectsProjectCodeBusinessCaseRouteImport } from './routes/portfolio.projects.$projectCode_.business-case'
 import { Route as PortfolioRequestsRequestIdBusinessCaseRouteImport } from './routes/portfolio.requests_.$requestId.business-case'
+import { Route as GovernanceReportsTemplatesTemplateIdEditRouteImport } from './routes/governance.reports.templates.$templateId.edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -459,6 +468,11 @@ const GovernanceRaiddRoute = GovernanceRaiddRouteImport.update({
   path: '/raidd',
   getParentRoute: () => GovernanceRoute,
 } as any)
+const GovernanceReportsRoute = GovernanceReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => GovernanceRoute,
+} as any)
 const HomeIndexRoute = HomeIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -564,6 +578,11 @@ const ProjectsProjectCodeRoute = ProjectsProjectCodeRouteImport.update({
   path: '/$projectCode',
   getParentRoute: () => ProjectsRoute,
 } as any)
+const ReportPrintReportIdRoute = ReportPrintReportIdRouteImport.update({
+  id: '/report-print/$reportId',
+  path: '/report-print/$reportId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResourcesIndexRoute = ResourcesIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -615,6 +634,11 @@ const DeliveryDependenciesMapRoute = DeliveryDependenciesMapRouteImport.update({
   path: '/map',
   getParentRoute: () => DeliveryDependenciesRoute,
 } as any)
+const GovernanceReportsIndexRoute = GovernanceReportsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => GovernanceReportsRoute,
+} as any)
 const PortfolioCollectionsIndexRoute =
   PortfolioCollectionsIndexRouteImport.update({
     id: '/',
@@ -650,6 +674,36 @@ const PortfolioProjectsProjectCodeRoute =
     path: '/$projectCode',
     getParentRoute: () => PortfolioProjectsRoute,
   } as any)
+const GovernanceReportsReportIdIndexRoute =
+  GovernanceReportsReportIdIndexRouteImport.update({
+    id: '/$reportId/',
+    path: '/$reportId/',
+    getParentRoute: () => GovernanceReportsRoute,
+  } as any)
+const GovernanceReportsReportIdEditRoute =
+  GovernanceReportsReportIdEditRouteImport.update({
+    id: '/$reportId/edit',
+    path: '/$reportId/edit',
+    getParentRoute: () => GovernanceReportsRoute,
+  } as any)
+const GovernanceReportsReportIdPresentRoute =
+  GovernanceReportsReportIdPresentRouteImport.update({
+    id: '/$reportId/present',
+    path: '/$reportId/present',
+    getParentRoute: () => GovernanceReportsRoute,
+  } as any)
+const GovernanceReportsReportIdPrintRoute =
+  GovernanceReportsReportIdPrintRouteImport.update({
+    id: '/$reportId/print',
+    path: '/$reportId/print',
+    getParentRoute: () => GovernanceReportsRoute,
+  } as any)
+const GovernanceReportsTemplatesIndexRoute =
+  GovernanceReportsTemplatesIndexRouteImport.update({
+    id: '/templates/',
+    path: '/templates/',
+    getParentRoute: () => GovernanceReportsRoute,
+  } as any)
 const PortfolioProjectsProjectCodeBusinessCaseRoute =
   PortfolioProjectsProjectCodeBusinessCaseRouteImport.update({
     id: '/$projectCode_/business-case',
@@ -661,6 +715,12 @@ const PortfolioRequestsRequestIdBusinessCaseRoute =
     id: '/requests_/$requestId/business-case',
     path: '/requests/$requestId/business-case',
     getParentRoute: () => PortfolioRoute,
+  } as any)
+const GovernanceReportsTemplatesTemplateIdEditRoute =
+  GovernanceReportsTemplatesTemplateIdEditRouteImport.update({
+    id: '/templates/$templateId/edit',
+    path: '/templates/$templateId/edit',
+    getParentRoute: () => GovernanceReportsRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -726,6 +786,7 @@ export interface FileRoutesByFullPath {
   '/governance/improvement-actions': typeof GovernanceImprovementActionsRoute
   '/governance/lessons': typeof GovernanceLessonsRoute
   '/governance/raidd': typeof GovernanceRaiddRoute
+  '/governance/reports': typeof GovernanceReportsRouteWithChildren
   '/home/approvals': typeof HomeApprovalsRoute
   '/home/issued': typeof HomeIssuedRoute
   '/home/my-timeline': typeof HomeMyTimelineRoute
@@ -741,6 +802,7 @@ export interface FileRoutesByFullPath {
   '/portfolio/roadmap': typeof PortfolioRoadmapRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectCode': typeof ProjectsProjectCodeRoute
+  '/report-print/$reportId': typeof ReportPrintReportIdRoute
   '/resources/allocation': typeof ResourcesAllocationRoute
   '/resources/assignments': typeof ResourcesAssignmentsRoute
   '/resources/scenarios': typeof ResourcesScenariosRoute
@@ -766,11 +828,18 @@ export interface FileRoutesByFullPath {
   '/portfolio/programmes/$programmeId': typeof PortfolioProgrammesProgrammeIdRoute
   '/portfolio/projects/$projectCode': typeof PortfolioProjectsProjectCodeRoute
   '/delivery/dependencies/': typeof DeliveryDependenciesIndexRoute
+  '/governance/reports/': typeof GovernanceReportsIndexRoute
   '/portfolio/collections/': typeof PortfolioCollectionsIndexRoute
   '/portfolio/programmes/': typeof PortfolioProgrammesIndexRoute
   '/portfolio/projects/': typeof PortfolioProjectsIndexRoute
+  '/governance/reports/$reportId/edit': typeof GovernanceReportsReportIdEditRoute
+  '/governance/reports/$reportId/present': typeof GovernanceReportsReportIdPresentRoute
+  '/governance/reports/$reportId/print': typeof GovernanceReportsReportIdPrintRoute
   '/portfolio/projects/$projectCode/business-case': typeof PortfolioProjectsProjectCodeBusinessCaseRoute
   '/portfolio/requests/$requestId/business-case': typeof PortfolioRequestsRequestIdBusinessCaseRoute
+  '/governance/reports/$reportId/': typeof GovernanceReportsReportIdIndexRoute
+  '/governance/reports/templates/': typeof GovernanceReportsTemplatesIndexRoute
+  '/governance/reports/templates/$templateId/edit': typeof GovernanceReportsTemplatesTemplateIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -832,6 +901,7 @@ export interface FileRoutesByTo {
   '/portfolio/roadmap': typeof PortfolioRoadmapRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectCode': typeof ProjectsProjectCodeRoute
+  '/report-print/$reportId': typeof ReportPrintReportIdRoute
   '/resources/allocation': typeof ResourcesAllocationRoute
   '/resources/assignments': typeof ResourcesAssignmentsRoute
   '/resources/scenarios': typeof ResourcesScenariosRoute
@@ -857,11 +927,18 @@ export interface FileRoutesByTo {
   '/portfolio/programmes/$programmeId': typeof PortfolioProgrammesProgrammeIdRoute
   '/portfolio/projects/$projectCode': typeof PortfolioProjectsProjectCodeRoute
   '/delivery/dependencies': typeof DeliveryDependenciesIndexRoute
+  '/governance/reports': typeof GovernanceReportsIndexRoute
   '/portfolio/collections': typeof PortfolioCollectionsIndexRoute
   '/portfolio/programmes': typeof PortfolioProgrammesIndexRoute
   '/portfolio/projects': typeof PortfolioProjectsIndexRoute
+  '/governance/reports/$reportId/edit': typeof GovernanceReportsReportIdEditRoute
+  '/governance/reports/$reportId/present': typeof GovernanceReportsReportIdPresentRoute
+  '/governance/reports/$reportId/print': typeof GovernanceReportsReportIdPrintRoute
   '/portfolio/projects/$projectCode/business-case': typeof PortfolioProjectsProjectCodeBusinessCaseRoute
   '/portfolio/requests/$requestId/business-case': typeof PortfolioRequestsRequestIdBusinessCaseRoute
+  '/governance/reports/$reportId': typeof GovernanceReportsReportIdIndexRoute
+  '/governance/reports/templates': typeof GovernanceReportsTemplatesIndexRoute
+  '/governance/reports/templates/$templateId/edit': typeof GovernanceReportsTemplatesTemplateIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -927,6 +1004,7 @@ export interface FileRoutesById {
   '/governance/improvement-actions': typeof GovernanceImprovementActionsRoute
   '/governance/lessons': typeof GovernanceLessonsRoute
   '/governance/raidd': typeof GovernanceRaiddRoute
+  '/governance/reports': typeof GovernanceReportsRouteWithChildren
   '/home/approvals': typeof HomeApprovalsRoute
   '/home/issued': typeof HomeIssuedRoute
   '/home/my-timeline': typeof HomeMyTimelineRoute
@@ -942,6 +1020,7 @@ export interface FileRoutesById {
   '/portfolio/roadmap': typeof PortfolioRoadmapRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
   '/projects/$projectCode': typeof ProjectsProjectCodeRoute
+  '/report-print/$reportId': typeof ReportPrintReportIdRoute
   '/resources/allocation': typeof ResourcesAllocationRoute
   '/resources/assignments': typeof ResourcesAssignmentsRoute
   '/resources/scenarios': typeof ResourcesScenariosRoute
@@ -967,11 +1046,18 @@ export interface FileRoutesById {
   '/portfolio/programmes/$programmeId': typeof PortfolioProgrammesProgrammeIdRoute
   '/portfolio/projects/$projectCode': typeof PortfolioProjectsProjectCodeRoute
   '/delivery/dependencies/': typeof DeliveryDependenciesIndexRoute
+  '/governance/reports/': typeof GovernanceReportsIndexRoute
   '/portfolio/collections/': typeof PortfolioCollectionsIndexRoute
   '/portfolio/programmes/': typeof PortfolioProgrammesIndexRoute
   '/portfolio/projects/': typeof PortfolioProjectsIndexRoute
+  '/governance/reports/$reportId/edit': typeof GovernanceReportsReportIdEditRoute
+  '/governance/reports/$reportId/present': typeof GovernanceReportsReportIdPresentRoute
+  '/governance/reports/$reportId/print': typeof GovernanceReportsReportIdPrintRoute
   '/portfolio/projects/$projectCode_/business-case': typeof PortfolioProjectsProjectCodeBusinessCaseRoute
   '/portfolio/requests_/$requestId/business-case': typeof PortfolioRequestsRequestIdBusinessCaseRoute
+  '/governance/reports/$reportId/': typeof GovernanceReportsReportIdIndexRoute
+  '/governance/reports/templates/': typeof GovernanceReportsTemplatesIndexRoute
+  '/governance/reports/templates/$templateId/edit': typeof GovernanceReportsTemplatesTemplateIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -1038,6 +1124,7 @@ export interface FileRouteTypes {
     | '/governance/improvement-actions'
     | '/governance/lessons'
     | '/governance/raidd'
+    | '/governance/reports'
     | '/home/approvals'
     | '/home/issued'
     | '/home/my-timeline'
@@ -1053,6 +1140,7 @@ export interface FileRouteTypes {
     | '/portfolio/roadmap'
     | '/programmes/$programmeId'
     | '/projects/$projectCode'
+    | '/report-print/$reportId'
     | '/resources/allocation'
     | '/resources/assignments'
     | '/resources/scenarios'
@@ -1078,11 +1166,18 @@ export interface FileRouteTypes {
     | '/portfolio/programmes/$programmeId'
     | '/portfolio/projects/$projectCode'
     | '/delivery/dependencies/'
+    | '/governance/reports/'
     | '/portfolio/collections/'
     | '/portfolio/programmes/'
     | '/portfolio/projects/'
+    | '/governance/reports/$reportId/edit'
+    | '/governance/reports/$reportId/present'
+    | '/governance/reports/$reportId/print'
     | '/portfolio/projects/$projectCode/business-case'
     | '/portfolio/requests/$requestId/business-case'
+    | '/governance/reports/$reportId/'
+    | '/governance/reports/templates/'
+    | '/governance/reports/templates/$templateId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1144,6 +1239,7 @@ export interface FileRouteTypes {
     | '/portfolio/roadmap'
     | '/programmes/$programmeId'
     | '/projects/$projectCode'
+    | '/report-print/$reportId'
     | '/resources/allocation'
     | '/resources/assignments'
     | '/resources/scenarios'
@@ -1169,11 +1265,18 @@ export interface FileRouteTypes {
     | '/portfolio/programmes/$programmeId'
     | '/portfolio/projects/$projectCode'
     | '/delivery/dependencies'
+    | '/governance/reports'
     | '/portfolio/collections'
     | '/portfolio/programmes'
     | '/portfolio/projects'
+    | '/governance/reports/$reportId/edit'
+    | '/governance/reports/$reportId/present'
+    | '/governance/reports/$reportId/print'
     | '/portfolio/projects/$projectCode/business-case'
     | '/portfolio/requests/$requestId/business-case'
+    | '/governance/reports/$reportId'
+    | '/governance/reports/templates'
+    | '/governance/reports/templates/$templateId/edit'
   id:
     | '__root__'
     | '/'
@@ -1238,6 +1341,7 @@ export interface FileRouteTypes {
     | '/governance/improvement-actions'
     | '/governance/lessons'
     | '/governance/raidd'
+    | '/governance/reports'
     | '/home/approvals'
     | '/home/issued'
     | '/home/my-timeline'
@@ -1253,6 +1357,7 @@ export interface FileRouteTypes {
     | '/portfolio/roadmap'
     | '/programmes/$programmeId'
     | '/projects/$projectCode'
+    | '/report-print/$reportId'
     | '/resources/allocation'
     | '/resources/assignments'
     | '/resources/scenarios'
@@ -1278,11 +1383,18 @@ export interface FileRouteTypes {
     | '/portfolio/programmes/$programmeId'
     | '/portfolio/projects/$projectCode'
     | '/delivery/dependencies/'
+    | '/governance/reports/'
     | '/portfolio/collections/'
     | '/portfolio/programmes/'
     | '/portfolio/projects/'
+    | '/governance/reports/$reportId/edit'
+    | '/governance/reports/$reportId/present'
+    | '/governance/reports/$reportId/print'
     | '/portfolio/projects/$projectCode_/business-case'
     | '/portfolio/requests_/$requestId/business-case'
+    | '/governance/reports/$reportId/'
+    | '/governance/reports/templates/'
+    | '/governance/reports/templates/$templateId/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1328,6 +1440,7 @@ export interface RootRouteChildren {
   AuthDemoRoute: typeof AuthDemoRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
+  ReportPrintReportIdRoute: typeof ReportPrintReportIdRoute
   SignupSetupRoute: typeof SignupSetupRoute
   SignupIndexRoute: typeof SignupIndexRoute
 }
@@ -1810,6 +1923,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GovernanceRaiddRouteImport
       parentRoute: typeof GovernanceRoute
     }
+    '/governance/reports': {
+      id: '/governance/reports'
+      path: '/reports'
+      fullPath: '/governance/reports'
+      preLoaderRoute: typeof GovernanceReportsRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
     '/home/': {
       id: '/home/'
       path: '/'
@@ -1957,6 +2077,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsProjectCodeRouteImport
       parentRoute: typeof ProjectsRoute
     }
+    '/report-print/$reportId': {
+      id: '/report-print/$reportId'
+      path: '/report-print/$reportId'
+      fullPath: '/report-print/$reportId'
+      preLoaderRoute: typeof ReportPrintReportIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/resources/': {
       id: '/resources/'
       path: '/'
@@ -2027,6 +2154,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DeliveryDependenciesMapRouteImport
       parentRoute: typeof DeliveryDependenciesRoute
     }
+    '/governance/reports/': {
+      id: '/governance/reports/'
+      path: '/'
+      fullPath: '/governance/reports/'
+      preLoaderRoute: typeof GovernanceReportsIndexRouteImport
+      parentRoute: typeof GovernanceReportsRoute
+    }
     '/portfolio/collections/': {
       id: '/portfolio/collections/'
       path: '/'
@@ -2069,6 +2203,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortfolioProjectsProjectCodeRouteImport
       parentRoute: typeof PortfolioProjectsRoute
     }
+    '/governance/reports/$reportId/': {
+      id: '/governance/reports/$reportId/'
+      path: '/$reportId'
+      fullPath: '/governance/reports/$reportId/'
+      preLoaderRoute: typeof GovernanceReportsReportIdIndexRouteImport
+      parentRoute: typeof GovernanceReportsRoute
+    }
+    '/governance/reports/$reportId/edit': {
+      id: '/governance/reports/$reportId/edit'
+      path: '/$reportId/edit'
+      fullPath: '/governance/reports/$reportId/edit'
+      preLoaderRoute: typeof GovernanceReportsReportIdEditRouteImport
+      parentRoute: typeof GovernanceReportsRoute
+    }
+    '/governance/reports/$reportId/present': {
+      id: '/governance/reports/$reportId/present'
+      path: '/$reportId/present'
+      fullPath: '/governance/reports/$reportId/present'
+      preLoaderRoute: typeof GovernanceReportsReportIdPresentRouteImport
+      parentRoute: typeof GovernanceReportsRoute
+    }
+    '/governance/reports/$reportId/print': {
+      id: '/governance/reports/$reportId/print'
+      path: '/$reportId/print'
+      fullPath: '/governance/reports/$reportId/print'
+      preLoaderRoute: typeof GovernanceReportsReportIdPrintRouteImport
+      parentRoute: typeof GovernanceReportsRoute
+    }
+    '/governance/reports/templates/': {
+      id: '/governance/reports/templates/'
+      path: '/templates'
+      fullPath: '/governance/reports/templates/'
+      preLoaderRoute: typeof GovernanceReportsTemplatesIndexRouteImport
+      parentRoute: typeof GovernanceReportsRoute
+    }
     '/portfolio/projects/$projectCode_/business-case': {
       id: '/portfolio/projects/$projectCode_/business-case'
       path: '/$projectCode/business-case'
@@ -2082,6 +2251,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/portfolio/requests/$requestId/business-case'
       preLoaderRoute: typeof PortfolioRequestsRequestIdBusinessCaseRouteImport
       parentRoute: typeof PortfolioRoute
+    }
+    '/governance/reports/templates/$templateId/edit': {
+      id: '/governance/reports/templates/$templateId/edit'
+      path: '/templates/$templateId/edit'
+      fullPath: '/governance/reports/templates/$templateId/edit'
+      preLoaderRoute: typeof GovernanceReportsTemplatesTemplateIdEditRouteImport
+      parentRoute: typeof GovernanceReportsRoute
     }
   }
 }
@@ -2187,6 +2363,30 @@ const DependenciesRouteWithChildren = DependenciesRoute._addFileChildren(
   DependenciesRouteChildren,
 )
 
+interface GovernanceReportsRouteChildren {
+  GovernanceReportsIndexRoute: typeof GovernanceReportsIndexRoute
+  GovernanceReportsReportIdEditRoute: typeof GovernanceReportsReportIdEditRoute
+  GovernanceReportsReportIdPresentRoute: typeof GovernanceReportsReportIdPresentRoute
+  GovernanceReportsReportIdPrintRoute: typeof GovernanceReportsReportIdPrintRoute
+  GovernanceReportsReportIdIndexRoute: typeof GovernanceReportsReportIdIndexRoute
+  GovernanceReportsTemplatesIndexRoute: typeof GovernanceReportsTemplatesIndexRoute
+  GovernanceReportsTemplatesTemplateIdEditRoute: typeof GovernanceReportsTemplatesTemplateIdEditRoute
+}
+
+const GovernanceReportsRouteChildren: GovernanceReportsRouteChildren = {
+  GovernanceReportsIndexRoute: GovernanceReportsIndexRoute,
+  GovernanceReportsReportIdEditRoute: GovernanceReportsReportIdEditRoute,
+  GovernanceReportsReportIdPresentRoute: GovernanceReportsReportIdPresentRoute,
+  GovernanceReportsReportIdPrintRoute: GovernanceReportsReportIdPrintRoute,
+  GovernanceReportsReportIdIndexRoute: GovernanceReportsReportIdIndexRoute,
+  GovernanceReportsTemplatesIndexRoute: GovernanceReportsTemplatesIndexRoute,
+  GovernanceReportsTemplatesTemplateIdEditRoute:
+    GovernanceReportsTemplatesTemplateIdEditRoute,
+}
+
+const GovernanceReportsRouteWithChildren =
+  GovernanceReportsRoute._addFileChildren(GovernanceReportsRouteChildren)
+
 interface GovernanceRouteChildren {
   GovernanceChangesRoute: typeof GovernanceChangesRoute
   GovernanceCommitteePacksRoute: typeof GovernanceCommitteePacksRoute
@@ -2194,6 +2394,7 @@ interface GovernanceRouteChildren {
   GovernanceImprovementActionsRoute: typeof GovernanceImprovementActionsRoute
   GovernanceLessonsRoute: typeof GovernanceLessonsRoute
   GovernanceRaiddRoute: typeof GovernanceRaiddRoute
+  GovernanceReportsRoute: typeof GovernanceReportsRouteWithChildren
   GovernanceIndexRoute: typeof GovernanceIndexRoute
 }
 
@@ -2204,6 +2405,7 @@ const GovernanceRouteChildren: GovernanceRouteChildren = {
   GovernanceImprovementActionsRoute: GovernanceImprovementActionsRoute,
   GovernanceLessonsRoute: GovernanceLessonsRoute,
   GovernanceRaiddRoute: GovernanceRaiddRoute,
+  GovernanceReportsRoute: GovernanceReportsRouteWithChildren,
   GovernanceIndexRoute: GovernanceIndexRoute,
 }
 
@@ -2430,6 +2632,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthDemoRoute: AuthDemoRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,
+  ReportPrintReportIdRoute: ReportPrintReportIdRoute,
   SignupSetupRoute: SignupSetupRoute,
   SignupIndexRoute: SignupIndexRoute,
 }

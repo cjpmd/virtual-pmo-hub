@@ -1,0 +1,78 @@
+[
+  {
+    "name": "numeric operators",
+    "ruleSet": { "mode": "any", "rules": [
+      { "id": "gt", "label": "gt", "metric": "n", "op": ">", "value": 10, "severity": 1, "enabled": true },
+      { "id": "ge", "label": "ge", "metric": "n", "op": ">=", "value": 10, "severity": 1, "enabled": true },
+      { "id": "lt", "label": "lt", "metric": "n", "op": "<", "value": 5, "severity": 1, "enabled": true },
+      { "id": "le", "label": "le", "metric": "n", "op": "<=", "value": 5, "severity": 1, "enabled": true },
+      { "id": "eq", "label": "eq", "metric": "n", "op": "=", "value": 7, "severity": 1, "enabled": true },
+      { "id": "ne", "label": "ne", "metric": "n", "op": "!=", "value": 7, "severity": 1, "enabled": true }
+    ] },
+    "tolerances": {},
+    "projects": [
+      { "projectId": "00000000-0000-0000-0000-000000000001", "name": "A", "metrics": { "n": 10 } },
+      { "projectId": "00000000-0000-0000-0000-000000000002", "name": "B", "metrics": { "n": 5 } },
+      { "projectId": "00000000-0000-0000-0000-000000000003", "name": "C", "metrics": { "n": 7 } },
+      { "projectId": "00000000-0000-0000-0000-000000000004", "name": "D", "metrics": { "n": 11 } },
+      { "projectId": "00000000-0000-0000-0000-000000000005", "name": "E", "metrics": {} }
+    ],
+    "expected": {
+      "00000000-0000-0000-0000-000000000001": ["ge", "ne"],
+      "00000000-0000-0000-0000-000000000002": ["le", "ne"],
+      "00000000-0000-0000-0000-000000000003": ["eq"],
+      "00000000-0000-0000-0000-000000000004": ["ge", "gt", "ne"]
+    }
+  },
+  {
+    "name": "enum, boolean, in, worse_than",
+    "ruleSet": { "mode": "any", "rules": [
+      { "id": "red", "label": "Evidenced red", "metric": "evidenced_rating", "op": "=", "value": "red", "severity": 3, "enabled": true },
+      { "id": "worse", "label": "Worse than amber", "metric": "declared_rating", "op": "worse_than", "value": "amber", "severity": 2, "enabled": true },
+      { "id": "in", "label": "Amber or red benefits", "metric": "benefits_rating", "op": "in", "value": ["amber", "red"], "severity": 1, "enabled": true },
+      { "id": "flag", "label": "Worsened", "metric": "rating_worsened", "op": "=", "value": true, "severity": 2, "enabled": true },
+      { "id": "off", "label": "Disabled", "metric": "evidenced_rating", "op": "=", "value": "green", "severity": 1, "enabled": false }
+    ] },
+    "tolerances": {},
+    "projects": [
+      { "projectId": "00000000-0000-0000-0000-000000000011", "name": "Red", "metrics": { "evidenced_rating": "red", "declared_rating": "red", "benefits_rating": "not_set", "rating_worsened": false } },
+      { "projectId": "00000000-0000-0000-0000-000000000012", "name": "Green", "metrics": { "evidenced_rating": "green", "declared_rating": "green", "benefits_rating": "amber", "rating_worsened": true } },
+      { "projectId": "00000000-0000-0000-0000-000000000013", "name": "Unset", "metrics": { "evidenced_rating": "not_set", "declared_rating": "not_set", "benefits_rating": "green", "rating_worsened": false } }
+    ],
+    "expected": {
+      "00000000-0000-0000-0000-000000000011": ["red", "worse"],
+      "00000000-0000-0000-0000-000000000012": ["flag", "in"]
+    }
+  },
+  {
+    "name": "forum tolerance lookup",
+    "ruleSet": { "mode": "any", "rules": [
+      { "id": "slip", "label": "Slip", "metric": "max_milestone_slip_days", "op": ">", "value": 14, "useForumTolerance": true, "severity": 2, "enabled": true },
+      { "id": "budget", "label": "Budget", "metric": "budget_variance_pct", "op": ">", "value": 5, "useForumTolerance": true, "severity": 2, "enabled": true },
+      { "id": "gate", "label": "Gate", "metric": "days_to_next_gate", "op": "<=", "value": 30, "useForumTolerance": false, "severity": 1, "enabled": true }
+    ] },
+    "tolerances": { "max_milestone_slip_days": { "op": ">", "value": 30 }, "budget_variance_pct": 10 },
+    "projects": [
+      { "projectId": "00000000-0000-0000-0000-000000000021", "name": "Slip 20", "metrics": { "max_milestone_slip_days": 20, "budget_variance_pct": 8, "days_to_next_gate": 40 } },
+      { "projectId": "00000000-0000-0000-0000-000000000022", "name": "Slip 40", "metrics": { "max_milestone_slip_days": 40, "budget_variance_pct": 12.5, "days_to_next_gate": 12 } }
+    ],
+    "expected": {
+      "00000000-0000-0000-0000-000000000022": ["budget", "slip", "gate"]
+    }
+  },
+  {
+    "name": "mode all",
+    "ruleSet": { "mode": "all", "rules": [
+      { "id": "a", "label": "Red", "metric": "evidenced_rating", "op": "=", "value": "red", "severity": 3, "enabled": true },
+      { "id": "b", "label": "Over", "metric": "budget_variance_pct", "op": ">", "value": 5, "severity": 2, "enabled": true }
+    ] },
+    "tolerances": {},
+    "projects": [
+      { "projectId": "00000000-0000-0000-0000-000000000031", "name": "Both", "metrics": { "evidenced_rating": "red", "budget_variance_pct": 9 } },
+      { "projectId": "00000000-0000-0000-0000-000000000032", "name": "One", "metrics": { "evidenced_rating": "red", "budget_variance_pct": 1 } }
+    ],
+    "expected": {
+      "00000000-0000-0000-0000-000000000031": ["a", "b"]
+    }
+  }
+]

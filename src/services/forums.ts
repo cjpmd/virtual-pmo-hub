@@ -49,6 +49,8 @@ export interface ForumMember {
   forumId: string;
   resourceId: string;
   name: string;
+  /** Report builder role (chair, secretary, member, contributor, observer). */
+  role: string;
 }
 
 export interface MeetingItem {
@@ -107,7 +109,7 @@ export async function listForumMembers(orgId: string): Promise<ForumMember[]> {
   const rows = unwrap(
     await supabase
       .from("forum_members")
-      .select("forum_id, resource_id")
+      .select("forum_id, resource_id, role")
       .eq("organisation_id", orgId),
     "Loading forum members",
   );
@@ -124,6 +126,7 @@ export async function listForumMembers(orgId: string): Promise<ForumMember[]> {
       forumId: row.forum_id,
       resourceId: row.resource_id,
       name: name.get(row.resource_id) ?? "Unknown",
+      role: row.role,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }

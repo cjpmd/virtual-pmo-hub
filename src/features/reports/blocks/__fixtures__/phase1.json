@@ -1,0 +1,921 @@
+{
+    "scope": {
+        "top_raid": {
+            "rows": [
+                {
+                    "id": "a800015d-d5c7-4174-a2ef-3a249ae14da5",
+                    "ref": "RSK-003",
+                    "band": {
+                        "key": "critical",
+                        "max": 25,
+                        "min": 15,
+                        "top": true,
+                        "rank": 3,
+                        "label": "Critical",
+                        "colour": "#b3261e"
+                    },
+                    "kind": "risk",
+                    "rank": 3,
+                    "owner": "Pete Manager",
+                    "score": 20,
+                    "title": "Data migration defects",
+                    "severity": null,
+                    "likelihood": 5,
+                    "updated_at": "2026-11-03T14:13:41.376816+00:00",
+                    "consequence": 4,
+                    "review_date": null,
+                    "project_code": "RD01"
+                },
+                {
+                    "id": "b6283bae-26d3-4a43-b188-5bea5dd6b94d",
+                    "ref": "RSK-001",
+                    "band": {
+                        "key": "critical",
+                        "max": 25,
+                        "min": 15,
+                        "top": true,
+                        "rank": 3,
+                        "label": "Critical",
+                        "colour": "#b3261e"
+                    },
+                    "kind": "risk",
+                    "rank": 3,
+                    "owner": "Pete Manager",
+                    "score": 16,
+                    "title": "Identity provider contract may lapse",
+                    "severity": null,
+                    "likelihood": 4,
+                    "updated_at": "2026-11-03T14:13:41.376816+00:00",
+                    "consequence": 4,
+                    "review_date": "2026-11-17",
+                    "project_code": "RD02"
+                },
+                {
+                    "id": "82524d2a-6964-45f2-8a7b-279edd72118a",
+                    "ref": "RSK-004",
+                    "band": {
+                        "key": "elevated",
+                        "max": 14,
+                        "min": 8,
+                        "top": false,
+                        "rank": 2,
+                        "label": "Elevated",
+                        "colour": "#b7791f"
+                    },
+                    "kind": "risk",
+                    "rank": 2,
+                    "owner": "Pete Manager",
+                    "score": 12,
+                    "title": "Clinical safety sign-off delayed",
+                    "severity": null,
+                    "likelihood": 3,
+                    "updated_at": "2026-11-03T14:13:41.376816+00:00",
+                    "consequence": 4,
+                    "review_date": null,
+                    "project_code": "RD01"
+                }
+            ],
+            "matrix": {
+                "name": "Standard 5×5",
+                "bands": [
+                    {
+                        "key": "low",
+                        "max": 7,
+                        "min": 1,
+                        "label": "Low",
+                        "colour": "#2e7d52"
+                    },
+                    {
+                        "key": "elevated",
+                        "max": 14,
+                        "min": 8,
+                        "label": "Elevated",
+                        "colour": "#b7791f"
+                    },
+                    {
+                        "key": "critical",
+                        "max": 25,
+                        "min": 15,
+                        "label": "Critical",
+                        "colour": "#b3261e"
+                    }
+                ]
+            },
+            "open_total": 3
+        },
+        "free_text": {
+            "heading": "Forward look",
+            "narrative": null
+        },
+        "report_cover": {
+            "as_at": "2026-11-03",
+            "title": "Fixture pack",
+            "author": null,
+            "status": "draft",
+            "forum_name": "Digital Care Programme Board",
+            "scope_type": "programme",
+            "scope_label": "Digital Care",
+            "meeting_date": null,
+            "project_count": 6,
+            "overall_rating": null,
+            "overall_rating_rationale": null
+        },
+        "budget_summary": {
+            "rows": [
+                {
+                    "id": "d0000000-0000-4000-8000-000000001001",
+                    "eac": 1250000.00,
+                    "code": "RD01",
+                    "name": "Electronic Patient Record",
+                    "budget": 1000000.00,
+                    "variance": 250000.00,
+                    "change_period": null,
+                    "actual_to_date": 300000.00,
+                    "actuals_through": "2026-10-01",
+                    "variance_percent": 25.0
+                },
+                {
+                    "id": "d0000000-0000-4000-8000-000000001005",
+                    "eac": 1080000.00,
+                    "code": "RD05",
+                    "name": "Digital Pathology",
+                    "budget": 1000000.00,
+                    "variance": 80000.00,
+                    "change_period": null,
+                    "actual_to_date": 300000.00,
+                    "actuals_through": "2026-10-01",
+                    "variance_percent": 8.0
+                },
+                {
+                    "id": "d0000000-0000-4000-8000-000000001004",
+                    "eac": 990000.00,
+                    "code": "RD04",
+                    "name": "Clinical Messaging",
+                    "budget": 1000000.00,
+                    "variance": -10000.00,
+                    "change_period": null,
+                    "actual_to_date": 300000.00,
+                    "actuals_through": "2026-10-01",
+                    "variance_percent": -1.0
+                },
+                {
+                    "id": "d0000000-0000-4000-8000-000000001002",
+                    "eac": 990000.00,
+                    "code": "RD02",
+                    "name": "Patient Portal",
+                    "budget": 1000000.00,
+                    "variance": -10000.00,
+                    "change_period": null,
+                    "actual_to_date": 300000.00,
+                    "actuals_through": "2026-10-01",
+                    "variance_percent": -1.0
+                },
+                {
+                    "id": "d0000000-0000-4000-8000-000000001006",
+                    "eac": 990000.00,
+                    "code": "RD06",
+                    "name": "Theatre Scheduling",
+                    "budget": 1000000.00,
+                    "variance": -10000.00,
+                    "change_period": null,
+                    "actual_to_date": 300000.00,
+                    "actuals_through": "2026-10-01",
+                    "variance_percent": -1.0
+                },
+                {
+                    "id": "d0000000-0000-4000-8000-000000001003",
+                    "eac": 990000.00,
+                    "code": "RD03",
+                    "name": "Virtual Wards",
+                    "budget": 1000000.00,
+                    "variance": -10000.00,
+                    "change_period": null,
+                    "actual_to_date": 300000.00,
+                    "actuals_through": "2026-10-01",
+                    "variance_percent": -1.0
+                }
+            ],
+            "totals": {
+                "eac": 6290000.00,
+                "budget": 6000000.00,
+                "variance": 290000.00,
+                "change_period": null,
+                "actual_to_date": 1800000.00,
+                "variance_percent": 4.8
+            },
+            "currency": "GBP"
+        },
+        "overall_status": {
+            "mode": "scope",
+            "counts": {
+                "red": 4,
+                "amber": 1,
+                "green": 1,
+                "not_set": 0
+            },
+            "declared": null,
+            "divergent": 5,
+            "evidenced": "red",
+            "rationale": null
+        },
+        "change_requests": {
+            "rows": [
+                {
+                    "id": "64211cef-de0e-482f-9222-9c497ee63c9c",
+                    "ref": "CR-001",
+                    "title": "Add maternity module",
+                    "status": "proposed",
+                    "created_at": "2026-11-03T14:13:41.376816+00:00",
+                    "updated_at": "2026-11-03T14:13:41.376816+00:00",
+                    "change_type": "Scope",
+                    "cost_impact": 120000.00,
+                    "project_code": "RD01",
+                    "schedule_impact_days": 30
+                },
+                {
+                    "id": "e3571ce7-d078-414c-a413-af3cdbee9131",
+                    "ref": "CR-001",
+                    "title": "Defer GP integration to phase 2",
+                    "status": "approved",
+                    "created_at": "2026-11-03T14:13:41.376816+00:00",
+                    "updated_at": "2026-11-03T14:13:41.376816+00:00",
+                    "change_type": "Scope",
+                    "cost_impact": -40000.00,
+                    "project_code": "RD04",
+                    "schedule_impact_days": -10
+                }
+            ]
+        },
+        "section_heading": {
+            "title": "Deep-dives"
+        },
+        "executive_summary": {
+            "heading": null,
+            "narrative": {
+                "id": "n1",
+                "body": {
+                    "text": "**On track** overall.",
+                    "format": "markdown"
+                },
+                "source": "human",
+                "updated_at": "2026-11-01T10:00:00Z"
+            }
+        },
+        "decisions_required": {
+            "rows": [
+                {
+                    "id": "d0000000-0000-4000-8000-000000000701",
+                    "ref": "DEC-001",
+                    "title": "Choose the theatre scheduling supplier",
+                    "status": "pending",
+                    "context": "Two compliant bids. Option A is cheaper; option B integrates with the existing PAS.",
+                    "options": [
+                        {
+                            "id": "20373604-c969-4d2f-90dc-e28a45651405",
+                            "cons": [
+                                "Custom PAS interface"
+                            ],
+                            "pros": [
+                                "£80k cheaper"
+                            ],
+                            "title": "Supplier A"
+                        },
+                        {
+                            "id": "c15110f8-bcf3-4da6-989c-b0f8d1318a67",
+                            "cons": [
+                                "Higher licence cost"
+                            ],
+                            "pros": [
+                                "Native PAS integration"
+                            ],
+                            "title": "Supplier B (recommended)"
+                        }
+                    ],
+                    "overdue": false,
+                    "forum_name": "Digital Care Programme Board",
+                    "impact_cost": false,
+                    "impact_time": false,
+                    "days_overdue": null,
+                    "impact_scope": false,
+                    "project_code": "RD06",
+                    "project_name": "Theatre Scheduling",
+                    "needed_by_date": "2026-11-13",
+                    "impact_benefits": false,
+                    "impact_cost_note": null,
+                    "impact_time_note": null,
+                    "impact_scope_note": null,
+                    "target_meeting_date": "2026-11-08",
+                    "impact_benefits_note": null
+                }
+            ]
+        },
+        "milestone_slippage": {
+            "rows": [
+                {
+                    "id": "b668a9a3-82ee-47d5-9c17-e1b363e9f426",
+                    "ord": 1,
+                    "ref": "MS-003",
+                    "type": "delivery",
+                    "title": "Go-live",
+                    "status": "late",
+                    "slip_band": "severe",
+                    "slip_days": 40,
+                    "actual_date": null,
+                    "project_code": "RD04",
+                    "project_name": "Clinical Messaging",
+                    "baseline_date": "2026-11-23",
+                    "forecast_date": "2027-01-02"
+                },
+                {
+                    "id": "8a07b250-b5f5-4ac0-a5e0-943edfb8accb",
+                    "ord": 2,
+                    "ref": "MS-003",
+                    "type": "delivery",
+                    "title": "Remote monitoring live",
+                    "status": "late",
+                    "slip_band": "severe",
+                    "slip_days": 35,
+                    "actual_date": null,
+                    "project_code": "RD03",
+                    "project_name": "Virtual Wards",
+                    "baseline_date": "2026-10-24",
+                    "forecast_date": "2026-11-28"
+                },
+                {
+                    "id": "138389bb-1487-4cd6-a6c5-5cfa1b6fa6cb",
+                    "ord": 3,
+                    "ref": "MS-002",
+                    "type": "delivery",
+                    "title": "Build complete",
+                    "status": "future",
+                    "slip_band": "on_time",
+                    "slip_days": 0,
+                    "actual_date": null,
+                    "project_code": "RD03",
+                    "project_name": "Virtual Wards",
+                    "baseline_date": "2027-01-02",
+                    "forecast_date": "2027-01-02"
+                },
+                {
+                    "id": "a2a2c6d7-9179-4d82-89ba-e3c60814cf93",
+                    "ord": 4,
+                    "ref": "MS-002",
+                    "type": "delivery",
+                    "title": "Build complete",
+                    "status": "future",
+                    "slip_band": "on_time",
+                    "slip_days": 0,
+                    "actual_date": null,
+                    "project_code": "RD04",
+                    "project_name": "Clinical Messaging",
+                    "baseline_date": "2027-01-02",
+                    "forecast_date": "2027-01-02"
+                },
+                {
+                    "id": "beead38d-6907-41d2-8cb5-d495acc72e91",
+                    "ord": 5,
+                    "ref": "MS-002",
+                    "type": "delivery",
+                    "title": "Build complete",
+                    "status": "future",
+                    "slip_band": "on_time",
+                    "slip_days": 0,
+                    "actual_date": null,
+                    "project_code": "RD01",
+                    "project_name": "Electronic Patient Record",
+                    "baseline_date": "2027-01-02",
+                    "forecast_date": "2027-01-02"
+                },
+                {
+                    "id": "4666f204-cef6-46bc-8b73-d8d13c3c94e6",
+                    "ord": 6,
+                    "ref": "MS-002",
+                    "type": "delivery",
+                    "title": "Build complete",
+                    "status": "future",
+                    "slip_band": "on_time",
+                    "slip_days": 0,
+                    "actual_date": null,
+                    "project_code": "RD06",
+                    "project_name": "Theatre Scheduling",
+                    "baseline_date": "2027-01-02",
+                    "forecast_date": "2027-01-02"
+                },
+                {
+                    "id": "f1881d1c-63b9-4e4a-b183-b1330f207247",
+                    "ord": 7,
+                    "ref": "MS-002",
+                    "type": "delivery",
+                    "title": "Build complete",
+                    "status": "future",
+                    "slip_band": "on_time",
+                    "slip_days": 0,
+                    "actual_date": null,
+                    "project_code": "RD05",
+                    "project_name": "Digital Pathology",
+                    "baseline_date": "2027-01-02",
+                    "forecast_date": "2027-01-02"
+                },
+                {
+                    "id": "70b35b49-491a-46d7-a0c5-655c2fe892a9",
+                    "ord": 8,
+                    "ref": "MS-002",
+                    "type": "delivery",
+                    "title": "Build complete",
+                    "status": "future",
+                    "slip_band": "on_time",
+                    "slip_days": 0,
+                    "actual_date": null,
+                    "project_code": "RD02",
+                    "project_name": "Patient Portal",
+                    "baseline_date": "2027-01-02",
+                    "forecast_date": "2027-01-02"
+                }
+            ],
+            "multi": true
+        },
+        "health_by_dimension": {
+            "mode": "scope",
+            "dimensions": [
+                {
+                    "red": 2,
+                    "amber": 0,
+                    "green": 4,
+                    "not_set": 0,
+                    "dimension": "schedule"
+                },
+                {
+                    "red": 1,
+                    "amber": 1,
+                    "green": 4,
+                    "not_set": 0,
+                    "dimension": "financial"
+                },
+                {
+                    "red": 0,
+                    "amber": 0,
+                    "green": 6,
+                    "not_set": 0,
+                    "dimension": "effort"
+                },
+                {
+                    "red": 2,
+                    "amber": 0,
+                    "green": 4,
+                    "not_set": 0,
+                    "dimension": "issue"
+                },
+                {
+                    "red": 0,
+                    "amber": 0,
+                    "green": 0,
+                    "not_set": 6,
+                    "dimension": "benefit"
+                },
+                {
+                    "red": 4,
+                    "amber": 1,
+                    "green": 1,
+                    "not_set": 0,
+                    "dimension": "overall"
+                }
+            ]
+        },
+        "project_status_grid": {
+            "rows": [
+                {
+                    "id": "d0000000-0000-4000-8000-000000001004",
+                    "code": "RD04",
+                    "name": "Clinical Messaging",
+                    "issue": "green",
+                    "phase": "Phase 3 - Design & Procure",
+                    "state": "active",
+                    "effort": "green",
+                    "benefit": "not_set",
+                    "manager": "Chloe Chair",
+                    "reasons": [
+                    ],
+                    "declared": "green",
+                    "schedule": "red",
+                    "evidenced": "red",
+                    "financial": "green",
+                    "inclusion": null,
+                    "programme_id": "d0000000-0000-4000-8000-000000000401",
+                    "programme_name": "Digital Care",
+                    "divergence_days": 0,
+                    "percent_complete": 0,
+                    "budget_variance_pct": -1.0,
+                    "forecast_finish_date": "2027-08-30",
+                    "finish_vs_baseline_days": 0
+                },
+                {
+                    "id": "d0000000-0000-4000-8000-000000001005",
+                    "code": "RD05",
+                    "name": "Digital Pathology",
+                    "issue": "green",
+                    "phase": "Phase 3 - Design & Procure",
+                    "state": "active",
+                    "effort": "green",
+                    "benefit": "not_set",
+                    "manager": "Chloe Chair",
+                    "reasons": [
+                    ],
+                    "declared": "green",
+                    "schedule": "green",
+                    "evidenced": "amber",
+                    "financial": "amber",
+                    "inclusion": null,
+                    "programme_id": "d0000000-0000-4000-8000-000000000401",
+                    "programme_name": "Digital Care",
+                    "divergence_days": 0,
+                    "percent_complete": 0,
+                    "budget_variance_pct": 8.0,
+                    "forecast_finish_date": "2027-08-30",
+                    "finish_vs_baseline_days": 0
+                },
+                {
+                    "id": "d0000000-0000-4000-8000-000000001001",
+                    "code": "RD01",
+                    "name": "Electronic Patient Record",
+                    "issue": "red",
+                    "phase": "Phase 3 - Design & Procure",
+                    "state": "active",
+                    "effort": "green",
+                    "benefit": "not_set",
+                    "manager": "Pete Manager",
+                    "reasons": [
+                    ],
+                    "declared": "green",
+                    "schedule": "green",
+                    "evidenced": "red",
+                    "financial": "red",
+                    "inclusion": null,
+                    "programme_id": "d0000000-0000-4000-8000-000000000401",
+                    "programme_name": "Digital Care",
+                    "divergence_days": 0,
+                    "percent_complete": 0,
+                    "budget_variance_pct": 25.0,
+                    "forecast_finish_date": "2027-08-30",
+                    "finish_vs_baseline_days": 0
+                },
+                {
+                    "id": "d0000000-0000-4000-8000-000000001002",
+                    "code": "RD02",
+                    "name": "Patient Portal",
+                    "issue": "red",
+                    "phase": "Phase 3 - Design & Procure",
+                    "state": "active",
+                    "effort": "green",
+                    "benefit": "not_set",
+                    "manager": "Chloe Chair",
+                    "reasons": [
+                    ],
+                    "declared": "green",
+                    "schedule": "green",
+                    "evidenced": "red",
+                    "financial": "green",
+                    "inclusion": null,
+                    "programme_id": "d0000000-0000-4000-8000-000000000401",
+                    "programme_name": "Digital Care",
+                    "divergence_days": 0,
+                    "percent_complete": 0,
+                    "budget_variance_pct": -1.0,
+                    "forecast_finish_date": "2027-08-30",
+                    "finish_vs_baseline_days": 0
+                },
+                {
+                    "id": "d0000000-0000-4000-8000-000000001006",
+                    "code": "RD06",
+                    "name": "Theatre Scheduling",
+                    "issue": "green",
+                    "phase": "Phase 3 - Design & Procure",
+                    "state": "active",
+                    "effort": "green",
+                    "benefit": "not_set",
+                    "manager": "Chloe Chair",
+                    "reasons": [
+                    ],
+                    "declared": "green",
+                    "schedule": "green",
+                    "evidenced": "green",
+                    "financial": "green",
+                    "inclusion": null,
+                    "programme_id": "d0000000-0000-4000-8000-000000000401",
+                    "programme_name": "Digital Care",
+                    "divergence_days": 0,
+                    "percent_complete": 0,
+                    "budget_variance_pct": -1.0,
+                    "forecast_finish_date": "2027-08-30",
+                    "finish_vs_baseline_days": 0
+                },
+                {
+                    "id": "d0000000-0000-4000-8000-000000001003",
+                    "code": "RD03",
+                    "name": "Virtual Wards",
+                    "issue": "green",
+                    "phase": "Phase 3 - Design & Procure",
+                    "state": "active",
+                    "effort": "green",
+                    "benefit": "not_set",
+                    "manager": "Chloe Chair",
+                    "reasons": [
+                    ],
+                    "declared": "green",
+                    "schedule": "red",
+                    "evidenced": "red",
+                    "financial": "green",
+                    "inclusion": null,
+                    "programme_id": "d0000000-0000-4000-8000-000000000401",
+                    "programme_name": "Digital Care",
+                    "divergence_days": 42,
+                    "percent_complete": 0,
+                    "budget_variance_pct": -1.0,
+                    "forecast_finish_date": "2027-08-30",
+                    "finish_vs_baseline_days": 0
+                }
+            ],
+            "total": 6,
+            "group_by": "programme"
+        }
+    },
+    "project": {
+        "top_raid": {
+            "rows": [
+                {
+                    "id": "a800015d-d5c7-4174-a2ef-3a249ae14da5",
+                    "ref": "RSK-003",
+                    "band": {
+                        "key": "critical",
+                        "max": 25,
+                        "min": 15,
+                        "top": true,
+                        "rank": 3,
+                        "label": "Critical",
+                        "colour": "#b3261e"
+                    },
+                    "kind": "risk",
+                    "rank": 3,
+                    "owner": "Pete Manager",
+                    "score": 20,
+                    "title": "Data migration defects",
+                    "severity": null,
+                    "likelihood": 5,
+                    "updated_at": "2026-11-03T14:13:41.376816+00:00",
+                    "consequence": 4,
+                    "review_date": null,
+                    "project_code": "RD01"
+                },
+                {
+                    "id": "82524d2a-6964-45f2-8a7b-279edd72118a",
+                    "ref": "RSK-004",
+                    "band": {
+                        "key": "elevated",
+                        "max": 14,
+                        "min": 8,
+                        "top": false,
+                        "rank": 2,
+                        "label": "Elevated",
+                        "colour": "#b7791f"
+                    },
+                    "kind": "risk",
+                    "rank": 2,
+                    "owner": "Pete Manager",
+                    "score": 12,
+                    "title": "Clinical safety sign-off delayed",
+                    "severity": null,
+                    "likelihood": 3,
+                    "updated_at": "2026-11-03T14:13:41.376816+00:00",
+                    "consequence": 4,
+                    "review_date": null,
+                    "project_code": "RD01"
+                }
+            ],
+            "matrix": {
+                "name": "Standard 5×5",
+                "bands": [
+                    {
+                        "key": "low",
+                        "max": 7,
+                        "min": 1,
+                        "label": "Low",
+                        "colour": "#2e7d52"
+                    },
+                    {
+                        "key": "elevated",
+                        "max": 14,
+                        "min": 8,
+                        "label": "Elevated",
+                        "colour": "#b7791f"
+                    },
+                    {
+                        "key": "critical",
+                        "max": 25,
+                        "min": 15,
+                        "label": "Critical",
+                        "colour": "#b3261e"
+                    }
+                ]
+            },
+            "open_total": 2
+        },
+        "budget_summary": {
+            "rows": [
+                {
+                    "id": "d0000000-0000-4000-8000-000000001001",
+                    "eac": 1250000.00,
+                    "code": "RD01",
+                    "name": "Electronic Patient Record",
+                    "budget": 1000000.00,
+                    "variance": 250000.00,
+                    "change_period": null,
+                    "actual_to_date": 300000.00,
+                    "actuals_through": "2026-10-01",
+                    "variance_percent": 25.0
+                }
+            ],
+            "totals": {
+                "eac": 1250000.00,
+                "budget": 1000000.00,
+                "variance": 250000.00,
+                "change_period": null,
+                "actual_to_date": 300000.00,
+                "variance_percent": 25.0
+            },
+            "currency": "GBP"
+        },
+        "overall_status": {
+            "mode": "project",
+            "trend": [
+                {
+                    "month": "2026-08",
+                    "rating": "green"
+                },
+                {
+                    "month": "2026-09",
+                    "rating": "amber"
+                },
+                {
+                    "month": "2026-10",
+                    "rating": "amber"
+                }
+            ],
+            "declared": "green",
+            "evidenced": "red",
+            "justified": false,
+            "justification": null,
+            "report_overdue": true,
+            "divergence_days": 42,
+            "divergence_alert": true,
+            "last_report_date": "2026-09-04",
+            "rating_rank_delta": 2
+        },
+        "project_summary": {
+            "id": "d0000000-0000-4000-8000-000000001001",
+            "code": "RD01",
+            "name": "Electronic Patient Record",
+            "tier": "large",
+            "phase": "Phase 3 - Design & Procure",
+            "state": "active",
+            "manager": "Pete Manager",
+            "sponsor": "Adam Admin",
+            "priority": "high",
+            "programme": "Digital Care",
+            "start_date": "2026-03-08",
+            "finish_date": "2027-08-30",
+            "phase_count": 6,
+            "phase_index": 2,
+            "project_officer": null,
+            "percent_complete": 0,
+            "baseline_finish_date": "2027-08-30",
+            "forecast_finish_date": "2027-08-30",
+            "finish_vs_baseline_days": 0
+        },
+        "milestone_slippage": {
+            "rows": [
+                {
+                    "id": "b668a9a3-82ee-47d5-9c17-e1b363e9f426",
+                    "ord": 1,
+                    "ref": "MS-003",
+                    "type": "delivery",
+                    "title": "Go-live",
+                    "status": "late",
+                    "slip_band": "severe",
+                    "slip_days": 40,
+                    "actual_date": null,
+                    "project_code": "RD04",
+                    "project_name": "Clinical Messaging",
+                    "baseline_date": "2026-11-23",
+                    "forecast_date": "2027-01-02"
+                },
+                {
+                    "id": "a2a2c6d7-9179-4d82-89ba-e3c60814cf93",
+                    "ord": 2,
+                    "ref": "MS-002",
+                    "type": "delivery",
+                    "title": "Build complete",
+                    "status": "future",
+                    "slip_band": "on_time",
+                    "slip_days": 0,
+                    "actual_date": null,
+                    "project_code": "RD04",
+                    "project_name": "Clinical Messaging",
+                    "baseline_date": "2027-01-02",
+                    "forecast_date": "2027-01-02"
+                }
+            ],
+            "multi": false
+        },
+        "health_by_dimension": {
+            "mode": "project",
+            "months": [
+                {
+                    "month": "2026-08",
+                    "declared": null,
+                    "evidenced": {
+                        "issue": "green",
+                        "effort": "green",
+                        "benefit": "not_set",
+                        "overall": "green",
+                        "schedule": "green",
+                        "financial": "green"
+                    }
+                },
+                {
+                    "month": "2026-09",
+                    "declared": {
+                        "issue": "green",
+                        "effort": "green",
+                        "benefit": "not_set",
+                        "overall": "green",
+                        "schedule": "green",
+                        "financial": "green"
+                    },
+                    "evidenced": {
+                        "issue": "green",
+                        "effort": "green",
+                        "benefit": "not_set",
+                        "overall": "amber",
+                        "schedule": "amber",
+                        "financial": "green"
+                    }
+                },
+                {
+                    "month": "2026-10",
+                    "declared": {
+                        "issue": "green",
+                        "effort": "green",
+                        "benefit": "not_set",
+                        "overall": "green",
+                        "schedule": "green",
+                        "financial": "green"
+                    },
+                    "evidenced": {
+                        "issue": "green",
+                        "effort": "green",
+                        "benefit": "not_set",
+                        "overall": "amber",
+                        "schedule": "amber",
+                        "financial": "green"
+                    }
+                }
+            ],
+            "current": {
+                "issue": "green",
+                "effort": "green",
+                "benefit": "not_set",
+                "overall": "red",
+                "schedule": "red",
+                "financial": "green"
+            }
+        },
+        "highlight_report_summary": {
+            "id": "2ac14d56-0c05-42af-a94f-ff95a42626fe",
+            "ref": "SR-001",
+            "author": "Pete Manager",
+            "planned": "Start build; confirm test environments.",
+            "comments": "Progressing to plan. Supplier mobilised and design assurance complete.",
+            "declared": {
+                "issue": "green",
+                "effort": "green",
+                "benefit": "not_set",
+                "overall": "green",
+                "schedule": "green",
+                "financial": "green"
+            },
+            "evidenced": {
+                "issue": "green",
+                "effort": "green",
+                "benefit": "not_set",
+                "overall": "green",
+                "schedule": "green",
+                "financial": "green"
+            },
+            "accomplished": "Completed design sign-off; onboarded supplier team.",
+            "project_code": "RD01",
+            "project_name": "Electronic Patient Record",
+            "submitted_at": "2026-10-13T14:13:41.376816+00:00",
+            "reporting_date": "2026-10-13",
+            "decisions_needed": null
+        }
+    }
+}
