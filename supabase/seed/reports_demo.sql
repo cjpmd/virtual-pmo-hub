@@ -48,15 +48,45 @@ begin
   end if;
 
   -- People (auth.users → profiles by trigger)
-  insert into auth.users (id, email, raw_user_meta_data, email_confirmed_at, aud, role) values
-    (u_pmo, 'pmo@reports-demo.test', '{"full_name":"Priya PMO"}', now(), 'authenticated', 'authenticated'),
-    (u_admin, 'admin@reports-demo.test', '{"full_name":"Adam Admin"}', now(), 'authenticated', 'authenticated'),
-    (u_chair, 'chair@reports-demo.test', '{"full_name":"Chloe Chair"}', now(), 'authenticated', 'authenticated'),
-    (u_pm, 'pm@reports-demo.test', '{"full_name":"Pete Manager"}', now(), 'authenticated', 'authenticated'),
-    (u_viewer, 'viewer@reports-demo.test', '{"full_name":"Vera Viewer"}', now(), 'authenticated', 'authenticated'),
-    (u_out, 'outsider@other-org.test', '{"full_name":"Olly Outsider"}', now(), 'authenticated', 'authenticated'),
-    (u_partner, 'partner@partner-org.test', '{"full_name":"Pia Partner"}', now(), 'authenticated', 'authenticated')
+  -- GoTrue (hosted Supabase) requires several fields to be non-null that Postgres would leave
+  -- null by default: instance_id, timestamps, token strings, email_change, raw_app_meta_data.
+  insert into auth.users (
+    id, email, raw_user_meta_data, email_confirmed_at, confirmed_at, aud, role,
+    instance_id, created_at, updated_at, last_sign_in_at,
+    confirmation_token, recovery_token, email_change_token_new, email_change_token_current,
+    phone_change_token, reauthentication_token, email_change, phone_change,
+    raw_app_meta_data
+  ) values
+    (u_pmo, 'pmo@reports-demo.test', '{"full_name":"Priya PMO"}', now(), now(), 'authenticated', 'authenticated',
+      '00000000-0000-0000-0000-000000000000', now(), now(), now(), '', '', '', '', '', '', '', '',
+      '{"provider":"email","providers":["email"]}'),
+    (u_admin, 'admin@reports-demo.test', '{"full_name":"Adam Admin"}', now(), now(), 'authenticated', 'authenticated',
+      '00000000-0000-0000-0000-000000000000', now(), now(), now(), '', '', '', '', '', '', '', '',
+      '{"provider":"email","providers":["email"]}'),
+    (u_chair, 'chair@reports-demo.test', '{"full_name":"Chloe Chair"}', now(), now(), 'authenticated', 'authenticated',
+      '00000000-0000-0000-0000-000000000000', now(), now(), now(), '', '', '', '', '', '', '', '',
+      '{"provider":"email","providers":["email"]}'),
+    (u_pm, 'pm@reports-demo.test', '{"full_name":"Pete Manager"}', now(), now(), 'authenticated', 'authenticated',
+      '00000000-0000-0000-0000-000000000000', now(), now(), now(), '', '', '', '', '', '', '', '',
+      '{"provider":"email","providers":["email"]}'),
+    (u_viewer, 'viewer@reports-demo.test', '{"full_name":"Vera Viewer"}', now(), now(), 'authenticated', 'authenticated',
+      '00000000-0000-0000-0000-000000000000', now(), now(), now(), '', '', '', '', '', '', '', '',
+      '{"provider":"email","providers":["email"]}'),
+    (u_out, 'outsider@other-org.test', '{"full_name":"Olly Outsider"}', now(), now(), 'authenticated', 'authenticated',
+      '00000000-0000-0000-0000-000000000000', now(), now(), now(), '', '', '', '', '', '', '', '',
+      '{"provider":"email","providers":["email"]}'),
+    (u_partner, 'partner@partner-org.test', '{"full_name":"Pia Partner"}', now(), now(), 'authenticated', 'authenticated',
+      '00000000-0000-0000-0000-000000000000', now(), now(), now(), '', '', '', '', '', '', '', '',
+      '{"provider":"email","providers":["email"]}')
   on conflict (id) do nothing;
+  -- auth.identities: needed for GoTrue email/password login
+  insert into auth.identities (id, provider_id, user_id, identity_data, provider, created_at, updated_at, last_sign_in_at)
+  select gen_random_uuid(), u.email, u.id,
+    jsonb_build_object('sub', u.id::text, 'email', u.email, 'email_verified', true, 'phone_verified', false),
+    'email', now(), now(), now()
+  from auth.users u
+  where u.id in (u_pmo, u_admin, u_chair, u_pm, u_viewer, u_out, u_partner)
+  on conflict do nothing;
   insert into public.profiles (id, display_name, email)
   select id, raw_user_meta_data ->> 'full_name', email from auth.users
   where id in (u_pmo, u_admin, u_chair, u_pm, u_viewer, u_out, u_partner)

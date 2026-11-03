@@ -6,7 +6,7 @@ types: `supabase/tests/local/gen-types.sh`.
 
 ## Current phase
 
-Follow-up run (04/11/2026): Part A done; Part B stopped (no `.env.local`, RB-45); Part C done. See `docs/report-builder-handover.md`.
+Third follow-up (04/11/2026): Part B run against `ormo-report-builder-test` — B1–B6 and B8 pass; B7 blocked (RB-47). Part C done. See `docs/report-builder-handover.md`.
 
 ## Completed
 
@@ -70,16 +70,32 @@ Follow-up run (04/11/2026): Part A done; Part B stopped (no `.env.local`, RB-45)
   secrets) with `supabase/tests/reports_phase6.sql`. Part B against the test project blocked:
   no credentials in this session (RB-46).
 
+- Part B (04/11/2026 follow-up with `.env.local` provided): B1–B6 and B8 all passed against
+  `ormo-report-builder-test` (afbmohzvyzblwbfsxpnx). All six migrations applied; types diff:
+  20 formatting-only differences (no semantic change); stray CLI upgrade notice removed from
+  `types.ts`. All six SQL/RLS test suites passed with real Supabase auth. Four report edge
+  functions deployed. Snapshot immutability, `changes_since_last`, re-publish prevention, and
+  the full 10-step manual test cycle all verified. B7 (Playwright E2E) blocked: `client.ts` is
+  hardcoded to production by Lovable; test project session not recognised (RB-47); see handover
+  §5 for details.
+
+## Current phase
+
+Part B complete (B1–B6, B8 pass; B7 blocked by RB-47). Ready for PR review (§4 decisions
+in handover) and production release (handover §6).
+
 ## Next steps
 
-- Provide branch credentials in `.env.local` and run Part B (handover §5): apply the five
-  migrations, regenerate types with the CLI and diff, seed with passwords, SQL/RLS suites with
-  real auth, deploy the four report functions, publish checks, E2E, manual cycle.
+- Review and confirm the §4 decisions in `docs/report-builder-handover.md`.
+- Run `e2e/reports.e2e.ts` on a Supabase branch where `client.ts` is regenerated against
+  the branch (RB-47).
+- Open a PR from `feature/report-builder` once §4 is confirmed.
+- Apply the six migrations to production in order; regenerate types; set secrets; deploy
+  functions (handover §6 steps 2–3).
 
 ## Known issues
 
-- Part B not run: no credentials in the session (RB-45, RB-46).
-
-- Browser E2E can't run here (RB-25); run `e2e/reports.e2e.ts` on a seeded Supabase branch.
+- B7 Playwright E2E blocked: `client.ts` hardcoded to production project (RB-47).
+- Browser E2E needs a branch with regenerated `client.ts` (RB-25, RB-47).
 - Edge functions (`report-publish`, `report-distribute`) and the Netlify `report-pdf` function
   are unit-tested through their shared module but not run end to end (no Deno / Netlify here).
