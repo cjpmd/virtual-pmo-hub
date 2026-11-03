@@ -180,6 +180,7 @@ function ForumSettingsSheet({
     defaultTemplateId: settings.defaultTemplateId ?? "",
     parentForumId: settings.parentForumId ?? "",
     approvalRequired: settings.approvalRequired,
+    autoCreatePacks: settings.autoCreatePacks,
     tolerances: settings.tolerances as Tolerances,
   }));
   const entities =
@@ -210,6 +211,7 @@ function ForumSettingsSheet({
           default_template_id: form.defaultTemplateId || null,
           parent_forum_id: form.parentForumId || null,
           approval_required: form.approvalRequired,
+          auto_create_packs: form.autoCreatePacks,
           tolerances: form.tolerances,
         },
       });
@@ -351,6 +353,16 @@ function ForumSettingsSheet({
               id="fs-approval"
               checked={form.approvalRequired}
               onCheckedChange={(approvalRequired) => setForm({ ...form, approvalRequired })}
+            />
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <Label htmlFor="fs-auto">
+              Draft the pack automatically when the papers deadline passes
+            </Label>
+            <Switch
+              id="fs-auto"
+              checked={form.autoCreatePacks}
+              onCheckedChange={(autoCreatePacks) => setForm({ ...form, autoCreatePacks })}
             />
           </div>
           <fieldset className="space-y-2">

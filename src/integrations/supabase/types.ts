@@ -5999,6 +5999,7 @@ export type Database = {
           active: boolean
           approval_required: boolean
           archived_at: string | null
+          auto_create_packs: boolean
           cadence: Database["public"]["Enums"]["forum_cadence"] | null
           chair_resource_id: string | null
           created_at: string
@@ -6024,6 +6025,7 @@ export type Database = {
           active?: boolean
           approval_required?: boolean
           archived_at?: string | null
+          auto_create_packs?: boolean
           cadence?: Database["public"]["Enums"]["forum_cadence"] | null
           chair_resource_id?: string | null
           created_at?: string
@@ -6049,6 +6051,7 @@ export type Database = {
           active?: boolean
           approval_required?: boolean
           archived_at?: string | null
+          auto_create_packs?: boolean
           cadence?: Database["public"]["Enums"]["forum_cadence"] | null
           chair_resource_id?: string | null
           created_at?: string
@@ -14434,13 +14437,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "decisions_chosen_option_fkey"
-            columns: ["chosen_option_id", "id"]
-            isOneToOne: false
-            referencedRelation: "decision_options"
-            referencedColumns: ["id", "decision_id"]
-          },
-          {
-            foreignKeyName: "decisions_chosen_option_fkey"
             columns: ["chosen_option_id", "superseded_by_id"]
             isOneToOne: false
             referencedRelation: "decision_options"
@@ -14449,6 +14445,13 @@ export type Database = {
           {
             foreignKeyName: "decisions_chosen_option_fkey"
             columns: ["chosen_option_id", "pending_successor_id"]
+            isOneToOne: false
+            referencedRelation: "decision_options"
+            referencedColumns: ["id", "decision_id"]
+          },
+          {
+            foreignKeyName: "decisions_chosen_option_fkey"
+            columns: ["chosen_option_id", "id"]
             isOneToOne: false
             referencedRelation: "decision_options"
             referencedColumns: ["id", "decision_id"]
@@ -16145,6 +16148,10 @@ export type Database = {
     }
     Functions: {
       accept_invite: { Args: { p_token: string }; Returns: Json }
+      acknowledge_ai_draft: {
+        Args: { p_narrative_id: string }
+        Returns: undefined
+      }
       add_join_domain: {
         Args: { p_kind: string; p_organisation_id: string }
         Returns: string
@@ -16181,6 +16188,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      ai_drafts_today: { Args: { p_report_id: string }; Returns: number }
       approve_report: {
         Args: { p_report_id: string }
         Returns: {
@@ -16453,6 +16461,15 @@ export type Database = {
         }[]
       }
       publish_report: { Args: { p_report_id: string }; Returns: Json }
+      record_ai_draft: {
+        Args: {
+          p_block_instance_id: string
+          p_model: string
+          p_report_id: string
+          p_text: string
+        }
+        Returns: string
+      }
       record_billing_request: {
         Args: { p_action: string; p_detail: Json; p_organisation_id: string }
         Returns: undefined
@@ -17008,6 +17025,44 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "decisions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_report_to_template: {
+        Args: { p_report_id: string }
+        Returns: {
+          approved_at: string | null
+          approved_by: string | null
+          as_at: string
+          blocks: Json
+          created_at: string
+          created_by: string | null
+          forum_id: string | null
+          id: string
+          meeting_id: string | null
+          organisation_id: string
+          overall_rating: string | null
+          overall_rating_rationale: string | null
+          previous_report_id: string | null
+          published_at: string | null
+          published_by: string | null
+          rating_scheme_id: string | null
+          scope_entity_id: string | null
+          scope_items: Json | null
+          scope_type: string
+          selection_rules: Json
+          status: Database["public"]["Enums"]["report_status"]
+          submitted_at: string | null
+          template_id: string | null
+          template_version: number | null
+          title: string
+          updated_at: string
+          workspace_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "reports"
           isOneToOne: true
           isSetofReturn: false
         }

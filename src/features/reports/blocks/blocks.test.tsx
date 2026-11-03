@@ -9,6 +9,7 @@ import type { ReactNode } from "react";
 import { z } from "zod";
 import fixtures from "./__fixtures__/phase1.json";
 import fixtures2 from "./__fixtures__/phase2.json";
+import fixtures34 from "./__fixtures__/phase34.json";
 import "./catalogue";
 import { getBlock, listBlocks, registerBlock, resolveConfig } from "./registry";
 import type { BlockInstance, RenderContext } from "./types";
@@ -401,5 +402,36 @@ describe("error states", () => {
       />,
     );
     expect(screen.getByText(/Hidden from partner organisations/)).toBeTruthy();
+  });
+});
+
+describe("Phase 3 and 4 blocks", () => {
+  for (const [key, data] of Object.entries(fixtures34)) {
+    it(`${key} renders fixture data`, () => {
+      const { container } = renderBlock(key, data);
+      expect(container.textContent?.length).toBeGreaterThan(0);
+    });
+  }
+  it("changes since last lists RD04's slip", () => {
+    renderBlock("changes_since_last", fixtures34.changes_since_last);
+    expect(screen.getByText(/Largest slip 5 → 40 days/)).toBeTruthy();
+  });
+  const EMPTY34: Record<string, unknown> = {
+    changes_since_last: { previous: null },
+    raid_movement: { since: "2026-10-01", has_previous: false, new: [], closed: [], rescored: [] },
+    lessons_learned: { since: "2026-10-01", rows: [] },
+    linked_records: { rows: [] },
+  };
+  for (const [key, data] of Object.entries(EMPTY34)) {
+    it(`${key} renders empty data`, () => {
+      expect(() => renderBlock(key, data)).not.toThrow();
+    });
+  }
+  it("covers every Phase 3 and 4 block", () => {
+    const keys = listBlocks()
+      .filter((b) => (b.phase === 3 || b.phase === 4) && !b.key.startsWith("test_"))
+      .map((b) => b.key)
+      .sort();
+    expect(Object.keys(EMPTY34).sort()).toEqual(keys);
   });
 });

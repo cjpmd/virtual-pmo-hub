@@ -21,10 +21,14 @@ import {
   useReportMutations,
   useReportPermissions,
   useScopeMetrics,
+  useTemplate,
 } from "@/hooks/use-reports";
 import { qk } from "@/services/query-keys";
 import {
+  acknowledgeAiDraft,
+  draftSummaryWithAi,
   latestHighlightSummary,
+  updateReportToTemplate,
   toScheme,
   updateReport,
   type ReportInput,
@@ -137,6 +141,20 @@ function Builder({ report }: { report: ReportRecord }) {
   const narrativeEditing: NarrativeEditing = {
     save: async (vars) => {
       await mutations.saveNarrative.mutateAsync({ reportId: report.id, ...vars });
+    },
+    draftWithAi: async (blockInstanceId) => {
+      const result = await draftSummaryWithAi(report.id, blockInstanceId);
+      await invalidateLive();
+      await mutations.invalidateReport(report.id);
+      toast.success(`AI draft added (${result.model}). Review it before submitting.`);
+    },
+    acknowledgeAi: async (narrativeId) => {
+      try {
+        await acknowledgeAiDraft(narrativeId);
+        await invalidateLive();
+      } catch (e) {
+        toast.error(errorMessage(e));
+      }
     },
     pmSummary: async (entityId) => {
       const projectId = entityId ?? (report.scopeType === "project" ? report.scopeEntityId : null);
@@ -374,9 +392,25 @@ function Builder({ report }: { report: ReportRecord }) {
                   />
                 </div>
                 {report.templateId && (
-                  <p className="text-xs text-muted-foreground">
-                    From template version {report.templateVersion ?? "—"}.
-                  </p>
+                  <TemplateVersion
+                    templateId={report.templateId}
+                    version={report.templateVersion}
+                    canUpdate={editable && report.status === "draft" && !autosave.dirty}
+                    onUpdate={async () => {
+                      if (
+                        !window.confirm(
+                          "Replace this draft's blocks and rules with the template's latest version? Narratives are kept for blocks that remain.",
+                        )
+                      )
+                        return;
+                      try {
+                        await updateReportToTemplate(report.id);
+                        window.location.reload();
+                      } catch (e) {
+                        toast.error(errorMessage(e));
+                      }
+                    }}
+                  />
                 )}
               </TabsContent>
               <TabsContent value="selection" className="pt-3">
@@ -425,6 +459,35 @@ function Builder({ report }: { report: ReportRecord }) {
         </div>
       </div>
     </NarrativeEditingContext.Provider>
+  );
+}
+
+/** Which template version the report used, and "Update to latest" when the template moved on. */
+function TemplateVersion({
+  templateId,
+  version,
+  canUpdate,
+  onUpdate,
+}: {
+  templateId: string;
+  version: number | null;
+  canUpdate: boolean;
+  onUpdate: () => void;
+}) {
+  const template = useTemplate(templateId);
+  const latest = template.data?.version ?? null;
+  return (
+    <div className="space-y-1 text-xs text-muted-foreground">
+      <p>
+        From “{template.data?.name ?? "template"}” version {version ?? "—"}
+        {latest !== null && version !== null && latest > version && ` (latest is ${latest})`}.
+      </p>
+      {latest !== null && version !== null && latest > version && canUpdate && (
+        <Button size="sm" variant="outline" onClick={onUpdate}>
+          Update report to latest template
+        </Button>
+      )}
+    </div>
   );
 }
 

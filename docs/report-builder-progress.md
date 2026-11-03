@@ -6,7 +6,7 @@ types: `supabase/tests/local/gen-types.sh`.
 
 ## Current phase
 
-Phase 3 — done. Next: Phase 4.
+All phases (0–4) done. See `docs/report-builder-handover.md`.
 
 ## Completed
 
@@ -43,11 +43,18 @@ Phase 3 — done. Next: Phase 4.
   `report-distribute` with a tested shared module; Netlify `report-pdf` behind the flag; E2E
   spec `e2e/reports.e2e.ts` (branch only); print verified to PDF locally.
 
+- Phase 4: migration `20261103170000_rb4_enhancements.sql` (record_ai_draft,
+  acknowledge_ai_draft, ai_drafts_today, update_report_to_template, forums.auto_create_packs
+  + daily create_scheduled_packs job, lessons_learned and linked_records functions,
+  v_record_links resolving milestone ends); SQL tests `reports_phase4.sql`; edge function
+  `report-ai-summary` with a tested prompt module; Draft with AI / Mark reviewed, template
+  version and update, auto-draft toggle, Links panel, two new blocks with component tests.
+  PPTX deferred (RB-40).
+
 ## Next steps
 
-- Phase 4: AI executive summary (`report-ai-summary`, ANTHROPIC_MODEL), un-acknowledged AI
-  draft gate, template versioning UI ("Update to latest template"), scheduled pack creation
-  when a cycle closes, `lessons_learned`, `linked_records` + Links panel, optional PPTX.
+- Apply the four migrations to a Supabase branch, seed it, set passwords for the seed users,
+  run `e2e/reports.e2e.ts`; then production (handover).
 
 ## Known issues
 

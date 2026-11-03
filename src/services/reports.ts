@@ -665,6 +665,7 @@ export interface ForumReporting {
   defaultTemplateId: string | null;
   parentForumId: string | null;
   approvalRequired: boolean;
+  autoCreatePacks: boolean;
   updatedAt: string;
 }
 
@@ -673,7 +674,7 @@ export async function listForumReporting(orgId: string): Promise<ForumReporting[
     await supabase
       .from("forums")
       .select(
-        "id, workspace_id, forum_type, description, scope_type, scope_entity_id, rating_scheme_id, tolerances, default_template_id, parent_forum_id, approval_required, updated_at",
+        "id, workspace_id, forum_type, description, scope_type, scope_entity_id, rating_scheme_id, tolerances, default_template_id, parent_forum_id, approval_required, auto_create_packs, updated_at",
       )
       .eq("organisation_id", orgId),
     "Loading forum report settings",
@@ -690,6 +691,7 @@ export async function listForumReporting(orgId: string): Promise<ForumReporting[
     defaultTemplateId: row.default_template_id,
     parentForumId: row.parent_forum_id,
     approvalRequired: row.approval_required,
+    autoCreatePacks: row.auto_create_packs,
     updatedAt: row.updated_at,
   }));
 }
@@ -704,6 +706,7 @@ export type ForumReportingPatch = Partial<{
   default_template_id: string | null;
   parent_forum_id: string | null;
   approval_required: boolean;
+  auto_create_packs: boolean;
 }>;
 
 export async function updateForumReporting(
@@ -968,4 +971,37 @@ export async function listReportActions(reportId: string): Promise<MeetingAction
     ownerId: row.owner_id,
     projectId: row.project_id,
   }));
+}
+
+// ------------------------------------------------------------------ Phase 4
+/** Drafts the executive summary with Claude (report-ai-summary edge function). */
+export async function draftSummaryWithAi(reportId: string, blockInstanceId: string) {
+  const { data, error } = await supabase.functions.invoke("report-ai-summary", {
+    body: { report_id: reportId, block_instance_id: blockInstanceId },
+  });
+  if (error) {
+    const body = await (error as { context?: Response }).context?.json?.().catch(() => null);
+    const status = (error as { context?: { status?: number } }).context?.status;
+    throw new Error(
+      (body as { error?: string } | null)?.error ??
+        (status === 404
+          ? "AI drafting isn't deployed here (report-ai-summary)."
+          : "The AI draft couldn't be written."),
+    );
+  }
+  return data as { narrative_id: string; model: string };
+}
+
+export async function acknowledgeAiDraft(narrativeId: string) {
+  unwrapMaybe(
+    await supabase.rpc("acknowledge_ai_draft", { p_narrative_id: narrativeId }),
+    "Marking the draft reviewed",
+  );
+}
+
+export async function updateReportToTemplate(reportId: string) {
+  unwrapMaybe(
+    await supabase.rpc("update_report_to_template", { p_report_id: reportId }),
+    "Updating to the latest template",
+  );
 }

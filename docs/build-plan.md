@@ -646,6 +646,12 @@ distribution list and print tokens. Edge functions `report-publish` and `report-
 (Resend, idempotent), Netlify `report-pdf` behind `REPORT_SERVER_PDF` (off), public
 `/report-print/<id>?token=`. E2E spec for the full cycle runs on a seeded branch only.
 
+**RB Phase 4 (03/11/2026):** migration `20261103170000_rb4_enhancements`: AI drafts
+(`record_ai_draft`, review gate, daily cap), template versioning (`update_report_to_template`),
+scheduled pack drafts (`forums.auto_create_packs`, daily job), `lessons_learned` and
+`linked_records` blocks, Links panel on the project page. Edge function `report-ai-summary`
+(model from `ANTHROPIC_MODEL`). PPTX deferred.
+
 ## Progress
 
 - [x] 0.1 Test harness  - [ ] 0.2 Clean-up  - [x] 0.3 Migration history and indexes  - [x] 0.4 Copy  - [x] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
