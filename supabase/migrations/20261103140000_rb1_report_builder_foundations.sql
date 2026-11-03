@@ -181,6 +181,10 @@ create index forums_parent_idx on public.forums (parent_forum_id, organisation_i
 create index forums_default_template_idx on public.forums (default_template_id);
 
 alter table public.forum_members add column role public.forum_role not null default 'member';
+grant update (role) on public.forum_members to authenticated;
+create policy forum_members_update on public.forum_members for update to authenticated
+  using ((select private.can_manage_forum(organisation_id, workspace_id)))
+  with check ((select private.can_manage_forum(organisation_id, workspace_id)));
 
 create table public.forum_scope_items (
   organisation_id uuid not null,
@@ -696,6 +700,52 @@ begin
 end;
 $$;
 
+-- PMO / admin of the report's workspace (organisation PMO / admin for organisation-wide reports).
+create function private.is_report_pmo(p_report uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce((select (r.workspace_id is null and r.organisation_id = any (private.my_org_ids('pmo')))
+      or r.workspace_id = any (private.my_workspace_ids('pmo'))
+    from public.reports r where r.id = p_report), false);
+$$;
+
+-- Approvers (§10, RB-19): the forum's chair; PMO / admin when the forum has no chair or does
+-- not require approval; PMO for reports without a forum.
+create function private.can_approve_report(p_report uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce((
+    select case
+      when r.forum_id is null then private.is_report_pmo(r.id)
+      when private.forum_role_of(r.forum_id) = 'chair' then true
+      when not f.approval_required then private.is_report_pmo(r.id)
+      when f.chair_resource_id is null and not exists (select 1 from public.forum_members m where m.forum_id = f.id and m.role = 'chair')
+        then private.is_report_pmo(r.id)
+      else false end
+    from public.reports r left join public.forums f on f.id = r.forum_id where r.id = p_report), false);
+$$;
+
+-- Publishers: PMO / admin, or the forum's secretary.
+create function private.can_publish_report(p_report uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select private.is_report_pmo(p_report) or coalesce((
+    select r.forum_id is not null and private.forum_role_of(r.forum_id) = 'secretary'
+    from public.reports r where r.id = p_report), false);
+$$;
+
 -- Is the signed-in user in a partner organisation (not the report's own)?
 create function private.is_partner_viewer(p_report uuid)
 returns boolean
@@ -721,6 +771,25 @@ as $$
       or (s.entity_type = r.scope_type and s.entity_id = r.scope_entity_id))
   cross join lateral unnest(s.hidden_block_keys) k
   where r.id = p_report;
+$$;
+
+-- What the signed-in user may do with a report (the UI's buttons; the RPCs re-check).
+create function public.report_permissions(p_report_id uuid)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'can_view', private.can_view_report(p_report_id),
+    'can_edit', private.can_edit_report(p_report_id),
+    'can_approve', private.can_approve_report(p_report_id),
+    'can_publish', private.can_publish_report(p_report_id),
+    'can_withdraw', private.is_report_pmo(p_report_id),
+    'can_save_template', coalesce((select private.can_manage_template(r.organisation_id, r.workspace_id) from public.reports r where r.id = p_report_id), false),
+    'is_partner', private.is_partner_viewer(p_report_id),
+    'hidden_block_keys', to_jsonb(private.partner_hidden_blocks(p_report_id)));
 $$;
 
 alter table public.reports enable row level security;
@@ -1826,6 +1895,10 @@ grant execute on function private.org_risk_matrix(uuid), private.matrix_score(js
   private.rb_decisions_required(jsonb, jsonb), private.rb_top_raid(jsonb, jsonb), private.rb_change_requests(jsonb, jsonb),
   private.rb_highlight_report_summary(jsonb, jsonb)
   to authenticated, service_role;
+revoke all on function private.is_report_pmo(uuid), private.can_approve_report(uuid), private.can_publish_report(uuid),
+  public.report_permissions(uuid) from public, anon;
+grant execute on function private.is_report_pmo(uuid), private.can_approve_report(uuid), private.can_publish_report(uuid),
+  public.report_permissions(uuid) to authenticated, service_role;
 revoke all on function public.risk_score(uuid), public.risk_band(uuid), public.project_metrics(uuid[], date, uuid, uuid),
   public.report_context(jsonb), public.report_block_data(jsonb, jsonb, uuid), public.report_scope_metrics(jsonb),
   public.refresh_report_selection(uuid), public.set_report_inclusion(uuid, uuid, text), public.reorder_report_inclusions(uuid, uuid[]),

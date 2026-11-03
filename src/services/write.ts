@@ -106,6 +106,7 @@ const KEY_COLUMN: Partial<Record<TableName, string>> = {
 /** Tables keyed by several columns (membership rows). */
 const KEY_COLUMNS: Partial<Record<TableName, string[]>> = {
   workspace_members: ["workspace_id", "profile_id"],
+  forum_members: ["forum_id", "resource_id"],
 };
 const keyOf = (name: TableName) => KEY_COLUMN[name] ?? "id";
 const keyColumns = (name: TableName) => KEY_COLUMNS[name] ?? [keyOf(name)];

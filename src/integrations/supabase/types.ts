@@ -16236,6 +16236,7 @@ export type Database = {
         Returns: Json
       }
       report_context: { Args: { p_input: Json }; Returns: Json }
+      report_permissions: { Args: { p_report_id: string }; Returns: Json }
       report_scope_metrics: { Args: { p_input: Json }; Returns: Json }
       request_to_join: {
         Args: { p_message?: string; p_organisation_id: string }
