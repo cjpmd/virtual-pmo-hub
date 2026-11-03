@@ -70,12 +70,31 @@ against a throwaway local Postgres 16 with a small Supabase shim (`supabase/test
 - `lessons_learned` and `linked_records` blocks; Links panel on the project page.
 - PPTX deferred (RB-40).
 
+### Follow-up run (04/11/2026) — Part A changes
+- **A1 Pack visibility:** `forums.published_pack_visibility` (`members` default, or
+  `organisation`), set in Boards › Report settings with a note that packs may be sensitive.
+  Published packs: forum members (or the whole organisation when allowed); PMO / admin and the
+  chair / secretary always. Ad hoc packs: the creator and PMO / admin only. Partners unchanged.
+- **A2 Point-in-time metrics:** `project_metric_history` filled nightly (02:40 UTC) with every
+  active project's metrics; a past as-at reads them (fallback: ratings from health snapshots,
+  the rest current). "Data basis" note on the cover, under the viewer banner and in the print
+  footer; stored with the published pack. `changes_since_last` falls back to history when the
+  previous pack has no metric snapshot.
+- **A3 Risk matrix guard:** an organisation's own matrix can't be the default (database
+  trigger + explanation in the UI); forums and templates can name one explicitly.
+- **A4** Chromium dependencies pinned in the root `package.json`; the function bundles with
+  Netlify's bundler. **A5** `ANTHROPIC_MODEL=claude-sonnet-5-5`. **A6** "Funding packs" for
+  the funding-collection packs in the UI. **A7** system-drafted packs: creator marker, email to
+  the secretary / chair (else PMO) via the new `report-notify` function, "Draft pack ready" in
+  the bell. **A8** debt logged (RB-42, RB-43).
+
 ## 2. Migrations to apply to production, in order
 
 1. `supabase/migrations/20261103140000_rb1_report_builder_foundations.sql`
 2. `supabase/migrations/20261103150000_rb2_selection_programme_packs.sql`
 3. `supabase/migrations/20261103160000_rb3_governance_snapshots.sql`
 4. `supabase/migrations/20261103170000_rb4_enhancements.sql`
+5. `supabase/migrations/20261104090000_rb5_visibility_history_guards.sql`
 
 All additive. Notes:
 - Migration 2 renames `public.project_metrics` (created in migration 1) to
@@ -84,7 +103,13 @@ All additive. Notes:
   `forums.forum_type` from `level`. Both are UPDATEs of the new columns only.
 - Migration 3 creates the private storage bucket `report-pdfs` and a storage read policy.
 - Migration 4 schedules `vpmo-scheduled-report-packs` (06:20 UTC) when pg_cron is present.
-- Apply to a Supabase branch first; then run `supabase/tests/reports_phase1..4.sql` there after
+- Migration 5 renames migration 2's `public.project_metrics` wrapper to
+  `private.project_metrics_v2` and adds the history-aware public function; back-fills
+  `forums.published_pack_visibility = 'members'`; clears `is_default` on any organisation-owned
+  risk matrix (none exist in production unless created since); schedules
+  `vpmo-capture-project-metric-history` (02:40 UTC). Before the first nightly run there is no
+  history, so past as-at packs say so in their data-basis note.
+- Apply to a Supabase branch first; then run `supabase/tests/reports_phase1..5.sql` there after
   loading `supabase/seed/reports_demo.sql` (the tests roll back). The seed creates its own
   organisations; don't load it on production unless you want the demo organisation there.
 - After applying, regenerate `types.ts` from the project (it should match the committed file).
@@ -97,22 +122,25 @@ Supabase edge-function secrets:
 
 | Secret | Used by | Notes |
 |---|---|---|
-| `RESEND_API_KEY` | report-publish, report-distribute | Missing: packs publish, no email; the result says so. |
+| `RESEND_API_KEY` | report-publish, report-distribute, report-notify | Missing: packs publish, no email; the result says so. |
 | `REPORTS_FROM` | same | e.g. `ORMO PMO <reports@ormo-pmo.originoverthrow.com>`; falls back to `RESEND_FROM`. Verify the address in Resend. |
 | `APP_URL` | same | Link in the email (existing secret). |
 | `ANTHROPIC_API_KEY` | report-ai-summary | Missing: "AI drafting isn't set up". |
-| `ANTHROPIC_MODEL` | report-ai-summary | Set to `claude-opus-5-5` (current default per Anthropic's docs, 03/11/2026). No default in code. |
+| `ANTHROPIC_MODEL` | report-ai-summary | `claude-sonnet-5-5` (RB-37, amended). No default in code. |
+| `REPORTS_TEST_RECIPIENTS` | report-publish, report-distribute, report-notify | Test branches only: comma-separated allowlist; other recipients are skipped (logged, not sent). Leave unset in production. |
 | `REPORT_AI_DAILY_LIMIT` | report-ai-summary | Optional, default 50 drafts per organisation per 24 h. |
 | `REPORT_SERVER_PDF` | report-publish | `true` to request a server PDF; default off. |
 | `REPORT_PDF_URL` | report-publish | The Netlify function URL, e.g. `https://<site>/api/report-pdf`. |
 | `REPORT_PDF_SECRET` | report-publish | Shared bearer secret with the Netlify function. |
 
 Netlify (only if server PDF is enabled): `REPORT_SERVER_PDF=true`, `REPORT_PDF_SECRET`,
-`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and install `@sparticuz/chromium` and
-`puppeteer-core` for the function (RB-35).
+`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. `@sparticuz/chromium` 153.0.0 and `puppeteer-core`
+25.15.0 are now in the root `package.json`; the function bundle is 71.5 MB zipped (RB-35).
 
-Deploy the edge functions `report-publish`, `report-distribute`, `report-ai-summary`
-(`supabase/config.toml` keeps `verify_jwt = true` for them). Without them the app still
+Deploy the edge functions `report-publish`, `report-distribute`, `report-ai-summary` and
+`report-notify` (`supabase/config.toml` keeps `verify_jwt = true` for them). Schedule
+`report-notify` in Supabase Cron (Integrations › Cron): every 15 minutes, HTTP POST to
+`<project>/functions/v1/report-notify` with `Authorization: Bearer <service role key>`. Without them the app still
 publishes through the RPC and says the emails weren't sent; "Draft with AI" reports that it
 isn't deployed.
 
@@ -127,12 +155,13 @@ From `docs/report-builder-decisions.md` (all are logged with alternatives):
   can't open packs and are listed in the distribution event).
 - RB-6 the collection cut-off is the meeting's papers deadline; "Create pack" waits for it
   (PMO can override).
-- RB-11 / RB-32 as-at: evidenced ratings for a past as-at come from nightly health snapshots;
-  slip, money and RAID are current at the time of the draft / publish.
-- RB-13 risk matrices drive report scoring; the organisation settings bands still drive health.
+- RB-11 / RB-32 (amended): past as-at reads the nightly metric history; without it, ratings are
+  as at and the rest current, said in the data-basis note.
+- RB-13 (amended): no organisation default matrix until the register scores from matrices
+  (RB-42 debt); forums / templates name one explicitly.
 - RB-14 `rating_schemes` / `risk_matrices` are organisation-scoped (no workspace_id).
-- RB-16 viewers see published packs of their workspaces and forums; drafts are for editors and
-  the chair / secretary.
+- RB-16 (replaced): published packs to forum members, or the organisation when the forum allows;
+  ad hoc packs to the creator and PMO / admin.
 - RB-19..21 the §21 answers as implemented (no chair → PMO approves; PMs create Project Board
   packs for their own project; distribution to all members except contributors).
 - RB-23 ad hoc reports by any contributor who can see the scope.
@@ -140,10 +169,23 @@ From `docs/report-builder-decisions.md` (all are logged with alternatives):
   overview components.
 - RB-29 publish refuses packs over 2 MB of snapshot data (no Storage overflow).
 - RB-34 sender address and per-recipient emails; approver reminders deferred.
-- RB-35 server PDF on Netlify behind the flag.
-- RB-37 AI model and daily cap. RB-39 scheduled drafts (opt-in per forum). RB-40 PPTX deferred.
+- RB-35 server PDF on Netlify behind the flag; bundle size against your Netlify plan and the
+  ~75 MB extra install for the Lovable build.
+- RB-37 `claude-sonnet-5-5` and the daily cap. RB-39 scheduled drafts and the report-notify cron.
+  RB-40 PPTX deferred. RB-9 Funding packs naming. RB-42 / RB-43 debt. RB-45 Part B not run.
 
 ## 5. Known issues
+
+- **Part B (branch test pass) was not run (RB-45).** This environment has no `.env.local` (the
+  only Supabase settings, in `.env`, point at the production project) and no Docker for a local
+  Supabase stack, so B1–B7 stopped per the instruction. Nothing was applied, deployed or sent.
+  Result of each step: B1 migrations / CLI types diff — not run (types were regenerated from the
+  local Postgres with postgres-meta, which matched the committed pre-change file apart from line
+  wrapping); B2 seed with passwords — not run; B3 SQL / RLS with real auth — not run (all five
+  suites pass on the local shim: `supabase/tests/local/run.sh test`); B4 deploy functions — not
+  run; B5 publish / immutability / changes / no duplicate email — covered only by
+  `reports_phase3.sql` and `report-distribution.test.ts` locally; B6 Playwright E2E — not run;
+  B7 manual cycle — not run.
 
 - Browser E2E could not be run here (no Docker; downloaded PostgREST / Auth binaries may not be
   executed). `e2e/reports.e2e.ts` is written but unverified; run it on a seeded branch.
@@ -159,12 +201,27 @@ From `docs/report-builder-decisions.md` (all are logged with alternatives):
 - The temp table `rb_matches` used by `compute_inclusions` logs a NOTICE when used twice in one
   transaction (harmless).
 
-## 6. Manual test — a full pack cycle
+## 6. Remaining release steps
+
+1. Put branch credentials in `.env.local` (never production) and run Part B: apply the five
+   migrations in order; `supabase gen types typescript` and diff with the committed `types.ts`;
+   load `supabase/seed/reports_demo.sql`; set passwords for the seed users; run
+   `supabase/tests/reports_phase1..5.sql` (with `-v cases="$(cat
+   src/features/reports/engine/selection-cases.json)"`); deploy the four report functions with
+   `REPORTS_TEST_RECIPIENTS`; publish a seeded pack, change data, publish a second pack; run
+   `npm run test:e2e -- e2e/reports.e2e.ts` with `E2E_REPORTS_PASSWORD`; walk the manual test below.
+2. Decide the items in §4; then open a PR from `feature/report-builder`.
+3. Production: apply the migrations in order; regenerate types; set the secrets (no
+   `REPORTS_TEST_RECIPIENTS`); deploy the functions; schedule `report-notify`; check pg_cron has
+   the two new jobs; leave `REPORT_SERVER_PDF` off until Netlify is set up.
+
+## 7. Manual test — a full pack cycle
 
 Use a Supabase branch with the four migrations and the demo seed, or real data.
 
 1. **Forum.** Governance › Boards → choose a board (or create one) → **Report settings**: type
    Programme board, scope = a programme, rating scheme RAG, default template "Programme Board",
+   who can read published packs (members / organisation),
    check the tolerances, set member roles (a chair, a secretary, members, a contributor). Save.
 2. **Pack.** Add a planned meeting whose papers deadline has passed → **Create pack** (before the
    deadline it is disabled; PMO can override). The builder opens on the template.
