@@ -16810,6 +16810,10 @@ export type Database = {
         Args: { p_block: Json; p_entity?: string; p_input: Json }
         Returns: Json
       }
+      report_blocks_data: {
+        Args: { p_input: Json; p_items: Json }
+        Returns: Json
+      }
       report_context: { Args: { p_input: Json }; Returns: Json }
       report_distribution: { Args: { p_report_id: string }; Returns: Json }
       report_permissions: { Args: { p_report_id: string }; Returns: Json }

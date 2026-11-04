@@ -10,13 +10,12 @@ import type {
   Tolerances,
 } from "@/features/reports/engine/evaluateRules";
 import type { ForumType } from "@/features/reports/engine/defaults";
-import { unwrap, unwrapMaybe } from "./service-error";
+import { ServiceError, unwrap, unwrapMaybe } from "./service-error";
 import { deleteWhere, insertRow, insertRows, updateRow } from "./write";
+import { createBatcher } from "@/lib/batch";
 import { createLimiter } from "@/lib/limit";
 
-// Live block data: at most two requests at once, so a pack's ~30 block requests don't queue
-// past the database's 8 s statement timeout on a small instance (RB-49). Scope metrics skip the
-// queue: the selection panel and its labels depend on them.
+// Live block data and scope metrics go in batches (RB-50); at most two batch requests at once.
 const liveDataLimit = createLimiter(2);
 
 export type ReportStatus = "draft" | "in_review" | "approved" | "published" | "withdrawn";
@@ -285,19 +284,54 @@ export type ReportInput =
       title?: string;
     };
 
-export async function fetchBlockData(
+type LiveItem = { block: BlockInstance; entityId: string | null } | { scopeMetrics: true };
+
+// Everything a page asks for within 250 ms goes to report_blocks_data together (RB-50): the
+// blocks and the selection panel's scope metrics, so the page builds the context and works out
+// project metrics once instead of once per block. The window covers the gap between the first
+// requests and the deep-dives, which wait for the inclusions.
+const loadLive = createBatcher<ReportInput, LiveItem, unknown>({
+  groupKey: (input) => JSON.stringify(input),
+  windowMs: 250,
+  run: async (input, items) => {
+    const result = await liveDataLimit(() =>
+      supabase.rpc("report_blocks_data", {
+        p_input: input as unknown as Json,
+        p_items: items.map((item, i) =>
+          "scopeMetrics" in item
+            ? { key: String(i), kind: "scope_metrics" }
+            : { key: String(i), block: item.block, entity: item.entityId },
+        ) as unknown as Json,
+      }),
+    );
+    const byKey = (unwrapMaybe(result, "Loading the report") ?? {}) as Record<
+      string,
+      { data?: unknown; error?: string; code?: string }
+    >;
+    return items.map((item, i) => {
+      const out = byKey[String(i)];
+      if (out && !out.error) return { ok: true, value: out.data ?? null };
+      const what =
+        "scopeMetrics" in item
+          ? "Loading project metrics"
+          : `Loading ${item.block.blockKey.replace(/_/g, " ")}`;
+      return {
+        ok: false,
+        error: new ServiceError("unknown", out?.error ?? `${what}: no data returned.`, {
+          code: out?.code,
+          detail: what,
+        }),
+      };
+    });
+  },
+});
+
+export function fetchBlockData(
   input: ReportInput,
   block: BlockInstance,
   entityId: string | null,
 ): Promise<unknown> {
-  const result = await liveDataLimit(() =>
-    supabase.rpc("report_block_data", {
-      p_input: input as unknown as Json,
-      p_block: block as unknown as Json,
-      ...(entityId ? { p_entity: entityId } : {}),
-    }),
-  );
-  return unwrapMaybe(result, `Loading ${block.blockKey.replace(/_/g, " ")}`);
+  return loadLive(input, { block, entityId });
 }
 
 export interface ReportContextData {
@@ -371,11 +405,9 @@ export const FALLBACK_SCHEME: RatingScheme = {
   ],
 };
 
+/** Scope metrics ride in the page's block batch (RB-50). */
 export async function fetchScopeMetrics(input: ReportInput): Promise<ScopeMetricsRow[]> {
-  return unwrap(
-    await supabase.rpc("report_scope_metrics", { p_input: input as unknown as Json }),
-    "Loading project metrics",
-  ) as unknown as ScopeMetricsRow[];
+  return ((await loadLive(input, { scopeMetrics: true })) ?? []) as ScopeMetricsRow[];
 }
 
 // ------------------------------------------------------------------ selection

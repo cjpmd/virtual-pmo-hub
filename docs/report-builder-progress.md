@@ -6,7 +6,8 @@ types: `supabase/tests/local/gen-types.sh`.
 
 ## Current phase
 
-Fourth follow-up (04/11/2026): B7 passed against `ormo-report-builder-test`; B8 in the browser partly (RB-49, RB-50). See `docs/report-builder-handover.md`.
+Fifth follow-up (04/11/2026): RB-50 performance built and measured, secrets rotated, copy fixed,
+test data reset, B7 and B8 re-run (RB-50 to RB-52). See `docs/report-builder-handover.md`.
 
 ## Completed
 
@@ -91,25 +92,35 @@ Fourth follow-up (04/11/2026): B7 passed against `ormo-report-builder-test`; B8 
   5–6 fail on statement timeouts, 7–9 not run, 10 partly; screenshots and results in
   `docs/report-builder-screenshots/`. Performance proposal RB-50 (not built).
 
+- 04/11/2026 (fifth follow-up): RB-50 built — migrations `20261104150000_rb7_batched_block_data`
+  and `20261104160000_rb8_batched_scope_metrics` (batched `report_blocks_data`, metrics once per
+  request, `publish_report` on the same path, two history indexes), applied to the test project;
+  client batching (`lib/batch.ts`). Programme pack 106–115 s → 1.6–2.3 s, portfolio 98–134 s →
+  2.2–6.7 s, no statement timeouts in the final runs, publish through the UI failed → 18.5 s.
+  RB-51: seed users' password rotated (only in `.env.local`), removed from the handover; repo and
+  history scanned. RB-52: `docs/sql/rb-test-reset.sql`; "1 decision made" copy. RB-53: autosave
+  paused during a reorder (conflict found in the B8 run). B7/B8: see handover §5.
+
 ## Current phase
 
-Part B done apart from B8 steps 5–9 in the UI (covered by B7). Next: decide RB-50 (batched
-block data, compute), then PR review (§4 decisions in handover) and production release
-(handover §6). PRs #68–#70 were reverted on `main` (production has no migrations yet); work stays
+Part B done; RB-50 built. Next: PR review (§4 decisions in handover) and production release
+(handover §6) with eight migrations. PRs #68–#70 were reverted on `main` (production has no migrations yet); work stays
 on `feature/report-builder`.
 
 ## Next steps
 
-- Decide RB-50 (batched `report_blocks_data` + compute upgrade); SQL proposal first.
+- Upgrade compute before the first customer (RB-50: cold pages still 2–13 s on the small
+  instance).
 - Review and confirm the §4 decisions in `docs/report-builder-handover.md`.
 - Open a PR from `feature/report-builder` once §4 is confirmed.
-- Apply the six migrations to production in order; regenerate types; set secrets; deploy
+- Apply the eight migrations to production in order; regenerate types; set secrets; deploy
   functions (handover §6 steps 2–3).
 
 ## Known issues
 
-- Report pages are slow on a small instance and requests can hit the 8 s statement timeout
-  (RB-50); B8 steps 5–6 failed for that reason in the browser run.
-- "1 decisions made" in Changes since last pack (copy).
+- On the small test instance cold pages vary (portfolio 6.7–13 s cold) and publish takes ~18 s
+  end to end; the queries themselves take under a second (RB-50).
+- The Selection panel's "Rules changed: refresh" hint appears only when the set of matching
+  projects changes, not when only a reason's threshold changes.
 - Edge functions (`report-publish`, `report-distribute`) and the Netlify `report-pdf` function
   are unit-tested through their shared module but not run end to end (no Deno / Netlify here).

@@ -23,6 +23,7 @@ export function useAutosave<T>(
   // than `delay` was followed by a second one carrying the stale updated_at, which the server
   // refused as "changed by someone else" (RB-49). Changes made during a save are saved after it.
   const inFlight = useRef(false);
+  const current = useRef<Promise<void> | null>(null);
   useEffect(() => {
     if (!enabled || status === "conflict" || inFlight.current) return;
     if (serialised === last.current || serialised === failed.current) return;
@@ -30,8 +31,13 @@ export function useAutosave<T>(
     const timer = window.setTimeout(async () => {
       inFlight.current = true;
       setStatus("saving");
+      const run = saveRef.current(valueRef.current);
+      current.current = run.then(
+        () => undefined,
+        () => undefined,
+      );
       try {
-        await saveRef.current(valueRef.current);
+        await run;
         last.current = serialised;
         failed.current = null;
         setStatus("saved");
@@ -42,6 +48,7 @@ export function useAutosave<T>(
         setStatus(isServiceError(e) && e.kind === "conflict" ? "conflict" : "error");
       } finally {
         inFlight.current = false;
+        current.current = null;
       }
     }, delay);
     return () => window.clearTimeout(timer);
@@ -53,5 +60,11 @@ export function useAutosave<T>(
     setStatus("idle");
     setError(null);
   };
-  return { status, error, reset, dirty: serialised !== last.current };
+  /**
+   * Resolves once no save is in flight. A caller that writes the same record another way pauses
+   * autosave (`enabled: false`, which also drops a pending save) and awaits this first, so no
+   * save carrying the old updated_at lands after its write.
+   */
+  const whenIdle = () => current.current ?? Promise.resolve();
+  return { status, error, reset, whenIdle, dirty: serialised !== last.current };
 }

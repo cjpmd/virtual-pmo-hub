@@ -19,9 +19,9 @@ const USERS = {
 } as const;
 type Who = keyof typeof USERS;
 
-// A pack page loads one RPC per block (~45 for a programme pack), two at a time (RB-49); on the
-// test project's small instance that takes up to two minutes per page, so each test gets ten.
-test.describe.configure({ mode: "serial", timeout: 600_000 });
+// A pack page loads its blocks in one batched request (RB-50); on the test project's small
+// instance a cold page still takes up to ~15 s, so each test gets a generous five minutes.
+test.describe.configure({ mode: "serial", timeout: 300_000 });
 test.skip(!PASSWORD, "E2E_REPORTS_PASSWORD is not set (seeded Supabase branch only)");
 
 const statePath = (who: Who) => `e2e/.auth/reports-${who}.json`;
@@ -192,7 +192,7 @@ test("the chair approves; PMO publishes a frozen snapshot", async ({ browser, ba
     await settle(page);
     page.once("dialog", (dialog) => void dialog.accept());
     await page.getByRole("button", { name: "Publish" }).click();
-    // report-publish builds every snapshot, then the page reloads the pack (~15 s on the test
+    // report-publish builds every snapshot, then the page reloads the pack (10–20 s on the test
     // project).
     await expect(page.locator('[data-banner="snapshot"]')).toBeVisible({ timeout: 60_000 });
   });

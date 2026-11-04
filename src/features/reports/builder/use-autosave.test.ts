@@ -42,4 +42,31 @@ describe("useAutosave", () => {
     expect(save).toHaveBeenCalledTimes(2);
     expect(save).toHaveBeenLastCalledWith("c");
   });
+
+  it("drops a pending save while paused and reports when a save in flight is done", async () => {
+    let finish: () => void = () => {};
+    const save = vi.fn(() => new Promise<void>((resolve) => (finish = resolve)));
+    const { result, rerender } = renderHook(
+      ({ value, enabled }) => useAutosave(value, save, { enabled }),
+      { initialProps: { value: "a", enabled: true } },
+    );
+    rerender({ value: "b", enabled: true });
+    await act(() => vi.advanceTimersByTimeAsync(1000));
+    expect(save).toHaveBeenCalledTimes(1);
+    let idle = false;
+    void result.current.whenIdle().then(() => (idle = true));
+    // Paused (e.g. a reorder writing the record): a new change waits.
+    rerender({ value: "c", enabled: false });
+    await act(() => vi.advanceTimersByTimeAsync(3000));
+    expect(idle).toBe(false);
+    await act(async () => finish());
+    expect(idle).toBe(true);
+    await act(() => vi.advanceTimersByTimeAsync(3000));
+    expect(save).toHaveBeenCalledTimes(1);
+    // Resumed: the waiting change is saved.
+    rerender({ value: "c", enabled: true });
+    await act(() => vi.advanceTimersByTimeAsync(1000));
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(save).toHaveBeenLastCalledWith("c");
+  });
 });

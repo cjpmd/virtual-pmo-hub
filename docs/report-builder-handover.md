@@ -4,9 +4,10 @@ Branch `feature/report-builder` (not merged into `main`). Spec:
 `docs/report-builder-spec.md`. Mapping: `docs/report-builder-mapping.md`. Decisions (RB-n):
 `docs/report-builder-decisions.md`. Progress log: `docs/report-builder-progress.md`.
 
-Nothing has been applied to the hosted Supabase project. Everything was built and tested
-against a throwaway local Postgres 16 with a small Supabase shim (`supabase/tests/local/`), and
-`src/integrations/supabase/types.ts` was regenerated from it with postgres-meta (RB-2).
+Production (`xvdlmtkzfmbcegkmampz`) has none of the report builder migrations. The test project
+`ormo-report-builder-test` (`afbmohzvyzblwbfsxpnx`) has all eight and the demo seed; `types.ts` is
+generated from it (04/11/2026, RB-50). Phases 1–4 were first built against a throwaway local
+Postgres 16 with a small Supabase shim (`supabase/tests/local/`, RB-2).
 
 ## 1. What was built
 
@@ -96,6 +97,8 @@ against a throwaway local Postgres 16 with a small Supabase shim (`supabase/test
 4. `supabase/migrations/20261103170000_rb4_enhancements.sql`
 5. `supabase/migrations/20261104090000_rb5_visibility_history_guards.sql`
 6. `supabase/migrations/20261104120000_rb6_report_notify_cron.sql`
+7. `supabase/migrations/20261104150000_rb7_batched_block_data.sql`
+8. `supabase/migrations/20261104160000_rb8_batched_scope_metrics.sql`
 
 All additive. Notes:
 - Migration 2 renames `public.project_metrics` (created in migration 1) to
@@ -116,6 +119,10 @@ All additive. Notes:
   `select vault.create_secret('https://<ref>.supabase.co/functions/v1/report-notify', 'report_notify_url');`
   `select vault.create_secret('<service role key>', 'report_notify_service_key');`
   Without them the job does nothing (and logs a warning when a notice is waiting).
+- Migrations 7–8 (RB-50) add `report_blocks_data` and its helpers, replace seven block
+  functions, `report_block_data` and `publish_report` (`create or replace`, same signatures), and
+  add two indexes (`health_snapshots_project_date_idx`, `status_reports_submitted_reporting_idx`).
+  The front end from this commit calls `report_blocks_data`, so apply 7–8 before deploying it.
 - Apply to a Supabase branch first; then run `supabase/tests/reports_phase1..6.sql` there after
   loading `supabase/seed/reports_demo.sql` (the tests roll back). The seed creates its own
   organisations; don't load it on production unless you want the demo organisation there.
@@ -199,8 +206,9 @@ From `docs/report-builder-decisions.md` (all are logged with alternatives):
   - B3 (seed + passwords): `supabase/seed/reports_demo.sql` loaded; seed updated to include all
     GoTrue-required fields (`instance_id`, `created_at`, `updated_at`, token fields,
     `raw_app_meta_data`, `email_change`, `phone_change`) and `auth.identities` rows so the
-    seed users can sign in with password. All 7 seed users set password `RbTest#2026!` via the
-    Auth admin API. `E2E_REPORTS_PASSWORD=RbTest#2026!` added to `.env.local`. PASS.
+    seed users can sign in with password. All 7 seed users given one password via the Auth
+    admin API, kept only in `.env.local` as `E2E_REPORTS_PASSWORD` (rotated 04/11/2026, RB-51;
+    the earlier value is still in Git history and no longer works). PASS.
   - B4 (SQL/RLS suites): all six suites (`reports_phase1.sql` through `reports_phase6.sql`) run
     against `ormo-report-builder-test` with real Supabase auth. All passed. The Phase 2 suite
     required the `:'cases'` psql variable to be inlined as a literal (Node.js pg driver does not
@@ -239,12 +247,42 @@ From `docs/report-builder-decisions.md` (all are logged with alternatives):
     pin, exclude, reorder, content, print PDF); 5–6 failed on database statement timeouts; 7–9
     not run; 10 partly (changes since last pack shown). Steps 5–8 and 10 are covered by B7.
     Results and screenshots: `docs/report-builder-screenshots/README.md`.
-  - **Performance (RB-50, needs a decision):** report pages make one RPC per block (~45 for a
-    programme pack), each recomputing `project_metrics`; on the test instance pages take up to
-    ~100 s and requests (including `publish_report` once) hit the 8 s statement timeout. Proposed:
-    a batched block-data RPC plus a compute upgrade before the first customer.
-  - Test data left on the test project: several draft / in-review / published packs and E2E
-    decisions on the Digital Care Programme Board (published snapshots can't be deleted).
+- **Fifth follow-up (04/11/2026), test project only (RB-50 to RB-53).**
+  - **Performance (RB-50, built):** migrations 7–8 (batched `report_blocks_data`, metrics once
+    per request, `publish_report` on the same path, two indexes) applied to the test project;
+    the client batches every block and the scope metrics into one request per page. Measured on
+    the same small instance (viewer page, navigation to last block):
+
+    | | Before | After |
+    |---|---|---|
+    | Programme pack (7 projects, 46 block items) | 106 s cold / 114–115 s warm, 51 RPCs, 3–8 timeouts per load | 2.3 s cold / 1.6–1.7 s warm, 5 RPCs, no timeouts |
+    | Portfolio pack (10 projects) | 134 s / 98–112 s, 5–8 timeouts | 6.7 s / 2.2–4.8 s, no timeouts |
+    | Selection refresh | 2.6 s | 0.8–4.5 s |
+    | Publish (UI) | failed (57014 in `report-publish`) | 18.5 s click → banner |
+
+    Targets: programme pack under 3 s warm — met; publish under 20 s — met (18.5–20 s, of which
+    `report-publish` ~12 s on a cold connection, `publish_report` itself 0.42 s warm); no
+    statement timeouts — none in the final runs, B7 or B8. The instance itself is the limit
+    now: a CPU probe runs ~3× slower than a normal core and a new API connection costs ~1.3 s on
+    its first batch, so cold pages vary (portfolio 6.7–13 s). Raw numbers:
+    `docs/report-builder-screenshots/perf/` (local).
+  - **Secrets (RB-51):** seed users' password rotated on the test project, kept only in
+    `.env.local` (`E2E_REPORTS_PASSWORD`); removed from this file. Repo and Git history
+    scanned: nothing else. The old password is still in Git history (commit `5007ae6`) and no
+    longer works; refresh tokens issued before the rotation were not revoked.
+  - **Copy (RB-52):** "1 decision made, 0 actions closed, 1 action overdue", "1 day".
+  - **Reorder conflict (RB-53):** a save fired between a deep-dive reorder and the reload of
+    `updated_at` was refused as "Changed by someone else"; autosave now pauses for the reorder.
+  - **Reset:** `docs/sql/rb-test-reset.sql` (run as postgres; refuses without the demo
+    organisation) before each run.
+  - **B7:** 5/5 passed after a reset (1.2 min); final run with retries off 5/5 (1.3 min). One
+    run in between had a flaky first test (rating save showed "Saving…" > 15 s though its PATCH
+    returned 200 in 1.2 s); not reproduced.
+  - **B8 through the UI: all ten steps passed** (step 9 after fixing the script's selector and
+    re-running it on its own). Results: `docs/report-builder-screenshots/README.md` (local; the
+    folder is gitignored).
+  - Test data left on the test project: the final B7 run's published pack and next draft, and
+    the RD06 decision recorded in it. Run the reset script to clear them.
 
 - Browser E2E could not be run here (no Docker; downloaded PostgREST / Auth binaries may not be
   executed). `e2e/reports.e2e.ts` is written but unverified; run it on a seeded branch.
@@ -262,9 +300,9 @@ From `docs/report-builder-decisions.md` (all are logged with alternatives):
 
 ## 6. Remaining release steps
 
-0. Done 04/11/2026 (RB-49): B7 passed; B8 in the browser partly (load). Still to decide: RB-50
-   (batched block data + compute). Re-run B8 steps 5–9 by hand on the test project if you want
-   them seen in the UI. Step 1 below is kept for reference.
+0. Done 04/11/2026 (RB-50 to RB-53): performance built and measured, B7 and all ten B8 steps
+   pass on the test project. Still recommended: a compute upgrade before the first customer.
+   Step 1 below is kept for reference.
 1. Make the test project's credentials available to the session (RB-46): `TEST_*`,
    `E2E_REPORTS_PASSWORD`, and the test project's `VITE_SUPABASE_URL` /
    `VITE_SUPABASE_PUBLISHABLE_KEY` (in `.env.local` or the environment — they override `.env`,
@@ -279,14 +317,15 @@ From `docs/report-builder-decisions.md` (all are logged with alternatives):
    `REPORTS_TEST_RECIPIENTS`; publish a seeded pack, change data, publish a second pack; run
    `npm run test:e2e -- e2e/reports.e2e.ts` with `E2E_REPORTS_PASSWORD`; walk the manual test below.
 2. Decide the items in §4; then open a PR from `feature/report-builder`.
-3. Production: apply the migrations in order; regenerate types; set the secrets (no
+3. Production: apply the eight migrations in order; regenerate types; set the secrets (no
    `REPORTS_TEST_RECIPIENTS`); deploy the functions; schedule `report-notify`; check pg_cron has
    the three new jobs (metric history, scheduled packs, report-notify); create the two Vault
    secrets; leave `REPORT_SERVER_PDF` off until Netlify and the Chromium pack are set up.
 
 ## 7. Manual test — a full pack cycle
 
-Use a Supabase branch with the four migrations and the demo seed, or real data.
+Use a Supabase branch with the eight migrations and the demo seed, or real data. On the test
+project, run `docs/sql/rb-test-reset.sql` first for a clean start (RB-52).
 
 1. **Forum.** Governance › Boards → choose a board (or create one) → **Report settings**: type
    Programme board, scope = a programme, rating scheme RAG, default template "Programme Board",

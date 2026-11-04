@@ -71,14 +71,17 @@ export function useReportView(reportId: string): {
   );
   const context = useReportContext(input);
   const permissions = useReportPermissions(reportId);
-  const metrics = useScopeMetrics(input);
+  // Scope metrics and changes wait for the context so they join the blocks' batch: one
+  // context and one metrics run per page (RB-50).
+  const live = context.data ? input : null;
+  const metrics = useScopeMetrics(live);
   const inclusions = useInclusions(report.data && !published ? reportId : null);
   const snapshot = useReportSnapshot(published ? reportId : null);
   const changes = useBlockData(
-    input,
+    live,
     CHANGES_BLOCK,
     null,
-    !!input && !!report.data?.previousReportId,
+    !!live && !!report.data?.previousReportId,
   );
   const error = report.error ?? context.error ?? snapshot.error ?? null;
   if (!report.data || !permissions.data) return { data: null, error, loading: !error };

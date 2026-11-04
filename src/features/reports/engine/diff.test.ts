@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { diffProjects, toMovement, type ChangesData } from "./diff";
+import { diffProjects, sinceCounts, toMovement, type ChangesData } from "./diff";
 
 const project = (
   id: string,
@@ -132,5 +132,37 @@ describe("toMovement", () => {
   });
   it("handles missing data", () => {
     expect(toMovement(null)).toEqual({});
+  });
+});
+
+describe("changes since last: counts and slip wording", () => {
+  it("uses the singular for one", () => {
+    expect(sinceCounts({ decisions_made: 1, actions_closed: 1, actions_overdue: 1 })).toBe(
+      " 1 decision made, 1 action closed, 1 action overdue.",
+    );
+    expect(sinceCounts({ decisions_made: 0, actions_closed: 2, actions_overdue: 3 })).toBe(
+      " 0 decisions made, 2 actions closed, 3 actions overdue.",
+    );
+    expect(sinceCounts({ decisions_made: 2 })).toBe(" 2 decisions made.");
+    expect(sinceCounts({})).toBe("");
+  });
+
+  it("says day for a one-day slip", () => {
+    const data = {
+      previous: { id: "r0", title: "Previous", as_at: "2026-10-01", published_at: null },
+      projects: [
+        {
+          id: "a",
+          code: "A",
+          name: "A",
+          prev: { max_milestone_slip_days: 0 },
+          curr: { max_milestone_slip_days: 1 },
+          prev_included: false,
+          curr_included: false,
+        },
+      ],
+    } as unknown as ChangesData;
+    const [change] = diffProjects(data, { slipDays: 0, budgetAmount: 0 }, String, String);
+    expect(change?.text).toBe("Largest slip 0 → 1 day");
   });
 });
