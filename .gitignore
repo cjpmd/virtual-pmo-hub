@@ -35,6 +35,3 @@ dist-ssr
 e2e/.auth/
 playwright-report/
 test-results/
-
-# Report builder manual-test screenshots (B8)
-docs/report-builder-screenshots/

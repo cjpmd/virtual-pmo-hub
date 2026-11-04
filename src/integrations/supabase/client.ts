@@ -3,21 +3,9 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 import { brokeredPreviewStorage } from "./previewAuthStorage";
 
-// RB-47: the project comes from VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY (e.g. a
-// test project in .env.local); the production values below are used only when they are unset.
-// If Lovable regenerates this file, restore this block (docs/report-builder-decisions.md RB-47).
-const PRODUCTION_URL = "https://xvdlmtkzfmbcegkmampz.supabase.co";
-const PRODUCTION_PUBLISHABLE_KEY =
+const SUPABASE_URL = "https://xvdlmtkzfmbcegkmampz.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2ZGxtdGt6Zm1iY2Vna21hbXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMTUwOTMsImV4cCI6MjEwNjc5MTA5M30.65YzzqssEazwj-WBgnLGRfwjvd2f4xNLQJOtyOlyffM";
-const SUPABASE_URL: string = import.meta.env.VITE_SUPABASE_URL ?? PRODUCTION_URL;
-const SUPABASE_PUBLISHABLE_KEY: string =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? PRODUCTION_PUBLISHABLE_KEY;
-
-if (import.meta.env.DEV) {
-  console.warn(
-    `[supabase] project ref: ${new URL(SUPABASE_URL).hostname.split(".")[0]} (${SUPABASE_URL})`,
-  );
-}
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
