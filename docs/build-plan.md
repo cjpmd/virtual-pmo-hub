@@ -616,42 +616,6 @@ Also before go-live: a cross-tenant RLS test suite in `supabase/tests` (user A c
 
 ---
 
-## Report builder (docs/report-builder-spec.md)
-
-Built on `feature/report-builder` without stopping for review; decisions in
-`docs/report-builder-decisions.md`, progress in `docs/report-builder-progress.md`, handover in
-`docs/report-builder-handover.md`.
-
-**RB Phase 1 (03/11/2026):** migration `20261103140000_rb1_report_builder_foundations`: rating
-schemes, risk matrices (`risk_score`, `risk_band`), forum report settings on the existing
-`forums` / `forum_members`, `report_templates`, `reports`, inclusions, narratives, events,
-`approval_gates` / `approval_steps`, `record_links`, `entity_shares`, report RLS helpers,
-`project_metrics`, the selection engine and the Phase 1 block functions (all block shaping in
-SQL, `report_block_data`). Block registry and 14 blocks, report and template builders, viewer,
-print route (A4 landscape), Boards packs and report settings, `/governance/reports/*`. Tested on
-a local Postgres (`supabase/tests/local/run.sh`), types generated there.
-
-**RB Phase 2 (03/11/2026):** migration `20261103150000_rb2_selection_programme_packs`:
-escalation columns on risks and issues, `forum_actions`, `nhs_assurance`, default tolerances
-per forum type, escalation and dependency metrics, 18 Phase 2 block functions, Programme Board
-and Portfolio Board / Committee templates. Selection panel with reason chips, pin / exclude /
-reorder; gate editor (Plan › Gates) and escalation control (RAID › Risks / Issues) on the
-project page. SQL parity test runs the TS rule engine's cases.
-
-**RB Phase 3 (03/11/2026):** migration `20261103160000_rb3_governance_snapshots`: immutable
-`report_snapshots` / `report_metric_snapshots`, lifecycle RPCs (submit, return, approve,
-publish, withdraw) with `report_events`, atomic `publish_report`, changes since the last pack and
-RAID movement, presentation-mode capture (`record_meeting_decision`, `add_meeting_action`),
-distribution list and print tokens. Edge functions `report-publish` and `report-distribute`
-(Resend, idempotent), Netlify `report-pdf` behind `REPORT_SERVER_PDF` (off), public
-`/report-print/<id>?token=`. E2E spec for the full cycle runs on a seeded branch only.
-
-**RB Phase 4 (03/11/2026):** migration `20261103170000_rb4_enhancements`: AI drafts
-(`record_ai_draft`, review gate, daily cap), template versioning (`update_report_to_template`),
-scheduled pack drafts (`forums.auto_create_packs`, daily job), `lessons_learned` and
-`linked_records` blocks, Links panel on the project page. Edge function `report-ai-summary`
-(model from `ANTHROPIC_MODEL`). PPTX deferred.
-
 ## Progress
 
 - [x] 0.1 Test harness  - [ ] 0.2 Clean-up  - [x] 0.3 Migration history and indexes  - [x] 0.4 Copy  - [x] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email

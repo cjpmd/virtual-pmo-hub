@@ -89,20 +89,6 @@ export const qk = {
   /** Forums, members and meetings. Under governance, so decision writes refresh their counts. */
   forums: (orgId: string) => ["org", orgId, "governance", "forums"] as const,
   committeePacks: (orgId: string) => ["org", orgId, "committee-packs"] as const,
-  /** Report builder (reports, templates, block data, selection, narratives). */
-  reports: {
-    all: (orgId: string) => ["org", orgId, "reports"] as const,
-    list: (orgId: string) => ["org", orgId, "reports", "list"] as const,
-    detail: (orgId: string, id: string) => ["org", orgId, "reports", "detail", id] as const,
-    /** Live data for one report or preview (context, blocks, metrics), keyed by input. */
-    live: (orgId: string, inputKey: string) => ["org", orgId, "reports", "live", inputKey] as const,
-    inclusions: (orgId: string, id: string) => ["org", orgId, "reports", "inclusions", id] as const,
-    narratives: (orgId: string, id: string) => ["org", orgId, "reports", "narratives", id] as const,
-    events: (orgId: string, id: string) => ["org", orgId, "reports", "events", id] as const,
-    snapshots: (orgId: string, id: string) => ["org", orgId, "reports", "snapshots", id] as const,
-    templates: (orgId: string) => ["org", orgId, "reports", "templates"] as const,
-    config: (orgId: string) => ["org", orgId, "reports", "config"] as const,
-  },
   /** Saved views for one board (saved_views, by board_key). */
   savedViews: (orgId: string, boardKey: string) => ["org", orgId, "saved-views", boardKey] as const,
   dashboards: (orgId: string) => ["org", orgId, "dashboards"] as const,
