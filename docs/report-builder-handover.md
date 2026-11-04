@@ -216,19 +216,35 @@ From `docs/report-builder-decisions.md` (all are logged with alternatives):
     with projects, decisions_made and actions; re-publish correctly refused ("this one is
     published"). PASS.
   - B7 (Playwright E2E): blocked in that session because `client.ts` hard-coded the production
-    URL, so the test session (`sb-afbmohzvyzblwbfsxpnx-...`) was ignored and every route
-    redirected to `/login`. Fixed by RB-47 (the client reads `VITE_SUPABASE_*`); the spec has not
-    been re-run since (RB-48). NOT RUN.
+    URL. Fixed by RB-47; **passed 5/5 on 04/11/2026 (RB-49)**, see below.
   - B8 (manual cycle): verified programmatically (through the RPCs, not the browser UI) against `ormo-report-builder-test`.
     Steps 1–10 all passed: forum → draft → selection → submit → approve → publish (snapshot
     immutability confirmed) → decisions_made:1 and actions_overdue:1 appear in the next pack's
     changes_since_last. Decision recorded via `record_meeting_decision` shows status 'made'
     linked to the report. Action recorded via `add_meeting_action` appears in
     `forum_actions`. PASS.
-- **B7 / B8 not run (RB-48, 04/11/2026):** with the RB-47 client change the dev server reads
-  `VITE_SUPABASE_*`, but this session had only `.env` (production), so the console showed
-  `xvdlmtkzfmbcegkmampz` and the browser steps stopped before anything ran. No screenshots exist
-  yet (`docs/report-builder-screenshots/` is for that run).
+- **B7 / B8 not run (RB-48, 04/11/2026):** superseded by the RB-49 run below.
+- **B7 / B8 browser run (RB-49, 04/11/2026), test project only.** The dev console showed
+  `[supabase] project ref: afbmohzvyzblwbfsxpnx` first. `playwright.config.ts` had loaded `.env`
+  before `.env.local`, which would have pointed the global setup and dev server at production;
+  fixed before any request.
+  - B7: `e2e/reports.e2e.ts` **5/5 passed** (7.1 min). Run with the seeded PMO as the global
+    user: `E2E_EMAIL=pmo@reports-demo.test E2E_PASSWORD="$E2E_REPORTS_PASSWORD" npx playwright
+    test e2e/reports.e2e.ts --project=desktop`. Bugs fixed on the way: autosave sent a second
+    save with a stale `updated_at`; reordering deep-dives made the next save conflict; Selection
+    showed UUIDs because `report_scope_metrics` timed out behind ~30 parallel block requests
+    (now two at a time). The spec now creates its own pending RD06 decision and tolerates a
+    forum that already has published packs.
+  - B8 through the UI: steps 1–4 passed (settings, create pack, selection with threshold change,
+    pin, exclude, reorder, content, print PDF); 5–6 failed on database statement timeouts; 7–9
+    not run; 10 partly (changes since last pack shown). Steps 5–8 and 10 are covered by B7.
+    Results and screenshots: `docs/report-builder-screenshots/README.md`.
+  - **Performance (RB-50, needs a decision):** report pages make one RPC per block (~45 for a
+    programme pack), each recomputing `project_metrics`; on the test instance pages take up to
+    ~100 s and requests (including `publish_report` once) hit the 8 s statement timeout. Proposed:
+    a batched block-data RPC plus a compute upgrade before the first customer.
+  - Test data left on the test project: several draft / in-review / published packs and E2E
+    decisions on the Digital Care Programme Board (published snapshots can't be deleted).
 
 - Browser E2E could not be run here (no Docker; downloaded PostgREST / Auth binaries may not be
   executed). `e2e/reports.e2e.ts` is written but unverified; run it on a seeded branch.
@@ -246,6 +262,9 @@ From `docs/report-builder-decisions.md` (all are logged with alternatives):
 
 ## 6. Remaining release steps
 
+0. Done 04/11/2026 (RB-49): B7 passed; B8 in the browser partly (load). Still to decide: RB-50
+   (batched block data + compute). Re-run B8 steps 5–9 by hand on the test project if you want
+   them seen in the UI. Step 1 below is kept for reference.
 1. Make the test project's credentials available to the session (RB-46): `TEST_*`,
    `E2E_REPORTS_PASSWORD`, and the test project's `VITE_SUPABASE_URL` /
    `VITE_SUPABASE_PUBLISHABLE_KEY` (in `.env.local` or the environment — they override `.env`,

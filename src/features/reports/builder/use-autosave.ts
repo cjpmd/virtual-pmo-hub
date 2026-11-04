@@ -19,11 +19,16 @@ export function useAutosave<T>(
   saveRef.current = save;
   const valueRef = useRef(value);
   valueRef.current = value;
+  // One save at a time: the effect re-runs when status changes, and without this a save slower
+  // than `delay` was followed by a second one carrying the stale updated_at, which the server
+  // refused as "changed by someone else" (RB-49). Changes made during a save are saved after it.
+  const inFlight = useRef(false);
   useEffect(() => {
-    if (!enabled || status === "conflict") return;
+    if (!enabled || status === "conflict" || inFlight.current) return;
     if (serialised === last.current || serialised === failed.current) return;
     setStatus("pending");
     const timer = window.setTimeout(async () => {
+      inFlight.current = true;
       setStatus("saving");
       try {
         await saveRef.current(valueRef.current);
@@ -35,6 +40,8 @@ export function useAutosave<T>(
         failed.current = serialised;
         setError(errorMessage(e));
         setStatus(isServiceError(e) && e.kind === "conflict" ? "conflict" : "error");
+      } finally {
+        inFlight.current = false;
       }
     }, delay);
     return () => window.clearTimeout(timer);

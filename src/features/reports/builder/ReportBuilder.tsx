@@ -27,6 +27,7 @@ import { qk } from "@/services/query-keys";
 import {
   acknowledgeAiDraft,
   draftSummaryWithAi,
+  getReport,
   latestHighlightSummary,
   updateReportToTemplate,
   toScheme,
@@ -107,13 +108,15 @@ function Builder({ report }: { report: ReportRecord }) {
         lastSeen,
       );
       if (written.updatedAt) setLastSeen(written.updatedAt);
+      // Refetches run in the background: "Saved" means the write landed, not that every block
+      // has reloaded (RB-49).
       if (
         value.asAt !== report.asAt ||
         value.title !== report.title ||
         value.overallRating !== report.overallRating
       )
-        await invalidateLive();
-      await queryClient.invalidateQueries({ queryKey: qk.reports.list(orgId) });
+        void invalidateLive();
+      void queryClient.invalidateQueries({ queryKey: qk.reports.list(orgId) });
     },
     { enabled: editable },
   );
@@ -448,6 +451,17 @@ function Builder({ report }: { report: ReportRecord }) {
                   onReorder={async (entityIds) => {
                     try {
                       await mutations.reorder.mutateAsync({ reportId: report.id, entityIds });
+                      // The RPC also sets selection_rules.orderBy = "manual" on the report, which
+                      // moves updated_at: take both on, or the next autosave is refused as a
+                      // conflict and would put the old order back (RB-49).
+                      const fresh = await getReport(report.id);
+                      if (fresh) {
+                        setLastSeen(fresh.updatedAt);
+                        setDraft((d) => ({
+                          ...d,
+                          selectionRules: { ...d.selectionRules, orderBy: "manual" },
+                        }));
+                      }
                     } catch (e) {
                       toast.error(errorMessage(e));
                     }

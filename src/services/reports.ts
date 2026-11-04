@@ -12,6 +12,12 @@ import type {
 import type { ForumType } from "@/features/reports/engine/defaults";
 import { unwrap, unwrapMaybe } from "./service-error";
 import { deleteWhere, insertRow, insertRows, updateRow } from "./write";
+import { createLimiter } from "@/lib/limit";
+
+// Live block data: at most two requests at once, so a pack's ~30 block requests don't queue
+// past the database's 8 s statement timeout on a small instance (RB-49). Scope metrics skip the
+// queue: the selection panel and its labels depend on them.
+const liveDataLimit = createLimiter(2);
 
 export type ReportStatus = "draft" | "in_review" | "approved" | "published" | "withdrawn";
 export type ScopeType = "project" | "programme" | "portfolio" | "custom";
@@ -284,11 +290,13 @@ export async function fetchBlockData(
   block: BlockInstance,
   entityId: string | null,
 ): Promise<unknown> {
-  const result = await supabase.rpc("report_block_data", {
-    p_input: input as unknown as Json,
-    p_block: block as unknown as Json,
-    ...(entityId ? { p_entity: entityId } : {}),
-  });
+  const result = await liveDataLimit(() =>
+    supabase.rpc("report_block_data", {
+      p_input: input as unknown as Json,
+      p_block: block as unknown as Json,
+      ...(entityId ? { p_entity: entityId } : {}),
+    }),
+  );
   return unwrapMaybe(result, `Loading ${block.blockKey.replace(/_/g, " ")}`);
 }
 

@@ -6,7 +6,7 @@ types: `supabase/tests/local/gen-types.sh`.
 
 ## Current phase
 
-Third follow-up (04/11/2026): Part B run against `ormo-report-builder-test` — B1–B6 and B8 pass; B7 blocked (RB-47). Part C done. See `docs/report-builder-handover.md`.
+Fourth follow-up (04/11/2026): B7 passed against `ormo-report-builder-test`; B8 in the browser partly (RB-49, RB-50). See `docs/report-builder-handover.md`.
 
 ## Completed
 
@@ -84,24 +84,32 @@ Third follow-up (04/11/2026): Part B run against `ormo-report-builder-test` — 
   B7 / B8 not run: the dev console showed the production ref (no test values in this session),
   so the browser steps stopped (RB-48).
 
+- 04/11/2026 (fourth follow-up, RB-49): B7 `e2e/reports.e2e.ts` **5/5 passed** against
+  `ormo-report-builder-test` (console ref confirmed first). Fixed: Playwright env load order
+  (would have used production), autosave double-save conflict, reorder → save conflict, block
+  requests limited to two at a time, spec made re-runnable. B8 in the browser: steps 1–4 pass,
+  5–6 fail on statement timeouts, 7–9 not run, 10 partly; screenshots and results in
+  `docs/report-builder-screenshots/`. Performance proposal RB-50 (not built).
+
 ## Current phase
 
-Part B: B1–B6 and B8 (via RPCs) pass. B7 and the browser run of B8 still to do: RB-47 makes the
-client follow `VITE_SUPABASE_*`, but they need the test project's values in the session (RB-48).
-Then PR review (§4 decisions in handover) and production release (handover §6).
+Part B done apart from B8 steps 5–9 in the UI (covered by B7). Next: decide RB-50 (batched
+block data, compute), then PR review (§4 decisions in handover) and production release
+(handover §6). PRs #68–#70 were reverted on `main` (production has no migrations yet); work stays
+on `feature/report-builder`.
 
 ## Next steps
 
+- Decide RB-50 (batched `report_blocks_data` + compute upgrade); SQL proposal first.
 - Review and confirm the §4 decisions in `docs/report-builder-handover.md`.
-- Run `e2e/reports.e2e.ts` on a Supabase branch where `client.ts` is regenerated against
-  the branch (RB-47).
 - Open a PR from `feature/report-builder` once §4 is confirmed.
 - Apply the six migrations to production in order; regenerate types; set secrets; deploy
   functions (handover §6 steps 2–3).
 
 ## Known issues
 
-- B7 Playwright E2E and the browser run of B8 not yet done: need the test project's
-  `VITE_SUPABASE_*` in the session (RB-47 fixed the client; RB-48).
+- Report pages are slow on a small instance and requests can hit the 8 s statement timeout
+  (RB-50); B8 steps 5–6 failed for that reason in the browser run.
+- "1 decisions made" in Changes since last pack (copy).
 - Edge functions (`report-publish`, `report-distribute`) and the Netlify `report-pdf` function
   are unit-tested through their shared module but not run end to end (no Deno / Netlify here).
