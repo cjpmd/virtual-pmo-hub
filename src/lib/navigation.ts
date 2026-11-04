@@ -25,7 +25,6 @@ import {
   Workflow,
   UsersRound,
   Waypoints,
-  FileBarChart,
 } from "lucide-react";
 import type { TermKey } from "@/data/settings-types";
 
@@ -137,11 +136,10 @@ export const sections: Section[] = [
     pages: [
       { to: "/governance/raidd", label: "RAIDD", icon: ShieldAlert },
       { to: "/governance/forum", label: "Boards", icon: Landmark },
-      { to: "/governance/reports", label: "Reports", icon: FileBarChart },
       { to: "/governance/changes", label: "Changes", icon: GitFork },
       { to: "/governance/lessons", label: "Lessons", icon: BookOpenCheck, termKey: "lesson" },
       { to: "/governance/improvement-actions", label: "Improvement actions", icon: ListChecks },
-      { to: "/governance/committee-packs", label: "Funding packs", icon: FileText },
+      { to: "/governance/committee-packs", label: "Committee packs", icon: FileText },
     ],
   },
   {

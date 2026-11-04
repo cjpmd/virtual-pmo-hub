@@ -121,7 +121,7 @@ export const settingsSections: SettingsSectionDefinition[] = [
     id: "templates",
     label: "Templates",
     icon: FileStack,
-    blurb: "Project, status report and funding pack templates.",
+    blurb: "Project, status report and committee pack templates.",
   },
   {
     id: "integrations",

@@ -25,9 +25,7 @@ export const isPublicPath = (path: string) =>
   path === "/terms" ||
   path === "/invite" ||
   path === "/signup" ||
-  path.startsWith("/signup/") ||
-  // Server-side PDF rendering of a published pack, authorised by a short-lived print token.
-  path.startsWith("/report-print/");
+  path.startsWith("/signup/");
 
 export function Splash({ label = "Loading your workspace…" }: { label?: string }) {
   return (

@@ -239,7 +239,7 @@ export async function getCommitteePack(id: string): Promise<IssuedCommitteePack>
       .select("id, title, meeting_date, issued_at, content")
       .eq("id", id)
       .maybeSingle(),
-    "Loading the funding pack",
+    "Loading the committee pack",
   );
   if (!row) throw new ServiceError("not_found", "This pack no longer exists or isn't visible.");
   return {
@@ -271,7 +271,7 @@ export async function listCommitteePacks(orgId: string): Promise<CommitteePackRe
       .eq("organisation_id", orgId)
       .order("meeting_date", { ascending: false })
       .order("created_at", { ascending: false }),
-    "Loading funding packs",
+    "Loading committee packs",
   );
   const issuerIds = [...new Set(rows.flatMap((row) => (row.issued_by ? [row.issued_by] : [])))];
   const names = new Map<string, string>();
@@ -312,6 +312,6 @@ export async function issueCommitteePack(input: {
       // The database replaces this with its own clock and records who issued it.
       issued_at: new Date().toISOString(),
     },
-    "Issuing the funding pack",
+    "Issuing the committee pack",
   );
 }

@@ -1664,7 +1664,7 @@ export function TemplateSettings() {
         />
       </SettingsCard>
       <SettingsCard
-        title="Funding pack template"
+        title="Committee pack template"
         description="Page order, cover text and whether the organisation logo appears."
       >
         <div className="space-y-2">

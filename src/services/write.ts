@@ -79,7 +79,6 @@ const NO_UPDATED_AT = new Set<TableName>([
   "divergence_justifications",
   "financial_forecast_history",
   "forum_members",
-  "forum_scope_items",
   "gate_checklist_ticks",
   "health_snapshots",
   "lesson_project_types",
@@ -87,7 +86,6 @@ const NO_UPDATED_AT = new Set<TableName>([
   "outcome_benefits",
   "outcome_capabilities",
   "phase_lessons_review_attendees",
-  "record_links",
   "resource_skills",
   "roadmap_item_collections",
   "status_report_decisions",
@@ -108,7 +106,6 @@ const KEY_COLUMN: Partial<Record<TableName, string>> = {
 /** Tables keyed by several columns (membership rows). */
 const KEY_COLUMNS: Partial<Record<TableName, string[]>> = {
   workspace_members: ["workspace_id", "profile_id"],
-  forum_members: ["forum_id", "resource_id"],
 };
 const keyOf = (name: TableName) => KEY_COLUMN[name] ?? "id";
 const keyColumns = (name: TableName) => KEY_COLUMNS[name] ?? [keyOf(name)];
