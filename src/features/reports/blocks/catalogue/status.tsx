@@ -1,6 +1,7 @@
 // Status blocks: overall_status, health_by_dimension, project_status_grid.
 import { z } from "zod";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 import { registerBlock } from "../registry";
 import {
   BlockNote,
@@ -516,6 +517,24 @@ function Grid({ data, config, ctx }: { data: GridData; config: GridConfig; ctx: 
                   header: "% done",
                   align: "right" as const,
                   cell: (row: GridRow) => `${row.percent_complete ?? 0}%`,
+                },
+              ]
+            : []),
+          ...(ctx.onPinProject
+            ? [
+                {
+                  key: "dd",
+                  header: "Deep dive",
+                  cell: (row: GridRow) => {
+                    const isIn = row.inclusion === "pinned" || row.inclusion === "rule";
+                    return (
+                      <Checkbox
+                        checked={isIn}
+                        aria-label={`${isIn ? "Remove" : "Add"} ${row.code} from deep dives`}
+                        onCheckedChange={() => ctx.onPinProject!(row.id, !isIn)}
+                      />
+                    );
+                  },
                 },
               ]
             : []),
