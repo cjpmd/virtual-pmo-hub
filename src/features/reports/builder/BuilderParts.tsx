@@ -26,7 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import "../blocks/catalogue";
+import { ALL_BLOCKS } from "../blocks/catalogue";
 import {
   CATEGORY_LABEL,
   getBlock,
@@ -115,7 +115,9 @@ export function BlockLibrary({
     return [...byCategory.entries()].sort((a, b) =>
       CATEGORY_LABEL[a[0]].localeCompare(CATEGORY_LABEL[b[0]]),
     );
-  }, [query, scope]);
+    // ALL_BLOCKS.length in the deps keeps the catalogue import live (sideEffects: false).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, scope, ALL_BLOCKS.length]);
   return (
     <div className="space-y-3">
       <Input

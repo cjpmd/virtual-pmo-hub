@@ -156,7 +156,7 @@ function Overall({
   );
 }
 
-registerBlock<OverallConfig, OverallData>({
+export const _overall_status = registerBlock<OverallConfig, OverallData>({
   key: "overall_status",
   version: 1,
   name: "Overall status",
@@ -308,7 +308,7 @@ function Health({
   );
 }
 
-registerBlock<{ months: number }, HealthProject | HealthScope>({
+export const _health_by_dimension = registerBlock<{ months: number }, HealthProject | HealthScope>({
   key: "health_by_dimension",
   version: 1,
   name: "Health by dimension",
@@ -531,7 +531,7 @@ function Grid({ data, config, ctx }: { data: GridData; config: GridConfig; ctx: 
   );
 }
 
-registerBlock<GridConfig, GridData>({
+export const _project_status_grid = registerBlock<GridConfig, GridData>({
   key: "project_status_grid",
   version: 1,
   name: "Project status grid",

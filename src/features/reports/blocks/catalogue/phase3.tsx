@@ -88,7 +88,7 @@ function Changes({
   );
 }
 
-registerBlock({
+export const _changes_since_last = registerBlock({
   key: "changes_since_last",
   version: 1,
   name: "Changes since last pack",
@@ -194,7 +194,7 @@ function RaidMovement({
   );
 }
 
-registerBlock({
+export const _raid_movement = registerBlock({
   key: "raid_movement",
   version: 1,
   name: "RAID movement",

@@ -10,7 +10,7 @@ import { z } from "zod";
 import fixtures from "./__fixtures__/phase1.json";
 import fixtures2 from "./__fixtures__/phase2.json";
 import fixtures34 from "./__fixtures__/phase34.json";
-import "./catalogue";
+import { ALL_BLOCKS } from "./catalogue";
 import { getBlock, listBlocks, registerBlock, resolveConfig } from "./registry";
 import type { BlockInstance, RenderContext } from "./types";
 import { FALLBACK_SCHEME } from "@/services/reports";
@@ -433,6 +433,22 @@ describe("Phase 3 and 4 blocks", () => {
       .map((b) => b.key)
       .sort();
     expect(Object.keys(EMPTY34).sort()).toEqual(keys);
+  });
+});
+
+describe("ALL_BLOCKS registry (tree-shaking guard)", () => {
+  it("ALL_BLOCKS contains exactly 36 definitions", () => {
+    // This test fails if a new block is added without updating catalogue/index.ts,
+    // or if the explicit import chain is broken and blocks get tree-shaken.
+    expect(ALL_BLOCKS).toHaveLength(36);
+  });
+  it("ALL_BLOCKS matches what the registry contains", () => {
+    const registryKeys = listBlocks()
+      .filter((b) => !b.key.startsWith("test_"))
+      .map((b) => b.key)
+      .sort();
+    const catalogueKeys = ALL_BLOCKS.map((b) => b.key).sort();
+    expect(catalogueKeys).toEqual(registryKeys);
   });
 });
 

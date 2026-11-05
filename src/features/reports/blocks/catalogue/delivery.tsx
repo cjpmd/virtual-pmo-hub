@@ -71,7 +71,7 @@ function Summary({
   );
 }
 
-registerBlock<Record<string, never>, SummaryData | null>({
+export const _project_summary = registerBlock<Record<string, never>, SummaryData | null>({
   key: "project_summary",
   version: 1,
   name: "Project summary",
@@ -164,7 +164,10 @@ function Milestones({
   );
 }
 
-registerBlock<MilestoneConfig, { multi: boolean; rows: MilestoneRow[] }>({
+export const _milestone_slippage = registerBlock<
+  MilestoneConfig,
+  { multi: boolean; rows: MilestoneRow[] }
+>({
   key: "milestone_slippage",
   version: 1,
   name: "Milestone slippage",
@@ -279,7 +282,7 @@ function Budget({
   );
 }
 
-registerBlock<z.infer<typeof budgetSchema>, BudgetData>({
+export const _budget_summary = registerBlock<z.infer<typeof budgetSchema>, BudgetData>({
   key: "budget_summary",
   version: 1,
   name: "Budget summary",
@@ -388,7 +391,10 @@ function Decisions({
   );
 }
 
-registerBlock<z.infer<typeof decisionsSchema>, { rows: DecisionRow[] }>({
+export const _decisions_required = registerBlock<
+  z.infer<typeof decisionsSchema>,
+  { rows: DecisionRow[] }
+>({
   key: "decisions_required",
   version: 1,
   name: "Decisions required",
@@ -496,7 +502,7 @@ function Raid({
   );
 }
 
-registerBlock<z.infer<typeof raidSchema>, RaidData>({
+export const _top_raid = registerBlock<z.infer<typeof raidSchema>, RaidData>({
   key: "top_raid",
   version: 1,
   name: "Top risks and issues",
@@ -577,7 +583,7 @@ function Changes({
   );
 }
 
-registerBlock<z.infer<typeof changeSchema>, { rows: ChangeRow[] }>({
+export const _change_requests = registerBlock<z.infer<typeof changeSchema>, { rows: ChangeRow[] }>({
   key: "change_requests",
   version: 1,
   name: "Change requests",

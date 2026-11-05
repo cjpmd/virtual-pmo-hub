@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { useBlockData } from "@/hooks/use-reports";
 import { errorMessage } from "@/services/service-error";
 import type { ReportInput } from "@/services/reports";
-import "../blocks/catalogue";
+import { ALL_BLOCKS } from "../blocks/catalogue";
 import { getBlock, resolveConfig } from "../blocks/registry";
 import type { BlockInstance, ProjectMovement, RatingScheme, RenderContext } from "../blocks/types";
 
@@ -63,7 +63,8 @@ export const blockTitle = (instance: BlockInstance) => {
     return config["title"];
   if (instance.blockKey === "free_text" && typeof config["heading"] === "string")
     return config["heading"];
-  return getBlock(instance.blockKey)?.name ?? "Block unavailable";
+  // ALL_BLOCKS.length keeps the catalogue import live in production (sideEffects: false).
+  return getBlock(instance.blockKey)?.name ?? `Block unavailable (${ALL_BLOCKS.length} registered)`;
 };
 
 /** Report-level blocks, then one section per deep-dive project (spec §9.2 contents). */
