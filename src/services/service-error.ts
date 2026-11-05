@@ -84,8 +84,12 @@ export function fromPostgrest(
   else if (!code && /fetch|network/i.test(error.message)) kind = "network";
   // PostgREST answers a statement timeout with HTTP 500; a gateway timeout is 504.
   else if (status === 500 || status === 504) kind = "timeout";
+  // P0001 (RAISE EXCEPTION) and 22023 (RAISE … USING ERRCODE='22023') always carry
+  // application-defined messages intended for the user.  Other codes go through
+  // isRuleMessage, which filters out Postgres's own constraint/privilege wording.
   message =
-    (kind === "invalid" && code === "P0001") || isRuleMessage(kind, error.message)
+    (kind === "invalid" && (code === "P0001" || code === "22023")) ||
+    isRuleMessage(kind, error.message)
       ? error.message
       : messages[kind];
   if (kind === "conflict" && error.details) message = `${messages.conflict} ${error.details}`;

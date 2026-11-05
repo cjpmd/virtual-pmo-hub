@@ -99,7 +99,7 @@ export function NewReportDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-auto sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>New report</DialogTitle>
           <DialogDescription>
@@ -199,7 +199,7 @@ export function NewReportDialog({
             <div className="flex gap-2">
               <select
                 id="nr-scope"
-                className="h-9 rounded-md border bg-background px-2 text-sm"
+                className="h-9 w-36 shrink-0 rounded-md border bg-background px-2 text-sm"
                 value={scopeType}
                 onChange={(e) => {
                   setScopeType(e.target.value as ScopeType);

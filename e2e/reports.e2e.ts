@@ -249,3 +249,42 @@ test("the next pack shows the decision taken and the changes", async ({ browser,
     await expectNoErrorBoundary(page);
   });
 });
+
+// RB-54: ad hoc report creation (no forum, no template) must succeed.
+// This exercises the client fix (blocks omitted from payload) and the dialog at desktop width.
+test("PMO creates an ad hoc project report with no forum and no template", async ({
+  browser,
+  baseURL,
+}) => {
+  let adHocId = "";
+  await as(browser, baseURL!, "pmo", async (page) => {
+    await page.goto("/governance/reports");
+    await settle(page);
+    await page.getByRole("button", { name: "New report" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+
+    // Select "Ad hoc"
+    await dialog.getByRole("radio", { name: "Ad hoc" }).check();
+
+    // Forum must stay as "None"
+    const forumSelect = dialog.getByLabel("Forum (optional)");
+    await expect(forumSelect).toHaveValue("");
+
+    // Pick a scope: project, first in list
+    const scopeItemSelect = dialog.getByRole("combobox", { name: "Scope item" });
+    const firstProjectId = await scopeItemSelect.locator("option").nth(1).getAttribute("value");
+    if (firstProjectId) await scopeItemSelect.selectOption(firstProjectId);
+
+    await dialog.getByRole("button", { name: "Create" }).click();
+    await page.waitForURL(/\/edit$/);
+    adHocId = /reports\/([0-9a-f-]+)\/edit/.exec(page.url())![1]!;
+    expect(adHocId).toBeTruthy();
+    await expectNoErrorBoundary(page);
+  });
+
+  // Clean up: delete the ad hoc report via the REST API as PMO.
+  if (adHocId) {
+    await restAs("pmo", `reports?id=eq.${adHocId}`, { method: "DELETE" });
+  }
+});
