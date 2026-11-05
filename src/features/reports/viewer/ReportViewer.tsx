@@ -1,9 +1,9 @@
 // Report viewer (spec §9.2): banner (draft live / published snapshot), sticky contents, the
 // document, and the print layout (§11: A4 landscape, page breaks, header and footer).
-import { useEffect, useMemo, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "@tanstack/react-router";
-import { Pencil, Presentation, Printer } from "lucide-react";
+import { FileDown, Loader2, Pencil, Presentation, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   useInclusions,
@@ -193,6 +193,20 @@ export function ReportViewer({
   actions?: (view: ViewModel) => ReactNode;
 }) {
   const view = useReportView(reportId);
+  const docRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportPptx = useCallback(async () => {
+    if (!view.data || !docRef.current) return;
+    setExporting(true);
+    try {
+      const { exportReportPptx } = await import("./export-pptx");
+      await exportReportPptx(view.data, docRef.current);
+    } finally {
+      setExporting(false);
+    }
+  }, [view.data]);
+
   if (view.error) return <p role="alert">{errorMessage(view.error)}</p>;
   if (!view.data) return <div aria-busy className="h-64 animate-pulse rounded-lg bg-muted/50" />;
   const v = view.data;
@@ -223,6 +237,20 @@ export function ReportViewer({
               <Printer className="mr-1 size-3.5" /> Download PDF
             </Link>
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void handleExportPptx()}
+            disabled={exporting}
+            aria-label="Export PowerPoint"
+          >
+            {exporting ? (
+              <Loader2 className="mr-1 size-3.5 animate-spin" />
+            ) : (
+              <FileDown className="mr-1 size-3.5" />
+            )}
+            Export PPTX
+          </Button>
           {actions?.(v)}
         </div>
       </div>
@@ -232,7 +260,9 @@ export function ReportViewer({
             <ReportToc sections={sections} />
           </div>
         </aside>
-        <ReportDocument {...v.doc} mode="screen" />
+        <div ref={docRef}>
+          <ReportDocument {...v.doc} mode="screen" />
+        </div>
       </div>
     </div>
   );
@@ -284,8 +314,12 @@ export function ReportPrint({ view, autoPrint }: { view: ViewModel; autoPrint: b
   const blocksReady = typeof document !== "undefined";
   useEffect(() => {
     if (!autoPrint) return;
-    // Give live blocks a moment to resolve before the dialog opens.
-    const timer = window.setTimeout(() => window.print(), 2500);
+    // Wait for fonts to load before opening the print dialog so SVG text and
+    // icon glyphs are measured correctly. A short fixed delay also gives live
+    // block queries time to settle before the snapshot is taken.
+    const timer = window.setTimeout(() => {
+      void document.fonts.ready.then(() => window.print());
+    }, 800);
     return () => window.clearTimeout(timer);
   }, [autoPrint]);
   const header = `${view.forumName ?? "Ad hoc report"} · ${view.report.title} · as at ${f.date(view.report.asAt)}`;

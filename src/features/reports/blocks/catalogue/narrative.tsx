@@ -11,6 +11,7 @@ import { registerBlock } from "../registry";
 import { useNarrativeEditing } from "../narrative-context";
 import { BlockNote, Empty, RatingChip, useReportFormat } from "../primitives";
 import type { RenderContext } from "../types";
+import { useSettings } from "@/services/settings";
 
 // ---------------------------------------------------------------- report_cover
 interface CoverData {
@@ -37,8 +38,28 @@ function Cover({
   ctx: RenderContext;
 }) {
   const f = useReportFormat();
+  const settings = useSettings();
+  const showLogo = settings.templates.committeePack.showLogo;
+  const logoUrl = settings.organisation.logoDataUrl;
+  const orgName = settings.organisation.name;
+  const shortName = settings.organisation.shortName;
   return (
     <div className="space-y-4">
+      {showLogo && (
+        <div className="flex items-center gap-3" data-cover-logo>
+          {logoUrl ? (
+            <img src={logoUrl} alt="" className="size-12 rounded-md object-contain" />
+          ) : (
+            <span className="grid size-12 place-items-center rounded-md bg-primary font-display font-bold text-primary-foreground">
+              {shortName.slice(0, 2).toUpperCase()}
+            </span>
+          )}
+          <div>
+            <p className="font-display font-semibold">{orgName}</p>
+            <p className="text-xs text-muted-foreground">{shortName} portfolio office</p>
+          </div>
+        </div>
+      )}
       <div>
         {data.forum_name && (
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">

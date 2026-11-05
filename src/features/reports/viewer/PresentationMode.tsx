@@ -92,7 +92,7 @@ export function PresentationMode({
                   </span>
                 ))}
               </div>
-              <div className="grid gap-4 xl:grid-cols-2">
+              <div className="space-y-4">
                 {deepBlocks.map((instance) => (
                   <BlockFrame
                     key={instance.id}
