@@ -673,6 +673,33 @@
   }
 }
 
+/* Project overview deep-dive: page break before each project (not the first), force
+   the three-column layout on A4 landscape regardless of how the browser resolves
+   container queries during print layout. */
+@media print {
+  .report-print-root .print-overview-project + .print-overview-project {
+    break-before: page;
+  }
+
+  /* Force 3-column layout – the @container query fires naturally when the container is
+     wider than 640 px (A4 landscape content area ≈ 1046 px) but we set it explicitly
+     here so it is reliable across all print engines. */
+  .report-print-root [data-testid="project-overview-panel"] > div {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  /* Show the milestones/health column (hidden below 640 px container) in print. */
+  .report-print-root [data-testid="project-overview-panel"] > div > .hidden {
+    display: flex;
+  }
+
+  /* Show the TopRisks wrapper (hidden below 640 px container) in print. */
+  .report-print-root [data-testid="project-overview-panel"] [data-testid="project-overview-panel"] .hidden,
+  .report-print-root [data-testid="project-overview-panel"] > div > div:last-child > .hidden {
+    display: block;
+  }
+}
+
 /* The server print route renders the pack on its own (no app shell): always visible. */
 .report-print-root.report-print-server {
   display: block;
