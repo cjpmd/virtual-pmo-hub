@@ -2,6 +2,7 @@
 // changes_since_last block data (previous and current metrics per project, as stored by
 // publish_report); output is the change list and the per-project movement markers.
 import type { ProjectMovement } from "../blocks/types";
+import { plural } from "@/lib/plural";
 
 export interface ProjectDelta {
   id: string;
@@ -115,7 +116,7 @@ export function diffProjects(
         kind: sCurr > sPrev ? "slip_increased" : "slip_reduced",
         from: sPrev,
         to: sCurr,
-        text: `Largest slip ${sPrev} → ${sCurr} days`,
+        text: `Largest slip ${sPrev} → ${plural(sCurr, "day")}`,
       });
     const bPrev = num(p.prev["eac"]);
     const bCurr = num(p.curr["eac"]);
@@ -162,4 +163,19 @@ export function toMovement(data: ChangesData | null | undefined): Record<string,
     if (Object.keys(m).length) out[p.id] = m;
   }
   return out;
+}
+
+/** " 1 decision made, 2 actions closed, 1 action overdue." (whichever counts the data has). */
+export function sinceCounts(
+  data: Pick<ChangesData, "decisions_made" | "actions_closed" | "actions_overdue">,
+) {
+  const parts = [
+    data.decisions_made !== undefined &&
+      plural(data.decisions_made, "decision made", "decisions made"),
+    data.actions_closed !== undefined &&
+      plural(data.actions_closed, "action closed", "actions closed"),
+    data.actions_overdue !== undefined &&
+      plural(data.actions_overdue, "action overdue", "actions overdue"),
+  ].filter(Boolean);
+  return parts.length ? ` ${parts.join(", ")}.` : "";
 }

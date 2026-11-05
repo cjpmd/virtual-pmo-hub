@@ -6,7 +6,8 @@ types: `supabase/tests/local/gen-types.sh`.
 
 ## Current phase
 
-Third follow-up (04/11/2026): Part B run against `ormo-report-builder-test` — B1–B6 and B8 pass; B7 blocked (RB-47). Part C done. See `docs/report-builder-handover.md`.
+Fifth follow-up (04/11/2026): RB-50 performance built and measured, secrets rotated, copy fixed,
+test data reset, B7 and B8 re-run (RB-50 to RB-52). See `docs/report-builder-handover.md`.
 
 ## Completed
 
@@ -84,24 +85,42 @@ Third follow-up (04/11/2026): Part B run against `ormo-report-builder-test` — 
   B7 / B8 not run: the dev console showed the production ref (no test values in this session),
   so the browser steps stopped (RB-48).
 
+- 04/11/2026 (fourth follow-up, RB-49): B7 `e2e/reports.e2e.ts` **5/5 passed** against
+  `ormo-report-builder-test` (console ref confirmed first). Fixed: Playwright env load order
+  (would have used production), autosave double-save conflict, reorder → save conflict, block
+  requests limited to two at a time, spec made re-runnable. B8 in the browser: steps 1–4 pass,
+  5–6 fail on statement timeouts, 7–9 not run, 10 partly; screenshots and results in
+  `docs/report-builder-screenshots/`. Performance proposal RB-50 (not built).
+
+- 04/11/2026 (fifth follow-up): RB-50 built — migrations `20261104150000_rb7_batched_block_data`
+  and `20261104160000_rb8_batched_scope_metrics` (batched `report_blocks_data`, metrics once per
+  request, `publish_report` on the same path, two history indexes), applied to the test project;
+  client batching (`lib/batch.ts`). Programme pack 106–115 s → 1.6–2.3 s, portfolio 98–134 s →
+  2.2–6.7 s, no statement timeouts in the final runs, publish through the UI failed → 18.5 s.
+  RB-51: seed users' password rotated (only in `.env.local`), removed from the handover; repo and
+  history scanned. RB-52: `docs/sql/rb-test-reset.sql`; "1 decision made" copy. RB-53: autosave
+  paused during a reorder (conflict found in the B8 run). B7/B8: see handover §5.
+
 ## Current phase
 
-Part B: B1–B6 and B8 (via RPCs) pass. B7 and the browser run of B8 still to do: RB-47 makes the
-client follow `VITE_SUPABASE_*`, but they need the test project's values in the session (RB-48).
-Then PR review (§4 decisions in handover) and production release (handover §6).
+Part B done; RB-50 built. Next: PR review (§4 decisions in handover) and production release
+(handover §6) with eight migrations. PRs #68–#70 were reverted on `main` (production has no migrations yet); work stays
+on `feature/report-builder`.
 
 ## Next steps
 
+- Upgrade compute before the first customer (RB-50: cold pages still 2–13 s on the small
+  instance).
 - Review and confirm the §4 decisions in `docs/report-builder-handover.md`.
-- Run `e2e/reports.e2e.ts` on a Supabase branch where `client.ts` is regenerated against
-  the branch (RB-47).
 - Open a PR from `feature/report-builder` once §4 is confirmed.
-- Apply the six migrations to production in order; regenerate types; set secrets; deploy
+- Apply the eight migrations to production in order; regenerate types; set secrets; deploy
   functions (handover §6 steps 2–3).
 
 ## Known issues
 
-- B7 Playwright E2E and the browser run of B8 not yet done: need the test project's
-  `VITE_SUPABASE_*` in the session (RB-47 fixed the client; RB-48).
+- On the small test instance cold pages vary (portfolio 6.7–13 s cold) and publish takes ~18 s
+  end to end; the queries themselves take under a second (RB-50).
+- The Selection panel's "Rules changed: refresh" hint appears only when the set of matching
+  projects changes, not when only a reason's threshold changes.
 - Edge functions (`report-publish`, `report-distribute`) and the Netlify `report-pdf` function
   are unit-tested through their shared module but not run end to end (no Deno / Netlify here).

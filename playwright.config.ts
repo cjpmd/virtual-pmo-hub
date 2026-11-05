@@ -1,10 +1,13 @@
 // End-to-end tests (work package 0.1). Run with `npm run test:e2e`.
 // Needs E2E_EMAIL and E2E_PASSWORD in .env.local (gitignored): a dedicated test user who is a
-// member of the demo organisation. The Supabase URL and key come from .env.
+// member of the demo organisation. The Supabase URL and key come from .env.local, else .env.
 import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
 
-for (const file of [".env", ".env.local"]) if (existsSync(file)) process.loadEnvFile(file);
+// .env.local first: loadEnvFile never overwrites a variable that is already set, so the first file
+// wins. This matches Vite (.env.local over .env), so a test project in .env.local reaches both
+// the global setup and the dev server (RB-49).
+for (const file of [".env.local", ".env"]) if (existsSync(file)) process.loadEnvFile(file);
 
 const port = Number(process.env["E2E_PORT"] ?? 8080);
 const baseURL = process.env["E2E_BASE_URL"] ?? `http://127.0.0.1:${port}`;

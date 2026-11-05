@@ -3,7 +3,8 @@ import { z } from "zod";
 import { registerBlock } from "../registry";
 import { BlockNote, Empty, Table, levelFor, useReportFormat } from "../primitives";
 import type { RenderContext } from "../types";
-import { diffProjects, type Change, type ChangesData } from "../../engine/diff";
+import { plural } from "@/lib/plural";
+import { diffProjects, sinceCounts, type Change, type ChangesData } from "../../engine/diff";
 
 const ICON: Record<Change["kind"], string> = {
   rating_worse: "▼",
@@ -51,9 +52,7 @@ function Changes({
     <div className="space-y-2">
       <p className="text-sm text-muted-foreground">
         Compared with “{data.previous.title}” (as at {f.date(data.previous.as_at)}).
-        {data.decisions_made !== undefined && ` ${data.decisions_made} decisions made`}
-        {data.actions_closed !== undefined && `, ${data.actions_closed} actions closed`}
-        {data.actions_overdue !== undefined && `, ${data.actions_overdue} overdue`}.
+        {sinceCounts(data)}
       </p>
       <Table
         rows={changes}
@@ -84,7 +83,7 @@ function Changes({
           },
         ]}
       />
-      <BlockNote>Slip changes under {config.slip_days} days are left out.</BlockNote>
+      <BlockNote>Slip changes under {plural(config.slip_days, "day")} are left out.</BlockNote>
     </div>
   );
 }

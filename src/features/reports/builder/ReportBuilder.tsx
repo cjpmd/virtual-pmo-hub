@@ -27,6 +27,7 @@ import { qk } from "@/services/query-keys";
 import {
   acknowledgeAiDraft,
   draftSummaryWithAi,
+  getReport,
   latestHighlightSummary,
   updateReportToTemplate,
   toScheme,
@@ -78,11 +79,13 @@ function Builder({ report }: { report: ReportRecord }) {
   const input: ReportInput = useMemo(() => ({ report_id: report.id }), [report.id]);
   const context = useReportContext(input);
   const permissions = useReportPermissions(report.id);
-  const metrics = useScopeMetrics(input);
+  // After the context, so scope metrics join the blocks' batch (one metrics run, RB-50).
+  const metrics = useScopeMetrics(context.data ? input : null);
   const inclusions = useInclusions(report.id);
   const mutations = useReportMutations();
   const [draft, setDraft] = useState<Draft>(() => draftOf(report));
   const [lastSeen, setLastSeen] = useState(report.updatedAt);
+  const [reordering, setReordering] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState("block");
   const editable =
@@ -107,15 +110,18 @@ function Builder({ report }: { report: ReportRecord }) {
         lastSeen,
       );
       if (written.updatedAt) setLastSeen(written.updatedAt);
+      // Refetches run in the background: "Saved" means the write landed, not that every block
+      // has reloaded (RB-49).
       if (
         value.asAt !== report.asAt ||
         value.title !== report.title ||
         value.overallRating !== report.overallRating
       )
-        await invalidateLive();
-      await queryClient.invalidateQueries({ queryKey: qk.reports.list(orgId) });
+        void invalidateLive();
+      void queryClient.invalidateQueries({ queryKey: qk.reports.list(orgId) });
     },
-    { enabled: editable },
+    // Paused while a reorder writes the report itself (see onReorder).
+    { enabled: editable && !reordering },
   );
 
   const scheme = toScheme(context.data?.scheme ?? null);
@@ -446,10 +452,27 @@ function Builder({ report }: { report: ReportRecord }) {
                     }
                   }}
                   onReorder={async (entityIds) => {
+                    // The RPC also sets selection_rules.orderBy = "manual" on the report, which
+                    // moves updated_at: take both on, or the next autosave is refused as a
+                    // conflict and would put the old order back (RB-49). Autosave pauses until
+                    // then, after any save in flight, so no save with the old updated_at lands
+                    // between the reorder and the reload (RB-53).
+                    setReordering(true);
                     try {
+                      await autosave.whenIdle();
                       await mutations.reorder.mutateAsync({ reportId: report.id, entityIds });
+                      const fresh = await getReport(report.id);
+                      if (fresh) {
+                        setLastSeen(fresh.updatedAt);
+                        setDraft((d) => ({
+                          ...d,
+                          selectionRules: { ...d.selectionRules, orderBy: "manual" },
+                        }));
+                      }
                     } catch (e) {
                       toast.error(errorMessage(e));
+                    } finally {
+                      setReordering(false);
                     }
                   }}
                 />

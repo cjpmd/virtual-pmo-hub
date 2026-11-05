@@ -6,7 +6,7 @@
 //   update auth.users set encrypted_password = extensions.crypt('<password>', extensions.gen_salt('bf')),
 //     email_confirmed_at = now() where email like '%@reports-demo.test';
 // then set E2E_REPORTS_PASSWORD in .env.local. Without it every test here skips.
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { chromium, type Browser, type Page } from "@playwright/test";
 import { expect, expectNoErrorBoundary, settle, test } from "./fixtures";
 
@@ -19,7 +19,9 @@ const USERS = {
 } as const;
 type Who = keyof typeof USERS;
 
-test.describe.configure({ mode: "serial" });
+// A pack page loads its blocks in one batched request (RB-50); on the test project's small
+// instance a cold page still takes up to ~15 s, so each test gets a generous five minutes.
+test.describe.configure({ mode: "serial", timeout: 300_000 });
 test.skip(!PASSWORD, "E2E_REPORTS_PASSWORD is not set (seeded Supabase branch only)");
 
 const statePath = (who: Who) => `e2e/.auth/reports-${who}.json`;
@@ -56,12 +58,80 @@ async function as(browser: Browser, baseURL: string, who: Who, run: (page: Page)
   }
 }
 
+/** The REST API as a seed user (their session from beforeAll). */
+async function restAs<T>(who: Who, path: string, init: RequestInit = {}): Promise<T> {
+  const state = JSON.parse(readFileSync(statePath(who), "utf8")) as {
+    origins: { localStorage: { name: string; value: string }[] }[];
+  };
+  const token = (
+    JSON.parse(
+      state.origins.flatMap((o) => o.localStorage).find((i) => i.name.endsWith("-auth-token"))!
+        .value,
+    ) as { access_token: string }
+  ).access_token;
+  const response = await fetch(`${process.env["VITE_SUPABASE_URL"]}/rest/v1/${path}`, {
+    ...init,
+    headers: {
+      apikey: process.env["VITE_SUPABASE_PUBLISHABLE_KEY"]!,
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+  });
+  if (!response.ok) throw new Error(`${path}: ${response.status} ${await response.text()}`);
+  return (await response.json()) as T;
+}
+
 let reportId = "";
+// The seed's first pack has RD02 "worsened" against the health snapshot four weeks back; once a
+// pack is published on the forum it compares with that pack instead, so RD02 drops out (RB-49).
+let firstPack = true;
+const SEED_DECISION = "d0000000-0000-4000-8000-000000000701";
 
 test.beforeAll(async ({ baseURL }) => {
   const browser = await chromium.launch();
   for (const who of Object.keys(USERS) as Who[]) await signIn(browser, baseURL!, who);
   await browser.close();
+  firstPack = !(
+    await restAs<unknown[]>(
+      "pmo",
+      `reports?select=id&forum_id=eq.${FORUM}&status=eq.published&limit=1`,
+    )
+  ).length;
+  // Every run records RD06's decision, so a run needs a pending one: re-runs on the same
+  // project add a fresh copy of the seed decision (same project, forum, meeting and maker).
+  const pending = await restAs<unknown[]>(
+    "pmo",
+    `decisions?select=id&forum_id=eq.${FORUM}&status=eq.pending&limit=1`,
+  );
+  if (!pending.length) {
+    const [seed] = await restAs<Record<string, string>[]>(
+      "pmo",
+      `decisions?select=organisation_id,workspace_id,project_id,title,context,target_meeting_id,decision_maker_id&id=eq.${SEED_DECISION}`,
+    );
+    const [decision] = await restAs<{ id: string }[]>("pmo", "decisions", {
+      method: "POST",
+      body: JSON.stringify({
+        ...seed,
+        title: `${seed!["title"]} (E2E ${new Date().toISOString().slice(0, 16)})`,
+        forum_id: FORUM,
+        needed_by_date: new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10),
+      }),
+    });
+    const base = {
+      organisation_id: seed!["organisation_id"],
+      workspace_id: seed!["workspace_id"],
+      decision_id: decision!.id,
+      project_id: seed!["project_id"],
+    };
+    await restAs("pmo", "decision_options", {
+      method: "POST",
+      body: JSON.stringify([
+        { ...base, title: "Supplier A", sort_order: 1 },
+        { ...base, title: "Supplier B (recommended)", sort_order: 2 },
+      ]),
+    });
+  }
 });
 
 test("PMO creates a programme pack; the rules pick the exceptions", async ({
@@ -77,15 +147,19 @@ test("PMO creates a programme pack; the rules pick the exceptions", async ({
     reportId = /reports\/([0-9a-f-]+)\/edit/.exec(page.url())![1]!;
     await settle(page);
     await page.getByRole("tab", { name: "Selection" }).click();
-    // RD01–RD06 breach a rule; RD09 is clean.
-    for (const code of ["RD01", "RD02", "RD03", "RD04", "RD05", "RD06"])
+    // RD01–RD06 breach a rule (RD02 only on the forum's first pack); RD09 is clean.
+    for (const code of ["RD01", ...(firstPack ? ["RD02"] : []), "RD03", "RD04", "RD05", "RD06"])
       await expect(page.locator("[data-inclusion]").filter({ hasText: code })).toHaveCount(1);
     await expect(page.locator("[data-inclusion]").filter({ hasText: "RD09" })).toHaveCount(0);
     await expect(page.locator("[data-inclusion]").filter({ hasText: "RD04" })).toContainText(
       "Slip",
     );
     // Pin RD09 and it becomes a deep-dive.
-    await page.getByRole("button", { name: "Pin" }).first().click();
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "RD09" })
+      .getByRole("button", { name: "Pin" })
+      .click();
     await expect(page.locator("[data-inclusion]").filter({ hasText: "RD09" })).toContainText(
       "Pinned",
     );
@@ -118,7 +192,9 @@ test("the chair approves; PMO publishes a frozen snapshot", async ({ browser, ba
     await settle(page);
     page.once("dialog", (dialog) => void dialog.accept());
     await page.getByRole("button", { name: "Publish" }).click();
-    await expect(page.locator('[data-banner="snapshot"]')).toBeVisible();
+    // report-publish builds every snapshot, then the page reloads the pack (10–20 s on the test
+    // project).
+    await expect(page.locator('[data-banner="snapshot"]')).toBeVisible({ timeout: 60_000 });
   });
 });
 
