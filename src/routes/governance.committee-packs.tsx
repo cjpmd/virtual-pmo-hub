@@ -11,8 +11,8 @@ import { KpiCard, PageHeader } from "@/components/pmo-ui";
 import { Button } from "@/components/ui/button";
 import { useCommitteePacks } from "@/hooks/use-committee-packs";
 import { useSettings } from "@/services/settings";
-const title = "Committee Packs — ORMO PMO",
-  description = "Generate and store governance packs for each committee.";
+const title = "Funding Packs — ORMO PMO",
+  description = "Generate and store funding packs for each funding collection.";
 export const Route = createFileRoute("/governance/committee-packs")({
   head: () => ({
     meta: [
@@ -45,8 +45,8 @@ function Packs({ collections }: { collections: CollectionView[] }) {
       <AutoBreadcrumbs />
       <PageHeader
         eyebrow="Governance"
-        title="Committee packs"
-        description="Build the pack for a governance forum, preview every page and issue it for the meeting. Section order and cover text are set in Settings → Templates."
+        title="Funding packs"
+        description="Build the funding pack for a funding collection, preview every page and issue it for the meeting. Section order and cover text are set in Settings → Templates."
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard

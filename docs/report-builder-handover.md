@@ -1,0 +1,363 @@
+# Report builder — handover
+
+Branch `feature/report-builder` (not merged into `main`). Spec:
+`docs/report-builder-spec.md`. Mapping: `docs/report-builder-mapping.md`. Decisions (RB-n):
+`docs/report-builder-decisions.md`. Progress log: `docs/report-builder-progress.md`.
+
+Production (`xvdlmtkzfmbcegkmampz`) has none of the report builder migrations. The test project
+`ormo-report-builder-test` (`afbmohzvyzblwbfsxpnx`) has all eight and the demo seed; `types.ts` is
+generated from it (04/11/2026, RB-50). Phases 1–4 were first built against a throwaway local
+Postgres 16 with a small Supabase shim (`supabase/tests/local/`, RB-2).
+
+## 1. What was built
+
+### Phase 0 — discovery
+- Mapping of every spec concept onto the existing schema: forums, forum members, meetings,
+  decisions (+ options, actions), status (highlight) reports, stored health with declared vs
+  evidenced, financial views, dependencies, gates and lessons already existed and are reused.
+- Local test harness: `supabase/tests/local/run.sh` (init / migrate / seed / test) and
+  `gen-types.sh`.
+
+### Phase 1 — foundations and Project Board pack
+- Config: `rating_schemes` (RAG), `risk_matrices` (standard 5×5 = today's settings, NHS 5×5),
+  `risk_score()` / `risk_band()`, `risks.risk_matrix_id`.
+- Forums extended (type, description, scope, scheme, tolerances, default template, parent,
+  approval required), member roles, `forum_scope_items`.
+- `report_templates`, `reports`, `report_inclusions`, `report_narratives`, `report_events`,
+  `decisions.report_id` / `decided_meeting_id`, `approval_gates` / `approval_steps`,
+  `record_links` (+ `v_record_links`), `entity_shares`.
+- RLS helpers (`can_view_entity`, `forum_role_of`, `can_edit_report`, `can_view_report`,
+  approve / publish checks) and policies; `report_permissions()`.
+- `project_metrics()` (all §7.1 metrics), selection engine in SQL (`evaluate_selection`,
+  `compute_inclusions`), `create_report`, `refresh_report_selection`, pin / exclude / reorder,
+  "Save as template".
+- Block data in SQL (`report_block_data` → `private.rb_<key>`), 14 Phase 1 blocks.
+- Front end: block registry with error-safe frames and an "unavailable" placeholder; report and
+  template builders (library, two-zone drag and drop canvas with @dnd-kit, zod-driven config
+  forms, selection panel, Markdown narratives, 1 s autosave with conflict detection); viewer
+  with contents; print route (A4 landscape); forum "Packs" and "Report settings" on Boards;
+  `/governance/reports/*` and a Reports nav item.
+- Demo seed `supabase/seed/reports_demo.sql`.
+
+### Phase 2 — programme / portfolio packs and exception selection
+- Escalation columns on risks and issues (+ panel on the project RAID tab), `forum_actions`,
+  `nhs_assurance` scheme, default tolerances per forum type, escalation and dependency metrics.
+- 18 more blocks (SVG charts for spend, burn-up, timelines, roadmap, heatmap).
+- Programme Board and Portfolio Board / Committee system templates with the default exception
+  rules; reason chips with values vs thresholds; pin / exclude / reorder; capping.
+- Gate editor (Plan › Gates) for approval gates of any type.
+- Partner audience: shared programme packs readable by partner organisations, with
+  partner-unsafe and share-hidden blocks withheld.
+
+### Phase 3 — governance workflow, snapshots, distribution
+- Lifecycle RPCs (submit, return with comment, approve, publish, withdraw), all audited.
+- Immutable `report_snapshots` / `report_metric_snapshots`; `publish_report` builds every
+  snapshot in one transaction; published packs render only from snapshots.
+- Changes since the previous pack (block + ▲▼ markers in grids and deep-dives), RAID movement.
+- Presentation mode with a drawer to record decisions (through the decision log's rules) and
+  actions, linked to the meeting and pack; the snapshot never changes.
+- Edge functions `report-publish` (publish → optional server PDF → email) and
+  `report-distribute` (Resend, idempotent); shared module with unit tests.
+- Server-side PDF: Netlify function `netlify/functions/report-pdf.mts` behind
+  `REPORT_SERVER_PDF` (off), public token print route `/report-print/<id>?token=`, bucket
+  `report-pdfs`. Browser print remains the default.
+- E2E spec `e2e/reports.e2e.ts` for the full cycle (seeded branch only).
+
+### Phase 4 — enhancements
+- AI executive summary (`report-ai-summary`, model from `ANTHROPIC_MODEL`), badged drafts that
+  block submit / publish until edited or marked reviewed, per-organisation daily cap.
+- Template versioning: version shown in the builder, "Update report to latest template".
+- Scheduled pack drafts when a meeting's papers deadline passes (per-forum opt-in).
+- `lessons_learned` and `linked_records` blocks; Links panel on the project page.
+- PPTX deferred (RB-40).
+
+### Follow-up run (04/11/2026) — Part A changes
+- **A1 Pack visibility:** `forums.published_pack_visibility` (`members` default, or
+  `organisation`), set in Boards › Report settings with a note that packs may be sensitive.
+  Published packs: forum members (or the whole organisation when allowed); PMO / admin and the
+  chair / secretary always. Ad hoc packs: the creator and PMO / admin only. Partners unchanged.
+- **A2 Point-in-time metrics:** `project_metric_history` filled nightly (02:40 UTC) with every
+  active project's metrics; a past as-at reads them (fallback: ratings from health snapshots,
+  the rest current). "Data basis" note on the cover, under the viewer banner and in the print
+  footer; stored with the published pack. `changes_since_last` falls back to history when the
+  previous pack has no metric snapshot.
+- **A3 Risk matrix guard:** an organisation's own matrix can't be the default (database
+  trigger + explanation in the UI); forums and templates can name one explicitly.
+- **A4** Chromium dependencies pinned in the root `package.json`; the function bundles with
+  Netlify's bundler. **A5** `ANTHROPIC_MODEL=claude-sonnet-5-5`. **A6** "Funding packs" for
+  the funding-collection packs in the UI. **A7** system-drafted packs: creator marker, email to
+  the secretary / chair (else PMO) via the new `report-notify` function, "Draft pack ready" in
+  the bell. **A8** debt logged (RB-42, RB-43).
+
+## 2. Migrations to apply to production, in order
+
+1. `supabase/migrations/20261103140000_rb1_report_builder_foundations.sql`
+2. `supabase/migrations/20261103150000_rb2_selection_programme_packs.sql`
+3. `supabase/migrations/20261103160000_rb3_governance_snapshots.sql`
+4. `supabase/migrations/20261103170000_rb4_enhancements.sql`
+5. `supabase/migrations/20261104090000_rb5_visibility_history_guards.sql`
+6. `supabase/migrations/20261104120000_rb6_report_notify_cron.sql`
+7. `supabase/migrations/20261104150000_rb7_batched_block_data.sql`
+8. `supabase/migrations/20261104160000_rb8_batched_scope_metrics.sql`
+
+All additive. Notes:
+- Migration 2 renames `public.project_metrics` (created in migration 1) to
+  `private.project_metrics_v1` and adds a new public wrapper; both are new in this branch.
+- Migration 2 back-fills `forums.tolerances` with type defaults where empty; migration 1 sets
+  `forums.forum_type` from `level`. Both are UPDATEs of the new columns only.
+- Migration 3 creates the private storage bucket `report-pdfs` and a storage read policy.
+- Migration 4 schedules `vpmo-scheduled-report-packs` (06:20 UTC) when pg_cron is present.
+- Migration 5 renames migration 2's `public.project_metrics` wrapper to
+  `private.project_metrics_v2` and adds the history-aware public function; back-fills
+  `forums.published_pack_visibility = 'members'`; clears `is_default` on any organisation-owned
+  risk matrix (none exist in production unless created since); schedules
+  `vpmo-capture-project-metric-history` (02:40 UTC). Before the first nightly run there is no
+  history, so past as-at packs say so in their data-basis note.
+- Migration 6 enables pg_net where available and schedules `vpmo-report-notify` (every 15
+  minutes): it calls `report-notify` only when a notice is waiting, with the URL and service role
+  key from Vault. **One-off per project, in the SQL editor:**
+  `select vault.create_secret('https://<ref>.supabase.co/functions/v1/report-notify', 'report_notify_url');`
+  `select vault.create_secret('<service role key>', 'report_notify_service_key');`
+  Without them the job does nothing (and logs a warning when a notice is waiting).
+- Migrations 7–8 (RB-50) add `report_blocks_data` and its helpers, replace seven block
+  functions, `report_block_data` and `publish_report` (`create or replace`, same signatures), and
+  add two indexes (`health_snapshots_project_date_idx`, `status_reports_submitted_reporting_idx`).
+  The front end from this commit calls `report_blocks_data`, so apply 7–8 before deploying it.
+- Apply to a Supabase branch first; then run `supabase/tests/reports_phase1..6.sql` there after
+  loading `supabase/seed/reports_demo.sql` (the tests roll back). The seed creates its own
+  organisations; don't load it on production unless you want the demo organisation there.
+- After applying, regenerate `types.ts` from the project (it should match the committed file).
+- The local runner comments out the known stray line 7 of
+  `20261012120035_health_current_b.sql` in a temporary copy (unchanged in the repo).
+
+## 3. Environment variables and secrets
+
+Supabase edge-function secrets:
+
+| Secret | Used by | Notes |
+|---|---|---|
+| `RESEND_API_KEY` | report-publish, report-distribute, report-notify | Missing: packs publish, no email; the result says so. |
+| `REPORTS_FROM` | same | e.g. `ORMO PMO <reports@ormo-pmo.originoverthrow.com>`; falls back to `RESEND_FROM`. Verify the address in Resend. |
+| `APP_URL` | same | Link in the email (existing secret). |
+| `ANTHROPIC_API_KEY` | report-ai-summary | Missing: "AI drafting isn't set up". |
+| `ANTHROPIC_MODEL` | report-ai-summary | `claude-sonnet-5-5` (RB-37, amended). No default in code. |
+| `REPORTS_TEST_RECIPIENTS` | report-publish, report-distribute, report-notify | Test branches only: comma-separated allowlist; other recipients are skipped (logged, not sent). Leave unset in production. |
+| `REPORT_AI_DAILY_LIMIT` | report-ai-summary | Optional, default 50 drafts per organisation per 24 h. |
+| `REPORT_SERVER_PDF` | report-publish | `true` to request a server PDF; default off. |
+| `REPORT_PDF_URL` | report-publish | The Netlify function URL, e.g. `https://<site>/api/report-pdf`. |
+| `REPORT_PDF_SECRET` | report-publish | Shared bearer secret with the Netlify function. |
+| Vault `report_notify_url`, `report_notify_service_key` | pg_cron job `vpmo-report-notify` | Database Vault secrets (not function secrets); see §2. |
+
+Netlify (only if server PDF is enabled): `REPORT_SERVER_PDF=true`, `REPORT_PDF_SECRET`,
+`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `REPORT_CHROMIUM_PACK_URL` (the Chromium pack
+`chromium-v153.0.0-pack.x64.tar` from the @sparticuz/chromium 153.0.0 release, hosted on storage
+you control). The function's dependencies (`@sparticuz/chromium-min`, `puppeteer-core`,
+`@supabase/supabase-js`) are in `netlify/functions/package.json`; `netlify.toml` installs them
+before the build. The app's `package.json` no longer contains them. Bundle: 1.5 MB (RB-35).
+
+Deploy the edge functions `report-publish`, `report-distribute`, `report-ai-summary` and
+`report-notify` (`supabase/config.toml` keeps `verify_jwt = true` for them). `report-notify` is
+called by migration 6's pg_cron job once the two Vault secrets above exist. Without them the app still
+publishes through the RPC and says the emails weren't sent; "Draft with AI" reports that it
+isn't deployed.
+
+E2E (branch only): `E2E_REPORTS_PASSWORD` in `.env.local` (see the header of
+`e2e/reports.e2e.ts`).
+
+## 4. Decisions to confirm
+
+From `docs/report-builder-decisions.md` (all are logged with alternatives):
+- RB-2 types generated locally — regenerate from the project after applying.
+- RB-5 forums extended in place; forum members stay resources (members without an account
+  can't open packs and are listed in the distribution event).
+- RB-6 the collection cut-off is the meeting's papers deadline; "Create pack" waits for it
+  (PMO can override).
+- RB-11 / RB-32 (amended): past as-at reads the nightly metric history; without it, ratings are
+  as at and the rest current, said in the data-basis note.
+- RB-13 (amended): no organisation default matrix until the register scores from matrices
+  (RB-42 debt); forums / templates name one explicitly.
+- RB-14 `rating_schemes` / `risk_matrices` are organisation-scoped (no workspace_id).
+- RB-16 (replaced): published packs to forum members, or the organisation when the forum allows;
+  ad hoc packs to the creator and PMO / admin.
+- RB-19..21 the §21 answers as implemented (no chair → PMO approves; PMs create Project Board
+  packs for their own project; distribution to all members except contributors).
+- RB-23 ad hoc reports by any contributor who can see the scope.
+- RB-24 report blocks have their own renderers (scheme labels) rather than wrapping the
+  overview components.
+- RB-29 publish refuses packs over 2 MB of snapshot data (no Storage overflow).
+- RB-34 sender address and per-recipient emails; approver reminders deferred.
+- RB-35 server PDF on Netlify behind the flag; bundle size against your Netlify plan and the
+  ~75 MB extra install for the Lovable build.
+- RB-37 `claude-sonnet-5-5` and the daily cap. RB-39 scheduled drafts and the report-notify cron.
+  RB-40 PPTX deferred. RB-9 Funding packs naming. RB-42 / RB-43 debt. RB-45 Part B not run.
+
+## 5. Known issues
+
+- **Part B run results (04/11/2026 follow-up session):**
+  - B1 (apply migrations, regenerate types): all six migrations applied to `ormo-report-builder-test`
+    (`afbmohzvyzblwbfsxpnx`) with `supabase db push --db-url "$TEST_DB_URL"`. The committed
+    `types.ts` was regenerated with the CLI and diffed: 20 formatting-only differences (union
+    type line wrapping), no semantic changes. A stray CLI upgrade notice was appended by the CLI
+    to `types.ts`; that line has been removed. The corrupted migration
+    `20261012120035_health_current_b.sql` (stray line 7) was applied patched via the MCP tool and
+    the migration history corrected. PASS.
+  - B2 (Vault secrets): `report_notify_url` and `report_notify_service_key` Vault secrets created
+    in `ormo-report-builder-test`; Auth site URL set. PASS.
+  - B3 (seed + passwords): `supabase/seed/reports_demo.sql` loaded; seed updated to include all
+    GoTrue-required fields (`instance_id`, `created_at`, `updated_at`, token fields,
+    `raw_app_meta_data`, `email_change`, `phone_change`) and `auth.identities` rows so the
+    seed users can sign in with password. All 7 seed users given one password via the Auth
+    admin API, kept only in `.env.local` as `E2E_REPORTS_PASSWORD` (rotated 04/11/2026, RB-51;
+    the earlier value is still in Git history and no longer works). PASS.
+  - B4 (SQL/RLS suites): all six suites (`reports_phase1.sql` through `reports_phase6.sql`) run
+    against `ormo-report-builder-test` with real Supabase auth. All passed. The Phase 2 suite
+    required the `:'cases'` psql variable to be inlined as a literal (Node.js pg driver does not
+    support psql variables). PASS.
+  - B5 (deploy functions): `report-publish`, `report-distribute`, `report-ai-summary`,
+    `report-notify` deployed to `afbmohzvyzblwbfsxpnx` with `--use-api`. `REPORTS_TEST_RECIPIENTS`
+    set. Publish via RPC returns `{"emails_not_sent":"RESEND_API_KEY not set"}` without the key —
+    correct fallback. `report-ai-summary` returns `{"error":"AI drafting isn't set up"}` without
+    `ANTHROPIC_API_KEY` — correct fallback. PASS.
+  - B6 (publish end-to-end): published two packs on the Digital Care Programme Board forum; verified
+    snapshot immutability (UPDATE and DELETE both blocked by trigger with "Published snapshots
+    can't be changed or deleted."); `changes_since_last` correctly references the previous pack
+    with projects, decisions_made and actions; re-publish correctly refused ("this one is
+    published"). PASS.
+  - B7 (Playwright E2E): blocked in that session because `client.ts` hard-coded the production
+    URL. Fixed by RB-47; **passed 5/5 on 04/11/2026 (RB-49)**, see below.
+  - B8 (manual cycle): verified programmatically (through the RPCs, not the browser UI) against `ormo-report-builder-test`.
+    Steps 1–10 all passed: forum → draft → selection → submit → approve → publish (snapshot
+    immutability confirmed) → decisions_made:1 and actions_overdue:1 appear in the next pack's
+    changes_since_last. Decision recorded via `record_meeting_decision` shows status 'made'
+    linked to the report. Action recorded via `add_meeting_action` appears in
+    `forum_actions`. PASS.
+- **B7 / B8 not run (RB-48, 04/11/2026):** superseded by the RB-49 run below.
+- **B7 / B8 browser run (RB-49, 04/11/2026), test project only.** The dev console showed
+  `[supabase] project ref: afbmohzvyzblwbfsxpnx` first. `playwright.config.ts` had loaded `.env`
+  before `.env.local`, which would have pointed the global setup and dev server at production;
+  fixed before any request.
+  - B7: `e2e/reports.e2e.ts` **5/5 passed** (7.1 min). Run with the seeded PMO as the global
+    user: `E2E_EMAIL=pmo@reports-demo.test E2E_PASSWORD="$E2E_REPORTS_PASSWORD" npx playwright
+    test e2e/reports.e2e.ts --project=desktop`. Bugs fixed on the way: autosave sent a second
+    save with a stale `updated_at`; reordering deep-dives made the next save conflict; Selection
+    showed UUIDs because `report_scope_metrics` timed out behind ~30 parallel block requests
+    (now two at a time). The spec now creates its own pending RD06 decision and tolerates a
+    forum that already has published packs.
+  - B8 through the UI: steps 1–4 passed (settings, create pack, selection with threshold change,
+    pin, exclude, reorder, content, print PDF); 5–6 failed on database statement timeouts; 7–9
+    not run; 10 partly (changes since last pack shown). Steps 5–8 and 10 are covered by B7.
+    Results and screenshots: `docs/report-builder-screenshots/README.md`.
+- **Fifth follow-up (04/11/2026), test project only (RB-50 to RB-53).**
+  - **Performance (RB-50, built):** migrations 7–8 (batched `report_blocks_data`, metrics once
+    per request, `publish_report` on the same path, two indexes) applied to the test project;
+    the client batches every block and the scope metrics into one request per page. Measured on
+    the same small instance (viewer page, navigation to last block):
+
+    | | Before | After |
+    |---|---|---|
+    | Programme pack (7 projects, 46 block items) | 106 s cold / 114–115 s warm, 51 RPCs, 3–8 timeouts per load | 2.3 s cold / 1.6–1.7 s warm, 5 RPCs, no timeouts |
+    | Portfolio pack (10 projects) | 134 s / 98–112 s, 5–8 timeouts | 6.7 s / 2.2–4.8 s, no timeouts |
+    | Selection refresh | 2.6 s | 0.8–4.5 s |
+    | Publish (UI) | failed (57014 in `report-publish`) | 18.5 s click → banner |
+
+    Targets: programme pack under 3 s warm — met; publish under 20 s — met (18.5–20 s, of which
+    `report-publish` ~12 s on a cold connection, `publish_report` itself 0.42 s warm); no
+    statement timeouts — none in the final runs, B7 or B8. The instance itself is the limit
+    now: a CPU probe runs ~3× slower than a normal core and a new API connection costs ~1.3 s on
+    its first batch, so cold pages vary (portfolio 6.7–13 s). Raw numbers:
+    `docs/report-builder-screenshots/perf/` (local).
+  - **Secrets (RB-51):** seed users' password rotated on the test project, kept only in
+    `.env.local` (`E2E_REPORTS_PASSWORD`); removed from this file. Repo and Git history
+    scanned: nothing else. The old password is still in Git history (commit `5007ae6`) and no
+    longer works; refresh tokens issued before the rotation were not revoked.
+  - **Copy (RB-52):** "1 decision made, 0 actions closed, 1 action overdue", "1 day".
+  - **Reorder conflict (RB-53):** a save fired between a deep-dive reorder and the reload of
+    `updated_at` was refused as "Changed by someone else"; autosave now pauses for the reorder.
+  - **Reset:** `docs/sql/rb-test-reset.sql` (run as postgres; refuses without the demo
+    organisation) before each run.
+  - **B7:** 5/5 passed after a reset (1.2 min); final run with retries off 5/5 (1.3 min). One
+    run in between had a flaky first test (rating save showed "Saving…" > 15 s though its PATCH
+    returned 200 in 1.2 s); not reproduced.
+  - **B8 through the UI: all ten steps passed** (step 9 after fixing the script's selector and
+    re-running it on its own). Results: `docs/report-builder-screenshots/README.md` (local; the
+    folder is gitignored).
+  - Test data left on the test project: the final B7 run's published pack and next draft, and
+    the RD06 decision recorded in it. Run the reset script to clear them.
+
+- Browser E2E could not be run here (no Docker; downloaded PostgREST / Auth binaries may not be
+  executed). `e2e/reports.e2e.ts` is written but unverified; run it on a seeded branch.
+- The edge functions and the Netlify function were not executed end to end (no Deno / Netlify
+  here). Their logic is in tested shared modules (`report-distribution.ts`, `report-ai.ts`).
+- Print was verified by rendering the seeded published pack to PDF with the bundled Chromium
+  (14 A4-landscape pages with running header, footer and page numbers); not checked in
+  Firefox/Safari, which ignore `@page` margin boxes (the header and page numbers are then
+  missing; the content prints).
+- `rating_worsened` before a pack has a previous published pack compares with the health
+  snapshot four weeks earlier.
+- The server print route uses the default regional settings for money and dates (no session).
+- The temp table `rb_matches` used by `compute_inclusions` logs a NOTICE when used twice in one
+  transaction (harmless).
+
+## 6. Remaining release steps
+
+0. Done 04/11/2026 (RB-50 to RB-53): performance built and measured, B7 and all ten B8 steps
+   pass on the test project. Still recommended: a compute upgrade before the first customer.
+   Step 1 below is kept for reference.
+1. Make the test project's credentials available to the session (RB-46): `TEST_*`,
+   `E2E_REPORTS_PASSWORD`, and the test project's `VITE_SUPABASE_URL` /
+   `VITE_SUPABASE_PUBLISHABLE_KEY` (in `.env.local` or the environment — they override `.env`,
+   RB-47). Start the dev server and confirm the console shows `[supabase] project ref:
+   afbmohzvyzblwbfsxpnx` before any test and run Part B against
+   `ormo-report-builder-test` only: `supabase db push --db-url "$TEST_DB_URL"` (never `link` /
+   `--linked`), functions with `--project-ref afbmohzvyzblwbfsxpnx`; apply the six
+   migrations in order; `supabase gen types typescript` and diff with the committed `types.ts`;
+   load `supabase/seed/reports_demo.sql`; set passwords for the seed users; run
+   `supabase/tests/reports_phase1..5.sql` (with `-v cases="$(cat
+   src/features/reports/engine/selection-cases.json)"`); deploy the four report functions with
+   `REPORTS_TEST_RECIPIENTS`; publish a seeded pack, change data, publish a second pack; run
+   `npm run test:e2e -- e2e/reports.e2e.ts` with `E2E_REPORTS_PASSWORD`; walk the manual test below.
+2. Decide the items in §4; then open a PR from `feature/report-builder`.
+3. Production: apply the eight migrations in order; regenerate types; set the secrets (no
+   `REPORTS_TEST_RECIPIENTS`); deploy the functions; schedule `report-notify`; check pg_cron has
+   the three new jobs (metric history, scheduled packs, report-notify); create the two Vault
+   secrets; leave `REPORT_SERVER_PDF` off until Netlify and the Chromium pack are set up.
+
+## 7. Manual test — a full pack cycle
+
+Use a Supabase branch with the eight migrations and the demo seed, or real data. On the test
+project, run `docs/sql/rb-test-reset.sql` first for a clean start (RB-52).
+
+1. **Forum.** Governance › Boards → choose a board (or create one) → **Report settings**: type
+   Programme board, scope = a programme, rating scheme RAG, default template "Programme Board",
+   who can read published packs (members / organisation),
+   check the tolerances, set member roles (a chair, a secretary, members, a contributor). Save.
+2. **Pack.** Add a planned meeting whose papers deadline has passed → **Create pack** (before the
+   deadline it is disabled; PMO can override). The builder opens on the template.
+3. **Selection.** Selection tab: the deep-dives are the projects breaching the rules, each with
+   reason chips (value vs threshold). Change a tolerance in Report settings → **Refresh
+   selection** → the list changes. Pin a clean project; exclude one ("Excluded — would have
+   matched …"); reorder.
+4. **Content.** Add / reorder / configure blocks (drag from the library, ↑↓, inspector). Write
+   the executive summary, or **Draft with AI** (badged; then edit or **Mark AI draft reviewed**).
+   Report tab: overall rating and rationale. **Print / PDF** shows a clean A4 landscape layout.
+5. **Review.** **Submit for review** (blocked while an AI draft is unreviewed, and without a
+   rating if the scheme is an assurance scheme). As the chair: **Return** with a comment (appears
+   in History), resubmit, then **Approve**.
+6. **Publish.** As PMO or the secretary: **Publish** → banner "Published … · Snapshot". Change a
+   project's milestone or a risk: the pack does not change. History shows "Emailed to members".
+7. **Email.** Members (not contributors) receive one email each: forum, meeting date, overall
+   rating label, summary, counts, **View the pack**. Publishing again is refused; re-running
+   report-distribute sends nothing ("already sent"). A viewer (free seat) opens the link and
+   reads the pack; **Download PDF** prints it.
+8. **Present.** **Present** → full screen, ←/→ through sections and deep-dives, Esc to leave.
+   In the drawer, record the decision on a "Decisions required" item (option + outcome) and add
+   an action. The decision log shows the decision with the meeting and pack; the pack itself is
+   unchanged.
+9. **Decisions.** Governance › Decisions: the decision is Made, linked to the meeting.
+10. **Second pack.** Create the next meeting's pack: **Changes since last pack** lists rating
+    moves, projects entering / leaving the exceptions, slips over 7 days, budget movement and
+    new top-band risks; ▲▼ markers sit next to moved ratings; **Decisions taken** lists the
+    decision; **Actions log** lists the action.
+11. Optional: switch the forum's scheme to NHS assurance → ratings relabel in drafts; share the
+    programme with a partner organisation (SQL, `entity_shares`) → a partner member sees the
+    published pack without resource / data-quality blocks.

@@ -58,7 +58,7 @@ const areas: { id: string; title: string; intro: string; points: string[] }[] = 
       "One RAIDD register for risks, assumptions, issues and decisions, with your own scoring matrix",
       "Change control with cost and schedule impact",
       "Boards: forums, their members, meetings and the decisions they record",
-      "Committee packs built from live data, previewed page by page, issued for the meeting and exported to PDF",
+      "Funding packs built from live data, previewed page by page, issued for the meeting and exported to PDF",
       "Lessons, and the improvement actions that turn them into lessons learned",
     ],
   },
