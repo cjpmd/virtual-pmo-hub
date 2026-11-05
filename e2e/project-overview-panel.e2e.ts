@@ -27,7 +27,9 @@ test.describe("ProjectOverviewPanel", () => {
     // table opens the ProjectRowPanel which contains ProjectOverviewPanel).
     const toggle = page
       .getByRole("button", { name: /expand|show details|toggle/i })
-      .or(page.locator('[aria-expanded]').filter({ hasNot: page.locator('[aria-expanded="true"]') }))
+      .or(
+        page.locator("[aria-expanded]").filter({ hasNot: page.locator('[aria-expanded="true"]') }),
+      )
       .first();
 
     // Fallback: click the first project name link's parent row button if no explicit toggle.
@@ -60,9 +62,7 @@ test.describe("ProjectOverviewPanel", () => {
     }
   });
 
-  test("print route renders 3-column panel (requires E2E_REPORT_PRINT_URL)", async ({
-    page,
-  }) => {
+  test("print route renders 3-column panel (requires E2E_REPORT_PRINT_URL)", async ({ page }) => {
     test.skip(!REPORT_PRINT_URL, "E2E_REPORT_PRINT_URL not set – skipping print visual check");
 
     // Load the public print route (no auth needed; uses a print token).
