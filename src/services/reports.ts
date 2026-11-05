@@ -238,10 +238,11 @@ export async function createReport(input: CreateReportInput): Promise<string> {
     scope_entity_id: input.scopeEntityId ?? null,
     scope_items: input.scopeItems ?? null,
     as_at: input.asAt ?? null,
-    blocks: input.blocks ?? null,
     ad_hoc: input.adHoc ?? false,
     override_cutoff: input.overrideCutoff ?? false,
   };
+  // Omit blocks when not provided — JSON null would bypass the DB default via COALESCE.
+  if (input.blocks != null) payload["blocks"] = input.blocks;
   const id = unwrap(
     await supabase.rpc("create_report", { p: payload as Json }),
     "Creating the report",
