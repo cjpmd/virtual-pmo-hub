@@ -7,8 +7,10 @@ interface ImportMetaEnv {
   readonly VITE_BOARD_AUTOMATIONS?: string;
   /** Address that receives access and demo requests from /request-access. */
   readonly VITE_CONTACT_EMAIL?: string;
-  /** Supabase project URL (the generated client hardcodes the same value). */
+  /** Supabase project URL; the client falls back to production only when unset (RB-47). */
   readonly VITE_SUPABASE_URL?: string;
+  /** Supabase publishable (anon) key for the same project. */
+  readonly VITE_SUPABASE_PUBLISHABLE_KEY?: string;
 }
 
 interface ImportMeta {

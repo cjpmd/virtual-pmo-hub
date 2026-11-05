@@ -5,3 +5,15 @@ verify_jwt = false
 
 [functions.resend-webhook]
 verify_jwt = false
+
+[functions.report-publish]
+verify_jwt = true
+
+[functions.report-distribute]
+verify_jwt = true
+
+[functions.report-ai-summary]
+verify_jwt = true
+
+[functions.report-notify]
+verify_jwt = true

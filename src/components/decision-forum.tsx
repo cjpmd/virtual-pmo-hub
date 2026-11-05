@@ -19,6 +19,7 @@ import { BoardsWorkspace } from "@/components/boards-workspace";
 import { DecisionMeetingSignals } from "@/components/decision-meeting-signals";
 import type { ForumItem, MeetingItem } from "@/services/forums";
 import { todayIso } from "@/lib/today";
+import { ForumReportsPanel } from "@/features/reports/forum/ForumReportsPanel";
 
 type DecisionForum = string;
 import { cn } from "@/lib/utils";
@@ -101,6 +102,7 @@ function Forum({
 
   return (
     <div className="space-y-6">
+      <ForumReportsPanel forum={selectedForum} meeting={chosenMeeting} />
       <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border/70 bg-card p-4 shadow-sm">
         <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-muted-foreground">
           Meeting date
