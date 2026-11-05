@@ -77,7 +77,7 @@ function Cover({
   );
 }
 
-registerBlock<Record<string, never>, CoverData>({
+export const _report_cover = registerBlock<Record<string, never>, CoverData>({
   key: "report_cover",
   version: 1,
   name: "Cover",
@@ -245,7 +245,7 @@ function NarrativeBlock({
 const narrativeSchema = z.object({ heading: z.string().max(120).optional() });
 type NarrativeConfig = z.infer<typeof narrativeSchema>;
 
-registerBlock<NarrativeConfig, NarrativeData>({
+export const _executive_summary = registerBlock<NarrativeConfig, NarrativeData>({
   key: "executive_summary",
   version: 1,
   name: "Executive summary",
@@ -267,7 +267,7 @@ registerBlock<NarrativeConfig, NarrativeData>({
   phase: 1,
 });
 
-registerBlock<NarrativeConfig, NarrativeData>({
+export const _free_text = registerBlock<NarrativeConfig, NarrativeData>({
   key: "free_text",
   version: 1,
   name: "Free text",
@@ -284,7 +284,7 @@ registerBlock<NarrativeConfig, NarrativeData>({
 
 // ---------------------------------------------------------------- section_heading
 const headingSchema = z.object({ title: z.string().max(120).default("Section") });
-registerBlock<z.infer<typeof headingSchema>, { title: string }>({
+export const _section_heading = registerBlock<z.infer<typeof headingSchema>, { title: string }>({
   key: "section_heading",
   version: 1,
   name: "Section heading",
@@ -366,7 +366,7 @@ function Highlight({
   );
 }
 
-registerBlock<Record<string, never>, HighlightData>({
+export const _highlight_report_summary = registerBlock<Record<string, never>, HighlightData>({
   key: "highlight_report_summary",
   version: 1,
   name: "Last highlight report",

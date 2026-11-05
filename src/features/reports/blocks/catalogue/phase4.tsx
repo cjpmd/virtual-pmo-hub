@@ -69,7 +69,7 @@ function Lessons({
     </div>
   );
 }
-registerBlock({
+export const _lessons_learned = registerBlock({
   key: "lessons_learned",
   version: 1,
   name: "Lessons learned",
@@ -134,7 +134,7 @@ function Links({
     />
   );
 }
-registerBlock({
+export const _linked_records = registerBlock({
   key: "linked_records",
   version: 1,
   name: "Linked records",

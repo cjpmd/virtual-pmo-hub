@@ -69,7 +69,7 @@ function Distribution({
     </div>
   );
 }
-registerBlock({
+export const _rating_distribution = registerBlock({
   key: "rating_distribution",
   version: 1,
   name: "Rating distribution",
@@ -133,7 +133,7 @@ function Divergence({
     />
   );
 }
-registerBlock({
+export const _divergence_list = registerBlock({
   key: "divergence_list",
   version: 1,
   name: "Divergence list",
@@ -277,7 +277,7 @@ function Timeline({
     </svg>
   );
 }
-registerBlock({
+export const _milestone_timeline = registerBlock({
   key: "milestone_timeline",
   version: 1,
   name: "Milestone timeline",
@@ -416,7 +416,7 @@ function Roadmap({
     </svg>
   );
 }
-registerBlock({
+export const _roadmap = registerBlock({
   key: "roadmap",
   version: 1,
   name: "Roadmap",
@@ -502,7 +502,7 @@ function BurnupChart({
     </div>
   );
 }
-registerBlock({
+export const _burnup_forecast = registerBlock({
   key: "burnup_forecast",
   version: 1,
   name: "Burn-up and forecast",
@@ -577,7 +577,7 @@ function Gates({
     />
   );
 }
-registerBlock({
+export const _stage_gates = registerBlock({
   key: "stage_gates",
   version: 1,
   name: "Stage gates",
@@ -693,7 +693,7 @@ function Spend({
     </div>
   );
 }
-registerBlock({
+export const _spend_profile = registerBlock({
   key: "spend_profile",
   version: 1,
   name: "Spend profile",
@@ -771,7 +771,7 @@ function Movers({
     </div>
   );
 }
-registerBlock({
+export const _budget_movers = registerBlock({
   key: "budget_movers",
   version: 1,
   name: "Budget movers",
@@ -852,7 +852,7 @@ function Resources({
     </div>
   );
 }
-registerBlock({
+export const _resource_summary = registerBlock({
   key: "resource_summary",
   version: 1,
   name: "Resource summary",
@@ -922,7 +922,7 @@ function Taken({
     </div>
   );
 }
-registerBlock({
+export const _decisions_taken = registerBlock({
   key: "decisions_taken",
   version: 1,
   name: "Decisions taken",
@@ -1004,7 +1004,7 @@ function Heatmap({ data }: { data: HeatData; config: Record<string, never>; ctx:
     </div>
   );
 }
-registerBlock({
+export const _risk_heatmap = registerBlock({
   key: "risk_heatmap",
   version: 1,
   name: "Risk heatmap",
@@ -1066,7 +1066,7 @@ function Escalations({
     />
   );
 }
-registerBlock({
+export const _escalations = registerBlock({
   key: "escalations",
   version: 1,
   name: "Escalations",
@@ -1160,7 +1160,7 @@ function Dependencies({
     />
   );
 }
-registerBlock({
+export const _dependencies = registerBlock({
   key: "dependencies",
   version: 1,
   name: "Dependencies",
@@ -1264,7 +1264,7 @@ function Benefits({
     </div>
   );
 }
-registerBlock({
+export const _benefits_summary = registerBlock({
   key: "benefits_summary",
   version: 1,
   name: "Benefits summary",
@@ -1328,7 +1328,7 @@ function Requests({
     />
   );
 }
-registerBlock({
+export const _requests_pipeline = registerBlock({
   key: "requests_pipeline",
   version: 1,
   name: "Requests pipeline",
@@ -1412,7 +1412,7 @@ function Actions({
     </div>
   );
 }
-registerBlock({
+export const _actions_log = registerBlock({
   key: "actions_log",
   version: 1,
   name: "Actions log",
@@ -1485,7 +1485,7 @@ function DataQuality({
     </div>
   );
 }
-registerBlock({
+export const _data_quality = registerBlock({
   key: "data_quality",
   version: 1,
   name: "Data quality",
@@ -1559,7 +1559,7 @@ function Approvals({
     </ul>
   );
 }
-registerBlock({
+export const _approvals_status = registerBlock({
   key: "approvals_status",
   version: 1,
   name: "Approvals status",
