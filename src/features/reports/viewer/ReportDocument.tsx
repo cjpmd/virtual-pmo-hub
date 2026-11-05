@@ -41,6 +41,8 @@ export interface DocumentProps {
   hiddenBlockKeys?: string[];
   /** Internal editors see a placeholder where partners would see nothing. */
   showPartnerPlaceholders?: boolean;
+  /** Builder only: pin/unpin a project from deep dives (used by project_status_grid). */
+  onPinProject?: (projectId: string, pin: boolean) => void;
   /** Builder: click to select a block. */
   selectedBlockId?: string | null;
   onSelectBlock?: (id: string) => void;
@@ -186,6 +188,7 @@ function Rendered({ instance, entityId, props, data }: BodyProps & { data: unkno
     asAt: props.asAt,
     instance,
     ...(props.movement && { movement: props.movement }),
+    ...(props.onPinProject && { onPinProject: props.onPinProject }),
   };
   const config = resolveConfig(definition, instance);
   const Renderer = (props.mode === "print" && definition.PrintRenderer) || definition.Renderer;

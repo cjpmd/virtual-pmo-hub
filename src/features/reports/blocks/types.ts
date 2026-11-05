@@ -82,6 +82,8 @@ export interface RenderContext {
   instance: BlockInstance;
   /** Per-project movement since the previous published pack (changes_since_last markers). */
   movement?: Record<string, ProjectMovement>;
+  /** Builder only: pin/unpin a project from the deep dives (project_status_grid checkbox). */
+  onPinProject?: (projectId: string, pin: boolean) => void;
 }
 
 export interface ProjectMovement {

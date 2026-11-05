@@ -170,6 +170,26 @@ const EMPTY2: Record<string, unknown> = {
   actions_log: { since: "2026-10-01", open: [], closed: [], overdue_count: 0 },
   data_quality: { since: "2026-10-01", stale_days: 30, rows: [], clean: 0 },
   approvals_status: { rows: [] },
+  project_overview: {
+    summary: null,
+    health: {
+      mode: "project",
+      declared: null,
+      evidenced: "not_set",
+      divergence_days: 0,
+      rating_rank_delta: null,
+      divergence_alert: null,
+      justified: null,
+      justification: null,
+      last_report_date: null,
+      report_overdue: null,
+      trend: [],
+    },
+    history: { mode: "project", months: [], current: null },
+    milestones: { multi: false, rows: [] },
+    raid: { matrix: { name: "M", bands: [] }, rows: [], open_total: 0 },
+    highlight: { id: null },
+  },
 };
 
 describe("Phase 2 blocks render fixture data", () => {
@@ -437,10 +457,10 @@ describe("Phase 3 and 4 blocks", () => {
 });
 
 describe("ALL_BLOCKS registry (tree-shaking guard)", () => {
-  it("ALL_BLOCKS contains exactly 36 definitions", () => {
+  it("ALL_BLOCKS contains exactly 37 definitions", () => {
     // This test fails if a new block is added without updating catalogue/index.ts,
     // or if the explicit import chain is broken and blocks get tree-shaken.
-    expect(ALL_BLOCKS).toHaveLength(36);
+    expect(ALL_BLOCKS).toHaveLength(37);
   });
   it("ALL_BLOCKS matches what the registry contains", () => {
     const registryKeys = listBlocks()

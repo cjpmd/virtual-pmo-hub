@@ -319,6 +319,18 @@ function Builder({ report }: { report: ReportRecord }) {
               editable,
               live: input,
               showPartnerPlaceholders: true,
+              ...(editable && {
+                onPinProject: (projectId, pin) => {
+                  void mutations.setInclusion
+                    .mutateAsync({
+                      reportId: report.id,
+                      entityId: projectId,
+                      mode: pin ? "pinned" : null,
+                    })
+                    .then(() => invalidateLive())
+                    .catch((e: unknown) => toast.error(errorMessage(e)));
+                },
+              }),
             }}
           />
           <aside className="lg:sticky lg:top-44 lg:max-h-[calc(100vh-12rem)] lg:overflow-auto">
