@@ -11,7 +11,7 @@ import {
 import { Empty } from "../primitives";
 import { registerBlock } from "../registry";
 import type { RenderContext } from "../types";
-import { toHealth } from "@/services/labels";
+import { priorityLabel, tierLabel, toHealth } from "@/services/labels";
 import type { Health } from "@/data/types";
 import type {
   LatestReport,
@@ -264,8 +264,10 @@ function mapBlockData(data: BlockData): MappedPanel | null {
       id: s.id,
       code: s.code,
       name: s.name,
-      tier: s.tier ?? "",
-      priority: s.priority ?? "",
+      tier: s.tier ? (tierLabel[s.tier as keyof typeof tierLabel] ?? s.tier) : "",
+      priority: s.priority
+        ? (priorityLabel[s.priority as keyof typeof priorityLabel] ?? s.priority)
+        : "",
       state: s.state ?? "active",
       phaseId: null,
       managerName: s.manager ?? null,

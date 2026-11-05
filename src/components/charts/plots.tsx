@@ -1,5 +1,4 @@
 import { useId } from "react";
-import { useMeasuredWidth } from "@/components/charts/use-measure";
 import {
   Area,
   CartesianGrid,
@@ -53,6 +52,11 @@ export function SmallMultiples({
   );
 }
 
+// Fixed coordinate space for the mini sparkline. Using a viewBox + width="100%"
+// means the chart renders at any container width without container measurement,
+// which is essential for print/PDF where ResizeObserver may not fire.
+const MINI_W = 220;
+
 function MiniLine({ series, domain }: { series: MiniSeries; domain: [number, number] }) {
   const gradientId = useId().replace(/[^a-zA-Z0-9]/g, "");
   const { state, show, hide } = useHoverTooltip<{
@@ -60,11 +64,10 @@ function MiniLine({ series, domain }: { series: MiniSeries; domain: [number, num
     value: number;
     colour?: string;
   }>();
-  const { ref, width } = useMeasuredWidth();
   const height = 44,
     [low, high] = domain,
     span = high - low || 1;
-  const step = series.points.length > 1 ? (width - 8) / (series.points.length - 1) : 0;
+  const step = series.points.length > 1 ? (MINI_W - 8) / (series.points.length - 1) : 0;
   const x = (index: number) => 4 + index * step;
   const y = (value: number) => 4 + (1 - (value - low) / span) * (height - 12);
   const path = series.points
@@ -85,11 +88,11 @@ function MiniLine({ series, domain }: { series: MiniSeries; domain: [number, num
           {series.caption}
         </p>
       </div>
-      <div ref={ref} className="mt-2 w-full">
+      <div className="mt-2 w-full">
         <svg
-          width={width}
-          height={height}
-          className="block"
+          viewBox={`0 0 ${MINI_W} ${height}`}
+          width="100%"
+          className="block overflow-visible"
           role="img"
           aria-label={`${series.label}: ${series.points.map((point) => `${point.label} ${point.value}`).join(", ")}`}
         >
@@ -102,7 +105,7 @@ function MiniLine({ series, domain }: { series: MiniSeries; domain: [number, num
           <line
             x1="0"
             y1={height - 1}
-            x2={width}
+            x2={MINI_W}
             y2={height - 1}
             stroke="var(--viz-grid)"
             strokeWidth="1"
