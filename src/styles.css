@@ -704,3 +704,17 @@
 .report-print-root.report-print-server {
   display: block;
 }
+
+/* PPTX export: hide interactive controls while html-to-image captures each section.
+   Set via document.documentElement.dataset.pptxExport = "1" before capture and removed
+   after. Targets the most common interactive elements in report blocks. */
+html[data-pptx-export] button,
+html[data-pptx-export] [role="button"],
+html[data-pptx-export] a[href],
+html[data-pptx-export] [data-radix-popper-content-wrapper],
+html[data-pptx-export] [aria-label="Open full report"],
+html[data-pptx-export] [aria-label="Open RAID log"],
+html[data-pptx-export] [aria-label="Open project"],
+html[data-pptx-export] [aria-label="Start report"] {
+  display: none !important;
+}

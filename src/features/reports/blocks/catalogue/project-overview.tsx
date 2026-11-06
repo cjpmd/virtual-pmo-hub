@@ -12,6 +12,7 @@ import { Empty } from "../primitives";
 import { registerBlock } from "../registry";
 import type { RenderContext } from "../types";
 import { priorityLabel, tierLabel, toHealth } from "@/services/labels";
+import type { Phase } from "@/services/hierarchy";
 import type { Health } from "@/data/types";
 import type {
   LatestReport,
@@ -35,6 +36,14 @@ interface RbSummary {
   tier: string | null;
   priority: string | null;
   state: string | null;
+  phase_id: string | null;
+  phases: Array<{
+    id: string;
+    name: string;
+    short_name: string;
+    gate_name: string | null;
+    sort_order: number;
+  }>;
   start_date: string | null;
   finish_date: string | null;
   baseline_finish_date: string | null;
@@ -269,7 +278,14 @@ function mapBlockData(data: BlockData): MappedPanel | null {
         ? (priorityLabel[s.priority as keyof typeof priorityLabel] ?? s.priority)
         : "",
       state: s.state ?? "active",
-      phaseId: null,
+      phaseId: s.phase_id ?? null,
+      phases: (s.phases ?? []).map((p): Phase => ({
+        id: p.id,
+        name: p.name,
+        shortName: p.short_name,
+        gateName: p.gate_name,
+        index: p.sort_order,
+      })),
       managerName: s.manager ?? null,
       sponsorName: s.sponsor ?? null,
       projectOfficerName: s.project_officer ?? null,
@@ -295,6 +311,7 @@ const overviewSchema = z.object({
 // Outer shell: maps data and returns early. No hooks so it's safe to render without a router.
 function ProjectOverviewBlock({
   data,
+  config,
   ctx,
 }: {
   data: BlockData | null;
@@ -304,11 +321,19 @@ function ProjectOverviewBlock({
   if (!data) return <Empty>No project data for this overview.</Empty>;
   const mapped = mapBlockData(data);
   if (!mapped) return <Empty>No project summary available.</Empty>;
-  return <ProjectOverviewInner mapped={mapped} ctx={ctx} />;
+  return <ProjectOverviewInner mapped={mapped} config={config} ctx={ctx} />;
 }
 
 // Inner shell: calls useNavigate so it only runs when we have real data (and a router).
-function ProjectOverviewInner({ mapped, ctx }: { mapped: MappedPanel; ctx: RenderContext }) {
+function ProjectOverviewInner({
+  mapped,
+  config,
+  ctx,
+}: {
+  mapped: MappedPanel;
+  config: z.infer<typeof overviewSchema>;
+  ctx: RenderContext;
+}) {
   const navigate = useNavigate();
   const { project, health, milestones, healthMonths, latestReport, riskBands, openRaid } = mapped;
   const asAt = ctx.asAt ?? todayIso();
@@ -338,6 +363,7 @@ function ProjectOverviewInner({ mapped, ctx }: { mapped: MappedPanel; ctx: Rende
         latestReport={latestReport}
         riskBands={riskBands}
         openRaid={openRaid}
+        milestoneLimit={config.milestones_limit}
         {...(handleNavigate && { onNavigate: handleNavigate })}
       />
     </div>

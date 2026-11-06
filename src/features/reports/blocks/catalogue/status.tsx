@@ -113,7 +113,7 @@ function Overall({
         {data.rationale && <p className="text-sm leading-6">{data.rationale}</p>}
         <div>
           <StackedBar parts={parts} label="Projects by evidenced rating" />
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-xs text-muted-foreground" data-counts>
             {parts.map((p) => `${p.label} ${p.value}`).join(" · ")}
             {data.divergent > 0 && ` · ${data.divergent} reporting better than the evidence`}
           </p>

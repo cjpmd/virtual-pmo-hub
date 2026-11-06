@@ -10,6 +10,7 @@ import { HealthMark } from "@/components/overview/project-watchlist";
 import { Chip, Fact, Lifecycle } from "@/components/project-header";
 import { usePhases } from "@/hooks/use-hierarchy";
 import { useFormat } from "@/lib/format";
+import type { Phase } from "@/services/hierarchy";
 import { TASK_SOURCE } from "@/lib/project-tabs";
 import { cn } from "@/lib/utils";
 import { divergenceText } from "@/services/assurance";
@@ -47,6 +48,8 @@ export interface PanelProject {
   state: string;
   /** Phase UUID from the hierarchy (null when only the phase name is known, e.g. in report blocks). */
   phaseId: string | null;
+  /** Full phases list; when provided, `usePhases()` is not called (safe in print/export routes). */
+  phases?: Phase[];
   managerName: string | null;
   sponsorName: string | null;
   projectOfficerName: string | null;
@@ -65,6 +68,8 @@ export interface ProjectOverviewPanelProps {
   latestReport: LatestReport | null;
   riskBands: RiskBand[];
   openRaid: OpenRaidItem[];
+  /** How many upcoming milestones to show in compact mode (default 5). */
+  milestoneLimit?: number | undefined;
   /**
    * Navigate to a tab on the project page. If omitted the navigation buttons are still
    * rendered (for accessibility) but clicking them is a no-op. All buttons are hidden in print.
@@ -82,6 +87,7 @@ export function ProjectOverviewPanel({
   latestReport,
   riskBands,
   openRaid,
+  milestoneLimit,
   onNavigate,
 }: ProjectOverviewPanelProps) {
   const closed = project.state === "closed";
@@ -102,6 +108,7 @@ export function ProjectOverviewPanel({
             milestones={milestones}
             today={today}
             closed={closed}
+            compactLimit={milestoneLimit}
           />
           {health ? (
             <HealthByDimension
@@ -150,7 +157,8 @@ function SummaryCard({
 }) {
   const format = useFormat();
   const settings = useSettings();
-  const phases = usePhases();
+  const phasesQuery = usePhases();
+  const phases = project.phases ?? phasesQuery.data ?? [];
   const late = health?.finishVsBaselineDays ?? 0;
   const declared = health?.declared ?? null;
   const evidenced = health?.evidenced ?? health?.overall ?? "Not Set";
@@ -165,7 +173,7 @@ function SummaryCard({
         <Chip label="Priority">{project.priority}</Chip>
         {taskSource ? <Chip label="Tasks">{TASK_SOURCE[taskSource] ?? taskSource}</Chip> : null}
       </div>
-      <Lifecycle size="compact" phases={phases.data ?? []} phaseId={project.phaseId} />
+      <Lifecycle size="compact" phases={phases} phaseId={project.phaseId} />
       <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
         <Fact label={term("projectManager", settings)}>{project.managerName}</Fact>
         <Fact label={term("projectOfficer", settings)}>

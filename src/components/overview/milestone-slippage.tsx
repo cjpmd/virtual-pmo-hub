@@ -34,8 +34,10 @@ type Props =
       closed?: boolean | undefined;
       /** Opens the milestones list to add one (empty state). */
       onAddMilestone?: (() => void) | undefined;
-      /** Compact (portfolio row panel): next 5 open plus any slipped, no sort or footer. */
+      /** Compact (portfolio row panel): next N open plus any slipped, no sort or footer. */
       size?: "default" | "compact" | undefined;
+      /** How many upcoming milestones to show in compact mode (default 5). */
+      compactLimit?: number | undefined;
       className?: string | undefined;
     };
 
@@ -81,6 +83,7 @@ function ProjectSlippage({
   closed,
   onAddMilestone,
   size,
+  compactLimit = 5,
   className,
 }: Extract<Props, { scope: "project" }>) {
   const format = useFormat();
@@ -90,11 +93,11 @@ function ProjectSlippage({
   const rows = useMemo(() => {
     const all = slipRows(milestones, today, sort);
     if (!compact) return all;
-    // Next five open milestones by baseline date, plus any other open one that has slipped.
+    // Next N open milestones by baseline date, plus any other open one that has slipped.
     const open = all.filter((row) => !row.delivered);
-    const next = new Set(open.slice(0, 5).map((row) => row.id));
+    const next = new Set(open.slice(0, compactLimit).map((row) => row.id));
     return open.filter((row) => next.has(row.id) || row.slip > 0);
-  }, [milestones, today, sort, compact]);
+  }, [milestones, today, sort, compact, compactLimit]);
   const data: DumbbellDatum[] = rows.map((row) => ({
     key: row.id,
     label: row.title,
@@ -119,7 +122,7 @@ function ProjectSlippage({
       title="Milestone slippage"
       subtitle={
         compact
-          ? "Next 5 open milestones and any that have slipped"
+          ? `Next ${compactLimit} open milestones and any that have slipped`
           : "Every milestone on this project, baseline against actual or forecast"
       }
       info="The hollow dot is the baselined date and the filled dot is the actual date for delivered milestones, or the current forecast for the rest. Solid connectors are delivered, dashed are not yet delivered; the colour is the slip band. The dashed vertical line is today."
