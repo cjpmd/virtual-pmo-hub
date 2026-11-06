@@ -21,10 +21,15 @@ declare
   req_id        uuid;
   req2_id       uuid;   -- for double-conversion test
   req_rejected  uuid;   -- for rejected-request test
+  req_prog      uuid;   -- for with-programme test
+  req_noprog    uuid;   -- for no-programme test
+  demo_prog     uuid;   -- a programme in demo_port
   draft_id      uuid;
   project_id    uuid;
   project_code  text;
   project_id2   uuid;   -- should fail (double conversion)
+  project_prog  uuid;   -- project created with a programme
+  project_noprog uuid;  -- project created without a programme
   n             integer;
   results       text[] := '{}';
   failures      integer := 0;
@@ -54,10 +59,27 @@ begin
     (gen_random_uuid(), demo_org, demo_ws, demo_port, 'CVT Rejected Request',      'rejected',  5000,  10000)
   returning id into req_id;  -- captures only the last row; use separate statements below
 
+  insert into public.project_requests
+    (id, organisation_id, workspace_id, portfolio_id, title, status, estimated_cost, estimated_benefit)
+  values
+    (gen_random_uuid(), demo_org, demo_ws, demo_port, 'CVT With Programme Request',    'approved', 15000, 30000),
+    (gen_random_uuid(), demo_org, demo_ws, demo_port, 'CVT Without Programme Request', 'approved', 15000, 30000);
+
   -- Re-fetch by title to get stable IDs.
   select id into req_id       from public.project_requests where organisation_id = demo_org and title = 'CVT Happy Path Request';
   select id into req2_id      from public.project_requests where organisation_id = demo_org and title = 'CVT Double Convert Request';
   select id into req_rejected from public.project_requests where organisation_id = demo_org and title = 'CVT Rejected Request';
+  select id into req_prog     from public.project_requests where organisation_id = demo_org and title = 'CVT With Programme Request';
+  select id into req_noprog   from public.project_requests where organisation_id = demo_org and title = 'CVT Without Programme Request';
+
+  -- Pick the first active programme in the demo portfolio (may be null in minimal seed).
+  select id into demo_prog
+  from public.programmes
+  where organisation_id = demo_org
+    and portfolio_id = demo_port
+    and archived_at is null
+  order by created_at
+  limit 1;
 
   -- Add a benefit draft to the happy-path request.
   insert into public.request_benefit_drafts
@@ -198,6 +220,40 @@ begin
   else
     failures := failures + 1;
     results := array_append(results, 'rejected request raises 22023: FAIL');
+  end if;
+
+  -- ── Test 5: convert without a programme — project gets portfolio_id ──────────
+  select public.convert_request_to_project(req_noprog, '{}') into project_noprog;
+
+  select count(*) into n from public.projects
+  where id = project_noprog
+    and portfolio_id = demo_port
+    and programme_id is null;
+  if n = 1 then
+    results := array_append(results, 'no-programme: project.portfolio_id set, programme_id null: ok');
+  else
+    failures := failures + 1;
+    results := array_append(results, 'no-programme: project.portfolio_id set, programme_id null: FAIL');
+  end if;
+
+  -- ── Test 6: convert with a programme — project gets programme_id, no portfolio_id ──
+  if demo_prog is null then
+    results := array_append(results, 'with-programme: skipped (no active programme in demo portfolio)');
+  else
+    select public.convert_request_to_project(req_prog,
+      jsonb_build_object('programme_id', demo_prog))
+    into project_prog;
+
+    select count(*) into n from public.projects
+    where id = project_prog
+      and programme_id = demo_prog
+      and portfolio_id is null;
+    if n = 1 then
+      results := array_append(results, 'with-programme: project.programme_id set, portfolio_id null: ok');
+    else
+      failures := failures + 1;
+      results := array_append(results, 'with-programme: project.programme_id set, portfolio_id null: FAIL');
+    end if;
   end if;
 
   reset role;
