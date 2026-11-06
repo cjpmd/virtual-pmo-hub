@@ -91,7 +91,9 @@ function Cover({
           )}
         </div>
         {data.overall_rating_rationale && (
-          <p className="max-w-2xl flex-1 text-sm leading-6">{data.overall_rating_rationale}</p>
+          <p className="max-w-2xl flex-1 text-sm leading-6" data-rationale>
+            {data.overall_rating_rationale}
+          </p>
         )}
       </div>
     </div>
