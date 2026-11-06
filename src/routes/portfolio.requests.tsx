@@ -29,7 +29,7 @@ import { QueryState } from "@/components/query-state";
 import { useBoardRecordSync } from "@/hooks/use-board-record-sync";
 import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
 import { useCan } from "@/hooks/use-permissions";
-import { usePhases, useProgrammes } from "@/hooks/use-hierarchy";
+import { usePhases, usePeople, useProgrammes } from "@/hooks/use-hierarchy";
 import { useRequestMutations, useRequests } from "@/hooks/use-requests";
 import type { Priority, ProjectRequest } from "@/data/types";
 import type { Person } from "@/services/hierarchy";
@@ -163,13 +163,18 @@ function ConvertDialog({
   const mutations = useRequestMutations();
   const programmesQuery = useProgrammes();
   const phasesQuery = usePhases();
-  const programmes = programmesQuery.data ?? [];
+  const peopleQuery = usePeople();
+  const programmes = (programmesQuery.data ?? []).filter(
+    (p) => p.portfolioId === request.portfolioId,
+  );
   const phases = phasesQuery.data ?? [];
+  const people = peopleQuery.data ?? [];
 
   const [name, setName] = useState(request.title);
   const [code, setCode] = useState("");
   const [tier, setTier] = useState<"small" | "medium" | "large">("medium");
   const [programmeId, setProgrammeId] = useState<string>("");
+  const [managerId, setManagerId] = useState<string>("");
   const [startDate, setStartDate] = useState("");
   const [finishDate, setFinishDate] = useState("");
   const [phaseId, setPhaseId] = useState<string>(phases[0]?.id ?? "");
@@ -180,6 +185,7 @@ function ConvertDialog({
     const overrides: ConvertRequestOverrides = {
       tier,
       programmeId: programmeId || null,
+      managerId: managerId || null,
       startDate: startDate || null,
       finishDate: finishDate || null,
       phaseId: phaseId || null,
@@ -193,11 +199,8 @@ function ConvertDialog({
           void projectId; // id returned but we navigate by code after cache refresh
           toast.success(`Project created from ${request.ref}.`);
           onOpenChange(false);
-          // Navigate to the requests list; the board will show "Converted → {code}".
-          // The project list invalidation in the hook will update the project pages.
           void navigate({ to: "/portfolio/requests" });
         },
-        onError: (err) => toast.error(err.message),
       },
     );
   }
@@ -269,6 +272,22 @@ function ConvertDialog({
                 {phases.map((ph) => (
                   <SelectItem key={ph.id} value={ph.id}>
                     {ph.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="conv-manager">Project manager (optional)</Label>
+            <Select value={managerId} onValueChange={setManagerId}>
+              <SelectTrigger id="conv-manager">
+                <SelectValue placeholder="Unassigned" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Unassigned</SelectItem>
+                {people.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
                   </SelectItem>
                 ))}
               </SelectContent>
