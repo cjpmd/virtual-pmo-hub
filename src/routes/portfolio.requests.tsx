@@ -1,22 +1,39 @@
 import { AutoBreadcrumbs } from "@/components/section-nav";
 import { formatCompactCurrency } from "@/lib/format";
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { BoardWorkspace, type BoardColumn, type BoardRow } from "@/components/board-workspace";
 import { AppraisalPanel } from "@/components/appraisal-panel";
 import { RelevantLessons } from "@/components/relevant-lessons";
 import { KpiCard, PageHeader } from "@/components/pmo-ui";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { scoreRequest } from "@/services/benefits-value";
 import { toast } from "sonner";
 import { QueryState } from "@/components/query-state";
 import { useBoardRecordSync } from "@/hooks/use-board-record-sync";
 import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
 import { useCan } from "@/hooks/use-permissions";
+import { usePhases, useProgrammes } from "@/hooks/use-hierarchy";
 import { useRequestMutations, useRequests } from "@/hooks/use-requests";
 import type { Priority, ProjectRequest } from "@/data/types";
 import type { Person } from "@/services/hierarchy";
-import type { RequestInput, RequestView } from "@/services/requests";
+import type { ConvertRequestOverrides, RequestInput, RequestView } from "@/services/requests";
 import { cn } from "@/lib/utils";
 
 const title = "Requests — ORMO PMO",
@@ -132,10 +149,170 @@ function RequestsPage() {
   );
 }
 
+/** Dialog for creating a project from an approved (or not-yet-approved) request. */
+function ConvertDialog({
+  request,
+  open,
+  onOpenChange,
+}: {
+  request: RequestView;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const navigate = useNavigate();
+  const mutations = useRequestMutations();
+  const programmesQuery = useProgrammes();
+  const phasesQuery = usePhases();
+  const programmes = programmesQuery.data ?? [];
+  const phases = phasesQuery.data ?? [];
+
+  const [name, setName] = useState(request.title);
+  const [code, setCode] = useState("");
+  const [tier, setTier] = useState<"small" | "medium" | "large">("medium");
+  const [programmeId, setProgrammeId] = useState<string>("");
+  const [startDate, setStartDate] = useState("");
+  const [finishDate, setFinishDate] = useState("");
+  const [phaseId, setPhaseId] = useState<string>(phases[0]?.id ?? "");
+
+  const isPending = mutations.convert.isPending;
+
+  function handleSubmit() {
+    const overrides: ConvertRequestOverrides = {
+      tier,
+      programmeId: programmeId || null,
+      startDate: startDate || null,
+      finishDate: finishDate || null,
+      phaseId: phaseId || null,
+      ...(name.trim() && { name: name.trim() }),
+      ...(code.trim() && { code: code.trim() }),
+    };
+    mutations.convert.mutate(
+      { requestId: request.id, overrides },
+      {
+        onSuccess: (projectId) => {
+          void projectId; // id returned but we navigate by code after cache refresh
+          toast.success(`Project created from ${request.ref}.`);
+          onOpenChange(false);
+          // Navigate to the requests list; the board will show "Converted → {code}".
+          // The project list invalidation in the hook will update the project pages.
+          void navigate({ to: "/portfolio/requests" });
+        },
+        onError: (err) => toast.error(err.message),
+      },
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Create project from {request.ref}</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-2">
+          <div className="grid gap-1.5">
+            <Label htmlFor="conv-name">Project name</Label>
+            <Input
+              id="conv-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={request.title}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-1.5">
+              <Label htmlFor="conv-code">Code (optional)</Label>
+              <Input
+                id="conv-code"
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                placeholder="Auto-suggested"
+                maxLength={10}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="conv-tier">Tier</Label>
+              <Select value={tier} onValueChange={(v) => setTier(v as typeof tier)}>
+                <SelectTrigger id="conv-tier">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="small">Small</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="large">Large</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="conv-programme">Programme (optional)</Label>
+            <Select value={programmeId} onValueChange={setProgrammeId}>
+              <SelectTrigger id="conv-programme">
+                <SelectValue placeholder="No programme" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">No programme</SelectItem>
+                {programmes.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="conv-phase">Phase</Label>
+            <Select value={phaseId} onValueChange={setPhaseId}>
+              <SelectTrigger id="conv-phase">
+                <SelectValue placeholder="First phase" />
+              </SelectTrigger>
+              <SelectContent>
+                {phases.map((ph) => (
+                  <SelectItem key={ph.id} value={ph.id}>
+                    {ph.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-1.5">
+              <Label htmlFor="conv-start">Start date</Label>
+              <Input
+                id="conv-start"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="conv-finish">Finish date</Label>
+              <Input
+                id="conv-finish"
+                type="date"
+                value={finishDate}
+                onChange={(e) => setFinishDate(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={isPending || !name.trim()}>
+            {isPending ? "Creating…" : "Create project"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function Requests({ requests, people }: { requests: RequestView[]; people: Person[] }) {
   const canManage = useCan("manager");
   const { portfolio } = useCurrentPortfolio();
   const mutations = useRequestMutations();
+  const [convertTarget, setConvertTarget] = useState<RequestView | null>(null);
   const onRecordChange = useBoardRecordSync<RequestInput>({
     toInput: (patch) => requestInputFromBoard(patch, people),
     create: (input) => {
@@ -273,14 +450,28 @@ function Requests({ requests, people }: { requests: RequestView[]; people: Perso
             <h2 className="font-display text-lg font-semibold">
               Appraisal · {selected.request.title}
             </h2>
-            <Button size="sm" variant="outline" asChild>
-              <Link
-                to="/portfolio/requests/$requestId/business-case"
-                params={{ requestId: selected.request.id }}
-              >
-                Business case
-              </Link>
-            </Button>
+            <div className="flex items-center gap-2">
+              {selected.request.convertedProjectCode && (
+                <span className="text-sm text-muted-foreground">
+                  Converted →{" "}
+                  <Link
+                    to="/portfolio/projects/$projectCode"
+                    params={{ projectCode: selected.request.convertedProjectCode }}
+                    className="font-mono text-primary hover:underline"
+                  >
+                    {selected.request.convertedProjectCode}
+                  </Link>
+                </span>
+              )}
+              <Button size="sm" variant="outline" asChild>
+                <Link
+                  to="/portfolio/requests/$requestId/business-case"
+                  params={{ requestId: selected.request.id }}
+                >
+                  Business case
+                </Link>
+              </Button>
+            </div>
           </div>
           <AppraisalPanel
             drafts={selected.request.draftBenefits ?? []}
@@ -293,7 +484,7 @@ function Requests({ requests, people }: { requests: RequestView[]; people: Perso
             projectTypeTags={selected.request.themes}
             compact
           />
-          {canManage && (
+          {canManage && !selected.request.convertedProjectCode && (
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -314,29 +505,29 @@ function Requests({ requests, people }: { requests: RequestView[]; people: Perso
               >
                 Send back for more detail
               </Button>
-              <Button
-                disabled={mutations.update.isPending || selected.request.status === "Approved"}
-                onClick={() =>
-                  mutations.update.mutate(
-                    {
-                      id: selected.request.id,
-                      input: { status: "Approved" },
-                      lastSeen: selected.request.updatedAt,
-                    },
-                    {
-                      onSuccess: () =>
-                        toast.success(
-                          `${selected.request.title} is approved to progress to Phase 2.`,
-                        ),
-                    },
-                  )
-                }
-              >
-                Progress to Phase 2
-              </Button>
+              {selected.request.status === "Rejected" ? null : (
+                <Button
+                  disabled={mutations.convert.isPending}
+                  onClick={() => setConvertTarget(selected.request)}
+                >
+                  {selected.request.status === "Approved"
+                    ? "Convert to project"
+                    : "Approve and create project"}
+                </Button>
+              )}
             </div>
           )}
         </div>
+      )}
+
+      {convertTarget && (
+        <ConvertDialog
+          request={convertTarget}
+          open={!!convertTarget}
+          onOpenChange={(open) => {
+            if (!open) setConvertTarget(null);
+          }}
+        />
       )}
     </div>
   );

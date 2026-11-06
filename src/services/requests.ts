@@ -29,12 +29,14 @@ export interface RequestView extends ProjectRequest {
   sponsorId: string | null;
   draftBenefits: DraftBenefitProfile[];
   updatedAt: string;
+  /** Code of the project this was converted to, or null if not yet converted. */
+  convertedProjectCode: string | null;
 }
 
 export async function listRequests(
   orgId: string,
 ): Promise<{ requests: RequestView[]; people: Person[] }> {
-  const [requests, categories, people] = await Promise.all([
+  const [requests, categories, people, converted] = await Promise.all([
     supabase
       .from("project_requests")
       .select(
@@ -51,11 +53,22 @@ export async function listRequests(
       .eq("organisation_id", orgId)
       .eq("list_key", "benefit_category"),
     listPeople(orgId),
+    supabase
+      .from("projects")
+      .select("code, converted_from_request_id")
+      .eq("organisation_id", orgId)
+      .not("converted_from_request_id", "is", null),
   ]);
   const names = new Map(people.map((person) => [person.id, person.name]));
   const nameOf = (id: string | null) => (id && names.get(id)) || "";
   const category = new Map(
     unwrap(categories, "Loading benefit categories").map((row) => [row.id, row.label]),
+  );
+  const convertedMap = new Map(
+    unwrap(converted, "Loading converted requests").map((row) => [
+      row.converted_from_request_id!,
+      row.code,
+    ]),
   );
   return {
     people,
@@ -93,6 +106,7 @@ export async function listRequests(
           strategicObjectiveId: draft.strategic_objective_id ?? "",
         })),
       updatedAt: row.updated_at,
+      convertedProjectCode: convertedMap.get(row.id) ?? null,
     })),
   };
 }
@@ -132,4 +146,37 @@ export async function createRequest(input: RequestInput & { title: string; portf
     },
     "Adding the request",
   );
+}
+
+export interface ConvertRequestOverrides {
+  name?: string;
+  code?: string;
+  tier?: "small" | "medium" | "large";
+  programmeId?: string | null;
+  managerId?: string | null;
+  startDate?: string | null;
+  finishDate?: string | null;
+  phaseId?: string | null;
+}
+
+/** Managers only (RLS). Returns the new project id. */
+export async function convertRequestToProject(
+  requestId: string,
+  overrides: ConvertRequestOverrides,
+): Promise<string> {
+  const p_overrides: Record<string, string> = {};
+  if (overrides.name) p_overrides["name"] = overrides.name;
+  if (overrides.code) p_overrides["code"] = overrides.code;
+  if (overrides.tier) p_overrides["tier"] = overrides.tier;
+  if (overrides.programmeId) p_overrides["programme_id"] = overrides.programmeId;
+  if (overrides.managerId) p_overrides["manager_id"] = overrides.managerId;
+  if (overrides.startDate) p_overrides["start_date"] = overrides.startDate;
+  if (overrides.finishDate) p_overrides["finish_date"] = overrides.finishDate;
+  if (overrides.phaseId) p_overrides["phase_id"] = overrides.phaseId;
+  const { data, error } = await supabase.rpc("convert_request_to_project", {
+    p_request_id: requestId,
+    p_overrides,
+  });
+  if (error) throw new ServiceError("unknown", error.message);
+  return data as string;
 }
