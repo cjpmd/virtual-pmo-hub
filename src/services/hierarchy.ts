@@ -133,6 +133,10 @@ export interface ProjectSummary {
   openIssues: number;
   /** Reporting date of the latest status report, if any. */
   lastReportDate: string | null;
+  /** Set when this project was converted from a request. */
+  convertedFromRequestId: string | null;
+  /** REQ-xxx ref of the originating request (null when not converted). */
+  convertedFromRequestRef: string | null;
 }
 
 export interface ProjectDetail extends ProjectSummary {
@@ -392,7 +396,7 @@ export async function getProgramme(orgId: string, programmeId: string): Promise<
 // ---- Projects -----------------------------------------------------------------------
 
 const PROJECT_COLUMNS =
-  "id, code, name, workspace_id, effective_portfolio_id, programme_id, state, closed_reason, priority, tier, phase_id, phase_index, manager_id, project_officer_id, sponsor_id, start_date, finish_date, baseline_finish_date, budget, actual, forecast, has_baseline, business_case, benefits_summary, task_source, updated_at";
+  "id, code, name, workspace_id, effective_portfolio_id, programme_id, state, closed_reason, priority, tier, phase_id, phase_index, manager_id, project_officer_id, sponsor_id, start_date, finish_date, baseline_finish_date, budget, actual, forecast, has_baseline, business_case, benefits_summary, task_source, updated_at, converted_from_request_id, converted_from_request_ref";
 
 type ProjectRow = {
   id: string | null;
@@ -421,6 +425,8 @@ type ProjectRow = {
   task_source: string | null;
   closed_reason: string | null;
   updated_at: string | null;
+  converted_from_request_id: string | null;
+  converted_from_request_ref: string | null;
 };
 
 /** Everything a project list or page needs besides the project rows themselves. */
@@ -550,6 +556,8 @@ function toProjectSummary(
     openRisks: context.openRisks.get(id) ?? 0,
     openIssues: context.openIssues.get(id) ?? 0,
     lastReportDate: context.lastReport.get(id) ?? null,
+    convertedFromRequestId: row.converted_from_request_id ?? null,
+    convertedFromRequestRef: row.converted_from_request_ref ?? null,
   };
 }
 

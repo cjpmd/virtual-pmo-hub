@@ -14595,14 +14595,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "decisions_chosen_option_fkey"
-            columns: ["chosen_option_id", "superseded_by_id"]
+            columns: ["chosen_option_id", "pending_successor_id"]
             isOneToOne: false
             referencedRelation: "decision_options"
             referencedColumns: ["id", "decision_id"]
           },
           {
             foreignKeyName: "decisions_chosen_option_fkey"
-            columns: ["chosen_option_id", "pending_successor_id"]
+            columns: ["chosen_option_id", "superseded_by_id"]
             isOneToOne: false
             referencedRelation: "decision_options"
             referencedColumns: ["id", "decision_id"]
@@ -15828,6 +15828,7 @@ export type Database = {
           closed_reason: string | null
           code: string | null
           converted_from_request_id: string | null
+          converted_from_request_ref: string | null
           created_at: string | null
           created_by: string | null
           effective_portfolio_id: string | null
@@ -16426,6 +16427,10 @@ export type Database = {
           p_workspace_id: string
         }
         Returns: Json
+      }
+      convert_request_to_project: {
+        Args: { p_overrides?: Json; p_request_id: string }
+        Returns: string
       }
       create_invites: {
         Args: {

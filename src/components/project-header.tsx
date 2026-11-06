@@ -133,6 +133,17 @@ export function ProjectHeader({
             <Chip label="Tier">{project.tier}</Chip>
             <Chip label="Priority">{project.priority}</Chip>
             <Chip label="Tasks">{TASK_SOURCE[project.taskSource] ?? project.taskSource}</Chip>
+            {project.convertedFromRequestRef && (
+              <Link
+                to="/portfolio/requests"
+                className="rounded-full border border-pmo-line bg-pmo-panel-2 px-2.5 py-0.5 text-xs text-pmo-muted hover:text-pmo-text"
+              >
+                Created from{" "}
+                <span className="font-mono font-medium text-pmo-text">
+                  {project.convertedFromRequestRef}
+                </span>
+              </Link>
+            )}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
