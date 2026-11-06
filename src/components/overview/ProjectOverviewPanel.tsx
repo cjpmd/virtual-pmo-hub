@@ -165,7 +165,7 @@ function SummaryCard({
   return (
     <section
       aria-label="Summary"
-      className="flex min-w-0 flex-col gap-4 rounded-lg border border-border/70 bg-card p-5 text-card-foreground shadow-sm"
+      className="@container/summary flex min-w-0 flex-col gap-4 rounded-lg border border-border/70 bg-card p-5 text-card-foreground shadow-sm"
     >
       <h3 className="font-display text-sm font-semibold">Summary</h3>
       <div className="flex flex-wrap gap-1.5">
@@ -174,7 +174,7 @@ function SummaryCard({
         {taskSource ? <Chip label="Tasks">{TASK_SOURCE[taskSource] ?? taskSource}</Chip> : null}
       </div>
       <Lifecycle size="compact" phases={phases} phaseId={project.phaseId} />
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-3 @[280px]/summary:grid-cols-3">
         <Fact label={term("projectManager", settings)}>{project.managerName}</Fact>
         <Fact label={term("projectOfficer", settings)}>
           {project.projectOfficerName ?? "Unassigned"}

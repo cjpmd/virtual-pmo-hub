@@ -1,215 +1,65 @@
 // Client-side PowerPoint export for report packs.
 //
 // Slide layout (16:9, 10 × 5.63 inches):
-//   • Cover slide  – logo, forum name, title, as-at, meeting date, overall rating
-//   • One slide per report-level section  – section title + block content captured as image
-//   • One slide per deep-dive project     – project code/name + ProjectOverviewPanel as image
+//   • Cover slide  – native text: logo, forum name, title, as-at, meeting date,
+//                    overall rating chip(s) + rationale
+//   • One slide per report-level section  – section title + block captured as image
+//   • One slide per deep-dive project     – project code/name + ProjectOverviewPanel
 //
-// Titles and standalone text are native pptx text so they are selectable.
-// Block content and project panels are captured from the live DOM at 2× device-pixel-ratio
-// using html-to-image, then inserted as images.
+// Titles and standalone metadata are native pptx text (selectable).
+// Block content is captured from a 1600 px off-screen clone at 2× DPR and
+// placed at full content-box width. Tall content is split across continuation slides.
 //
-// Callers must pass the DOM node of the rendered report document so this module never
-// touches the global document directly.
+// See export-canvas.ts for the off-screen rendering primitives.
 
 import PptxGenJS from "pptxgenjs";
-import { toPng } from "html-to-image";
 import type { ViewModel } from "./ReportViewer";
 import { sectionsOf } from "./ReportDocument";
+import { PPTX_EXPORT_W, captureAtWidth, fitOrSplit, type SlicePlacement } from "./export-canvas";
 
-// Slide canvas: 10 × 5.625 in (standard 16:9)
+// ── Slide dimensions (inches, standard 16:9) ────────────────────────────────
 const W = 10;
 const H = 5.625;
-// Content area inside slide padding (inches)
 const PAD = 0.3;
 const CONTENT_X = PAD;
 const CONTENT_Y = PAD;
 const CONTENT_W = W - PAD * 2;
 
-// Header strip height (title bar above the content image)
+// Header strip (title bar above the content image)
 const HEADER_H = 0.55;
-// Content image starts below the header
-const IMG_Y = CONTENT_Y + HEADER_H + 0.1;
+// Content image area
+const IMG_Y = CONTENT_Y + HEADER_H + 0.08;
 const IMG_H = H - IMG_Y - PAD;
 
-const FONT_TITLE = "Calibri";
-const COLOUR_PRIMARY = "1D4ED8"; // blue-700 (matches --pmo-accent approx)
-const COLOUR_MID = "374151"; // gray-700
-const COLOUR_MUTED = "6B7280"; // gray-500
+const FONT = "Calibri";
+const C_PRIMARY = "1D4ED8";
+const C_MID = "374151";
+const C_MUTED = "6B7280";
+const C_BORDER = "E5E7EB";
 
-// ── RAG chip colours (hex, no #) ────────────────────────────────────────────
-const RAG_FILL_MAP: Readonly<Record<"green" | "amber" | "red" | "not_set", string>> = {
+// ── RAG palette ──────────────────────────────────────────────────────────────
+const RAG_FILL: Readonly<Record<"green" | "amber" | "red" | "not_set", string>> = {
   green: "16A34A",
   amber: "D97706",
   red: "DC2626",
   not_set: "9CA3AF",
 };
-const RAG_TEXT_MAP: Readonly<Record<"green" | "amber" | "red" | "not_set", string>> = {
+const RAG_TEXT: Readonly<Record<"green" | "amber" | "red" | "not_set", string>> = {
   green: "FFFFFF",
   amber: "FFFFFF",
   red: "FFFFFF",
   not_set: "FFFFFF",
 };
-const ragFill = (rating: string): string =>
-  RAG_FILL_MAP[rating as keyof typeof RAG_FILL_MAP] ?? RAG_FILL_MAP.not_set;
-const ragText = (rating: string): string =>
-  RAG_TEXT_MAP[rating as keyof typeof RAG_TEXT_MAP] ?? RAG_TEXT_MAP.not_set;
+const ragFill = (r: string) => RAG_FILL[r as keyof typeof RAG_FILL] ?? RAG_FILL.not_set;
+const ragText = (r: string) => RAG_TEXT[r as keyof typeof RAG_TEXT] ?? RAG_TEXT.not_set;
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-/**
- * Decode a PNG/JPEG data-URL and return its intrinsic pixel dimensions.
- * Returns null if the data URL is empty or the image fails to load.
- */
-function getImageSize(dataUrl: string): Promise<{ w: number; h: number } | null> {
-  return new Promise((resolve) => {
-    if (!dataUrl) return resolve(null);
-    const img = new Image();
-    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-    img.onerror = () => resolve(null);
-    img.src = dataUrl;
-  });
-}
-
-/**
- * Fit a source image (px) into a box (inches) with contain-fit, centred.
- * Returns the x/y/w/h in inches for pptxgenjs.
- */
-function fitInBox(
-  imgW: number,
-  imgH: number,
-  boxX: number,
-  boxY: number,
-  boxW: number,
-  boxH: number,
-): { x: number; y: number; w: number; h: number } {
-  const imgAspect = imgW / imgH;
-  const boxAspect = boxW / boxH;
-  let w: number, h: number;
-  if (imgAspect > boxAspect) {
-    w = boxW;
-    h = boxW / imgAspect;
-  } else {
-    h = boxH;
-    w = boxH * imgAspect;
-  }
-  const x = boxX + (boxW - w) / 2;
-  const y = boxY + (boxH - h) / 2;
-  return { x, y, w, h };
-}
-
-/** Set / unset the PPTX-export CSS class on <html> so controls are hidden during capture. */
-function setExportMode(on: boolean) {
-  if (on) {
-    document.documentElement.dataset["pptxExport"] = "1";
-  } else {
-    delete document.documentElement.dataset["pptxExport"];
-  }
-}
-
-/** Capture a DOM element as a PNG data-URL at 2× scale. Returns null on failure. */
-async function capture(node: HTMLElement): Promise<string | null> {
-  setExportMode(true);
-  try {
-    return await toPng(node, {
-      pixelRatio: 2,
-      backgroundColor: "#ffffff",
-      // Skip elements that break cross-origin image capture (e.g. avatars from storage)
-      filter: (el) => {
-        if (el instanceof HTMLImageElement && el.src.startsWith("blob:")) return false;
-        return true;
-      },
-    });
-  } catch {
-    return null;
-  } finally {
-    setExportMode(false);
-  }
-}
-
-/** Add a slide with a coloured title bar and an optional content image. */
-async function addContentSlide(
-  pptx: PptxGenJS,
-  title: string,
-  subtitle: string | null,
-  imgDataUrl: string | null,
-) {
-  const slide = pptx.addSlide();
-
-  // Title bar background
-  slide.addShape(pptx.ShapeType.rect, {
-    x: 0,
-    y: 0,
-    w: W,
-    h: HEADER_H + CONTENT_Y,
-    fill: { color: "F9FAFB" },
-    line: { color: "E5E7EB", width: 0.5 },
-  });
-
-  slide.addText(title, {
-    x: CONTENT_X,
-    y: 0,
-    w: subtitle ? CONTENT_W * 0.75 : CONTENT_W,
-    h: HEADER_H + CONTENT_Y,
-    fontSize: 14,
-    bold: true,
-    fontFace: FONT_TITLE,
-    color: COLOUR_MID,
-    valign: "middle",
-  });
-
-  if (subtitle) {
-    slide.addText(subtitle, {
-      x: CONTENT_X + CONTENT_W * 0.75,
-      y: 0,
-      w: CONTENT_W * 0.25,
-      h: HEADER_H + CONTENT_Y,
-      fontSize: 10,
-      fontFace: FONT_TITLE,
-      color: COLOUR_MUTED,
-      align: "right",
-      valign: "middle",
-    });
-  }
-
-  // Divider
-  slide.addShape(pptx.ShapeType.line, {
-    x: CONTENT_X,
-    y: CONTENT_Y + HEADER_H,
-    w: CONTENT_W,
-    h: 0,
-    line: { color: "E5E7EB", width: 1 },
-  });
-
-  if (imgDataUrl) {
-    const size = await getImageSize(imgDataUrl);
-    const placement = size
-      ? fitInBox(size.w, size.h, CONTENT_X, IMG_Y, CONTENT_W, IMG_H)
-      : { x: CONTENT_X, y: IMG_Y, w: CONTENT_W, h: IMG_H };
-    slide.addImage({ data: imgDataUrl, ...placement });
-  } else {
-    slide.addText("(Content not available)", {
-      x: CONTENT_X,
-      y: IMG_Y,
-      w: CONTENT_W,
-      h: IMG_H,
-      fontSize: 10,
-      fontFace: FONT_TITLE,
-      color: COLOUR_MUTED,
-      align: "center",
-      valign: "middle",
-    });
-  }
-}
-
-// ── Overall status: native shapes ────────────────────────────────────────────
+// ── Chip extraction ───────────────────────────────────────────────────────────
 
 interface RagChip {
-  rating: string; // "green" | "amber" | "red" | "not_set"
-  label: string; // "Declared: Amber" etc.
+  rating: string;
+  label: string;
 }
 
-/** Extract declared/evidenced chips from an overall_status block node. */
 function extractRagChips(node: HTMLElement): RagChip[] {
   const chips: RagChip[] = [];
   node.querySelectorAll<HTMLElement>("[data-rating]").forEach((el) => {
@@ -220,131 +70,267 @@ function extractRagChips(node: HTMLElement): RagChip[] {
   return chips;
 }
 
-/**
- * Render an overall_status block as native pptxgenjs shapes rather than a
- * stretched image. Falls back to the image path if no chips are found.
- */
-async function addOverallStatusSlide(
+// ── Title bar helper (shared by all content slides) ──────────────────────────
+
+function addTitleBar(
   pptx: PptxGenJS,
+  slide: ReturnType<PptxGenJS["addSlide"]>,
   title: string,
-  node: HTMLElement,
-  imgDataUrl: string | null,
+  subtitle: string | null,
 ) {
-  const chips = extractRagChips(node);
-  if (!chips.length) {
-    // No structured data – fall back to image
-    await addContentSlide(pptx, title, null, imgDataUrl);
-    return;
-  }
-
-  const slide = pptx.addSlide();
-
-  // Title bar
+  const bandH = HEADER_H + CONTENT_Y;
   slide.addShape(pptx.ShapeType.rect, {
     x: 0,
     y: 0,
     w: W,
-    h: HEADER_H + CONTENT_Y,
+    h: bandH,
     fill: { color: "F9FAFB" },
-    line: { color: "E5E7EB", width: 0.5 },
+    line: { color: C_BORDER, width: 0.5 },
   });
   slide.addText(title, {
     x: CONTENT_X,
     y: 0,
-    w: CONTENT_W,
-    h: HEADER_H + CONTENT_Y,
+    w: subtitle ? CONTENT_W * 0.75 : CONTENT_W,
+    h: bandH,
     fontSize: 14,
     bold: true,
-    fontFace: FONT_TITLE,
-    color: COLOUR_MID,
+    fontFace: FONT,
+    color: C_MID,
     valign: "middle",
   });
+  if (subtitle) {
+    slide.addText(subtitle, {
+      x: CONTENT_X + CONTENT_W * 0.75,
+      y: 0,
+      w: CONTENT_W * 0.25,
+      h: bandH,
+      fontSize: 10,
+      fontFace: FONT,
+      color: C_MUTED,
+      align: "right",
+      valign: "middle",
+    });
+  }
   slide.addShape(pptx.ShapeType.line, {
     x: CONTENT_X,
     y: CONTENT_Y + HEADER_H,
     w: CONTENT_W,
     h: 0,
-    line: { color: "E5E7EB", width: 1 },
+    line: { color: C_BORDER, width: 1 },
   });
+}
 
-  // Render chips as coloured rectangles
-  const chipW = 2.0;
-  const chipH = 0.55;
+// ── Content slide (image + title bar) ───────────────────────────────────────
+
+/**
+ * Add one or more slides for a section: one per slice when the content is tall
+ * enough to require splitting. The first slide has the full title; continuation
+ * slides append " (continued)".
+ */
+async function addContentSlides(
+  pptx: PptxGenJS,
+  title: string,
+  subtitle: string | null,
+  node: HTMLElement | null,
+) {
+  if (!node) {
+    const slide = pptx.addSlide();
+    addTitleBar(pptx, slide, title, subtitle);
+    slide.addText("(Content not available)", {
+      x: CONTENT_X,
+      y: IMG_Y,
+      w: CONTENT_W,
+      h: IMG_H,
+      fontSize: 10,
+      fontFace: FONT,
+      color: C_MUTED,
+      align: "center",
+      valign: "middle",
+    });
+    return;
+  }
+
+  const cap = await captureAtWidth(node, PPTX_EXPORT_W);
+  if (!cap) {
+    const slide = pptx.addSlide();
+    addTitleBar(pptx, slide, title, subtitle);
+    return;
+  }
+
+  const slices = await fitOrSplit(cap, CONTENT_X, IMG_Y, CONTENT_W, IMG_H);
+
+  slices.forEach((slice: SlicePlacement, i: number) => {
+    const slide = pptx.addSlide();
+    addTitleBar(pptx, slide, i === 0 ? title : `${title} (continued)`, i === 0 ? subtitle : null);
+    slide.addImage({ data: slice.dataUrl, x: slice.x, y: slice.y, w: slice.w, h: slice.h });
+  });
+}
+
+// ── Overall-status slide (native PPT shapes) ─────────────────────────────────
+
+async function addOverallStatusSlide(pptx: PptxGenJS, title: string, node: HTMLElement) {
+  const chips = extractRagChips(node);
+
+  if (!chips.length) {
+    await addContentSlides(pptx, title, null, node);
+    return;
+  }
+
+  const slide = pptx.addSlide();
+  addTitleBar(pptx, slide, title, null);
+
+  // ── Chips ─────────────────────────────────────────────────────────────────
+  const chipW = Math.min(2.8, (CONTENT_W - (chips.length - 1) * 0.3) / chips.length);
+  const chipH = 0.65;
   const chipGap = 0.3;
-  const startX = CONTENT_X;
-  const startY = IMG_Y + 0.2;
+  const chipRowW = chips.length * chipW + (chips.length - 1) * chipGap;
+  const startX = CONTENT_X + (CONTENT_W - chipRowW) / 2;
+  const chipY = IMG_Y + 0.15;
 
   chips.forEach((chip, i) => {
     const x = startX + i * (chipW + chipGap);
-    const fillColour = ragFill(chip.rating);
-    const textColour = ragText(chip.rating);
+    const fill = ragFill(chip.rating);
+    const text = ragText(chip.rating);
     slide.addShape(pptx.ShapeType.roundRect, {
       x,
-      y: startY,
+      y: chipY,
       w: chipW,
       h: chipH,
-      fill: { color: fillColour },
-      line: { color: fillColour, width: 0 },
-      rectRadius: 0.05,
+      fill: { color: fill },
+      line: { color: fill, width: 0 },
+      rectRadius: 0.06,
     });
     slide.addText(chip.label, {
       x,
-      y: startY,
+      y: chipY,
       w: chipW,
       h: chipH,
-      fontSize: 12,
+      fontSize: 14,
       bold: true,
-      fontFace: FONT_TITLE,
-      color: textColour,
+      fontFace: FONT,
+      color: text,
       align: "center",
       valign: "middle",
     });
   });
 
-  // Counts line (e.g. "12 projects · 4 at risk · 2 off track")
+  let nextY = chipY + chipH + 0.25;
+
+  // ── Stacked rating bar ─────────────────────────────────────────────────────
   const countsEl = node.querySelector<HTMLElement>("[data-counts]");
   if (countsEl) {
     const countsText = countsEl.textContent?.trim() ?? "";
+
+    // Parse "Green 5 · Amber 3 · Red 2 · Not set 1" (or localised equivalents)
+    const countParts = countsText.split("·").map((s) => s.trim());
+    let total = 0;
+    const parsed: Array<{ key: string; count: number }> = [];
+    for (const part of countParts) {
+      const m = part.match(/(\d+)\s*$/);
+      if (m?.[1]) {
+        const count = parseInt(m[1], 10);
+        const key = part
+          .replace(/\d+\s*$/, "")
+          .trim()
+          .toLowerCase();
+        parsed.push({ key, count });
+        total += count;
+      }
+    }
+
+    if (total > 0) {
+      const colourMap: Record<string, string> = {
+        green: RAG_FILL.green,
+        "on track": RAG_FILL.green,
+        amber: RAG_FILL.amber,
+        "at risk": RAG_FILL.amber,
+        red: RAG_FILL.red,
+        "off track": RAG_FILL.red,
+        "not set": RAG_FILL.not_set,
+        "not reported": RAG_FILL.not_set,
+      };
+
+      const barH = 0.22;
+      let barX = CONTENT_X;
+      for (const { key, count } of parsed) {
+        if (count === 0) continue;
+        const segW = (count / total) * CONTENT_W;
+        const colour = colourMap[key] ?? RAG_FILL.not_set;
+        slide.addShape(pptx.ShapeType.rect, {
+          x: barX,
+          y: nextY,
+          w: segW,
+          h: barH,
+          fill: { color: colour },
+          line: { color: colour, width: 0 },
+        });
+        barX += segW;
+      }
+      nextY += barH + 0.12;
+    }
+
     if (countsText) {
       slide.addText(countsText, {
         x: CONTENT_X,
-        y: startY + chipH + 0.2,
+        y: nextY,
         w: CONTENT_W,
         h: 0.3,
         fontSize: 10,
-        fontFace: FONT_TITLE,
-        color: COLOUR_MUTED,
-        align: "left",
+        fontFace: FONT,
+        color: C_MUTED,
+        align: "center",
         valign: "middle",
+      });
+      nextY += 0.38;
+    }
+  }
+
+  // ── Rationale text ────────────────────────────────────────────────────────
+  const rationaleEl = node.querySelector<HTMLElement>("p.text-sm:not([data-counts])");
+  if (rationaleEl) {
+    const rText = rationaleEl.textContent?.trim() ?? "";
+    if (rText) {
+      slide.addText(rText, {
+        x: CONTENT_X,
+        y: nextY,
+        w: CONTENT_W,
+        h: H - nextY - PAD,
+        fontSize: 11,
+        fontFace: FONT,
+        color: C_MID,
+        wrap: true,
+        valign: "top",
       });
     }
   }
 }
 
-// ── Main export function ─────────────────────────────────────────────────────
+// ── Main export ───────────────────────────────────────────────────────────────
 
 /** Build and trigger download of a PPTX file from the current report view. */
 export async function exportReportPptx(
   view: ViewModel,
-  /** The rendered report document root element (the .report-document div). */
+  /** The rendered report document root (the .report-document div from the viewer). */
   reportDocNode: HTMLElement,
 ): Promise<void> {
   const pptx = new PptxGenJS();
-  pptx.layout = "LAYOUT_WIDE"; // 13.33 × 7.5 in – but we override below
   pptx.defineLayout({ name: "16x9", width: W, height: H });
   pptx.layout = "16x9";
   pptx.author = "ORMO PMO";
   pptx.title = view.report.title;
 
-  const f = (d: string | null | undefined) =>
+  const fDate = (d: string | null | undefined) =>
     d
-      ? new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+      ? new Date(d).toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })
       : "";
 
   // ── Cover slide ───────────────────────────────────────────────────────────
   const coverSlide = pptx.addSlide();
 
-  // Background
   coverSlide.addShape(pptx.ShapeType.rect, {
     x: 0,
     y: 0,
@@ -352,18 +338,17 @@ export async function exportReportPptx(
     h: H,
     fill: { color: "FFFFFF" },
   });
-  // Top accent bar
   coverSlide.addShape(pptx.ShapeType.rect, {
     x: 0,
     y: 0,
     w: W,
     h: 0.08,
-    fill: { color: COLOUR_PRIMARY },
+    fill: { color: C_PRIMARY },
   });
 
-  // Logo from the cover block DOM (if present and not a blob URL)
-  const logoImg = reportDocNode.querySelector<HTMLImageElement>("[data-cover-logo] img");
+  // Logo (optional — always show text even without it)
   let textLeft = PAD;
+  const logoImg = reportDocNode.querySelector<HTMLImageElement>("[data-cover-logo] img");
   if (logoImg?.src && !logoImg.src.startsWith("blob:")) {
     try {
       coverSlide.addImage({
@@ -376,108 +361,118 @@ export async function exportReportPptx(
       });
       textLeft = PAD + 0.75;
     } catch {
-      // logo capture failed – skip silently
+      /* logo failed – text starts at PAD */
     }
   }
 
+  // Forum name (always, not gated on logo)
   if (view.forumName) {
     coverSlide.addText(view.forumName.toUpperCase(), {
       x: textLeft,
-      y: 0.4,
+      y: 0.35,
       w: W - textLeft - PAD,
       h: 0.3,
       fontSize: 9,
-      fontFace: FONT_TITLE,
-      color: COLOUR_PRIMARY,
+      fontFace: FONT,
+      color: C_PRIMARY,
       bold: true,
     });
   }
+
   coverSlide.addText(view.report.title, {
     x: textLeft,
-    y: view.forumName ? 0.75 : 0.4,
+    y: view.forumName ? 0.68 : 0.35,
     w: W - textLeft - PAD,
-    h: 1.2,
-    fontSize: 28,
+    h: 1.3,
+    fontSize: 26,
     bold: true,
-    fontFace: FONT_TITLE,
+    fontFace: FONT,
     color: "111827",
+    wrap: true,
   });
 
-  const metaY = 2.2;
+  // Meeting · As-at · Snapshot flag
+  const metaY = 2.15;
   const metaParts: string[] = [];
-  if (view.meetingDate) metaParts.push(`Meeting ${f(view.meetingDate)}`);
-  metaParts.push(`As at ${f(view.report.asAt)}`);
+  if (view.meetingDate) metaParts.push(`Meeting ${fDate(view.meetingDate)}`);
+  metaParts.push(`As at ${fDate(view.report.asAt)}`);
   if (view.isSnapshot) metaParts.push("Published snapshot");
 
   coverSlide.addText(metaParts.join("  ·  "), {
     x: PAD,
     y: metaY,
     w: W - PAD * 2,
-    h: 0.35,
+    h: 0.3,
     fontSize: 11,
-    fontFace: FONT_TITLE,
-    color: COLOUR_MUTED,
+    fontFace: FONT,
+    color: C_MUTED,
   });
 
-  // Overall rating chips from [data-rating] attributes on the cover block
+  // Overall rating chips (always shown even without logo)
   const coverBlock = reportDocNode.querySelector<HTMLElement>("[data-block='report_cover']");
+  let chipBottomY = metaY + 0.35;
   if (coverBlock) {
     const chips = extractRagChips(coverBlock);
-    chips.forEach((chip, i) => {
-      const fillColour = ragFill(chip.rating);
-      const textColour = ragText(chip.rating);
+    if (chips.length) {
       const chipW = 1.8;
       const chipH = 0.42;
-      const x = PAD + i * (chipW + 0.2);
-      coverSlide.addShape(pptx.ShapeType.roundRect, {
-        x,
-        y: metaY + 0.5,
-        w: chipW,
-        h: chipH,
-        fill: { color: fillColour },
-        line: { color: fillColour, width: 0 },
-        rectRadius: 0.05,
+      const gap = 0.2;
+      const chipY = metaY + 0.42;
+      chips.forEach((chip, i) => {
+        const x = PAD + i * (chipW + gap);
+        const fill = ragFill(chip.rating);
+        const text = ragText(chip.rating);
+        coverSlide.addShape(pptx.ShapeType.roundRect, {
+          x,
+          y: chipY,
+          w: chipW,
+          h: chipH,
+          fill: { color: fill },
+          line: { color: fill, width: 0 },
+          rectRadius: 0.05,
+        });
+        coverSlide.addText(chip.label, {
+          x,
+          y: chipY,
+          w: chipW,
+          h: chipH,
+          fontSize: 11,
+          bold: true,
+          fontFace: FONT,
+          color: text,
+          align: "center",
+          valign: "middle",
+        });
       });
-      coverSlide.addText(chip.label, {
-        x,
-        y: metaY + 0.5,
-        w: chipW,
-        h: chipH,
-        fontSize: 11,
-        bold: true,
-        fontFace: FONT_TITLE,
-        color: textColour,
-        align: "center",
-        valign: "middle",
-      });
-    });
+      chipBottomY = chipY + chipH + 0.1;
+    }
 
-    // Overall rating rationale (plain text below chips)
     const rationaleEl = coverBlock.querySelector<HTMLElement>("[data-rationale]");
     if (rationaleEl) {
-      const rationaleText = rationaleEl.textContent?.trim() ?? "";
-      if (rationaleText) {
-        coverSlide.addText(rationaleText, {
+      const rText = rationaleEl.textContent?.trim() ?? "";
+      if (rText) {
+        coverSlide.addText(rText, {
           x: PAD,
-          y: metaY + 1.1,
+          y: chipBottomY,
           w: W - PAD * 2,
-          h: 0.6,
+          h: 0.65,
           fontSize: 10,
-          fontFace: FONT_TITLE,
-          color: COLOUR_MID,
+          fontFace: FONT,
+          color: C_MID,
           wrap: true,
+          valign: "top",
         });
       }
     }
   }
 
-  // Bottom divider
+  // Data-basis footer
   coverSlide.addShape(pptx.ShapeType.line, {
     x: PAD,
     y: H - 0.6,
     w: W - PAD * 2,
     h: 0,
-    line: { color: "E5E7EB", width: 0.5 },
+    line: { color: C_BORDER, width: 0.5 },
   });
   if (view.dataBasis) {
     coverSlide.addText(view.dataBasis, {
@@ -486,8 +481,8 @@ export async function exportReportPptx(
       w: W - PAD * 2,
       h: 0.3,
       fontSize: 8,
-      fontFace: FONT_TITLE,
-      color: COLOUR_MUTED,
+      fontFace: FONT,
+      color: C_MUTED,
     });
   }
 
@@ -495,16 +490,15 @@ export async function exportReportPptx(
   const sections = sectionsOf(view.report.blocks, view.deepDives);
   for (const section of sections) {
     if (section.kind !== "block") continue;
-    if (section.instance?.blockKey === "report_cover") continue; // already on cover slide
+    if (section.instance?.blockKey === "report_cover") continue;
 
     const sectionId = `s-${section.instance?.id ?? section.id}`;
     const sectionNode = reportDocNode.querySelector<HTMLElement>(`#${CSS.escape(sectionId)}`);
-    const imgDataUrl = sectionNode ? await capture(sectionNode) : null;
 
     if (section.instance?.blockKey === "overall_status" && sectionNode) {
-      await addOverallStatusSlide(pptx, section.title, sectionNode, imgDataUrl);
+      await addOverallStatusSlide(pptx, section.title, sectionNode);
     } else {
-      await addContentSlide(pptx, section.title, null, imgDataUrl);
+      await addContentSlides(pptx, section.title, null, sectionNode ?? null);
     }
   }
 
@@ -513,17 +507,15 @@ export async function exportReportPptx(
   if (hasDeepDives) {
     for (const project of view.deepDives) {
       const ddNode = reportDocNode.querySelector<HTMLElement>(`#${CSS.escape(`dd-${project.id}`)}`);
-      // Prefer the ProjectOverviewPanel specifically; fall back to the whole deep-dive article.
       const panelNode =
         ddNode?.querySelector<HTMLElement>('[data-testid="project-overview-panel"]') ?? ddNode;
-      const imgDataUrl = panelNode ? await capture(panelNode) : null;
 
-      await addContentSlide(pptx, project.name, project.code, imgDataUrl);
+      await addContentSlides(pptx, project.name, project.code, panelNode ?? null);
     }
   }
 
   // ── Download ──────────────────────────────────────────────────────────────
-  const asAt = view.report.asAt ? view.report.asAt.slice(0, 10) : "";
+  const asAt = view.report.asAt?.slice(0, 10) ?? "";
   const filename = `${view.report.title} – ${asAt}.pptx`
     .replace(/[/\\?%*:|"<>]/g, "-")
     .replace(/\s+/g, " ")

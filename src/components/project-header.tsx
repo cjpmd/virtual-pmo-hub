@@ -280,7 +280,7 @@ export function Fact({
   return (
     <div className="min-w-0">
       <dt className="text-xs text-pmo-muted">{label}</dt>
-      <dd className={cn("mt-0.5 truncate font-medium text-pmo-text", mono && "pmo-num")}>
+      <dd className={cn("mt-0.5 break-words font-medium text-pmo-text", mono && "pmo-num")}>
         {children}
       </dd>
     </div>
