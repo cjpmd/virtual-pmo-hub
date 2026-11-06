@@ -741,6 +741,20 @@ html[data-pptx-export] .whitespace-nowrap {
   white-space: normal;
 }
 
+/* Cancel chart entry animations: cloneNode restarts them from opacity:0.
+   Setting animation:none reverts the element to its natural (opacity:1) state. */
+html[data-pptx-export] .viz-animate {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* Card heights: in export mode size each card to its content rather than
+   stretching to match the tallest column in the grid. */
+html[data-pptx-export] [data-testid="project-overview-panel"] > div {
+  align-items: start !important;
+}
+
 /* Print: same unwrapping inside the print root portal */
 @media print {
   .report-print-root .truncate {
@@ -753,5 +767,15 @@ html[data-pptx-export] .whitespace-nowrap {
     display: block !important;
     -webkit-line-clamp: unset !important;
     -webkit-box-orient: unset !important;
+  }
+  /* Cancel chart animations in print too */
+  .report-print-root .viz-animate {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  /* Card heights in print */
+  .report-print-root [data-testid="project-overview-panel"] > div {
+    align-items: start !important;
   }
 }

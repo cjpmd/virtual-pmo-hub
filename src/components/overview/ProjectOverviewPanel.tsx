@@ -2,7 +2,7 @@
 // Highlight report + Risks). Used by the portfolio row panel AND the report deep-dive block so
 // both render the identical component. Layout responds to the container's width via CSS
 // container queries, not the viewport, so it works inside the report preview and viewer too.
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import { HealthByDimension } from "@/components/overview/health-by-dimension";
 import { MilestoneSlippage } from "@/components/overview/milestone-slippage";
 import { HighlightReport, TopRisks } from "@/components/overview/project-work-panels";
@@ -93,10 +93,20 @@ export function ProjectOverviewPanel({
   const closed = project.state === "closed";
   const raid = useMemo(() => rankRaid(openRaid, riskBands, today), [openRaid, riskBands, today]);
 
+  // Signal to captureAtWidth that this panel has rendered with real data.
+  const panelRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (panelRef.current) panelRef.current.dataset["exportReady"] = "true";
+  });
+
   return (
     // @container: 3-col split responds to this element's width, not the viewport.
     // [&_button]:print:hidden: hides all action buttons in print/PDF.
-    <div className="@container [&_button]:print:hidden" data-testid="project-overview-panel">
+    <div
+      ref={panelRef}
+      className="@container [&_button]:print:hidden"
+      data-testid="project-overview-panel"
+    >
       <div className="grid gap-4 @[640px]:grid-cols-3">
         {/* Column 1: summary facts */}
         <SummaryCard project={project} health={health} taskSource={taskSource} />

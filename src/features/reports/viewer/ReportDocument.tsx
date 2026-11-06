@@ -2,7 +2,7 @@
 // deep-dive blocks repeated per included project (spec §6.1). Drafts resolve live data per
 // block (report_block_data); published reports render only from snapshots (§4). Every block
 // sits in an error boundary, and unknown keys render a neutral placeholder (§6.1).
-import { Component, type ReactNode } from "react";
+import { Component, useLayoutEffect, useRef, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -173,6 +173,22 @@ function LiveBody({ instance, entityId, props }: BodyProps) {
   return <Rendered instance={instance} entityId={entityId} props={props} data={query.data} />;
 }
 
+/**
+ * Sets data-export-ready="true" on the nearest [data-block] ancestor after the
+ * block has rendered with real data. captureAtWidth polls this attribute before
+ * cloning, ensuring the clone always captures a fully-painted block.
+ */
+function ReadySignaller() {
+  const ref = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    // Walk up to the [data-block] section wrapper and mark it ready.
+    let el: HTMLElement | null = ref.current;
+    while (el && !el.dataset["block"]) el = el.parentElement;
+    if (el) el.dataset["exportReady"] = "true";
+  });
+  return <span ref={ref} style={{ display: "none" }} aria-hidden="true" />;
+}
+
 function Rendered({ instance, entityId, props, data }: BodyProps & { data: unknown }) {
   const definition = getBlock(instance.blockKey)!;
   if (data && typeof data === "object" && (data as { unavailable?: boolean }).unavailable)
@@ -194,6 +210,7 @@ function Rendered({ instance, entityId, props, data }: BodyProps & { data: unkno
   const Renderer = (props.mode === "print" && definition.PrintRenderer) || definition.Renderer;
   return (
     <BlockBoundary name={definition.name}>
+      <ReadySignaller />
       <Renderer data={data} config={config} ctx={ctx} />
     </BlockBoundary>
   );

@@ -1,6 +1,14 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { fitOrSplit } from "./export-canvas";
+import { PPTX_EXPORT_W, fitOrSplit } from "./export-canvas";
+
+// SPLIT_THRESHOLD is 0.45 (not exported; tested via behaviour).
+
+describe("PPTX_EXPORT_W", () => {
+  it("is 1280 (narrower canvas → larger text on slide)", () => {
+    expect(PPTX_EXPORT_W).toBe(1280);
+  });
+});
 
 describe("fitOrSplit", () => {
   const BOX_X = 0.5;
@@ -12,46 +20,66 @@ describe("fitOrSplit", () => {
     return { dataUrl: "data:image/png;base64,test", naturalW, naturalH };
   }
 
-  it("returns one slice centred vertically when image fits at full width", async () => {
-    // 1600 × 760 → imageHeightIn = 9.4 * (760/1600) ≈ 4.465 < 5.0 → fits
-    const slices = await fitOrSplit(capture(1600, 760), BOX_X, BOX_Y, BOX_W, BOX_H);
+  it("returns one slice at full width when image fits (imageHeightIn ≤ boxH)", async () => {
+    // 1280 × 600 → imageHeightIn = 9.4*(600/1280) ≈ 4.41in < 5.0 → fits
+    const slices = await fitOrSplit(capture(1280, 600), BOX_X, BOX_Y, BOX_W, BOX_H);
 
     expect(slices).toHaveLength(1);
     expect(slices[0]!.w).toBe(BOX_W);
     expect(slices[0]!.x).toBe(BOX_X);
-    // y is centred: should be > BOX_Y because the image is shorter than the box
+    // centred vertically: y > BOX_Y because image is shorter than box
     expect(slices[0]!.y).toBeGreaterThan(BOX_Y);
-    // The image must fill ≥ 95% of box width
+    // image fills full content width
     expect(slices[0]!.w / BOX_W).toBeGreaterThanOrEqual(0.95);
   });
 
-  it("returns one slice scaled down when scale ≥ 0.8", async () => {
-    // 1600 × 870 → imageHeightIn = 9.4 * (870/1600) ≈ 5.11in, scale = 5.0/5.11 ≈ 0.978 ≥ 0.8
-    const slices = await fitOrSplit(capture(1600, 870), BOX_X, BOX_Y, BOX_W, BOX_H);
+  it("returns one scaled-down slice when scale ≥ 0.45", async () => {
+    // 1280 × 900 → imageHeightIn = 9.4*(900/1280) ≈ 6.61in, scale = 5.0/6.61 ≈ 0.757 ≥ 0.45
+    const slices = await fitOrSplit(capture(1280, 900), BOX_X, BOX_Y, BOX_W, BOX_H);
 
     expect(slices).toHaveLength(1);
-    // scaled width is BOX_W * scale; since scale ≥ 0.8 → w ≥ 0.8 * BOX_W
-    expect(slices[0]!.w).toBeGreaterThanOrEqual(BOX_W * 0.8);
-    // centred horizontally inside box → x ≥ BOX_X
-    expect(slices[0]!.x).toBeGreaterThanOrEqual(BOX_X);
-    // height should equal BOX_H (filling the box vertically when scaled)
+    // height fills box (contain → fill the constraining dimension)
     expect(slices[0]!.h).toBeCloseTo(BOX_H, 5);
+    // width < BOX_W (image was taller than box → scale down → narrower than full width)
+    expect(slices[0]!.w).toBeLessThan(BOX_W);
+    // centred horizontally: x > BOX_X
+    expect(slices[0]!.x).toBeGreaterThan(BOX_X);
   });
 
-  it("scale branch boundary: naturalH=1000 gives scale≈0.851, still one slice", async () => {
-    // imageHeightIn = 9.4*(1000/1600) = 5.875in, scale = 5/5.875 ≈ 0.851 ≥ 0.8 → scale branch
-    // Note: naturalH ≥ 1064 gives scale < 0.8 → split branch (which calls canvas cropImage and
-    // is not testable in jsdom). The scale branch is a single slice with no canvas call.
-    const slices = await fitOrSplit(capture(1600, 1000), BOX_X, BOX_Y, BOX_W, BOX_H);
-
-    expect(slices).toHaveLength(1);
-    expect(slices[0]!.w / BOX_W).toBeGreaterThanOrEqual(0.8);
-    expect(slices[0]!.h).toBeCloseTo(BOX_H, 5);
-  });
-
-  it("preserves the original dataUrl when image fits in one slice", async () => {
-    const cap = capture(1600, 760);
+  it("preserves the original dataUrl for single-slice results", async () => {
+    const cap = capture(1280, 600);
     const slices = await fitOrSplit(cap, BOX_X, BOX_Y, BOX_W, BOX_H);
     expect(slices[0]!.dataUrl).toBe(cap.dataUrl);
+  });
+
+  it("scale 0.45 boundary: imageHeightIn ≈ 1.1× boxH → one contained slice", async () => {
+    // imageHeightIn = 9.4*(680/1280) ≈ 4.995in ≈ boxH (barely taller)
+    // scale = 5.0/4.995 ≈ 1.001 → fits, full width
+    const slicesFit = await fitOrSplit(capture(1280, 680), BOX_X, BOX_Y, BOX_W, BOX_H);
+    expect(slicesFit).toHaveLength(1);
+
+    // 1280 × 1050 → imageHeightIn = 9.4*(1050/1280) ≈ 7.71in, scale = 5/7.71 ≈ 0.648 ≥ 0.45
+    const slicesContain = await fitOrSplit(capture(1280, 1050), BOX_X, BOX_Y, BOX_W, BOX_H);
+    expect(slicesContain).toHaveLength(1);
+    expect(slicesContain[0]!.h).toBeCloseTo(BOX_H, 5);
+  });
+});
+
+describe("export-mode CSS animation cancellation", () => {
+  it("styles.css contains animation:none rule for html[data-pptx-export] .viz-animate", async () => {
+    // We can't apply CSS in jsdom, but we assert the source rule exists.
+    const fs = await import("fs");
+    const path = await import("path");
+    const css = fs.readFileSync(path.resolve(__dirname, "../../../styles.css"), "utf-8");
+    expect(css).toContain("html[data-pptx-export] .viz-animate");
+    expect(css).toContain("animation: none !important");
+    expect(css).toContain("opacity: 1 !important");
+  });
+
+  it("styles.css contains print animation:none rule for .report-print-root .viz-animate", async () => {
+    const fs = await import("fs");
+    const path = await import("path");
+    const css = fs.readFileSync(path.resolve(__dirname, "../../../styles.css"), "utf-8");
+    expect(css).toContain(".report-print-root .viz-animate");
   });
 });

@@ -64,7 +64,17 @@ function extractRagChips(node: HTMLElement): RagChip[] {
   const chips: RagChip[] = [];
   node.querySelectorAll<HTMLElement>("[data-rating]").forEach((el) => {
     const rating = el.dataset["rating"] ?? "not_set";
-    const label = el.textContent?.trim() ?? "";
+    // The chip has an optional prefix span ("Declared"/"Evidenced") and a value
+    // span. Extract them separately so we format as "Declared: Green" not "DeclaredGreen".
+    const visibleSpans = Array.from(el.querySelectorAll<HTMLElement>("span:not([aria-hidden])"));
+    let label: string;
+    if (visibleSpans.length >= 2) {
+      const prefix = visibleSpans[0]?.textContent?.trim() ?? "";
+      const value = visibleSpans[visibleSpans.length - 1]?.textContent?.trim() ?? "";
+      label = prefix ? `${prefix}: ${value}` : value;
+    } else {
+      label = el.textContent?.trim().replace(/\s+/g, " ") ?? "";
+    }
     if (label) chips.push({ rating, label });
   });
   return chips;
@@ -286,7 +296,7 @@ async function addOverallStatusSlide(pptx: PptxGenJS, title: string, node: HTMLE
   }
 
   // ── Rationale text ────────────────────────────────────────────────────────
-  const rationaleEl = node.querySelector<HTMLElement>("p.text-sm:not([data-counts])");
+  const rationaleEl = node.querySelector<HTMLElement>("[data-rationale]");
   if (rationaleEl) {
     const rText = rationaleEl.textContent?.trim() ?? "";
     if (rText) {
