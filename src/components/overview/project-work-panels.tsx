@@ -413,7 +413,7 @@ export function TopRisks({ items, onOpen }: { items: RankedRaid[]; onOpen: () =>
                 <HealthMark health={LEVEL_HEALTH[level]} shape="dot" />
               </span>
               <span className="min-w-0 text-sm">
-                <span className="block truncate font-medium">
+                <span className="block break-words font-medium">
                   {item.ref ? `${item.ref} ` : ""}
                   {item.title}
                 </span>
