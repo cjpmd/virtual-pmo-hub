@@ -12,7 +12,7 @@ Source: platform audit of `main` at `3c77c64` (06/11/2026) and the live Supabase
 - Packages marked **[DB]** stop twice: SQL to `docs/sql/gl-<n>-<name>.sql` first, then stop for approval; after approval, apply it as a migration, regenerate `src/integrations/supabase/types.ts`, then build the front end.
 - Anything destructive follows the `CLAUDE.md` rule: its own section of the SQL file, run by me in the SQL editor.
 - Measure database cost signed in, through RLS, as in `docs/perf.md`.
-- Run e2e and SQL suites against a Supabase branch or the local Postgres (`supabase/tests/local/run.sh`), never production.
+- Run e2e and SQL suites against a Supabase branch, or the local Postgres until we're on Pro (`supabase/tests/local/run.sh`), never production. Supabase branching needs the Pro plan.
 
 ---
 
@@ -39,6 +39,9 @@ supabase_migrations.schema_migrations go in docs/sql/gl-1-migration-history.sql 
 Don't apply anything. Stop for my review.
 ```
 **Done when:** a fresh Supabase branch built from the repo has the same migration list and the same function definitions as production (spot-check `create_report`, `rb_project_summary`, `convert_request_to_project`).
+
+**Done (09/11/2026):** verified on a fresh local Postgres from `main` `7380d02` (91 migrations, full
+schema fingerprint and the three spot-checks match production); Supabase branching needs Pro.
 
 ### GL-2 Cron housekeeping [DB]
 
@@ -314,11 +317,11 @@ RLS on the bucket matches report visibility. SQL and design first, then stop.
 
 ### GL-17 Multi-tenant health refresh measurement
 
-After GL-10. Branch only.
+After GL-10. Supabase branch, or the local Postgres until we're on Pro.
 
 ```
 Work package GL-17 = build plan work package 6.1 (read its prompt and the Phase 6 notes in
-docs/build-plan.md, and docs/perf.md). Measure with 1, 2 and 5 tenants on a Supabase branch,
+docs/build-plan.md, and docs/perf.md). Measure with 1, 2 and 5 tenants on a Supabase branch, or the local Postgres until we're on Pro,
 recommend with numbers, and stop for my decision before any change. Tick 6.1 when decided.
 ```
 
@@ -389,6 +392,6 @@ and delete the adapter layer. List every screen touched; e2e for that domain mus
 
 ## Progress
 
-- [ ] GL-1 Migrations  - [ ] GL-2 Cron  - [ ] GL-3 Hide dead ends  - [ ] GL-4 Read-only  - [ ] GL-5 Banners  - [ ] GL-6 Billing emails  - [ ] GL-7 Legal pages
+- [x] GL-1 Migrations  - [ ] GL-2 Cron  - [ ] GL-3 Hide dead ends  - [ ] GL-4 Read-only  - [ ] GL-5 Banners  - [ ] GL-6 Billing emails  - [ ] GL-7 Legal pages
 - [ ] GL-8 Sector  - [ ] GL-9 Sample data  - [ ] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [ ] GL-12 Bugs  - [ ] GL-13 Notifications  - [ ] GL-14 Committee packs
 - [ ] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [ ] GL-17 Multi-tenant  - [ ] GL-18 Bundle  - [ ] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters
