@@ -8,3 +8,5 @@ one work package per session; finish with `npx tsc --noEmit`, `npx tsc --noEmit 
 Migrations: avoid destructive statements (drop, delete, truncate) where an additive alternative
 exists. If one is unavoidable, don't apply it through the Supabase tool (the confirmation can't
 reach me): put it in its own section of the docs/sql file and ask me to run it in the SQL editor.
+
+@docs/build-plan.md
