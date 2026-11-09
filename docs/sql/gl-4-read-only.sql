@@ -1,4 +1,8 @@
 -- GL-4 Read-only when a trial or subscription lapses (docs/go-live-plan.md). PROPOSAL, not applied.
+-- Round 2 (09/11/2026), with your decisions: Outsider backfilled to today + 14 days;
+-- user_favourites writable; declining join requests and free viewer invites allowed; storage
+-- covered; E2E test organisation trial extended by a year; edge functions audited; bulk write
+-- cost measured.
 --
 -- Evidence (live project xvdlmtkzfmbcegkmampz, read-only, 09/11/2026)
 -- ---------------------------------------------------------------------
@@ -6,8 +10,8 @@
 -- organisation_subscriptions on live:
 --   University                 demo   status null  trial_ends_at null        writable (demo)
 --   VPMO Test Outsider Org     trial  status null  trial_ends_at null        writable FOREVER (bug)
---   Originoverthrow            trial  status null  trial_ends_at 12/11/2026  writable until then
---   E2E 2.1 Test Organisation  trial  status null  trial_ends_at 12/11/2026  writable until then
+--   Originoverthrow            trial  status null  trial_ends_at 12/11/2026  left as it is (you decide)
+--   E2E 2.1 Test Organisation  trial  status null  trial_ends_at 12/11/2026  extended a year (§2)
 -- The bug: for a trial row with trial_ends_at null every clause is false or NULL, so the whole
 --   OR is NULL, and the outer coalesce(..., true) (meant for "no subscription row") turns it
 --   into true. Same for past_due with current_period_end null: coalesce(now()) gives a grace
@@ -26,7 +30,9 @@
 --     so it runs last and sees the filled-in organisation_id.
 --   * 4 don't: organisations (the trigger reads its id instead), profiles (personal, not
 --     covered), stripe_webhook_events and resend_webhook_events (service role only, no org).
---   * Not covered: storage.objects (see "Not in this proposal" at the end).
+--   * storage.objects: buckets org-assets, attachments, evidence and documents keep objects
+--     under <organisation_id>/...; their insert, update and delete policies gain a writable
+--     check (§9). report-pdfs has no client write policy (service role only).
 --
 -- How a system write is told from a user write: auth.uid() is null and the JWT role isn't anon.
 --   pg_cron jobs run as postgres with no JWT; edge functions using the service role send a JWT
@@ -34,34 +40,48 @@
 --   directly (current_user authenticated) or through a SECURITY DEFINER RPC (current_user is
 --   the owner, but request.jwt.claims still carries their sub), so definer RPCs are covered.
 --   current_user can't be used: inside a definer RPC it is postgres, the same as cron.
---   An anon caller is treated as a user (refused), not as the system.
+--   An anon caller is treated as a user (refused), not as the system. In storage, the service
+--   role bypasses RLS, so system uploads (the server PDF) are unaffected.
 --
 -- Writes that still work when read-only
 --   * System writes (cron health refresh, snapshots, metric and forecast history, report-notify,
---     stripe-webhook, resend-webhook, report-distribute): auth.uid() null, allowed.
+--     stripe-webhook, resend-webhook): auth.uid() null, allowed.
 --   * organisation_subscriptions, audit_log, user_favourites: no trigger. Billing is service
---     role; the audit log only records allowed actions (member removal etc.); favourites are a
---     personal convenience.
+--     role; the audit log only records allowed actions; favourites are personal (your call).
 --   * profiles: no trigger (name, email sync, last_organisation_id).
---   * Getting under the seat count, shaped by row, not by a session setting (AGENTS.md: no
---     session setting may bypass a rule):
---       organisation_members  DELETE (remove_member); UPDATE that only sets role to viewer
---                             (change_member_role to viewer).
---       workspace_members     DELETE (cascade from organisation_members); UPDATE that only
---                             sets role to viewer (change_member_role lowers workspace roles).
---       resources             UPDATE that only clears profile_id (the ON DELETE SET NULL
---                             cascade when a member is removed).
---       organisation_invites  UPDATE that only revokes a pending invite (revoke_invite), since
---                             pending paid invites count as seats. Bounces are service role.
+--   * Allowed row changes, decided by what the row change looks like, not by a session setting
+--     (AGENTS.md: no session setting may bypass a rule). All in §5:
+--       Getting under the seat count
+--         organisation_members  DELETE (remove_member); UPDATE that only sets role to viewer.
+--         workspace_members     DELETE (cascade); UPDATE that only sets role to viewer.
+--         resources             UPDATE that only clears profile_id (ON DELETE SET NULL cascade).
+--         organisation_invites  UPDATE that only revokes a pending invite (paid or viewer).
+--       Free viewer invites (create_invites, resend_invite, send-invite, accept_invite)
+--         organisation_invites            INSERT with role viewer; UPDATE of a viewer invite
+--                                         that keeps it viewer (token, resend, sent, accepted).
+--         organisation_invite_workspaces  INSERT for a viewer invite.
+--         organisation_members            INSERT with role viewer (accepting).
+--         workspace_members               INSERT with role viewer (accepting).
+--         resources                       the link made for a new viewer member: INSERT of a
+--                                         non-bookable resource for them, or UPDATE that only
+--                                         sets an empty profile_id to them.
+--         organisation_join_requests      pending -> withdrawn (accepting withdraws the
+--                                         person's pending request).
+--       Declining join requests (decide_join_request with p_approve false)
+--         organisation_join_requests      pending -> declined, touching only status,
+--                                         decided_by and decided_at. Withdrawing your own
+--                                         request (pending -> withdrawn) is allowed too.
+--         Approving a request, even as viewer, stays refused (you asked for declining only;
+--         allowing approve-as-viewer is one more line in §5).
 --   * Settings › Subscription: checkout and portal run in edge functions; the subscription row
---     is written by stripe-webhook (service role). Nothing there is refused.
+--     is written by stripe-webhook and create-checkout-session (service role). Not refused.
 --   Everything else by a signed-in user (or anon) in a read-only organisation is refused with
---   errcode P0001, hint 'org_read_only'. Examples: create/edit any record, settings
---   (organisations UPDATE), new invites, accepting an old invite (it inserts a member), raising
---   a member's role, report lifecycle RPCs (submit/approve/publish), AI drafts.
+--   errcode P0001, hint 'org_read_only': create/edit any record, settings (organisations
+--   UPDATE), paid invites, accepting a paid invite, raising a member's role, new join
+--   requests, report lifecycle RPCs (submit/approve/publish), AI drafts, file uploads.
 --
 -- System jobs that create new user-facing work, and skip read-only organisations
---   * vpmo-scheduled-report-packs (private.create_scheduled_packs): skips them (below). It runs
+--   * vpmo-scheduled-report-packs (private.create_scheduled_packs): skips them (§8). It runs
 --     as postgres, so the trigger alone wouldn't stop it.
 --   * vpmo-report-notify only sends what's already queued; nothing new is queued for a
 --     read-only organisation once packs stop and the lifecycle RPCs are refused. No change.
@@ -69,17 +89,68 @@
 --     existing data correct). GL-6 (billing emails) will need the opposite: it runs *because*
 --     an organisation is read-only.
 --
--- Cost
---   * Reads: none. This is a trigger on writes, not a policy, so no SELECT path changes
---     (unlike adding the check to RLS policies, which 2.2 floated).
---   * Writes: per row, one GUC read for auth.uid() (system writes stop there), then one
---     primary-key lookup on organisation_subscriptions. To be measured after approval on the
---     local Postgres and on live (signed in, as docs/perf.md), on a single update and on a
---     500-row insert (the project CSV import's maximum), and written up in docs/perf.md.
+-- Edge functions: service-role writes made on a user's behalf (audit, decision 5)
+-- ---------------------------------------------------------------------
+-- The database can't refuse these by itself: with the service role auth.uid() is null, so the
+-- trigger treats them as system writes. Each was read in supabase/functions (09/11/2026):
+--   report-distribute    NEEDS A CHECK. A publisher calls it to (re)send a published pack. The
+--                        permission check is a read as the caller; the write (record_report_event
+--                        'distributed') and the emails go through the service role, so a
+--                        read-only organisation could still send. Change: after the permission
+--                        check, call public.organisation_writable(report's organisation) as
+--                        the caller and return 400 { code: 'org_read_only' } if false.
+--   report-ai-summary    CHECK ADDED EARLY, though already covered. Every write is as the caller
+--                        (record_ai_draft), so the trigger refuses it, but only after the
+--                        Anthropic call has been paid for. Change: the same check before
+--                        calling Anthropic.
+--   report-publish       NO CHECK NEEDED. publish_report runs as the caller first and is refused
+--                        by the trigger; the service-role steps (print token, pdf_generated
+--                        event, distribution) only run after it succeeds.
+--   send-invite          NO CHECK NEEDED. create_invites / resend_invite run as the caller first
+--                        (viewer invites pass, paid ones are refused); the service-role steps
+--                        (issue_invite_token, mark_invite_sent, record_invite_email_id) only run
+--                        for invites those calls returned.
+--   notify-join-request  NO CHECK NEEDED. It only marks an existing pending request as notified
+--                        and emails admins; creating the request (request_to_join, as the
+--                        caller) is refused in a read-only organisation. A request made before
+--                        the lapse can still be notified, which helps admins decline it.
+--   manage-subscription  NO CHECK, ON PURPOSE. Seat and interval changes in Stripe are how an
+--                        admin gets out of read-only; its only database write is
+--                        record_billing_request (audit_log, exempt).
+--   create-checkout-session  NO CHECK, ON PURPOSE. Subscribing restores writes; it writes
+--                        organisation_subscriptions (exempt) with the service role.
+--   create-portal-session    No database writes.
+--   stripe-webhook, resend-webhook  Not on a user's behalf (signed webhooks); system writes.
+--   report-notify        Not on a user's behalf (cron); sends what's queued, marks sent_at.
+--   Netlify report-pdf   Only reached from report-publish after publish succeeded.
+-- The check goes in supabase/functions/_shared/http.ts as requireWritable(client, orgId),
+-- used by report-distribute and report-ai-summary. It calls the new public RPC in §7, which
+-- GL-5 will reuse for the banner.
 --
--- Additive only: new functions, triggers, a constraint and a backfill. Nothing is dropped or
--- deleted. create_scheduled_packs and organisation_is_writable are replaced in place with the
--- same signatures.
+-- Cost (local Postgres 16, demo seed, signed in as an organisation admin through RLS; local is
+-- several times slower than hosted, so read the ratios). Each figure is the median of 7 runs,
+-- each run in its own transaction, rolled back.
+--   Writable organisation (the normal case: the trigger checks and lets the write through).
+--   "Trigger" is zz_org_read_only's own time from EXPLAIN ANALYZE; "total" is the whole
+--   statement, with all the table's other triggers (tenant guard, audit, health enqueue).
+--                                         trigger (median, range)   total without   total with
+--     Project CSV import, 500 rows,
+--       one insert (Settings › Data)      17.9 ms (13.1–18.5)        331 ms          324 ms
+--     Lessons CSV import, 500 rows        16.5 ms (13.4–18.3)        325 ms          326 ms
+--     Single project update               0.07 ms (0.06–0.12)        3.5 ms          3.6 ms
+--   About 0.035 ms a row: roughly 5% of a 500-row import and 2% of a single update, inside the
+--   run-to-run noise of the totals. A board paste moves one task (task-workspace.tsx), so it's
+--   the single-row case. A storage upload adds one call of the same lookup.
+--   * Reads: none. This is a trigger on writes, not a policy, so no SELECT path changes.
+--     Storage reads (select policy) are unchanged too.
+--   * Writes: per row, one GUC read for auth.uid() (system writes stop there), then one
+--     primary-key lookup on organisation_subscriptions. After approval, also measured on live
+--     with a single signed-in update, and written up in docs/perf.md.
+--
+-- Additive only: new functions, triggers, a constraint, two data updates, and three storage
+-- policies altered in place (alter policy, as migration benefits_pathway did). Nothing is
+-- dropped or deleted. create_scheduled_packs and organisation_is_writable are replaced in
+-- place with the same signatures.
 
 -- =============================================================================================
 -- Migration (supabase/migrations/<timestamp>_gl_4_read_only.sql)
@@ -110,14 +181,21 @@ as $$
 $$;
 revoke execute on function private.organisation_is_writable(uuid) from public, anon, authenticated;
 
--- 2. Backfill the trial row with no end date, then forbid it.
---    Proposed: give it a fresh 14 days from today, so applying this migration doesn't flip an
---    organisation to read-only without warning. Alternative: created_at + 14 days (the
---    Outsider test org would become read-only at once; it's only used as an outsider in RLS
---    tests, which don't write as it). Tell me which.
+-- 2. Trial end dates on existing rows, then forbid a trial without one.
+--    a. Any trial with no end date gets 14 days from today (decision 1). On live that is only
+--       "VPMO Test Outsider Org" (a98e388d-97fb-4a5a-a83e-f9ee88dbaaaf).
 update public.organisation_subscriptions
 set trial_ends_at = now() + interval '14 days'
 where plan = 'trial' and trial_ends_at is null;
+
+--    b. "E2E 2.1 Test Organisation" is the e2e suite's own organisation (docs/invites-and-seats.md)
+--       and must stay writable or the suite fails once its trial ends on 12/11/2026. A year from
+--       today keeps it a trial (so trial behaviour stays tested) without going read-only.
+--       Matched by id, so on a branch or local database (where the row doesn't exist) it
+--       updates nothing. "Originoverthrow" is deliberately left as it is.
+update public.organisation_subscriptions
+set trial_ends_at = now() + interval '1 year'
+where organisation_id = 'b7c1b116-f327-434a-ac70-2fddc27bf0a5' and plan = 'trial';
 
 alter table public.organisation_subscriptions
   add constraint organisation_subscriptions_trial_end_check
@@ -127,8 +205,8 @@ alter table public.organisation_subscriptions
 -- create_organisation already inserts trial_ends_at = now() + interval '14 days'; with the
 -- constraint, nothing can create a trial without one again. No change to create_organisation.
 
--- 3. The assertion. Callable from other private code (e.g. a future RPC that wants to fail
---    early with the same message); not exposed to clients.
+-- 3. The assertion. Called by the trigger and the storage check; available to other private
+--    code that wants to fail early with the same message. Not exposed to clients.
 create or replace function private.assert_org_writable(p_org uuid)
 returns void
 language plpgsql
@@ -159,28 +237,67 @@ as $$
 $$;
 revoke execute on function private.is_system_write() from public, anon, authenticated;
 
--- 5. Row changes allowed while read-only (all of them reduce seats or access; see header).
---    Compares whole rows minus the columns the change may touch, so any other edit in the
---    same statement is still refused.
+-- 5. Row changes allowed while read-only (see the header for why each one). Compares whole rows
+--    minus the columns the change may touch, so any other edit in the same statement is still
+--    refused. A few rules look up the member or invite they depend on, so it is STABLE and
+--    SECURITY DEFINER (it only reads).
 create or replace function private.read_only_write_allowed(p_table text, p_op text, p_old jsonb, p_new jsonb)
 returns boolean
 language sql
-immutable
+stable
+security definer
 set search_path to ''
 as $$
   select case
-    when p_table in ('organisation_members', 'workspace_members') and p_op = 'DELETE' then true
-    when p_table in ('organisation_members', 'workspace_members') and p_op = 'UPDATE' then
-      p_new ->> 'role' = 'viewer'
-      and (p_old - 'role' - 'updated_at') = (p_new - 'role' - 'updated_at')
-    -- team_list is a generated column: NULL in NEW inside a BEFORE trigger, so it's left out.
+    -- Members: leave, step down to viewer, or join as viewer.
+    when p_table in ('organisation_members', 'workspace_members') then
+      case p_op
+        when 'DELETE' then true
+        when 'INSERT' then p_new ->> 'role' = 'viewer'
+        when 'UPDATE' then p_new ->> 'role' = 'viewer'
+          and (p_old - 'role' - 'updated_at') = (p_new - 'role' - 'updated_at')
+        else false
+      end
+
+    -- Invites: revoke any pending invite; create and work with viewer invites.
+    when p_table = 'organisation_invites' then
+      case p_op
+        when 'INSERT' then p_new ->> 'role' = 'viewer'
+        when 'UPDATE' then
+          (p_old ->> 'role' = 'viewer' and p_new ->> 'role' = 'viewer')
+          or (p_old -> 'revoked_at' = 'null'::jsonb and p_new -> 'revoked_at' <> 'null'::jsonb
+              and (p_old - 'revoked_at' - 'revoked_by' - 'updated_at')
+                = (p_new - 'revoked_at' - 'revoked_by' - 'updated_at'))
+        else false
+      end
+    when p_table = 'organisation_invite_workspaces' and p_op = 'INSERT' then
+      exists (select 1 from public.organisation_invites i
+              where i.id = (p_new ->> 'invite_id')::uuid and i.role = 'viewer')
+
+    -- Resources: unlink a removed member; link or create the resource for a new viewer member
+    -- (private.link_profile_to_resource). team_list is a generated column, NULL in NEW inside a
+    -- BEFORE trigger, so it's left out of the comparison.
     when p_table = 'resources' and p_op = 'UPDATE' then
-      p_new -> 'profile_id' = 'null'::jsonb
-      and (p_old - 'profile_id' - 'updated_at' - 'team_list') = (p_new - 'profile_id' - 'updated_at' - 'team_list')
-    when p_table = 'organisation_invites' and p_op = 'UPDATE' then
-      p_old -> 'revoked_at' = 'null'::jsonb and p_new -> 'revoked_at' <> 'null'::jsonb
-      and (p_old - 'revoked_at' - 'revoked_by' - 'updated_at')
-        = (p_new - 'revoked_at' - 'revoked_by' - 'updated_at')
+      (p_old - 'profile_id' - 'updated_at' - 'team_list') = (p_new - 'profile_id' - 'updated_at' - 'team_list')
+      and (p_new -> 'profile_id' = 'null'::jsonb
+           or (p_old -> 'profile_id' = 'null'::jsonb
+               and exists (select 1 from public.organisation_members m
+                           where m.organisation_id = (p_new ->> 'organisation_id')::uuid
+                             and m.profile_id = (p_new ->> 'profile_id')::uuid
+                             and m.role = 'viewer')))
+    when p_table = 'resources' and p_op = 'INSERT' then
+      (p_new ->> 'is_bookable')::boolean is false
+      and exists (select 1 from public.organisation_members m
+                  where m.organisation_id = (p_new ->> 'organisation_id')::uuid
+                    and m.profile_id = (p_new ->> 'profile_id')::uuid
+                    and m.role = 'viewer')
+
+    -- Join requests: decline, or withdraw (by the requester, or by accepting an invite).
+    when p_table = 'organisation_join_requests' and p_op = 'UPDATE' then
+      p_old ->> 'status' = 'pending' and p_new ->> 'status' in ('declined', 'withdrawn')
+      and (p_old - 'status' - 'decided_by' - 'decided_at' - 'updated_at')
+        = (p_new - 'status' - 'decided_by' - 'decided_at' - 'updated_at')
+
     else false
   end;
 $$;
@@ -220,9 +337,9 @@ end;
 $$;
 revoke execute on function private.enforce_org_writable() from public, anon, authenticated;
 
--- 7. Attach it. Every public table with an organisation_id column, except the three exempt
---    ones. supabase/tests/read_only_mode.sql fails if a later table with organisation_id has
---    neither the trigger nor a place on this list, and AGENTS.md gains a rule to add it.
+-- Attach it. Every public table with an organisation_id column, except the three exempt ones.
+-- supabase/tests/read_only_mode.sql fails if a later table with organisation_id has neither the
+-- trigger nor a place on this list, and AGENTS.md gains a rule to add it.
 do $$
 declare
   t record;
@@ -247,6 +364,26 @@ $$;
 -- subscription row, and a new organisation is always writable).
 create trigger zz_org_read_only before update or delete on public.organisations
   for each row execute function private.enforce_org_writable('id');
+
+-- 7. For the edge functions (report-distribute, report-ai-summary) and GL-5's banner: is this
+--    organisation writable? A signed-in caller must be a member; the service role may ask
+--    about any organisation.
+create or replace function public.organisation_writable(p_organisation_id uuid)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path to ''
+as $$
+begin
+  if (select auth.uid()) is not null and not private.is_org_member(p_organisation_id) then
+    raise exception 'You are not a member of this organisation' using errcode = '42501';
+  end if;
+  return private.organisation_is_writable(p_organisation_id);
+end;
+$$;
+revoke execute on function public.organisation_writable(uuid) from public, anon;
+grant execute on function public.organisation_writable(uuid) to authenticated, service_role;
 
 -- 8. Scheduled pack drafts skip read-only organisations. Body unchanged apart from the
 --    marked line.
@@ -293,15 +430,60 @@ begin
 end;
 $function$;
 
--- =============================================================================================
--- Not in this proposal (say if you want them)
--- =============================================================================================
--- * Storage uploads (attachments, evidence, documents, org-assets buckets). The metadata rows
---   (work_item_attachments, documents) are refused, so an upload can't be attached to anything,
---   but the object itself would still be stored. Closing that means `alter policy
---   vpmo_objects_insert / vpmo_objects_update ... with check (... and
---   private.organisation_is_writable(<org from path>))` — additive, but it changes live storage
---   policies, so I'd rather do it as a small follow-up.
--- * Viewer invites while read-only (free seats). Refused for now with everything else; easy to
---   allow later in read_only_write_allowed if you want admins to add viewers to a lapsed org.
--- * Declining join requests while read-only: refused for now.
+-- 9. Storage: refuse uploads, replacements and deletions under a read-only organisation's
+--    folder. Every client-writable bucket (org-assets, attachments, evidence, documents) keeps
+--    objects at <organisation_id>/..., so the first folder names the organisation. A path whose
+--    first folder isn't an organisation id is left to the existing checks (they refuse it
+--    anyway). The service role bypasses RLS, so system writes are unaffected. Each policy
+--    keeps its current expression (as on live, 09/11/2026) and gains one condition.
+--    For a member of the organisation it raises the same org_read_only error as the tables,
+--    so the app can show the friendly message; for anyone else it just returns false (a plain
+--    RLS refusal), so it never tells an outsider whether another organisation is read-only.
+create or replace function private.storage_path_writable(p_name text)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path to ''
+as $$
+declare
+  v_org uuid := private.try_uuid((storage.foldername(p_name))[1]);
+begin
+  if v_org is null or private.organisation_is_writable(v_org) then
+    return true;
+  end if;
+  if private.is_org_member(v_org) then
+    perform private.assert_org_writable(v_org);
+  end if;
+  return false;
+end;
+$$;
+revoke execute on function private.storage_path_writable(text) from public, anon;
+grant execute on function private.storage_path_writable(text) to authenticated, service_role;
+
+alter policy vpmo_objects_insert on storage.objects
+  with check (
+    (((bucket_id = 'org-assets'::text) AND private.has_org_role(private.try_uuid((storage.foldername(name))[1]), 'admin'::app_role))
+      OR ((bucket_id = ANY (ARRAY['attachments'::text, 'evidence'::text])) AND private.has_workspace_role(private.storage_workspace(name), 'contributor'::app_role))
+      OR ((bucket_id = 'documents'::text) AND private.can_upload_document(name)))
+    AND private.storage_path_writable(name)
+  );
+
+alter policy vpmo_objects_update on storage.objects
+  using (
+    (((bucket_id = 'org-assets'::text) AND (private.try_uuid((storage.foldername(name))[1]) = ANY (( SELECT private.my_org_ids('admin'::app_role) AS my_org_ids)::uuid[])))
+      OR ((bucket_id = ANY (ARRAY['attachments'::text, 'evidence'::text])) AND (private.storage_workspace(name) = ANY (( SELECT private.my_workspace_ids('contributor'::app_role) AS my_workspace_ids)::uuid[]))))
+    AND private.storage_path_writable(name)
+  )
+  with check (
+    (((bucket_id = 'org-assets'::text) AND (private.try_uuid((storage.foldername(name))[1]) = ANY (( SELECT private.my_org_ids('admin'::app_role) AS my_org_ids)::uuid[])))
+      OR ((bucket_id = ANY (ARRAY['attachments'::text, 'evidence'::text])) AND (private.storage_workspace(name) = ANY (( SELECT private.my_workspace_ids('contributor'::app_role) AS my_workspace_ids)::uuid[]))))
+    AND private.storage_path_writable(name)
+  );
+
+alter policy vpmo_objects_delete on storage.objects
+  using (
+    (((bucket_id = 'org-assets'::text) AND (private.try_uuid((storage.foldername(name))[1]) = ANY (( SELECT private.my_org_ids('admin'::app_role) AS my_org_ids)::uuid[])))
+      OR ((bucket_id = ANY (ARRAY['attachments'::text, 'evidence'::text])) AND (private.storage_workspace(name) = ANY (( SELECT private.my_workspace_ids('manager'::app_role) AS my_workspace_ids)::uuid[]))))
+    AND private.storage_path_writable(name)
+  );
