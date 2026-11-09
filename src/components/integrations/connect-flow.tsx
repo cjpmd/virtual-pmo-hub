@@ -119,7 +119,7 @@ function Connect({ data }: { data: IntegrationsData }) {
               <Input
                 value={adminEmail}
                 onChange={(e) => setAdminEmail(e.target.value)}
-                placeholder="it-admin@your-university.ac.uk"
+                placeholder="it-admin@example.com"
                 aria-label="Admin email"
               />
               <div className="flex flex-wrap gap-2">

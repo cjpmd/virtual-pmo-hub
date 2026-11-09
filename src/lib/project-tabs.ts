@@ -1,5 +1,6 @@
 // Project page tabs and sub-tabs, and how the URL (?tab=&sub=, plus the old single-level tab
 // names and ?task=<id>) maps onto them.
+import { sprintDelivery } from "./features";
 
 export const PROJECT_TABS = [
   { id: "overview", label: "Overview" },
@@ -14,6 +15,10 @@ export const PROJECT_TABS = [
 ] as const;
 
 export type ProjectTab = (typeof PROJECT_TABS)[number]["id"];
+
+/** The tabs shown on the page: Delivery only once sprints are live (VITE_SPRINT_DELIVERY). */
+export const visibleProjectTabs = (showDelivery: boolean = sprintDelivery) =>
+  PROJECT_TABS.filter((t) => showDelivery || t.id !== "delivery");
 
 export const PROJECT_SUBTABS = {
   plan: [
@@ -66,20 +71,24 @@ export const defaultSub = (tab: ProjectTab): ProjectSubtab | undefined =>
 
 /**
  * Resolves the URL to a tab and sub-tab. Unknown values fall back to the tab's first sub-tab or to
- * Overview; ?task=<id> with no tab opens Plan › Tasks.
+ * Overview; ?task=<id> with no tab opens Plan › Tasks. A hidden tab (Delivery while sprints are
+ * off) opens Overview.
  */
-export function resolveProjectTab(search: {
-  tab?: string | undefined;
-  sub?: string | undefined;
-  task?: string | undefined;
-}): ProjectTabState {
+export function resolveProjectTab(
+  search: {
+    tab?: string | undefined;
+    sub?: string | undefined;
+    task?: string | undefined;
+  },
+  showDelivery: boolean = sprintDelivery,
+): ProjectTabState {
   const raw = search.tab?.trim().toLowerCase().replace(/_/g, "-");
   if (!raw) {
     return search.task ? { tab: "plan", sub: "tasks" } : { tab: "overview", sub: undefined };
   }
   const old = OLD_NAMES[raw] ?? OLD_NAMES[raw.replace(/-/g, " ")];
   const tab: ProjectTab | undefined = isTab(raw) ? raw : old?.tab;
-  if (!tab) return { tab: "overview", sub: undefined };
+  if (!tab || (tab === "delivery" && !showDelivery)) return { tab: "overview", sub: undefined };
   if (!isGrouped(tab)) return { tab, sub: undefined };
   const wanted = search.sub?.trim().toLowerCase() ?? (isTab(raw) ? undefined : old?.sub);
   const sub = subsOf(tab).find((s) => s.id === wanted)?.id;

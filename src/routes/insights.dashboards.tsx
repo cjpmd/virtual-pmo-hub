@@ -34,7 +34,7 @@ import {
   type DashboardWidget,
 } from "@/services/dashboards";
 import { errorMessage } from "@/services/service-error";
-import { useSettings } from "@/services/settings";
+import { orgDisplayNames, useSettings } from "@/services/settings";
 export const Route = createFileRoute("/insights/dashboards")({
   head: () => ({
     meta: [
@@ -140,7 +140,7 @@ function DashboardPage() {
       <AutoBreadcrumbs />
       <PageHeader
         eyebrow="Dashboard"
-        title={current?.name ?? `${settings.organisation.shortName} portfolio`}
+        title={current?.name ?? `${orgDisplayNames(settings).shortName} portfolio`}
         description="A configurable view of delivery, finance, milestones and portfolio capacity."
         actions={
           <Button onClick={() => setPicker(true)}>
@@ -156,7 +156,7 @@ function DashboardPage() {
           onChange={(event) => open(event.target.value)}
           className="h-8 rounded border border-input bg-background px-2 text-xs"
         >
-          <option value={SEEDED}>{settings.organisation.shortName} portfolio (built-in)</option>
+          <option value={SEEDED}>{orgDisplayNames(settings).shortName} portfolio (built-in)</option>
           {records?.map((record) => (
             <option key={record.id} value={record.id}>
               {record.isDefault && record.ownerId === store.me ? "★ " : ""}

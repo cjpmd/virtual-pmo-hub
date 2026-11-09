@@ -38,6 +38,8 @@ function merge<T>(base: T, patch: unknown): T {
 
 const serverSnapshot: AppSettings = clone(defaultSettings);
 let snapshot: AppSettings = clone(defaultSettings);
+/** organisations.name of the loaded organisation; stands in for a blank name or short name. */
+let fallbackOrgName = "";
 
 type Persister = (previous: AppSettings, next: AppSettings) => void;
 let persister: Persister | null = null;
@@ -61,17 +63,37 @@ function subscribe(listener: Listener) {
   };
 }
 
-/** Replace the live settings with what the organisation has stored (over the defaults). */
-export function applyServerSettings(settings: Partial<AppSettings>) {
+/**
+ * Replace the live settings with what the organisation has stored (over the defaults).
+ * orgName is organisations.name, used wherever the organisation name or short name is blank.
+ */
+export function applyServerSettings(settings: Partial<AppSettings>, orgName = "") {
+  fallbackOrgName = orgName.trim();
   snapshot = merge(clone(defaultSettings), settings);
   emit();
 }
 
 /** Back to the shipped defaults, e.g. when signing out or switching organisation. */
 export function clearServerSettings() {
+  fallbackOrgName = "";
   snapshot = clone(defaultSettings);
   emit();
 }
+
+/**
+ * The organisation's name and short name for display: a blank name falls back to
+ * organisations.name, and a blank short name to the name.
+ */
+export function orgDisplayNames(
+  settings: AppSettings = getSettings(),
+  orgName: string = fallbackOrgName,
+): { name: string; shortName: string } {
+  const name = settings.organisation.name.trim() || orgName.trim();
+  return { name, shortName: settings.organisation.shortName.trim() || name };
+}
+
+/** Two-letter mark for the organisation when it has no logo. */
+export const orgInitials = (shortName: string) => shortName.trim().slice(0, 2).toUpperCase();
 
 /** SettingsSync registers the function that saves edits; null while no organisation is loaded. */
 export function setSettingsPersister(next: Persister | null) {

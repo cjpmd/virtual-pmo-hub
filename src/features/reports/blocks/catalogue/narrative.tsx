@@ -11,7 +11,7 @@ import { registerBlock } from "../registry";
 import { useNarrativeEditing } from "../narrative-context";
 import { BlockNote, Empty, RatingChip, useReportFormat } from "../primitives";
 import type { RenderContext } from "../types";
-import { useSettings } from "@/services/settings";
+import { orgDisplayNames, orgInitials, useSettings } from "@/services/settings";
 
 // ---------------------------------------------------------------- report_cover
 interface CoverData {
@@ -41,17 +41,17 @@ function Cover({
   const settings = useSettings();
   const showLogo = settings.templates.committeePack.showLogo;
   const logoUrl = settings.organisation.logoDataUrl;
-  const orgName = settings.organisation.name;
-  const shortName = settings.organisation.shortName;
+  const { name: orgName, shortName } = orgDisplayNames(settings);
   return (
     <div className="space-y-4">
-      {showLogo && (
+      {/* No organisation name or logo (e.g. a token print, where settings aren't loaded): no mark. */}
+      {showLogo && (logoUrl || orgName) && (
         <div className="flex items-center gap-3" data-cover-logo>
           {logoUrl ? (
             <img src={logoUrl} alt="" className="size-12 rounded-md object-contain" />
           ) : (
             <span className="grid size-12 place-items-center rounded-md bg-primary font-display font-bold text-primary-foreground">
-              {shortName.slice(0, 2).toUpperCase()}
+              {orgInitials(shortName)}
             </span>
           )}
           <div>

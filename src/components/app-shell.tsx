@@ -41,7 +41,13 @@ import { useWorkspaceRole } from "@/hooks/use-permissions";
 import { useWorkspaceArchived } from "@/hooks/use-workspaces";
 import { appRoleLabel } from "@/services/org-settings";
 import type { AppRole } from "@/services/auth";
-import { hydrateSettings, term, useSettings } from "@/services/settings";
+import {
+  hydrateSettings,
+  orgDisplayNames,
+  orgInitials,
+  term,
+  useSettings,
+} from "@/services/settings";
 import { useOrganisation } from "@/components/auth/organisation-provider";
 import { signOut } from "@/services/auth";
 import { errorMessage } from "@/services/service-error";
@@ -303,13 +309,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                     className="size-7 rounded object-contain"
                   />
                 ) : (
-                  settings.organisation.shortName.slice(0, 2).toUpperCase()
+                  orgInitials(orgDisplayNames(settings).shortName)
                 )}
               </span>
               <div className={cn("ml-2.5 min-w-0", collapsed && "min-[900px]:hidden")}>
                 <p className="truncate text-sm font-semibold">ORMO PMO</p>
                 <p className="truncate text-[11px] text-pmo-muted">
-                  {settings.organisation.shortName} portfolio office
+                  {orgDisplayNames(settings).shortName} portfolio office
                 </p>
               </div>
               <Button

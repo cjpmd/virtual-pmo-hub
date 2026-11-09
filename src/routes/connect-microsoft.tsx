@@ -1,8 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { PageHeader } from "@/components/pmo-ui";
 import { ConnectFlow } from "@/components/integrations/connect-flow";
+import { plannerSync } from "@/lib/features";
 
 export const Route = createFileRoute("/connect-microsoft")({
+  // Planner sync isn't live yet (VITE_PLANNER_SYNC); Settings says it is coming later.
+  beforeLoad: () => {
+    if (!plannerSync) throw redirect({ to: "/settings", replace: true });
+  },
   head: () => ({
     meta: [
       { title: "Connect Microsoft 365 — ORMO PMO" },
@@ -24,7 +29,7 @@ export const Route = createFileRoute("/connect-microsoft")({
       <PageHeader
         eyebrow="Integrations"
         title="Connect Microsoft 365"
-        description="Sync tasks with Microsoft Planner and bring in your people directory. This is a prototype, so no real Microsoft data is used."
+        description="Sync tasks with Microsoft Planner and bring in your people directory."
       />
       <ConnectFlow />
     </div>

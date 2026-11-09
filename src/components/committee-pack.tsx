@@ -35,7 +35,7 @@ import { useCommitteePack, useIssueCommitteePack } from "@/hooks/use-committee-p
 import { useWorkspaceRole } from "@/hooks/use-permissions";
 import { errorMessage } from "@/services/service-error";
 import { todayIso } from "@/lib/today";
-import { getSettings } from "@/services/settings";
+import { getSettings, orgDisplayNames, orgInitials } from "@/services/settings";
 import { cn } from "@/lib/utils";
 
 type PackPage = PackPageOf<Project>;
@@ -69,7 +69,7 @@ function PackHeader({
   return (
     <div className="flex items-center justify-between border-b border-border pb-3 text-[10px] font-semibold uppercase text-muted-foreground">
       <span>
-        {getSettings().organisation.shortName} · {collection.name}
+        {orgDisplayNames().shortName} · {collection.name}
       </span>
       <span>
         {pageNumber} / {total}
@@ -103,13 +103,13 @@ function CoverPage({
             />
           ) : (
             <span className="grid size-11 place-items-center rounded-md bg-primary font-display font-bold text-primary-foreground">
-              {getSettings().organisation.shortName.slice(0, 2).toUpperCase()}
+              {orgInitials(orgDisplayNames().shortName)}
             </span>
           )}
           <div>
-            <p className="font-display font-semibold">{getSettings().organisation.name}</p>
+            <p className="font-display font-semibold">{orgDisplayNames().name}</p>
             <p className="text-xs text-muted-foreground">
-              {getSettings().organisation.shortName} portfolio office
+              {orgDisplayNames().shortName} portfolio office
             </p>
           </div>
         </div>

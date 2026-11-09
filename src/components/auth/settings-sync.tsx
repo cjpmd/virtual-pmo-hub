@@ -57,9 +57,9 @@ export function SettingsSync({ children }: { children: ReactNode }) {
     if (!query.data) return;
     state.current.data = query.data;
     if (state.current.busy) return;
-    applyServerSettings(query.data.settings);
+    applyServerSettings(query.data.settings, organisation.name);
     setApplied(orgId);
-  }, [query.data, orgId]);
+  }, [query.data, orgId, organisation.name]);
 
   useEffect(() => {
     const current = state.current;

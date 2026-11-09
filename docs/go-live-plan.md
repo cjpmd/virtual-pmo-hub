@@ -107,6 +107,15 @@ dead ends; don't delete the code behind them.
 Add or update e2e checks so the hidden items stay hidden.
 ```
 
+**Done (09/11/2026):** "DTS" removed from page descriptions. `defaultSettings.organisation` is
+blank; `orgDisplayNames` (`services/settings.ts`) falls back to `organisations.name` for a blank
+name or short name (sidebar, committee packs, report covers, dashboards), and a short name is no
+longer derived from the first three letters. Flags in `lib/features.ts`: `VITE_PLANNER_SYNC`
+(off: `/connect-microsoft` redirects to `/settings`, Settings › Integrations says Planner sync
+is coming later) and `VITE_SPRINT_DELIVERY` (off: no project Delivery tab, `?tab=delivery` opens
+Overview). The setup wizard's Microsoft 365 card is gone; Settings › Notifications shows In-app
+only. e2e: `e2e/hidden-features.e2e.ts`.
+
 ### GL-4 Read-only when a trial or subscription lapses [DB]
 
 ```
@@ -223,6 +232,11 @@ financial year in the wizard. Propose:
   January general); the user can still change it.
 SQL first, then stop. e2e: a General organisation has no university wording in Settings.
 ```
+**Note from GL-3:** `components/appraisal-panel.tsx:196` hard-codes "Student experience" (with
+Efficiency and Income) as a category name in the appraisal logic; make it sector-aware. The
+benefit categories, business units and lists in `data/settings-data.ts` `defaultSettings` are
+still university values (the organisation name, short name and support contact were blanked in
+GL-3).
 
 ### GL-9 Start with sample data [DB]
 
@@ -415,6 +429,6 @@ and delete the adapter layer. List every screen touched; e2e for that domain mus
 
 ## Progress
 
-- [x] GL-1 Migrations  - [ ] GL-2 Cron  - [ ] GL-3 Hide dead ends  - [ ] GL-4 Read-only  - [ ] GL-5 Banners  - [ ] GL-6 Billing emails  - [ ] GL-7 Legal pages
+- [x] GL-1 Migrations  - [ ] GL-2 Cron  - [x] GL-3 Hide dead ends  - [ ] GL-4 Read-only  - [ ] GL-5 Banners  - [ ] GL-6 Billing emails  - [ ] GL-7 Legal pages
 - [ ] GL-8 Sector  - [ ] GL-9 Sample data  - [ ] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [ ] GL-12 Bugs  - [ ] GL-13 Notifications  - [ ] GL-14 Committee packs
 - [ ] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [ ] GL-17 Multi-tenant  - [ ] GL-18 Bundle  - [ ] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters

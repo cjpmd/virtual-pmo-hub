@@ -17,11 +17,11 @@ import { Button } from "@/components/ui/button";
 import type { Health } from "@/data/types";
 import { useFormat } from "@/lib/format";
 import {
-  PROJECT_TABS,
   TASK_SOURCE,
   phaseLabel,
   projectPanelId,
   projectTabId,
+  visibleProjectTabs,
   type ProjectTab,
 } from "@/lib/project-tabs";
 import { cn } from "@/lib/utils";
@@ -225,7 +225,7 @@ export function ProjectHeader({
         className="-mx-1 flex gap-0.5 overflow-x-auto [scrollbar-width:none]"
         onKeyDown={(event) => moveTab(event, tab, onTabChange)}
       >
-        {PROJECT_TABS.map((item) => (
+        {visibleProjectTabs().map((item) => (
           <button
             key={item.id}
             id={projectTabId(item.id)}
@@ -252,7 +252,7 @@ export function ProjectHeader({
 
 /** Left/right/home/end move between tabs (WAI-ARIA tabs pattern, activation follows focus). */
 function moveTab(event: KeyboardEvent, tab: ProjectTab, onTabChange: (tab: ProjectTab) => void) {
-  const ids = PROJECT_TABS.map((t) => t.id);
+  const ids = visibleProjectTabs().map((t) => t.id);
   const at = ids.indexOf(tab);
   const next =
     event.key === "ArrowRight"
