@@ -136,6 +136,19 @@ end $$;
 --
 --   select private.prune_cron_history_batch(p_batch => 50000);
 --
+-- Or, without the function (works before section A is applied; same batch, same rule):
+--
+--   with doomed as (
+--     select runid from cron.job_run_details
+--     where start_time < now() - interval '7 days'
+--     order by runid limit 50000
+--   ), gone as (
+--     delete from cron.job_run_details d using doomed
+--     where d.runid = doomed.runid
+--     returning 1
+--   )
+--   select count(*) as deleted from gone;
+--
 -- Then check:
 --
 --   select count(*) as rows,
