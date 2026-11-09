@@ -59,6 +59,29 @@ Also prune net._http_response if pg_net isn't already doing it. SQL first, then 
 ```
 **Done when:** the job exists, the backlog is cleared, and the run history stays roughly flat over a week.
 
+**Notes from GL-2 (09/11/2026), done pending a week of flat run history:** migration
+`20261109161632_gl_2_cron_housekeeping` (`docs/sql/gl-2-cron-housekeeping.sql`).
+`private.prune_cron_history_batch(keep 7 days, batch 10,000)` deletes the oldest run history
+by `runid`; the job `vpmo-prune-cron-history` runs at 02:30 and 03:30 UTC and only works when
+it's 03:xx in Europe/London (pg_cron here schedules in GMT), committing after each batch, at
+most 50 batches. The per-batch commit was tested on the local Postgres (4 batches, 4
+transactions) and the command run by hand on production. `vpmo-health-refresh-queue` now runs
+every 10 seconds (was 5): about 8,640 runs a day, so roughly 60k rows / 20 MB kept, and a writer
+waits about 6 s on average (worst ~12 s) for "Updating health…". The backlog (~364k rows) was
+deleted by hand on 09/11; the table stays at 156 MB on disk (owned by `supabase_admin`, so no
+`VACUUM FULL`) and reuses the space. `net._http_response` needs nothing: pg_net purges it after
+6 hours. Tick GL-2 when this stays roughly flat (60–70k rows, oldest 7–8 days ago, size
+not growing) for a week from 10/11:
+
+```sql
+select count(*) as rows, min(start_time) as oldest,
+       count(*) filter (where start_time < now() - interval '7 days') as over_7_days,
+       pg_size_pretty(pg_total_relation_size('cron.job_run_details')) as size,
+       (select max(start_time) from cron.job_run_details d
+         join cron.job j using (jobid) where j.jobname = 'vpmo-prune-cron-history') as last_prune
+from cron.job_run_details;
+```
+
 ### GL-3 Hide what isn't live, and remove client-specific copy
 
 No database change.
