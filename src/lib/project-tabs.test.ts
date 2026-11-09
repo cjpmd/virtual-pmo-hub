@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { phaseLabel, resolveProjectTab } from "./project-tabs";
+import { phaseLabel, resolveProjectTab, visibleProjectTabs } from "./project-tabs";
 
 describe("resolveProjectTab", () => {
   test("defaults to Overview", () => {
@@ -44,6 +44,23 @@ describe("resolveProjectTab", () => {
 
   test("unknown tab falls back to Overview", () => {
     expect(resolveProjectTab({ tab: "nope" })).toEqual({ tab: "overview", sub: undefined });
+  });
+  test("Delivery opens Overview while sprints are off, and opens when they are on", () => {
+    expect(resolveProjectTab({ tab: "delivery" }, false)).toEqual({
+      tab: "overview",
+      sub: undefined,
+    });
+    expect(resolveProjectTab({ tab: "delivery" }, true)).toEqual({
+      tab: "delivery",
+      sub: undefined,
+    });
+  });
+});
+
+describe("visibleProjectTabs", () => {
+  test("hides Delivery unless sprints are on", () => {
+    expect(visibleProjectTabs(false).map((t) => t.id)).not.toContain("delivery");
+    expect(visibleProjectTabs(true).map((t) => t.id)).toContain("delivery");
   });
 });
 

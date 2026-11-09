@@ -207,7 +207,8 @@ export async function loadOrgSettings(orgId: string, userId: string): Promise<Or
 
   settings.organisation = {
     name: orgRow.name,
-    shortName: orgRow.short_name ?? orgRow.name.slice(0, 3).toUpperCase(),
+    // Blank when not set: orgDisplayNames shows the organisation name instead.
+    shortName: orgRow.short_name ?? "",
     brandColour: orgRow.brand_colour ?? "#2a4c96",
     supportContact: orgRow.support_contact ?? "",
     logoDataUrl: orgRow.logo_path ? await signedLogoUrl(orgRow.logo_path) : "",

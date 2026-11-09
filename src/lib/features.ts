@@ -20,3 +20,17 @@ export const supportEmail = "support@ormo-pmo.originoverthrow.com";
  * VITE_BOARD_AUTOMATIONS is "true"; the panel and recipes stay in board-workspace.tsx.
  */
 export const boardAutomations = import.meta.env.VITE_BOARD_AUTOMATIONS === "true";
+
+/**
+ * Microsoft Planner sync (build plan Phase 5). Off unless VITE_PLANNER_SYNC is "true": then
+ * /connect-microsoft redirects to /settings and Settings › Integrations says sync is coming
+ * later. The connect flow and the integrations workspace stay in the code.
+ */
+export const plannerSync = import.meta.env.VITE_PLANNER_SYNC === "true";
+
+/**
+ * Sprint delivery and the evidence-based forecast (build plan Phase 3). Off unless
+ * VITE_SPRINT_DELIVERY is "true": the project page hides its Delivery tab, and ?tab=delivery
+ * opens Overview. Turn it on once sprints are stored in the database.
+ */
+export const sprintDelivery = import.meta.env.VITE_SPRINT_DELIVERY === "true";

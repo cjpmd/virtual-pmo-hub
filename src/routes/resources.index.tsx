@@ -25,7 +25,7 @@ function Page() {
       <PageHeader
         eyebrow="Portfolio capacity"
         title="Resource Dashboard"
-        description="Understand capacity, utilisation, effort and staffing demand across DTS."
+        description="Understand capacity, utilisation, effort and staffing demand across your organisation."
       />
       <ResourceDashboard />
     </div>

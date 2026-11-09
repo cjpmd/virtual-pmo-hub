@@ -127,7 +127,7 @@ export const settingsSections: SettingsSectionDefinition[] = [
     id: "integrations",
     label: "Integrations",
     icon: Plug,
-    blurb: "Microsoft 365 and Planner connections.",
+    blurb: "Connections to other tools.",
   },
   {
     id: "data",

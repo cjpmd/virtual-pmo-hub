@@ -58,11 +58,11 @@ export const Route = createFileRoute("/portfolio/")({
   head: () => ({
     meta: [
       { title: "Portfolio Overview — ORMO PMO" },
-      { name: "description", content: "DTS portfolio health, delivery and financial overview." },
+      { name: "description", content: "Portfolio health, delivery and financial overview." },
       { property: "og:title", content: "Portfolio Overview — ORMO PMO" },
       {
         property: "og:description",
-        content: "DTS portfolio health, delivery and financial overview.",
+        content: "Portfolio health, delivery and financial overview.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

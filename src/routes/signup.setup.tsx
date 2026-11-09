@@ -234,10 +234,9 @@ function Setup({ userId, email }: { userId: string; email: string }) {
             <>
               <h1 className="text-2xl font-semibold">{name} is ready</h1>
               <p className="text-sm text-muted-foreground">
-                Your organisation is empty: add a portfolio, programmes and projects, or connect
-                Microsoft 365.
+                Your organisation is empty: add a portfolio, programmes and projects.
               </p>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3">
                 <button
                   onClick={() => navigate({ to: "/portfolio" })}
                   className="rounded-lg border p-5 text-left hover:bg-muted/50"
@@ -245,15 +244,6 @@ function Setup({ userId, email }: { userId: string; email: string }) {
                   <p className="font-semibold">Go to your portfolio</p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Start adding programmes and projects.
-                  </p>
-                </button>
-                <button
-                  onClick={() => navigate({ to: "/connect-microsoft" })}
-                  className="rounded-lg border p-5 text-left hover:bg-muted/50"
-                >
-                  <p className="font-semibold">Connect Microsoft 365</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Ask your admin to approve Planner and directory access.
                   </p>
                 </button>
               </div>

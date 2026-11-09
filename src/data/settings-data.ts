@@ -291,11 +291,12 @@ export const defaultRoles: RoleDefinition[] = [
 
 export const defaultSettings: AppSettings = {
   organisation: {
-    name: "University Digital & Technology Services",
-    shortName: "DTS",
+    // Blank: the organisation's own name (organisations.name) stands in; see orgDisplayNames.
+    name: "",
+    shortName: "",
     logoDataUrl: "",
     brandColour: "#2a4c96",
-    supportContact: "dts-pmo@university.ac.uk",
+    supportContact: "",
   },
   regional: {
     baseCurrency: "GBP",

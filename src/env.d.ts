@@ -5,6 +5,10 @@ interface ImportMetaEnv {
   readonly VITE_SELF_SIGNUP?: string;
   /** "true" shows board automations (hidden until work package 4.3). Default off. */
   readonly VITE_BOARD_AUTOMATIONS?: string;
+  /** "true" shows Microsoft Planner sync (hidden until Phase 5). Default off. */
+  readonly VITE_PLANNER_SYNC?: string;
+  /** "true" shows the project Delivery tab (sprints, hidden until Phase 3). Default off. */
+  readonly VITE_SPRINT_DELIVERY?: string;
   /** Address that receives access and demo requests from /request-access. */
   readonly VITE_CONTACT_EMAIL?: string;
   /** Supabase project URL; the client falls back to production only when unset (RB-47). */

@@ -36,7 +36,13 @@ import {
   fromIsoDate,
 } from "@/lib/format";
 import { todayIso } from "@/lib/today";
-import { resetSettings, updateSettings, useSettings } from "@/services/settings";
+import {
+  orgDisplayNames,
+  orgInitials,
+  resetSettings,
+  updateSettings,
+  useSettings,
+} from "@/services/settings";
 import {
   Field,
   ListEditor,
@@ -48,6 +54,7 @@ import {
 } from "@/components/settings/settings-shell";
 import { cn } from "@/lib/utils";
 import { IntegrationsWorkspace } from "@/components/integrations/integrations-workspace";
+import { plannerSync } from "@/lib/features";
 import { setPendingLogo } from "@/components/auth/settings-sync";
 import { useOrgId } from "@/components/auth/organisation-provider";
 import { LessonsImport } from "@/components/lessons-import";
@@ -65,6 +72,7 @@ const patch = <K extends keyof AppSettings>(key: K, value: Partial<AppSettings[K
 export function OrganisationSettings() {
   const settings = useSettings();
   const organisation = settings.organisation;
+  const display = orgDisplayNames(settings);
   return (
     <>
       <SettingsCard
@@ -76,17 +84,20 @@ export function OrganisationSettings() {
             label="Organisation name"
             value={organisation.name}
             onChange={(value) => patch("organisation", { name: value })}
+            placeholder={display.name}
           />
           <TextField
             label="Short name"
             value={organisation.shortName}
             onChange={(value) => patch("organisation", { shortName: value })}
-            hint="Used on the sidebar mark and in compact headers."
+            placeholder={display.name}
+            hint="Used on the sidebar mark and in compact headers. Leave blank to use the organisation name."
           />
           <TextField
             label="Support contact"
             value={organisation.supportContact}
             onChange={(value) => patch("organisation", { supportContact: value })}
+            hint="Optional."
             wide
           />
           <Field
@@ -118,7 +129,7 @@ export function OrganisationSettings() {
                     className="size-9 object-contain"
                   />
                 ) : (
-                  organisation.shortName.slice(0, 2).toUpperCase()
+                  orgInitials(display.shortName)
                 )}
               </span>
               <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border px-3 text-sm hover:bg-accent/40">
@@ -1533,13 +1544,9 @@ export function NotificationSettings() {
     <>
       <SettingsCard title="Channels" description="Where notifications are delivered.">
         <div className="grid gap-3 sm:grid-cols-3">
-          {(
-            [
-              ["inApp", "In-app"],
-              ["email", "Email"],
-              ["teams", "Microsoft Teams"],
-            ] as const
-          ).map(([key, label]) => (
+          {/* Email, Teams and the digest come back with real notifications (GL-13); Teams with
+              Planner sync. The stored values are left as they are. */}
+          {([["inApp", "In-app"]] as const).map(([key, label]) => (
             <label key={key} className="flex items-center justify-between rounded-md border p-4">
               <span className="text-sm font-medium">{label}</span>
               <Switch
@@ -1551,14 +1558,6 @@ export function NotificationSettings() {
               />
             </label>
           ))}
-        </div>
-        <div className="mt-4 max-w-xs">
-          <SelectField
-            label="Digest frequency"
-            value={notifications.digest}
-            onChange={(value) => set({ digest: value as AppSettings["notifications"]["digest"] })}
-            options={["Real time", "Daily", "Weekly"].map((item) => ({ value: item, label: item }))}
-          />
         </div>
       </SettingsCard>
       <SettingsCard
@@ -1724,7 +1723,14 @@ export function TemplateSettings() {
 }
 
 export function IntegrationSettings() {
-  return <IntegrationsWorkspace />;
+  if (plannerSync) return <IntegrationsWorkspace />;
+  return (
+    <SettingsCard title="Microsoft Planner" description="Two-way task sync with Microsoft Planner.">
+      <p className="text-sm text-muted-foreground">
+        Planner sync is coming later. For now, projects, tasks and people are managed in ORMO PMO.
+      </p>
+    </SettingsCard>
+  );
 }
 
 /** The Lessons page's import wizard, with the lessons data it needs loaded on open. */

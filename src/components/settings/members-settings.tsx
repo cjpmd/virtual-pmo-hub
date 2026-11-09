@@ -53,7 +53,7 @@ import {
   type SeatUsage,
 } from "@/services/members";
 import { errorMessage } from "@/services/service-error";
-import { useSettings } from "@/services/settings";
+import { orgDisplayNames, useSettings } from "@/services/settings";
 import type { Workspace } from "@/services/workspaces";
 import { SettingsCard } from "./settings-shell";
 
@@ -592,7 +592,7 @@ function InviteDialog({ onClose }: { onClose: () => void }) {
           <DialogTitle>Invite people</DialogTitle>
           <DialogDescription>
             We'll email each person a link to join{" "}
-            {settings.organisation.name || "this organisation"}. Up to 20 at a time.
+            {orgDisplayNames(settings).name || "this organisation"}. Up to 20 at a time.
           </DialogDescription>
         </DialogHeader>
         {results ? (
