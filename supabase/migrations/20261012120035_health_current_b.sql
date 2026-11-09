@@ -4,7 +4,7 @@
 -- 12/10/2026 (dry run: 0 mismatches; first fill: 0 mismatches). Design and measurements:
 -- docs/sql/perf-health-current-b.sql.
 
-create table public.project_health_current" to
+-- create table public.project_health_current" to
 -- the end. Then tell Claude: it saves the migration file, records it in
 -- supabase_migrations.schema_migrations, regenerates types and switches the app's reads.
 --
