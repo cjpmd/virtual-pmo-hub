@@ -1,9 +1,10 @@
--- GL-1 Migration history reconciliation — PROPOSAL, nothing applied.
+-- GL-1 Migration history reconciliation. Approved 09/11/2026; repo changes on feat/gl-1.
+-- Section A is still for you to run in the SQL editor.
 -- Audit 09/11/2026 against production xvdlmtkzfmbcegkmampz (read-only: list_migrations,
 -- supabase_migrations.schema_migrations, pg_proc, pg_catalog).
 --
 -- ============================================================================ FINDINGS
--- Repo: 90 files. Production history: 90 rows. 85 versions are in both.
+-- Repo: 90 files. Production history: 90 rows (before rb9 was applied; 91 each after). 85 versions are in both.
 --
 -- 1. Same SQL, different version (normalised statements identical: comments/whitespace removed):
 --      rb10_project_overview         repo 20261103180000  production 20261105163144
@@ -63,10 +64,12 @@
 --   health_current_b.sql: prefix line 7 with "-- " (the one edit to an existing migration;
 --     it restores the comment the file was copied from, docs/sql/perf-health-current-b.sql:43)
 --     and drop the sed workaround from supabase/tests/local/run.sh.
---   rb9: move out of the history order. Recommended: re-date it as
---     2026111xxxxxxx_rb9_fix_create_report.sql and apply it to production as a new migration
---     (create or replace only, additive) once you approve it, so RB-54 is actually fixed and
---     reports_bugfix.sql passes. Alternative: move it to docs/sql/ as pending.
+--   rb9: re-dated and applied (approved 09/11/2026). Applied to production with the Supabase
+--     tool as rb9_fix_create_report, recorded as 20261109153756; the repo file now has that
+--     version. Body diff against live (rb1) was only the RB-54 blocks / selection_rules
+--     handling. Live create_report body now matches the file; grants unchanged.
+--     supabase/tests/reports_bugfix.sql passes on the local Postgres (it writes, so not run on
+--     production). Generated types unchanged.
 --
 -- Production history: only the four descriptive names below (Section A). Versions already
 -- match after the repo renames, so nothing else in schema_migrations changes.

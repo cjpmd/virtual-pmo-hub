@@ -26,7 +26,9 @@ create table if not exists auth.users (
   raw_app_meta_data jsonb default '{}'::jsonb, raw_user_meta_data jsonb default '{}'::jsonb,
   is_anonymous boolean default false, is_sso_user boolean default false,
   created_at timestamptz default now(), updated_at timestamptz default now(),
-  last_sign_in_at timestamptz, confirmed_at timestamptz, banned_until timestamptz, deleted_at timestamptz
+  last_sign_in_at timestamptz, confirmed_at timestamptz, banned_until timestamptz, deleted_at timestamptz,
+  confirmation_token text, recovery_token text, email_change_token_new text, email_change_token_current text,
+  phone_change_token text, reauthentication_token text, email_change text, phone_change text
 );
 create table if not exists auth.identities (
   id uuid primary key default gen_random_uuid(), user_id uuid references auth.users(id) on delete cascade,
@@ -69,3 +71,21 @@ alter default privileges in schema public grant all on tables to anon, authentic
 alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
 alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
 grant usage on schema public to anon, authenticated, service_role;
+
+-- pg_cron stand-in: a few migrations schedule jobs without a pg_cron guard. Records the jobs,
+-- runs nothing. Skipped when the real extension is available.
+do $$
+begin
+  if not exists (select 1 from pg_available_extensions where name = 'pg_cron') then
+    create schema if not exists cron;
+    create table if not exists cron.job (jobid bigserial primary key, jobname text unique, schedule text, command text);
+    create or replace function cron.schedule(p_name text, p_schedule text, p_command text) returns bigint
+      language sql as 'insert into cron.job (jobname, schedule, command) values (p_name, p_schedule, p_command)
+        on conflict (jobname) do update set schedule = excluded.schedule, command = excluded.command returning jobid';
+    create or replace function cron.unschedule(p_name text) returns boolean
+      language sql as 'delete from cron.job where jobname = p_name returning true';
+    create or replace function cron.alter_job(job_id bigint, schedule text default null, command text default null,
+      database text default null, username text default null, active boolean default null) returns void
+      language sql as 'update cron.job set schedule = coalesce($2, schedule), command = coalesce($3, command) where jobid = $1';
+  end if;
+end $$;

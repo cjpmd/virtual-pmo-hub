@@ -1,5 +1,6 @@
 @AGENTS.md
 @docs/build-plan.md
+@docs/go-live-plan.md
 
 Working style: plan first and wait for my go-ahead; scoped str_replace edits, never whole-file rewrites;
 one work package per session; finish with `npx tsc --noEmit`, `npx tsc --noEmit -p scripts`,

@@ -26,13 +26,7 @@ migrate() {
   psql -q -d postgres -c "drop database if exists vpmo" -c "create database vpmo" >/dev/null
   psql -q -v ON_ERROR_STOP=1 -d vpmo -f "$ROOT/supabase/tests/local/supabase-shim.sql" >/dev/null
   for f in "$ROOT"/supabase/migrations/*.sql; do
-    # 20261012120035_health_current_b.sql has a stray line 7 in the repo copy (live is correct,
-    # build-plan 1.6 notes): comment it out in a temporary copy, never in the migration itself.
-    src="$f"
-    if [ "$(basename "$f")" = "20261012120035_health_current_b.sql" ]; then
-      src=/tmp/vpmo-health-current-b.sql; sed '7s/^/-- /' "$f" > "$src"
-    fi
-    if ! psql -q -v ON_ERROR_STOP=1 -d vpmo -f "$src" >/tmp/vpmo-migrate.log 2>&1; then
+    if ! psql -q -v ON_ERROR_STOP=1 -d vpmo -f "$f" >/tmp/vpmo-migrate.log 2>&1; then
       echo "FAILED: $(basename "$f")"; tail -20 /tmp/vpmo-migrate.log; exit 1
     fi
   done
