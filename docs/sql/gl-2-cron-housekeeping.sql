@@ -1,4 +1,6 @@
--- GL-2 Cron housekeeping (docs/go-live-plan.md). PROPOSAL: not applied.
+-- GL-2 Cron housekeeping (docs/go-live-plan.md). Approved 09/11/2026 with the drain at 10 s.
+-- Section A applied as migration 20261109161632_gl_2_cron_housekeeping (the function is
+-- plpgsql there, so it also applies where pg_cron isn't installed). Section B run by hand.
 --
 -- Evidence (live project xvdlmtkzfmbcegkmampz, read-only, 09/11/2026)
 -- ---------------------------------------------------------------------
@@ -96,7 +98,7 @@ as $$
 $$;
 revoke all on function private.prune_cron_history_batch(interval, integer) from public, anon, authenticated;
 
-do $$
+do $mig$
 begin
   if exists (select 1 from pg_extension where extname = 'pg_cron') then
     -- Daily prune, 03:30 Europe/London. Commits after each batch so no transaction is long;
@@ -124,7 +126,7 @@ $prune$$cmd$);
       schedule := '10 seconds'
     );
   end if;
-end $$;
+end $mig$;
 
 -- =============================================================================================
 -- Section B: one-off backlog delete. Run by hand in the SQL editor, NOT part of the migration.
