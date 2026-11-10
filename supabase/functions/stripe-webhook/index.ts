@@ -10,6 +10,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 import { RESTORE_KEYS, priceId, scheduleNextPhase, stripe } from "../_shared/billing.ts";
 import { sendBillingNotices } from "../_shared/billing-notices.ts";
 import { sendEmail } from "../_shared/email.ts";
+import { resolveSubscriptionOrganisation } from "../_shared/stripe-org.ts";
 const cryptoProvider = Stripe.createSubtleCryptoProvider();
 const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
   auth: { persistSession: false },
@@ -83,19 +84,30 @@ async function syncSubscription(subscriptionId: string) {
       ? (sub.customer as Stripe.Customer)
       : null;
 
-  let organisationId: string | null = sub.metadata?.organisation_id || customer?.metadata?.organisation_id || null;
-  if (!organisationId) {
-    const { data } = await admin
-      .from("organisation_subscriptions")
-      .select("organisation_id")
-      .eq("stripe_customer_id", customerId)
-      .maybeSingle();
-    organisationId = data?.organisation_id ?? null;
-  }
-  if (!organisationId) {
-    console.warn("stripe-webhook: no organisation for subscription", sub.id);
+  // GL-10 follow-up: the stored customer mapping wins; metadata is used only when there is none,
+  // and a disagreement is logged and skipped (see _shared/stripe-org.ts).
+  const { data: mappedRows, error: mappingError } = await admin
+    .from("organisation_subscriptions")
+    .select("organisation_id")
+    .eq("stripe_customer_id", customerId);
+  if (mappingError) throw mappingError; // Stripe retries; never fall back to metadata on an error
+  const resolution = resolveSubscriptionOrganisation(
+    (mappedRows ?? []).map((row: { organisation_id: string }) => row.organisation_id),
+    sub.metadata?.organisation_id || customer?.metadata?.organisation_id || null,
+  );
+  if (resolution.organisationId === null) {
+    if (resolution.reason === "no_organisation") {
+      console.warn("stripe-webhook: no organisation for subscription", sub.id);
+    } else {
+      console.error("stripe-webhook: organisation mismatch, subscription not written", {
+        subscription: sub.id,
+        customer: customerId,
+        ...resolution,
+      });
+    }
     return;
   }
+  const organisationId = resolution.organisationId;
 
   const { data: existing } = await admin
     .from("organisation_subscriptions")
