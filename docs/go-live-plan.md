@@ -389,6 +389,18 @@ Tests: `supabase/tests/sample_data.sql` (25 checks, local), `services/sample-dat
 `evaluateRules.test.ts`, e2e `e2e/sample-data.e2e.ts` (replaces the is_sample reads; not run: e2e
 stays off production).
 
+**GL-9 follow-up (to do) [DB]:** published packs don't store whether a deep-dive project is sample.
+The signed-in viewer works it out from the live `is_sample` flag (`ReportViewer.tsx`), but the
+public print link (`/report-print/<id>?token=`, `report_snapshot_by_token`, anon) and the PDF made
+from it have no access to that flag, so they show no Sample chip. Fix: in `public.publish_report`
+(latest definition in `20261104150000_rb7_batched_block_data`), add `'is_sample', p.is_sample` to
+each entry of the snapshot's `meta.deep_dives`, so the flag is frozen with the pack like the code
+and name. Then read `project.is_sample` from the snapshot in `report-print.$reportId.tsx` and
+`ReportViewer.tsx` (falling back to the live flag for packs published before the change, where it's
+absent), and drop the viewer's live lookup for snapshots that carry it. Snapshots stay immutable:
+older packs aren't rewritten. SQL first, then stop; test on the local Postgres that a published pack
+with a pinned sample project carries `is_sample: true` and that the print route shows the chip.
+
 ### GL-10 Cross-tenant security suite [DB tests only]
 
 ```
