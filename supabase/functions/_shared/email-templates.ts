@@ -1,5 +1,6 @@
 // Work package 2.1 emails: invitation and join request. Plain inline-styled HTML (email clients
-// ignore stylesheets) plus a text version. Every value from the database is escaped.
+// ignore stylesheets) plus a text version. Every value from the database is escaped. GL-6
+// billing notices (billing-notices.ts) reuse layout.
 import { escapeHtml } from "./email.ts";
 
 type Rendered = { subject: string; html: string; text: string };
@@ -19,7 +20,7 @@ export const longDate = (iso: string) =>
     new Date(iso),
   );
 
-function layout(preheader: string, heading: string, paragraphs: string[], button: { label: string; url: string }, footer: string) {
+export function layout(preheader: string, heading: string, paragraphs: string[], button: { label: string; url: string }, footer: string) {
   const body = paragraphs
     .map((p) => `<p style="margin:0 0 16px;font-size:16px;line-height:24px;color:#1f2933;">${p}</p>`)
     .join("");

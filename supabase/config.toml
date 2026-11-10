@@ -17,3 +17,6 @@ verify_jwt = true
 
 [functions.report-notify]
 verify_jwt = true
+
+[functions.send-billing-notice]
+verify_jwt = true

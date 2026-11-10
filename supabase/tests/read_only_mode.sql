@@ -57,6 +57,10 @@ returns void language sql as $$
   set plan = case when p_status is null then 'trial' else 'standard' end, status = p_status,
       trial_ends_at = p_trial_ends, current_period_end = p_period_end
   where organisation_id = (select org from ctx); $$;
+-- Sets only status_changed_at (the status trigger keeps an explicit value).
+create function pg_temp.set_changed(p_at timestamptz) returns void language sql as $$
+  update public.organisation_subscriptions set status_changed_at = p_at
+  where organisation_id = (select org from ctx); $$;
 create function pg_temp.ok(name text, cond boolean) returns void language plpgsql as $$
 begin
   if cond is not true then raise exception 'FAIL: %', name; end if;
@@ -101,12 +105,20 @@ select pg_temp.set_sub('canceled', null, now() - interval '1 day');
 select pg_temp.ok('canceled is read-only', not pg_temp.writable());
 select pg_temp.set_sub('unpaid', null, now() - interval '1 day');
 select pg_temp.ok('unpaid is read-only', not pg_temp.writable());
-select pg_temp.set_sub('past_due', null, now() - interval '13 days');
+-- GL-6: the 14 days run from when the payment failed (status_changed_at), not from the
+-- period end, which Stripe has already moved to the end of the unpaid period.
+select pg_temp.set_sub('past_due', null, now() + interval '20 days');
+select pg_temp.ok('past_due stamps status_changed_at',
+  (select status_changed_at > now() - interval '1 minute' from public.organisation_subscriptions where organisation_id = (select org from ctx)));
+select pg_temp.set_changed(now() - interval '13 days');
 select pg_temp.ok('past_due inside 14 days is writable', pg_temp.writable());
-select pg_temp.set_sub('past_due', null, now() - interval '15 days');
-select pg_temp.ok('past_due beyond 14 days is read-only', not pg_temp.writable());
+select pg_temp.set_changed(now() - interval '15 days');
+select pg_temp.ok('past_due beyond 14 days is read-only, even with the period end ahead', not pg_temp.writable());
+select pg_temp.set_changed(null);
+select pg_temp.set_sub('past_due', null, now() - interval '13 days');
+select pg_temp.ok('past_due with no failure time falls back to the period end', pg_temp.writable());
 select pg_temp.set_sub('past_due', null, null);
-select pg_temp.ok('past_due with no period end is read-only', not pg_temp.writable());
+select pg_temp.ok('past_due with neither is read-only', not pg_temp.writable());
 select pg_temp.set_sub('canceled', now() + interval '5 days');
 select pg_temp.ok('canceled ends a running trial too', not pg_temp.writable());
 select pg_temp.ok('no subscription row is writable', private.organisation_is_writable(gen_random_uuid()));

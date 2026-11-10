@@ -229,6 +229,47 @@ Propose:
 SQL first, then stop.
 ```
 
+**Done (10/11/2026); the daily job sends once the Vault secret `billing_notice_url` exists:** migration `20261110102132_gl_6_billing_notices`
+(`docs/sql/gl-6-billing-notices.sql`). `billing_notices` (service role only, on the AGENTS.md
+organisation-only list), unique on (organisation, kind, period_key). The daily job
+`vpmo-billing-notices` (07:00 and 08:00 UTC, works only at 08:xx London) queues `trial_ending`
+(3 days or less, never subscribed), `trial_ended` and `read_only` (both within 7 days of
+happening), then calls `send-billing-notice` through pg_net (URL in the Vault secret
+`billing_notice_url`, key from `report_notify_service_key`). `stripe-webhook` (version 14) queues
+`payment_failed` for renewal invoices (`billing_reason` `subscription_cycle`), once per invoice,
+and sends it at once. Every notice is re-checked when sent (`still_applies`); admins whose address
+Resend last reported as bounced or suppressed (`organisation_invites.email_status`) are skipped and
+counted (`skipped_count`), and a notice with nobody left is `skipped`; five failed runs make it
+`failed`. Also: `organisation_subscriptions.status_changed_at` (trigger), and the past_due grace now
+runs 14 days from the failed payment (`private.past_due_grace_ends_at`), not from
+`current_period_end`, which Stripe has already moved to the end of the unpaid period; GL-5's
+"update your card by" date follows. "VPMO Test Outsider Org" has a year of trial so its test admin
+gets no email; Originoverthrow is unchanged (trial ends 12/11). Tests:
+`supabase/tests/billing_notices.sql` (36 checks, local) and `read_only_mode.sql` (46),
+`_shared/billing-notices.test.ts`, `_shared/service-role.test.ts`.
+`send-billing-notice` (verify_jwt on) accepts any token whose `role` claim is `service_role`: the
+Vault key is the legacy service-role JWT and no longer equals the runtime's
+`SUPABASE_SERVICE_ROLE_KEY`. `report-notify` compared the strings too: fixed in the GL-6
+follow-up below.
+Stripe dashboard: switch off "Send emails when card payments fail"; keep receipts, the 7-day
+trial reminder (only Stripe trials carried over at checkout), upcoming renewals, expiring cards and
+the 3D Secure link.
+
+**GL-6 follow-up (10/11/2026):** `report-notify` compared the caller's key with the runtime's
+`SUPABASE_SERVICE_ROLE_KEY`, but the Vault secret `report_notify_service_key` is the legacy
+service-role JWT, which no longer matches. Every call from the cron job (`vpmo-report-notify`,
+every 15 minutes, via `private.trigger_report_notify`) got 403, so no draft-pack-ready email went
+out. It now uses `_shared/service-role.ts` like `send-billing-notice`: verify_jwt stays on (the
+gateway checks the signature) and the function accepts a token whose `role` claim is
+`service_role`, or the runtime key itself. Deployed as `report-notify` version 2. Checked on
+production: the only database functions that call an edge function with the Vault key are
+`private.trigger_report_notify` and `private.run_billing_notices`; no other edge function compares
+keys (the rest only use `SUPABASE_SERVICE_ROLE_KEY` to build their own client). Proof: the call
+from the database with the Vault URL and key answers 200; one test notice queued on the withdrawn
+"Portfolio Report Test" report (demo organisation), addressed only to Resend's test inbox
+`delivered@resend.dev`, was sent and marked sent by `private.trigger_report_notify()`, leaving
+the queue empty. That test row stays in `report_notifications` (sent).
+
 ### GL-7 Terms, Privacy, DPA and Security pages
 
 No database change. **Draft copy for my legal review: don't merge to main until I say so.**
@@ -470,6 +511,6 @@ and delete the adapter layer. List every screen touched; e2e for that domain mus
 
 ## Progress
 
-- [x] GL-1 Migrations  - [ ] GL-2 Cron  - [x] GL-3 Hide dead ends  - [x] GL-4 Read-only  - [x] GL-5 Banners  - [ ] GL-6 Billing emails  - [ ] GL-7 Legal pages
+- [x] GL-1 Migrations  - [ ] GL-2 Cron  - [x] GL-3 Hide dead ends  - [x] GL-4 Read-only  - [x] GL-5 Banners  - [x] GL-6 Billing emails  - [ ] GL-7 Legal pages
 - [ ] GL-8 Sector  - [ ] GL-9 Sample data  - [ ] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [ ] GL-12 Bugs  - [ ] GL-13 Notifications  - [ ] GL-14 Committee packs
 - [ ] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [ ] GL-17 Multi-tenant  - [ ] GL-18 Bundle  - [ ] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters
