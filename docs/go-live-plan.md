@@ -449,36 +449,62 @@ organisation, and partner access needs its own positive tests. Found, not change
 GL-8 signature and the old wrapper (the app passes named arguments); `reports_phase6.sql` fails
 locally because the shim has no `vpmo-report-notify` cron job.
 
-**GL-10 follow-up: service-role code audit (to do).** Code-level audit that each function below
-checks the caller's organisation membership (and role) before it acts on an organisation's data
-with the service role, and only on the records that check covered. One line per function, with
-what to confirm:
-- `report-publish`: the caller's `publish_report` runs first under their own JWT; confirm the
-  service-role print token, `record_report_event` and signed URL run only after it succeeded, and
-  only for that report.
-- `report-distribute`: confirm `report_permissions` (which flag) and `requireWritable` gate every
-  service-role step, and the organisation comes from the report row, not the request.
-- `report-ai-summary`: confirm it uses only the caller's client (no service role found in the
-  code) and that `report_permissions` gates the Anthropic call.
-- `send-invite`: confirm `issue_invite_token`, `mark_invite_sent` and `record_invite_email_id` run
-  only for invite ids returned by the caller's `create_invites` / `resend_invite`.
-- `notify-join-request`: confirm `claim_join_request_notification` only emails for a request the
-  caller authored, and only that organisation's admins.
-- `manage-subscription`: confirm the caller's admin membership of the body's `organisation_id` is
-  checked before any service-role read or Stripe change.
-- `create-checkout-session`, `create-portal-session`: confirm the `organisation_members` admin check
-  covers the organisation the Stripe customer and session are created for.
-- `stripe-webhook`: no user; confirm the Stripe signature is checked first and that the
-  organisation taken from subscription, customer or invoice metadata is cross-checked against the
-  stored `stripe_customer_id` / `stripe_subscription_id` before writing.
-- `resend-webhook`: no user; confirm the Svix signature is checked first and only invite delivery
-  status is written, matched by the stored Resend email id.
-- `report-notify`, `send-billing-notice`: no user; confirm `isServiceRole` is the only way in and
-  recipients come from the queued rows' own organisation.
-- Netlify `report-pdf`: shared secret `REPORT_PDF_SECRET`, no user. Confirm only `report-publish`
-  holds the secret, that the print token is checked against the report (the page load does it
-  through `report_snapshot_by_token`), and that `app_url` from the body is pinned to the app's
-  host: today Chromium opens whatever URL the caller sends.
+**GL-10 follow-up: service-role code audit (done 10/11/2026).** Each function that uses the
+service role (or a shared secret) was read, with the SQL of every RPC it calls, to check it
+confirms the caller's organisation membership (and role) before acting on an organisation's data,
+and only on the records that check covered. Every service-role-only RPC they call
+(`issue_invite_token`, `mark_invite_sent`, `record_invite_email_id`, `claim_join_request_notification`,
+`record_invite_email_event`, `issue_report_print_token`, `record_report_event`,
+`report_distribution`, `pending_report_notifications`, `mark_report_notification_sent`,
+`pending_billing_notices`, `mark_billing_notice`) is closed to `authenticated`.
+- `report-publish` **pass**: `publish_report` runs first under the caller's JWT (PMO in the
+  report's workspace or the forum's secretary, report approved or an ad hoc draft); the print token,
+  `record_report_event` and signed URL run only after it succeeds, for that report only. A second
+  call on a published report fails, so it can't re-trigger sending.
+- `report-distribute` **pass**: `report_permissions.can_publish` as the caller, the organisation
+  read from the report through the caller's RLS (not the request), then `requireWritable`, before
+  any service-role step.
+- `report-ai-summary` **pass**: no service role at all; `can_edit`, `requireWritable` and the daily
+  limit gate the Anthropic call.
+- `send-invite` **pass**: `create_invites` / `resend_invite` (admin checks in SQL) run as the
+  caller; the service-role calls use only the invite ids they returned or accepted, and
+  `issue_invite_token` refuses accepted, revoked, expired or already-tokened invites.
+- `notify-join-request` **pass**: `claim_join_request_notification` matches only a pending request
+  whose `profile_id` is the caller, once; recipients are that organisation's admins.
+- `manage-subscription`, `create-checkout-session`, `create-portal-session` **pass**: the caller's
+  admin membership of the body's organisation is checked before any service-role read, write or
+  Stripe call; Stripe calls use the ids stored for that organisation.
+- `stripe-webhook` **pass, one low finding (fixed)**: the Stripe signature is checked first and
+  events are idempotent on id, but `syncSubscription` took the organisation from subscription or
+  customer metadata before the stored mapping, without cross-checking. Fixed: the stored
+  `stripe_customer_id` mapping now wins; metadata is used only when no mapping exists; a mismatch, or
+  a customer mapped to two organisations, is logged and nothing is written
+  (`_shared/stripe-org.ts`, unit-tested). Deployed as `stripe-webhook` version 15 (10/11/2026;
+  production had one mapped customer and no duplicates); an unsigned request gets 400.
+- `resend-webhook` **pass**: Svix signature checked first (constant time, 5-minute window),
+  idempotent on svix-id, writes only delivery status to the invite with the matching stored Resend
+  email id.
+- `report-notify`, `send-billing-notice` **pass**: service-role tokens only (`isServiceRoleRequest`
+  behind verify_jwt); recipients are worked out in the database from the queued row's own
+  organisation (users can only read those queues).
+- Report roles (forum secretary / chair) come from `resources.profile_id`, which has a foreign key
+  to `organisation_members`, so they only ever name a current member.
+- Netlify `report-pdf` **fail (fixed)**: anyone holding `REPORT_PDF_SECRET` could make headless
+  Chromium open any `app_url` (SSRF) and store whatever it rendered as any published report's PDF,
+  which is then attached to the forum emails; the print token was only checked by the print page.
+  Fixed (`netlify/lib/report-pdf-guard.ts`, unit-tested): `app_url` must be one of
+  `REPORT_PDF_ALLOWED_ORIGINS` (comma-separated, default `https://pmo.originoverthrow.com`; parsed
+  origins compared, credentials refused) and the page URL is built from that origin; the token is
+  checked with `report_snapshot_by_token` before anything is rendered or stored (403 otherwise);
+  the secret is compared in constant time. Server PDF stays off (`REPORT_SERVER_PDF`); nothing is
+  deployed to Netlify. Add preview hosts to `REPORT_PDF_ALLOWED_ORIGINS` there if they need it.
+- Deployed vs repo (10/11/2026): all 12 edge functions on production were fetched and diffed. Every
+  entrypoint is byte-identical to the repo. Shared modules differ only where a function was
+  deployed before a later change it doesn't use: `report-publish`, `send-invite`,
+  `notify-join-request` and `manage-subscription` carry `_shared/http.ts` from before
+  `requireWritable` (GL-4); `send-invite` and `notify-join-request` carry `_shared/email-templates.ts`
+  from before `layout` was exported (GL-6); `send-billing-notice` carries `_shared/service-role.ts`
+  with an older header comment (code identical). No redeploy needed for those.
 
 ### GL-11 Account closure and organisation deletion [DB]
 
