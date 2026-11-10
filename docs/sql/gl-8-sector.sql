@@ -25,13 +25,23 @@
 --   Lessons, change types, collection types, cost categories, lifecycle phases, gate criteria
 --   and benefit periods are the same for every sector (lifecycle copied verbatim from live).
 -- - No new table, no destructive statement. One additive check constraint.
+-- - Settings › Organisation shows the sector to everyone; admins change it through the normal
+--   settings save (organisations.settings, existing admin update policy and write helper), so no
+--   extra SQL. Changing it only steers the restore / reset buttons and the financial-year
+--   suggestion in the app; nothing rewrites existing lists.
 
 -- ---------------------------------------------------------------------------------------------
 -- 1. Sector on organisations.settings
 -- ---------------------------------------------------------------------------------------------
 
+-- Backfill (approved): Originoverthrow is general; the demo ("University"), "E2E 2.1 Test
+-- Organisation" and "VPMO Test Outsider Org" are university. Matched by id, read from production
+-- before applying. Only the sector key is added: existing lists, tiers and financial year are
+-- left exactly as they are.
 update public.organisations
-   set settings = settings || jsonb_build_object('sector', 'university')
+   set settings = settings || jsonb_build_object(
+         'sector', case when id = 'd9923564-e13a-4076-a582-d3109cb6654b' then 'general'
+                        else 'university' end)
  where not (settings ? 'sector');
 
 alter table public.organisations
