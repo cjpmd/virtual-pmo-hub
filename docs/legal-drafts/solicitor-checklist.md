@@ -84,6 +84,25 @@ the change is material, bump `TERMS_VERSION` and `LEGAL_LAST_UPDATED`.
 | S5 | Microsoft (Entra ID) | Whether Entra ID is our subprocessor or the customer's own identity provider (when they sign in with their organisation's Microsoft account), and the safeguard. It stays listed until this is decided. |
 | S6 | Anthropic | The UK Addendum in Anthropic's DPA, and the wording of its no-training commitment under its commercial terms. |
 
+## Organisation deletion and account closure (GL-11, wording not on the pages yet)
+
+GL-11 (design `docs/design/account-closure.md`, SQL `docs/sql/gl-11-account-closure.sql`) adds a
+30-day cancellation window before an organisation's data is deleted. The pages now say "When an
+organisation is closed, its data is deleted within 30 days" (Privacy 8, Terms 12, DPA 10), but
+with the window the purge happens 30 days after the request (normally within 2 days after that,
+because it runs daily). Proposed replacement, for the three places (T7, D6 and Privacy 8):
+
+> When an administrator deletes an organisation, it becomes read-only at once, and any
+> administrator can cancel the deletion for 30 days. After that we delete the organisation's
+> data, normally within 2 days. Copies in backups expire as described below.
+
+| # | Section | Point to confirm |
+|---|---|---|
+| G1 | Terms 12, Privacy 8, DPA 10 | The replacement wording above, and whether "30 days, then normally within 2 days" is acceptable against "within 30 days" in customer contracts. |
+| G2 | Privacy 8 | Account closure: the account (sign-in, name, email, avatar, preferences) is deleted or anonymised at once; records the person wrote stay with their organisations and show "Former member". The current sentence ("within 30 days") already covers this. |
+| G3 | Privacy 8 / Terms 4 | Billing records stay with Stripe after an organisation is deleted (the Stripe customer and invoices are kept for HMRC's six years). Add: "billing records stay with Stripe for the period the law requires." |
+| G4 | DPA 6 (subprocessors) | Resend keeps logs of emails sent for its own retention period; we can't delete them per organisation. |
+
 ## Not on the pages yet
 
 - Cloudflare (Turnstile CAPTCHA) is left off the subprocessor list because CAPTCHA isn't switched

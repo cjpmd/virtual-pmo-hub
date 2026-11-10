@@ -1,7 +1,37 @@
 # Account closure and organisation deletion (GL-11)
 
-Status: **design for review**. Nothing here is built or applied. Written 10/11/2026 from `main`
-`42e089e` and a read-only look at production (`xvdlmtkzfmbcegkmampz`).
+Status: **decided 10/11/2026; SQL proposed, not applied** (`docs/sql/gl-11-account-closure.sql`,
+tests `supabase/tests/account_closure.sql`, 64 checks passing on the local Postgres). Written
+10/11/2026 from `main` `42e089e` and a read-only look at production (`xvdlmtkzfmbcegkmampz`).
+
+**Decisions (10/11/2026)** — D1 cancel at period end on request; D2 scheduled purge shipped in
+`dry_run`, first purges run by hand; D3 admins emailed, and every member sees "This organisation
+is scheduled for deletion on <date>" in the banner; D4 sign-in within 10 minutes for account
+closure; D5 drop `profiles_id_fkey` (run by hand) and add an insert trigger on `profiles`
+requiring a matching `auth.users` row; D6 full export is GL-11b; D7 no retention limit for
+abandoned trials. Bypass: no session setting or GUC; a row only the definer purge function can
+write, keyed to the current transaction id and backend.
+
+**Where the SQL proposal differs from the sections below** (the SQL file is authoritative):
+- The marker table is `private.privileged_ops` (kind `purge` or `closure`), not
+  `private.purges_in_progress`. A `closure` row only lifts the read-only check and row audit for
+  the closure's own writes; it never satisfies `in_purge()`.
+- Deletion emails are tracked in columns on `organisation_deletions` (`scheduled_email_at`,
+  `reminder_7_email_at`, `reminder_1_email_at`, `cancelled_email_at`), not new `billing_notices`
+  kinds: widening that check would need a `drop constraint`.
+- For the same reason, audit rows reuse existing actions: `update` on `organisation_deletions` for
+  a request or cancel, `member.removed` with `reason: account_closed` for a closure.
+- `organisation_deletions` has no `zz_org_read_only` trigger (like `organisation_subscriptions`),
+  so a lapsed organisation can still ask for deletion and admins can cancel while it's pending.
+  Members can read only `organisation_id`, `requested_at`, `purge_after` and `cancelled_at`.
+- `close_my_account` refuses (`closure_not_enabled`) until `profiles_id_fkey` is dropped, so a
+  `deleteUser` can never cascade the profile.
+- The guard functions changed are the ones the catalog shows refusing a DELETE on an organisation
+  table, plus `committee_pack_lock`, `audit_row_change` and `health_current_enqueue`. Not changed:
+  `meeting_rules`, `forum_action_rules`, `risk_matrix_default_guard`, `financial_period_guard`
+  (they don't refuse deletes; the purge test passes without them).
+- The purge test covers the tables that sample data plus the guarded records touch, not literally
+  every table; GL-10's generated table list is the natural place for the every-table seed.
 
 There are two separate requests:
 

@@ -426,6 +426,37 @@ UK GDPR erasure requests need. Write docs/design/account-closure.md, then stop:
 - Settings › Organisation and personal settings UI.
 ```
 
+**Design decided (10/11/2026), SQL proposed, not applied:** `docs/design/account-closure.md` (decisions
+D1–D7 at the top), `docs/sql/gl-11-account-closure.sql`, `supabase/tests/account_closure.sql` (64
+checks, local). The `profiles_id_fkey` drop is section D of the SQL file, for me to run.
+
+### GL-11b Full organisation export
+
+After GL-11's SQL; before its deletion UI goes live (the deletion dialog offers it).
+
+**Does Settings › Data (1.1) already cover a full export? No.** What exists today: Export
+portfolio (CSV): non-archived projects only, with programme, portfolio, phase, tier, state,
+health, budget, forecast and dates; Export settings (JSON, admins, without member emails, the
+audit log or the logo); and CSV buttons on the Projects list, the Lessons register and chart
+cards. Missing: archived projects, programmes and portfolios as records; tasks, milestones,
+RAID (risks, issues, assumptions, dependencies, change requests), decisions and their history,
+benefits and measurements, financials (cost lines, values, baselines, periods), business cases,
+status reports, report-builder reports and published snapshots, committee packs, forums,
+meetings and actions, resources and assignments, roadmaps, lessons' links, documents and
+attachments (Storage files), members and invites, and the audit log.
+
+```
+Work package GL-11b. Read docs/design/account-closure.md §2.5. Add an edge function
+export-organisation (org admin; works while read-only and while deletion is pending) that reads
+every organisation table as the service role, filtered by organisation_id (generate the list
+from the catalog, as private.purge_organisation does), and writes one JSON file per table plus a
+manifest (table, row count, schema version, Storage object paths) into a zip in a new private
+bucket exports/<org>/<timestamp>.zip, returning a 24-hour signed URL; zips are removed after 7
+days. Member emails are included (the organisation is the controller); auth data isn't.
+Settings › Data gets "Export all data (zip)". Files in Storage are listed, not zipped, in v1.
+Plan first; SQL for the bucket and its policies, then stop.
+```
+
 ### GL-12 Bugs: board date sort and selection hint
 
 No database change.
