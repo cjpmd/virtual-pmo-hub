@@ -147,6 +147,24 @@ keep full write access. Propose (SQL first, then stop):
 Nothing is ever deleted.
 ```
 
+**Done (10/11/2026):** migration `20261110093319_gl_4_read_only` (`docs/sql/gl-4-read-only.sql`).
+`private.organisation_is_writable` is null-safe now (a trial with no end date, or past_due with
+no period end, is read-only); the default of writable applies only with no subscription row. The
+Outsider org's missing trial end was backfilled to 24/11/2026, the E2E 2.1 organisation's trial
+runs to 10/11/2027, and a constraint stops any trial without an end date. One trigger,
+`zz_org_read_only` (`private.enforce_org_writable`), on the 136 tenant tables and
+`organisations`; exempt: `organisation_subscriptions`, `audit_log`, `user_favourites` (and
+`profiles`). A write is the system's when there's no signed-in user and the caller isn't anon
+(cron, service role). While read-only, allowed by row shape: removing members, stepping down to
+viewer, revoking invites, viewer invites (create, resend, accept), declining join requests and
+approving them as viewer. Storage insert / update / delete policies check the organisation in
+the path (members get the friendly error, outsiders a plain refusal). Scheduled pack drafts skip
+read-only organisations. `public.organisation_writable(org)` for edge functions and GL-5.
+`report-distribute` and `report-ai-summary` (version 2) check it before their service-role work;
+the other edge functions don't need to (audit in the SQL file). Client: `read_only` error kind
+in `services/service-error.ts`. Tests: `supabase/tests/read_only_mode.sql` (44 checks, local).
+Cost: about 0.035 ms a row, 0.11 ms on a warm hosted update (`docs/perf.md`).
+
 ### GL-5 Trial and read-only banners
 
 After GL-4. No database change expected.
@@ -429,6 +447,6 @@ and delete the adapter layer. List every screen touched; e2e for that domain mus
 
 ## Progress
 
-- [x] GL-1 Migrations  - [ ] GL-2 Cron  - [x] GL-3 Hide dead ends  - [ ] GL-4 Read-only  - [ ] GL-5 Banners  - [ ] GL-6 Billing emails  - [ ] GL-7 Legal pages
+- [x] GL-1 Migrations  - [ ] GL-2 Cron  - [x] GL-3 Hide dead ends  - [x] GL-4 Read-only  - [ ] GL-5 Banners  - [ ] GL-6 Billing emails  - [ ] GL-7 Legal pages
 - [ ] GL-8 Sector  - [ ] GL-9 Sample data  - [ ] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [ ] GL-12 Bugs  - [ ] GL-13 Notifications  - [ ] GL-14 Committee packs
 - [ ] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [ ] GL-17 Multi-tenant  - [ ] GL-18 Bundle  - [ ] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters

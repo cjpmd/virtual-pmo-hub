@@ -16608,6 +16608,10 @@ export type Database = {
           workspace_id: string
         }[]
       }
+      organisation_writable: {
+        Args: { p_organisation_id: string }
+        Returns: boolean
+      }
       pending_report_notifications: { Args: never; Returns: Json }
       project_metrics: {
         Args: {

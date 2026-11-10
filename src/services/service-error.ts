@@ -12,6 +12,7 @@ export type ServiceErrorKind =
   | "network" // the request did not reach the server
   | "timeout" // the database gave up (statement timeout) or the gateway did
   | "cancelled" // the read was abandoned because the person left the page
+  | "read_only" // the organisation's trial or subscription has ended (GL-4)
   | "unknown";
 
 export class ServiceError extends Error {
@@ -41,8 +42,33 @@ const messages: Record<ServiceErrorKind, string> = {
   network: "We couldn't reach the server. Check your connection and try again.",
   timeout: "This is taking too long — please try again.",
   cancelled: "Loading was cancelled.",
+  read_only:
+    "This organisation is read-only because its trial or subscription has ended. An admin can subscribe in Settings › Subscription to restore editing.",
   unknown: "Something went wrong. Please try again.",
 };
+
+/**
+ * GL-4: every write in a read-only organisation is refused by the database with hint
+ * 'org_read_only' (errcode P0001). Storage uploads don't pass the hint on, only the message,
+ * so that is matched too.
+ */
+const READ_ONLY_HINT = "org_read_only";
+export const isReadOnlyError = (
+  error: { hint?: string | null; message?: string } | null | undefined,
+) =>
+  !!error &&
+  (error.hint === READ_ONLY_HINT || /^This organisation is read-only\b/.test(error.message ?? ""));
+
+/** A storage upload error: the read-only refusal, or the caller's usual error. */
+export function fromStorageUpload(
+  error: { message: string },
+  context: string,
+  fallback: ServiceErrorKind,
+): ServiceError {
+  if (isReadOnlyError(error))
+    return new ServiceError("read_only", `${context}: ${messages.read_only}`, { cause: error });
+  return new ServiceError(fallback, `${context}: ${error.message}`, { cause: error });
+}
 
 /**
  * Triggers that enforce a rule raise their own sentence with a standard code (42501 for a
@@ -62,6 +88,13 @@ export function fromPostgrest(
   status?: number,
 ): ServiceError {
   const code = error.code;
+  if (isReadOnlyError(error)) {
+    return new ServiceError(
+      "read_only",
+      context ? `${context}: ${messages.read_only}` : messages.read_only,
+      { code, detail: [error.message, error.hint].filter(Boolean).join(" — "), cause: error },
+    );
+  }
   let kind: ServiceErrorKind = "unknown";
   let message = messages.unknown;
   if (code === "57014" || /statement timeout|canceling statement/i.test(error.message ?? ""))

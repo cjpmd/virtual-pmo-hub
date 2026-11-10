@@ -1,5 +1,6 @@
--- GL-4 Read-only when a trial or subscription lapses (docs/go-live-plan.md). PROPOSAL, not applied.
--- Round 2 (09/11/2026), with your decisions: Outsider backfilled to today + 14 days;
+-- GL-4 Read-only when a trial or subscription lapses (docs/go-live-plan.md).
+-- Applied 10/11/2026 as migration 20261110093319_gl_4_read_only (approved with approve-as-viewer
+-- added). Round 2 (09/11/2026), with your decisions: Outsider backfilled to today + 14 days;
 -- user_favourites writable; declining join requests and free viewer invites allowed; storage
 -- covered; E2E test organisation trial extended by a year; edge functions audited; bulk write
 -- cost measured.
@@ -18,8 +19,8 @@
 --   period that never ends. create_organisation already sets trial_ends_at = now() + 14 days
 --   (since migration auth_email_microsoft), so only the one old row is affected.
 --
--- Table inventory (public, 137 tables):
---   * 133 have organisation_id (all tenant tables, including those without workspace_id:
+-- Table inventory (public, 143 tables):
+--   * 139 have organisation_id (136 get the trigger; 3 are exempt, below) (all tenant tables, including those without workspace_id:
 --     benefit_periods, business_case_templates, exchange_rates, financial_periods,
 --     gate_criteria, holiday_*, lifecycle_phases, lookup_values, ms_connections,
 --     organisation_* (6), project_templates, rating_schemes, resource_*, resources,
@@ -67,12 +68,14 @@
 --                                         sets an empty profile_id to them.
 --         organisation_join_requests      pending -> withdrawn (accepting withdraws the
 --                                         person's pending request).
---       Declining join requests (decide_join_request with p_approve false)
---         organisation_join_requests      pending -> declined, touching only status,
---                                         decided_by and decided_at. Withdrawing your own
---                                         request (pending -> withdrawn) is allowed too.
---         Approving a request, even as viewer, stays refused (you asked for declining only;
---         allowing approve-as-viewer is one more line in §5).
+--       Join requests (decide_join_request)
+--         organisation_join_requests      pending -> declined, or pending -> approved with
+--                                         decided_role viewer (the same rule as viewer
+--                                         invites; add_member then inserts viewer rows),
+--                                         touching only status, decided_role, decided_by and
+--                                         decided_at. Withdrawing your own request
+--                                         (pending -> withdrawn) is allowed too.
+--         Approving with a paid role stays refused.
 --   * Settings › Subscription: checkout and portal run in edge functions; the subscription row
 --     is written by stripe-webhook and create-checkout-session (service role). Not refused.
 --   Everything else by a signed-in user (or anon) in a read-only organisation is refused with
@@ -153,7 +156,7 @@
 -- place with the same signatures.
 
 -- =============================================================================================
--- Migration (supabase/migrations/<timestamp>_gl_4_read_only.sql)
+-- Migration (supabase/migrations/20261110093319_gl_4_read_only.sql)
 -- =============================================================================================
 
 -- 1. Fix the writable check. Same rules as 2.3, but every clause is null-safe, and the default
@@ -292,11 +295,14 @@ as $$
                     and m.profile_id = (p_new ->> 'profile_id')::uuid
                     and m.role = 'viewer')
 
-    -- Join requests: decline, or withdraw (by the requester, or by accepting an invite).
+    -- Join requests: decline, approve as viewer, or withdraw (by the requester, or by
+    -- accepting an invite).
     when p_table = 'organisation_join_requests' and p_op = 'UPDATE' then
-      p_old ->> 'status' = 'pending' and p_new ->> 'status' in ('declined', 'withdrawn')
-      and (p_old - 'status' - 'decided_by' - 'decided_at' - 'updated_at')
-        = (p_new - 'status' - 'decided_by' - 'decided_at' - 'updated_at')
+      p_old ->> 'status' = 'pending'
+      and (p_new ->> 'status' in ('declined', 'withdrawn')
+           or (p_new ->> 'status' = 'approved' and p_new ->> 'decided_role' = 'viewer'))
+      and (p_old - 'status' - 'decided_role' - 'decided_by' - 'decided_at' - 'updated_at')
+        = (p_new - 'status' - 'decided_role' - 'decided_by' - 'decided_at' - 'updated_at')
 
     else false
   end;

@@ -119,3 +119,19 @@ select id, '<your profile id>', 'admin' from organisations where slug = 'perf-te
 ```
 
 Building the script found a bug: references past 999 were truncated (`RSK-1000` became `RSK-100` and collided). This is fixed in migration `20261006090010_ref_numbers_past_999`.
+
+## Read-only trigger (GL-4)
+
+`zz_org_read_only` (migration `20261110093319_gl_4_read_only`) runs before every insert, update and delete on the 136 tenant tables and `organisations`. Reads are unaffected: it is a trigger, not a policy. Per row it reads `auth.uid()` (system writes stop there), then does one primary-key lookup on `organisation_subscriptions`.
+
+Signed in as an organisation admin through RLS, writable organisation. "Trigger" is the trigger's own time from `EXPLAIN ANALYZE`; "total" is the whole statement with every other trigger on the table.
+
+|                                                           | Trigger                  | Total without | Total with |
+| --------------------------------------------------------- | ------------------------ | ------------- | ---------- |
+| Local, project CSV import, 500 rows in one insert          | 17.9 ms (13.1–18.5)      | 331 ms        | 324 ms     |
+| Local, lessons CSV import, 500 rows                        | 16.5 ms (13.4–18.3)      | 325 ms        | 326 ms     |
+| Local, single project update                               | 0.07 ms (0.06–0.12)      | 3.5 ms        | 3.6 ms     |
+| Hosted, single project update (demo organisation), warm    | 0.11 ms                  |               | 4.1 ms     |
+| Hosted, the same, first (cold) run                         | 2.0 ms                   |               | 72.8 ms    |
+
+Local figures are medians of 7 runs, each in its own rolled-back transaction. About 0.035 ms a row: roughly 5% of a 500-row import and 2–3% of a single update, inside the run-to-run noise of the totals. A board paste moves one task, so it is the single-row case. A storage upload adds one call of the same lookup.

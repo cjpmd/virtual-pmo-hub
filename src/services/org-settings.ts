@@ -27,7 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { defaultRoles } from "@/data/settings-data";
 import { fromIsoDate, toIsoDate } from "@/lib/format";
 import { tierLabel } from "./labels";
-import { ServiceError, unwrap, unwrapMaybe } from "./service-error";
+import { fromStorageUpload, unwrap, unwrapMaybe } from "./service-error";
 import type { TableName } from "./db";
 import { deleteRows, insertRow, insertRows, updateRow } from "./write";
 
@@ -408,8 +408,7 @@ export async function uploadLogo(orgId: string, file: File) {
   const { error } = await supabase.storage
     .from("org-assets")
     .upload(path, file, { upsert: false, contentType: file.type });
-  if (error)
-    throw new ServiceError("forbidden", `Uploading the logo: ${error.message}`, { cause: error });
+  if (error) throw fromStorageUpload(error, "Uploading the logo", "forbidden");
   return path;
 }
 
