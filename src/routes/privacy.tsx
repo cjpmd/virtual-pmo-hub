@@ -22,7 +22,7 @@ const sections: LegalSection[] = [
     id: "who",
     title: "Who we are",
     blocks: [
-      "ORMO PMO is a trading name of its owner, a sole trader based in Scotland. Our registration with the Information Commissioner’s Office is pending. [[solicitor to confirm: owner’s name and address for the business-name disclosure]]",
+      "ORMO PMO is a trading name of OriginOverthrow, a sole trader business based in Scotland. You can contact us at support@ormo-pmo.originoverthrow.com. Our registration with the Information Commissioner’s Office is pending.",
       "For questions about this notice or your personal data, email support@ormo-pmo.originoverthrow.com.",
     ],
   },

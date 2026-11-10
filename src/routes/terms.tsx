@@ -22,7 +22,7 @@ const sections: LegalSection[] = [
     id: "about",
     title: "About these terms",
     blocks: [
-      "ORMO PMO (the “Service”) is a trading name of its owner, a sole trader based in Scotland (“we”, “us”). We are not a limited company. You can contact us at support@ormo-pmo.originoverthrow.com. [[solicitor to confirm: owner’s name and address for the business-name disclosure]]",
+      "ORMO PMO (the “Service”) is a trading name of OriginOverthrow, a sole trader business based in Scotland (“we”, “us”). We are not a limited company. You can contact us at support@ormo-pmo.originoverthrow.com.",
       "These terms form a contract between us and the organisation that creates or subscribes to an ORMO PMO organisation (the “Customer”, “you”). The person who accepts them confirms that they have authority to bind the Customer. The Service is for business use only; it is not offered to consumers.",
       <p key="dpa" className="m-0 text-[15px] leading-[1.7] text-site-text-muted">
         Our{" "}

@@ -12,7 +12,9 @@ the change is material, bump `TERMS_VERSION` and `LEGAL_LAST_UPDATED`.
 
 ## Facts the owner supplied (10/11/2026)
 
-- Business: a sole trader based in Scotland, trading as ORMO PMO; not incorporated.
+- Business: ORMO PMO is a trading name of OriginOverthrow, a sole trader business based in
+  Scotland; not incorporated. Stated in the Terms (1), Privacy (1), DPA (1) and the site footer,
+  each with the support email (the footer's support link).
 - ICO registration: pending.
 - Contact and privacy email: support@ormo-pmo.originoverthrow.com.
 - Deletion: 30 days after an organisation is closed; 30 days for account deletion (to match
@@ -36,7 +38,7 @@ the change is material, bump `TERMS_VERSION` and `LEGAL_LAST_UPDATED`.
 
 | # | Section | Point to confirm |
 |---|---|---|
-| T1 | 1. About these terms | Business-name disclosure: as a sole trader trading as "ORMO PMO", the owner's name and an address for service may have to appear on the site (Companies Act 2006, Part 41). The page gives neither today. |
+| T1 | 1. About these terms | **Filled (10/11/2026):** "ORMO PMO is a trading name of OriginOverthrow", with the support email, in the Terms, Privacy, DPA and footer; the page marker is removed. Still to confirm: whether "OriginOverthrow" is itself a business name rather than the owner's own name, in which case Companies Act 2006 Part 41 may still require the owner's name and an address for service on the site. |
 | T2 | 4. Seats, prices and billing | 30 days' email notice of price changes, applying from the next renewal. |
 | T3 | 7. Your data | Using anonymous, aggregated usage information to run and improve the Service. |
 | T4 | 11. Liability (free trial) | No liability at all during the free trial, with the service "as is", subject to the carve-outs (death or personal injury caused by negligence, fraud, anything that can't be limited by law). Enforceability under the Unfair Contract Terms Act 1977 for business customers. |
@@ -50,7 +52,7 @@ the change is material, bump `TERMS_VERSION` and `LEGAL_LAST_UPDATED`.
 
 | # | Section | Point to confirm |
 |---|---|---|
-| P1 | 1. Who we are | Same business-name disclosure as T1; the ICO registration is pending, and the notice says so. |
+| P1 | 1. Who we are | Filled with T1 (same wording and residual question); the ICO registration is pending, and the notice says so. |
 | P2 | 4. How we use it | Legitimate interests as the basis for security, product improvement and enquiries: is a written legitimate interests assessment needed? |
 | P3 | 5. Cookies and local storage | Only strictly necessary storage (session, theme), so no consent banner under PECR. |
 | P4 | 7. International transfers | The general wording on adequacy, the IDTA and the UK Addendum. |

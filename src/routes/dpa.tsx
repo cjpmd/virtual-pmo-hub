@@ -52,7 +52,7 @@ const sections: LegalSection[] = [
     id: "parties",
     title: "Parties and scope",
     blocks: [
-      "This Data Processing Agreement (“DPA”) is between the owner of ORMO PMO, a sole trader based in Scotland trading as ORMO PMO (the “Processor”, “we”), and the organisation that has accepted the ORMO PMO Terms of service (the “Customer”).",
+      "This Data Processing Agreement (“DPA”) is between OriginOverthrow, a sole trader business based in Scotland trading as ORMO PMO (contact: support@ormo-pmo.originoverthrow.com) (the “Processor”, “we”), and the organisation that has accepted the ORMO PMO Terms of service (the “Customer”).",
       <p key="terms" className={textClass}>
         It forms part of the{" "}
         <Link to="/terms" className={linkClass}>
