@@ -126,6 +126,7 @@ export const PAST_DUE_GRACE_DAYS = 14;
 export const TRIAL_URGENT_DAYS = 3;
 
 export type AccessBanner =
+  | { kind: "pending_deletion"; purgeAfter: string; isAdmin: boolean }
   | { kind: "read_only"; isAdmin: boolean }
   | { kind: "past_due"; payBy: string }
   | { kind: "cancelling"; endsOn: string }
@@ -138,11 +139,14 @@ export interface AccessBannerInput {
   writable: boolean;
   /** From getSubscriptionStatus (admins only; null for everyone else). */
   subscription: SubscriptionStatus | null;
+  /** GL-11: the purge date of a pending deletion (every member can read it), else null. */
+  pendingDeletion?: { purgeAfter: string } | null;
   now?: number;
 }
 
 /**
- * Which banner the shell shows, in priority order: read-only (everyone), then for admins a
+ * Which banner the shell shows, in priority order: a pending deletion (everyone, GL-11), then
+ * read-only (everyone), then for admins a
  * failed payment inside the grace period, a subscription set to cancel, and a running trial.
  * Nothing for the demo organisation or a healthy subscription.
  */
@@ -151,9 +155,12 @@ export function accessBanner({
   isAdmin,
   writable,
   subscription: sub,
+  pendingDeletion,
   now = Date.now(),
 }: AccessBannerInput): AccessBanner | null {
   if (isDemo) return null;
+  if (pendingDeletion)
+    return { kind: "pending_deletion", purgeAfter: pendingDeletion.purgeAfter, isAdmin };
   if (!writable) return { kind: "read_only", isAdmin };
   if (!isAdmin || !sub || sub.plan === "demo") return null;
   const failedAt = sub.statusChangedAt || sub.currentPeriodEnd;

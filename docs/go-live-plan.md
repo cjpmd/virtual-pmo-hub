@@ -539,9 +539,32 @@ UK GDPR erasure requests need. Write docs/design/account-closure.md, then stop:
 - Settings › Organisation and personal settings UI.
 ```
 
-**Design decided (10/11/2026), SQL proposed, not applied:** `docs/design/account-closure.md` (decisions
-D1–D7 at the top), `docs/sql/gl-11-account-closure.sql`, `supabase/tests/account_closure.sql` (64
-checks, local). The `profiles_id_fkey` drop is section D of the SQL file, for me to run.
+**Built (10/11/2026); waiting on section D and the first hand-run purge:** migration
+`20261110170309_gl_11_account_closure` (`docs/sql/gl-11-account-closure.sql`, design
+`docs/design/account-closure.md`, decisions D1–D7 at the top). Deleting an organisation:
+`request_organisation_deletion` (admin, typed name) makes it read-only for 30 days
+(`organisation_deletions`, members read only the dates); any admin can cancel. The edge function
+`organisation-deletion` sets a live Stripe subscription to cancel at period end (only one it marked
+is renewed again on cancel) and emails the admins. The daily job `vpmo-organisation-purge` (07:20 and
+08:20 UTC, works at 08:xx London) calls `purge-organisations` through the Vault secret
+`organisation_purge_url`: reminders 7 days and 1 day before, then, when due and the mode is `on`
+(`private.organisation_purge_settings`, shipped `dry_run`) or by hand
+(`select private.run_organisation_purges('<id>', true)`), it cancels the subscription now, removes the
+Storage objects through the API and runs `purge_organisation` (catalog-generated deletes, refused
+while objects remain, completeness check, ids-only `private.organisation_purge_log`). Protective
+triggers step aside only for `private.in_purge()`, a row in `private.privileged_ops` keyed to the
+transaction id and backend that only the purge writes. Closing an account: `close_my_account`
+(typed email, sign-in within 10 minutes from the JWT's amr timestamp, else `auth.sessions.created_at`;
+refused for the last admin) leaves a "Former member" tombstone profile, and `close-account` deletes
+the auth user (retried daily). Settings › Organisation › Delete organisation, Settings › Account
+settings › Close your account, and a "scheduled for deletion on <date>" banner for every member.
+Tests (local): `organisation_purge.sql` (GL-10's filler: rows in all 144 organisation tables plus
+Storage objects; B purged to zero, A's counts and checksums unchanged), `account_closure.sql` (75),
+`cross_tenant.sql` (cases for the new RPCs), `read_only_mode.sql`; unit tests for the edge-function
+decisions and the banner; e2e in `org-access.e2e.ts` (not run: e2e stays off production).
+To finish: run section D; add the Vault secret `organisation_purge_url`
+(`https://xvdlmtkzfmbcegkmampz.supabase.co/functions/v1/purge-organisations`); optionally set the
+edge-function secret `OPS_ALERT_EMAIL`. Tick GL-11 after the first purge has been run by hand.
 
 ### GL-11b Full organisation export
 

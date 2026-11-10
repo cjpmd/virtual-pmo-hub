@@ -9,6 +9,7 @@ import {
   getSubscriptionStatus,
   type AccessBanner,
 } from "@/services/billing";
+import { getPendingDeletion, type PendingDeletion } from "@/services/organisation-deletion";
 import { qk } from "@/services/query-keys";
 
 const STALE = 5 * 60_000;
@@ -33,6 +34,18 @@ export function useOrgWritable(): boolean {
   return useWritableQuery().data ?? true;
 }
 
+/** GL-11: the organisation's pending deletion, or null. Every member can read it. */
+export function usePendingDeletion() {
+  const { organisation } = useOrganisation();
+  const orgId = organisation.organisationId;
+  return useQuery<PendingDeletion | null>({
+    queryKey: qk.access.deletion(orgId),
+    queryFn: () => getPendingDeletion(orgId),
+    staleTime: STALE,
+    enabled: !organisation.isDemo,
+  });
+}
+
 /** The banner for the app shell, or null. Admins also read the subscription row. */
 export function useOrgAccess(): { banner: AccessBanner | null; isAdmin: boolean } {
   const { organisation } = useOrganisation();
@@ -45,6 +58,7 @@ export function useOrgAccess(): { banner: AccessBanner | null; isAdmin: boolean 
     staleTime: STALE,
     enabled: isAdmin && !organisation.isDemo,
   });
+  const deletion = usePendingDeletion();
   const banner =
     organisation.isDemo || writable.data === undefined
       ? null
@@ -53,6 +67,7 @@ export function useOrgAccess(): { banner: AccessBanner | null; isAdmin: boolean 
           isAdmin,
           writable: writable.data,
           subscription: subscription.data ?? null,
+          pendingDeletion: deletion.data ?? null,
         });
   return { banner, isAdmin };
 }

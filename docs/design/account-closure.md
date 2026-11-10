@@ -1,7 +1,11 @@
 # Account closure and organisation deletion (GL-11)
 
-Status: **decided 10/11/2026; SQL proposed, not applied** (`docs/sql/gl-11-account-closure.sql`,
-tests `supabase/tests/account_closure.sql`, 64 checks passing on the local Postgres). Written
+Status: **built 10/11/2026** (migration `20261110170309_gl_11_account_closure`; section D, the
+`profiles_id_fkey` drop, is run by hand). Tests: `supabase/tests/account_closure.sql` (75 checks) and
+`supabase/tests/organisation_purge.sql` (full coverage, GL-10's filler), both on the local Postgres.
+Built on top of the design below: the recent-sign-in check falls back to the session's creation time
+when the JWT's amr has no timestamp (Microsoft), and the purge refuses while Storage objects remain.
+The full data export is GL-11b. Written
 10/11/2026 from `main` `42e089e` and a read-only look at production (`xvdlmtkzfmbcegkmampz`).
 
 **Decisions (10/11/2026)** — D1 cancel at period end on request; D2 scheduled purge shipped in

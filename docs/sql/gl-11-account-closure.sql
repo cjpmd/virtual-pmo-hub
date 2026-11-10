@@ -1,5 +1,8 @@
 -- =====================================================================================
--- GL-11 Account closure and organisation deletion: SQL proposal (NOT APPLIED).
+-- GL-11 Account closure and organisation deletion. Sections A–H APPLIED on 10/11/2026 as migration
+-- 20261110170309_gl_11_account_closure (same statements, shorter comments). Section D: run by hand.
+-- Added after the approval, as asked: the recent-sign-in fallback to auth.sessions
+-- (private.signed_in_at) and the purge's refusal while Storage objects remain (storage_not_empty).
 -- Design: docs/design/account-closure.md. Decisions (10/11/2026): Stripe cancel at period end on
 -- request; scheduled purge shipped in dry_run (first purges run by hand); admins emailed, every
 -- member sees the banner; recent sign-in (10 min) for account closure; profiles_id_fkey dropped

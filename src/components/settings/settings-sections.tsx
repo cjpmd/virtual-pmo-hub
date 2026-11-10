@@ -65,6 +65,7 @@ import { plannerSync } from "@/lib/features";
 import { setPendingLogo } from "@/components/auth/settings-sync";
 import { useOrgId } from "@/components/auth/organisation-provider";
 import { LessonsImport } from "@/components/lessons-import";
+import { OrganisationDeletionSettings } from "@/components/settings/organisation-deletion-settings";
 import { ProjectImport } from "@/components/settings/project-import";
 import { SampleDataSettings } from "@/components/settings/sample-data-settings";
 import { useCan } from "@/hooks/use-permissions";
@@ -189,6 +190,7 @@ export function OrganisationSettings() {
           Reset all settings
         </Button>
       </SettingsCard>
+      <OrganisationDeletionSettings />
     </>
   );
 }

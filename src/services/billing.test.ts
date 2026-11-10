@@ -133,6 +133,50 @@ describe("accessBanner (GL-5)", () => {
     expect(admin(sub({ plan: "demo" }))).toBeNull();
   });
 
+  it("GL-11: a pending deletion shows to everyone, above read-only, with the date", () => {
+    const pendingDeletion = { purgeAfter: "2026-12-10T08:00:00Z" };
+    expect(
+      accessBanner({
+        isDemo: false,
+        isAdmin: false,
+        writable: false,
+        subscription: null,
+        pendingDeletion,
+        now,
+      }),
+    ).toEqual({ kind: "pending_deletion", purgeAfter: "2026-12-10T08:00:00Z", isAdmin: false });
+    expect(
+      accessBanner({
+        isDemo: false,
+        isAdmin: true,
+        writable: false,
+        subscription: sub({ status: "past_due", statusChangedAt: "2026-11-01T00:00:00Z" }),
+        pendingDeletion,
+        now,
+      }),
+    ).toEqual({ kind: "pending_deletion", purgeAfter: "2026-12-10T08:00:00Z", isAdmin: true });
+    expect(
+      accessBanner({
+        isDemo: true,
+        isAdmin: true,
+        writable: false,
+        subscription: null,
+        pendingDeletion,
+        now,
+      }),
+    ).toBeNull();
+    expect(
+      accessBanner({
+        isDemo: false,
+        isAdmin: false,
+        writable: false,
+        subscription: null,
+        pendingDeletion: null,
+        now,
+      }),
+    ).toEqual({ kind: "read_only", isAdmin: false });
+  });
+
   it("shows nothing for an active subscription", () => {
     expect(
       admin(sub({ plan: "paid", status: "active", currentPeriodEnd: "2026-11-29T00:00:00Z" })),
