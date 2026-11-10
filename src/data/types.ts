@@ -336,7 +336,9 @@ export type BenefitCategory =
   | "Risk reduction"
   | "Compliance"
   | "Sustainability"
-  | "Income";
+  | "Income"
+  // Categories are the organisation's own list (lookup_values), which differs by sector (GL-8).
+  | (string & {});
 export type BenefitStatus =
   | "Identified"
   | "Validated"

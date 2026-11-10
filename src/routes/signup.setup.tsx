@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { orgFromDomain } from "@/lib/org-name";
 import { JoinableOrganisations } from "@/components/auth/joinable-organisations";
 import { defaultLifecyclePhases } from "@/data/lifecycle";
+import { financialYearStartFor, sectors, type Sector } from "@/data/sectors";
 
 export const Route = createFileRoute("/signup/setup")({
   // Creating an organisation can be switched off with VITE_SELF_SIGNUP=false (lib/features.ts).
@@ -25,7 +26,8 @@ export const Route = createFileRoute("/signup/setup")({
       { title: "Set up your organisation — ORMO PMO" },
       {
         name: "description",
-        content: "Name your organisation and choose your region, currency and financial year.",
+        content:
+          "Name your organisation and choose your sector, region, currency and financial year.",
       },
       { property: "og:title", content: "Set up your organisation — ORMO PMO" },
       { property: "og:description", content: "A short setup with sensible defaults." },
@@ -78,12 +80,19 @@ function Setup({ userId, email }: { userId: string; email: string }) {
   const [name, setName] = useState(suggestedName);
   const [region, setRegion] = useState<"uk" | "eu">("uk");
   const [currency, setCurrency] = useState<"GBP" | "EUR">("GBP");
+  const [sector, setSector] = useState<Sector | null>(null);
   const [fyStart, setFyStart] = useState(8);
+  // The financial year follows the sector (August, April, January); it can still be changed.
+  const chooseSector = (value: Sector) => {
+    setSector(value);
+    setFyStart(financialYearStartFor(value));
+  };
   const create = useMutation({
     meta: { silent: true },
     mutationFn: async () => {
       const id = await createOrganisation({
         name,
+        sector: sector ?? "general",
         region,
         currency,
         financialYearStartMonth: fyStart,
@@ -95,15 +104,15 @@ function Setup({ userId, email }: { userId: string; email: string }) {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: qk.memberships(userId) });
-      setStep(3);
+      setStep(4);
     },
   });
-  const steps = ["Organisation", "Region and money", "Lifecycle", "Get started"];
+  const steps = ["Organisation", "Sector", "Region and money", "Lifecycle", "Get started"];
   const sel = "h-9 w-full rounded-md border bg-background px-2 text-sm";
 
   if (memberships.isPending) return <Splash label="Checking your organisations…" />;
   const existing = memberships.data ?? [];
-  if (existing.length && step < 3 && !another)
+  if (existing.length && step < 4 && !another)
     return (
       <CentredCard title="You're already in an organisation">
         <p className="text-sm text-muted-foreground">
@@ -171,6 +180,33 @@ function Setup({ userId, email }: { userId: string; email: string }) {
           )}
           {step === 1 && (
             <>
+              <h1 className="text-2xl font-semibold">Your sector</h1>
+              <p className="text-sm text-muted-foreground">
+                Sets the starting lists, benefit categories, forums and financial year. You can edit
+                all of them later in Settings.
+              </p>
+              <div role="radiogroup" aria-label="Sector" className="grid gap-3 sm:grid-cols-3">
+                {sectors.map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={sector === item.value}
+                    onClick={() => chooseSector(item.value)}
+                    className={cn(
+                      "rounded-lg border p-4 text-left hover:bg-muted/50",
+                      sector === item.value && "border-primary bg-primary/10",
+                    )}
+                  >
+                    <p className="font-semibold">{item.label}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          {step === 2 && (
+            <>
               <h1 className="text-2xl font-semibold">Region and money</h1>
               <div className="grid gap-4 sm:grid-cols-3">
                 <label className="text-sm">
@@ -212,7 +248,7 @@ function Setup({ userId, email }: { userId: string; email: string }) {
               </div>
             </>
           )}
-          {step === 2 && (
+          {step === 3 && (
             <>
               <h1 className="text-2xl font-semibold">Your lifecycle</h1>
               <p className="text-sm text-muted-foreground">
@@ -230,7 +266,7 @@ function Setup({ userId, email }: { userId: string; email: string }) {
               )}
             </>
           )}
-          {step === 3 && (
+          {step === 4 && (
             <>
               <h1 className="text-2xl font-semibold">{name} is ready</h1>
               <p className="text-sm text-muted-foreground">
@@ -254,18 +290,24 @@ function Setup({ userId, email }: { userId: string; email: string }) {
         <div className="mt-6 flex justify-between">
           <Button
             variant="ghost"
-            disabled={step === 0 || step === 3 || create.isPending}
+            disabled={step === 0 || step === 4 || create.isPending}
             onClick={() => setStep((s) => s - 1)}
           >
             Back
           </Button>
-          {step < 2 && (
-            <Button disabled={!name.trim()} onClick={() => setStep((s) => s + 1)}>
+          {step < 3 && (
+            <Button
+              disabled={!name.trim() || (step === 1 && !sector)}
+              onClick={() => setStep((s) => s + 1)}
+            >
               Continue
             </Button>
           )}
-          {step === 2 && (
-            <Button disabled={create.isPending || !name.trim()} onClick={() => create.mutate()}>
+          {step === 3 && (
+            <Button
+              disabled={create.isPending || !name.trim() || !sector}
+              onClick={() => create.mutate()}
+            >
               {create.isPending && <LoaderCircle className="animate-spin" />}Create organisation
             </Button>
           )}

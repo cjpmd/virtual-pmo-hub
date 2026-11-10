@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { defaultSettings } from "@/data/settings-data";
+import { financialYearStartFor, sectorOptimismBias } from "@/data/sectors";
 import type { AppSettings, PermissionKey, TermKey, UserRole } from "@/data/settings-types";
 
 // Settings belong to the organisation and live in Supabase (see services/org-settings.ts).
@@ -111,11 +112,19 @@ export function updateSettings(
   persister?.(previous, snapshot);
 }
 
-/** Restore the organisation-wide preferences (not lists, phases or members) to the defaults. */
+/**
+ * Restore the organisation-wide preferences (not lists, phases or members) to the defaults for
+ * the organisation's sector: optimism bias and financial-year start follow the sector (GL-8).
+ */
 export function resetSettings() {
   const defaults = clone(defaultSettings);
+  const sector = snapshot.organisation.sector;
   updateSettings({
-    regional: { ...defaults.regional, exchangeRates: snapshot.regional.exchangeRates },
+    regional: {
+      ...defaults.regional,
+      financialYearStartMonth: financialYearStartFor(sector),
+      exchangeRates: snapshot.regional.exchangeRates,
+    },
     workingTime: {
       ...defaults.workingTime,
       holidayCalendars: snapshot.workingTime.holidayCalendars,
@@ -123,7 +132,11 @@ export function resetSettings() {
     terminology: defaults.terminology,
     health: defaults.health,
     risk: defaults.risk,
-    benefits: { ...defaults.benefits, categories: snapshot.benefits.categories },
+    benefits: {
+      ...defaults.benefits,
+      optimismBias: sectorOptimismBias(sector),
+      categories: snapshot.benefits.categories,
+    },
     notifications: defaults.notifications,
     templates: { ...defaults.templates, projectTemplates: snapshot.templates.projectTemplates },
   });

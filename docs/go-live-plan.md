@@ -329,6 +329,22 @@ financial year in the wizard. Propose:
   January general); the user can still change it.
 SQL first, then stop. e2e: a General organisation has no university wording in Settings.
 ```
+**Done (10/11/2026):** migration `20261110113630_gl_8_sector` (`docs/sql/gl-8-sector.sql`).
+`organisations.settings.sector` (`university` | `public_sector` | `general`, check constraint);
+backfilled Originoverthrow `general`, the other three `university`; missing reads as university.
+`create_organisation` has a new signature with a required `p_sector` (financial year defaults to
+August / April / January); the old six-argument one is kept as a wrapper that passes University.
+`private.sector_org_settings(sector)` sets the optimism bias, financial year, tier wording
+(`settings.tiers`) and sector; `seed_org_defaults` seeds teams, benefit categories, project types,
+business units and forums by sector (lifecycle unchanged). `data/sectors.ts` mirrors the SQL. Setup
+wizard: a Sector step before Region and money. Settings › Organisation: Sector, shown to everyone,
+admins edit (the existing role-scope trigger); it only steers Restore default tiers, Reset all
+settings and a "Suggested for …" hint on the financial year; it never rewrites lists. Shipped
+`defaultSettings` and the fallback tiers are now General. The appraisal panel lists the first three
+configured optimism-bias entries. Tests: `data/sectors.test.ts`; e2e `e2e/sector.e2e.ts` (replaces
+the organisation and lookup responses; not run: e2e stays off production). Checked on the local
+Postgres: one organisation per sector, old signature, unknown sector refused.
+
 **Note from GL-3:** `components/appraisal-panel.tsx:196` hard-codes "Student experience" (with
 Efficiency and Income) as a category name in the appraisal logic; make it sector-aware. The
 benefit categories, business units and lists in `data/settings-data.ts` `defaultSettings` are
@@ -527,5 +543,5 @@ and delete the adapter layer. List every screen touched; e2e for that domain mus
 ## Progress
 
 - [x] GL-1 Migrations  - [ ] GL-2 Cron  - [x] GL-3 Hide dead ends  - [x] GL-4 Read-only  - [x] GL-5 Banners  - [x] GL-6 Billing emails  - [ ] GL-7 Legal pages
-- [ ] GL-8 Sector  - [ ] GL-9 Sample data  - [ ] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [ ] GL-12 Bugs  - [ ] GL-13 Notifications  - [ ] GL-14 Committee packs
+- [x] GL-8 Sector  - [ ] GL-9 Sample data  - [ ] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [ ] GL-12 Bugs  - [ ] GL-13 Notifications  - [ ] GL-14 Committee packs
 - [ ] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [ ] GL-17 Multi-tenant  - [ ] GL-18 Bundle  - [ ] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters

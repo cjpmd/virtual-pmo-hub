@@ -10,7 +10,14 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { defaultLifecyclePhases, defaultTierDefinitions } from "@/data/lifecycle";
+import { defaultLifecyclePhases } from "@/data/lifecycle";
+import {
+  financialYearStartFor,
+  sectorLabel,
+  sectors,
+  tierDefinitionsFor,
+  toSector,
+} from "@/data/sectors";
 const getDefaultPhases = () =>
   JSON.parse(JSON.stringify(defaultLifecyclePhases)) as typeof defaultLifecyclePhases;
 import { Button } from "@/components/ui/button";
@@ -98,6 +105,14 @@ export function OrganisationSettings() {
             value={organisation.supportContact}
             onChange={(value) => patch("organisation", { supportContact: value })}
             hint="Optional."
+            wide
+          />
+          <SelectField
+            label="Sector"
+            value={organisation.sector}
+            onChange={(value) => patch("organisation", { sector: toSector(value) })}
+            options={sectors.map((item) => ({ value: item.value, label: item.label }))}
+            hint="Changes only what Restore and Reset bring back and the suggested financial year. Your existing lists, categories and forums stay as they are."
             wide
           />
           <Field
@@ -429,7 +444,14 @@ export function RegionalSettings() {
             value={String(regional.financialYearStartMonth)}
             onChange={(value) => set({ financialYearStartMonth: Number(value) })}
             options={monthNames.map((name, index) => ({ value: String(index + 1), label: name }))}
-            hint={`Today sits in ${formatFinancialYear(todayIso(), settings)}.`}
+            hint={`Today sits in ${formatFinancialYear(todayIso(), settings)}.${
+              regional.financialYearStartMonth ===
+              financialYearStartFor(settings.organisation.sector)
+                ? ""
+                : ` Suggested for ${sectorLabel(settings.organisation.sector)}: ${
+                    monthNames[financialYearStartFor(settings.organisation.sector) - 1]
+                  }.`
+            }`}
           />
         </div>
       </SettingsCard>
@@ -641,7 +663,9 @@ export function LifecycleSettings() {
   const health = settings.health;
   const set = (value: Partial<AppSettings["health"]>) => patch("health", value);
   const phases = settings.lifecycle.phases;
-  const tiers = settings.lifecycle.tiers.length ? settings.lifecycle.tiers : defaultTierDefinitions;
+  const tiers = settings.lifecycle.tiers.length
+    ? settings.lifecycle.tiers
+    : tierDefinitionsFor(settings.organisation.sector);
   const [activeId, setActiveId] = useState(phases[0]?.id ?? "");
   const active = phases.find((phase) => phase.id === activeId) ?? phases[0];
   const allTiers: ProjectTier[] = ["Small", "Medium", "Large"];
@@ -895,7 +919,10 @@ export function LifecycleSettings() {
             variant="outline"
             onClick={() =>
               updateSettings({
-                lifecycle: { ...settings.lifecycle, tiers: defaultTierDefinitions },
+                lifecycle: {
+                  ...settings.lifecycle,
+                  tiers: tierDefinitionsFor(settings.organisation.sector),
+                },
               })
             }
           >

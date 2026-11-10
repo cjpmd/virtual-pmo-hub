@@ -1,3 +1,4 @@
+import type { Sector } from "./sectors";
 import type {
   BenefitCategory,
   BenefitClassification,
@@ -13,6 +14,8 @@ export interface OrganisationSettings {
   logoDataUrl: string;
   brandColour: string;
   supportContact: string;
+  /** organisations.settings.sector (GL-8): steers restore / reset defaults only. */
+  sector: Sector;
 }
 
 // ---- 2. Regional & currency ----

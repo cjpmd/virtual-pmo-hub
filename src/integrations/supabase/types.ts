@@ -16496,17 +16496,30 @@ export type Database = {
         }
         Returns: Json
       }
-      create_organisation: {
-        Args: {
-          p_currency?: string
-          p_fy_start_month?: number
-          p_name: string
-          p_region?: string
-          p_slug?: string
-          p_workspace_name?: string
-        }
-        Returns: string
-      }
+      create_organisation:
+        | {
+            Args: {
+              p_currency?: string
+              p_fy_start_month?: number
+              p_name: string
+              p_region?: string
+              p_sector: string
+              p_slug?: string
+              p_workspace_name?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_currency?: string
+              p_fy_start_month?: number
+              p_name: string
+              p_region?: string
+              p_slug?: string
+              p_workspace_name?: string
+            }
+            Returns: string
+          }
       create_report: { Args: { p: Json }; Returns: string }
       decide_approval_step: {
         Args: { p_comment?: string; p_decision: string; p_step_id: string }

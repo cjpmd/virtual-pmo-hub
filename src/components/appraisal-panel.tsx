@@ -192,9 +192,8 @@ export function AppraisalPanel({
         <Info className="mt-0.5 size-3.5 shrink-0" />
         Optimism bias defaults are set in Admin → Appraisal:{" "}
         {settings
-          .filter((setting) =>
-            ["Efficiency", "Income", "Student experience"].includes(setting.category),
-          )
+          // The organisation's own categories, which differ by sector (GL-8).
+          .slice(0, 3)
           .map((setting) => `${setting.category} ${setting.percentage}%`)
           .join(", ")}
         .

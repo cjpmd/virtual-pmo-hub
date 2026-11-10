@@ -2,6 +2,7 @@
 import type { AuthError, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { TERMS_VERSION } from "@/lib/legal";
+import type { Sector } from "@/data/sectors";
 import { ServiceError, fromPostgrest, fromAuth, unwrap, unwrapWrite } from "./service-error";
 
 export interface Profile {
@@ -283,6 +284,8 @@ export async function setLastOrganisation(userId: string, organisationId: string
 
 export interface NewOrganisation {
   name: string;
+  /** Seeds sector-specific lists, forums, tier wording and optimism bias (GL-8). */
+  sector: Sector;
   region: "uk" | "eu";
   currency: "GBP" | "EUR";
   financialYearStartMonth: number;
@@ -295,6 +298,7 @@ export interface NewOrganisation {
 export async function createOrganisation(input: NewOrganisation): Promise<string> {
   const { data, error } = await supabase.rpc("create_organisation", {
     p_name: input.name.trim(),
+    p_sector: input.sector,
     p_region: input.region,
     p_currency: input.currency,
     p_fy_start_month: input.financialYearStartMonth,
