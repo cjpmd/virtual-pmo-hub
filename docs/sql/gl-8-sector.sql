@@ -1,4 +1,5 @@
--- GL-8 Sector choice and financial-year defaults — PROPOSAL, not applied.
+-- GL-8 Sector choice and financial-year defaults. Approved 10/11/2026; applied as migration
+-- gl_8_sector.
 --
 -- Read from production (10/11/2026): public.create_organisation(text,text,text,text,integer,text)
 -- matches migration 20261028112834_auth_email_microsoft; private.seed_org_defaults(uuid) matches
@@ -8,7 +9,7 @@
 --
 -- Design
 -- - organisations.settings.sector: 'university' | 'public_sector' | 'general'. Existing
---   organisations are backfilled to 'university' (that's what they were seeded with). Missing
+--   organisations are backfilled: Originoverthrow 'general', the rest 'university'. Missing
 --   sector is read as 'university' everywhere, so scripts/seed-perf-org.sql and
 --   scripts/generate-seed.ts keep working unchanged.
 -- - private.sector_org_settings(sector): default_org_settings() plus the sector's optimism
@@ -409,7 +410,7 @@ $$;
 -- ---------------------------------------------------------------------------------------------
 -- Checks to run after applying (local Postgres first, then production read-only)
 -- ---------------------------------------------------------------------------------------------
--- select name, settings ->> 'sector' from public.organisations;           -- all 'university'
+-- select name, settings ->> 'sector' from public.organisations;  -- Originoverthrow general, rest university
 -- select oid::regprocedure from pg_proc where proname = 'create_organisation';  -- two overloads
 -- As a signed-in test user (local only): create_organisation(p_name => 'G', p_sector => 'general')
 --   then lookup_values / forums / settings -> 'tiers' / financialYearStartMonth = 1, and no

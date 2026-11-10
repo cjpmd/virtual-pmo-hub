@@ -1,7 +1,8 @@
 // The stage-gate checklist for a project's current phase (Prompt H3). Criteria are the
 // organisation's own (lifecycle_phases + gate_criteria, loaded into settings); automatic checks
 // read the project's benefits and lessons from Supabase. Pure: callers pass the data in.
-import { defaultLifecyclePhases, defaultTierDefinitions } from "@/data/lifecycle";
+import { defaultLifecyclePhases } from "@/data/lifecycle";
+import { tierDefinitionsFor } from "@/data/sectors";
 import type { GateCriterion, LifecyclePhase, ProjectTier, TierDefinition } from "@/data/types";
 import type { BenefitView } from "./benefits";
 import { getSettings } from "./settings";
@@ -133,6 +134,7 @@ export const getLifecyclePhases = (): LifecyclePhase[] => {
   return phases?.length ? phases : defaultLifecyclePhases;
 };
 export const getTierDefinitions = (): TierDefinition[] => {
-  const tiers = getSettings().lifecycle?.tiers;
-  return tiers?.length ? tiers : defaultTierDefinitions;
+  const settings = getSettings();
+  const tiers = settings.lifecycle?.tiers;
+  return tiers?.length ? tiers : tierDefinitionsFor(settings.organisation.sector);
 };

@@ -1,4 +1,5 @@
 import { defaultLifecyclePhases, defaultTierDefinitions } from "./lifecycle";
+import { benefitCategoriesFor, financialYearStartFor, sectorOptimismBias } from "./sectors";
 import type { AppSettings, CurrencyDefinition, RoleDefinition, TermKey } from "./settings-types";
 
 export const currencies: CurrencyDefinition[] = [
@@ -297,6 +298,8 @@ export const defaultSettings: AppSettings = {
     logoDataUrl: "",
     brandColour: "#2a4c96",
     supportContact: "",
+    // Shipped defaults are the General sector's (GL-8); a loaded organisation brings its own.
+    sector: "general",
   },
   regional: {
     baseCurrency: "GBP",
@@ -316,7 +319,7 @@ export const defaultSettings: AppSettings = {
     dateFormat: "DD/MM/YYYY",
     timeZone: "Europe/London",
     firstDayOfWeek: 1,
-    financialYearStartMonth: 8,
+    financialYearStartMonth: financialYearStartFor("general"),
   },
   workingTime: {
     hoursPerWeek: 36.25,
@@ -354,25 +357,9 @@ export const defaultSettings: AppSettings = {
     appetiteThreshold: 12,
   },
   benefits: {
-    categories: [
-      "Efficiency",
-      "Student experience",
-      "Research",
-      "Risk reduction",
-      "Compliance",
-      "Sustainability",
-      "Income",
-    ],
+    categories: benefitCategoriesFor("general"),
     classifications: ["Cash-releasing", "Non-cash-releasing", "Qualitative", "Societal"],
-    optimismBias: [
-      { category: "Efficiency", percentage: 20 },
-      { category: "Income", percentage: 30 },
-      { category: "Student experience", percentage: 25 },
-      { category: "Research", percentage: 25 },
-      { category: "Risk reduction", percentage: 15 },
-      { category: "Compliance", percentage: 10 },
-      { category: "Sustainability", percentage: 15 },
-    ],
+    optimismBias: sectorOptimismBias("general"),
     defaultMeasurementFrequency: "Quarterly",
     appraisalYears: 5,
   },
@@ -400,35 +387,27 @@ export const defaultSettings: AppSettings = {
       "Cyber",
       "Rollout",
       "Service improvement",
+      "Process change",
+      "Organisational change",
       "AI",
-      "Mobile app",
-      "Estate wide",
       "Supplier delivered",
     ],
     businessUnits: [
-      "Digital & Technology Services",
-      "Student Services",
-      "Research Services",
-      "Estates & Campus Services",
+      "Technology",
+      "Operations",
+      "Product",
+      "Sales & Marketing",
+      "Customer Service",
       "Finance",
-      "People Services",
-      "Academic Faculties",
+      "People & HR",
     ],
     collectionTypes: ["Governance", "Priority set", "Funding stream"],
-    tags: [
-      "Student experience",
-      "Research",
-      "Efficiency",
-      "Security",
-      "Teaching",
-      "AI",
-      "Net zero",
-    ],
+    tags: ["Efficiency", "Security", "AI", "Net zero"],
     issueSeverities: ["Low", "Medium", "High"],
     decisionForums: [
       "Project Board",
       "Programme Board",
-      "Digital Committee",
+      "Portfolio Board",
       "Architecture Review Board",
       "Change Advisory Board",
     ],

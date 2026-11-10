@@ -25,6 +25,7 @@ import type { GateCheckKey, GateCriterion, LifecyclePhase, ProjectTier } from "@
 import type { Database, Json } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { defaultRoles } from "@/data/settings-data";
+import { toSector } from "@/data/sectors";
 import { fromIsoDate, toIsoDate } from "@/lib/format";
 import { tierLabel } from "./labels";
 import { fromStorageUpload, unwrap, unwrapMaybe } from "./service-error";
@@ -212,6 +213,8 @@ export async function loadOrgSettings(orgId: string, userId: string): Promise<Or
     brandColour: orgRow.brand_colour ?? "#2a4c96",
     supportContact: orgRow.support_contact ?? "",
     logoDataUrl: orgRow.logo_path ? await signedLogoUrl(orgRow.logo_path) : "",
+    // Missing on organisations created before GL-8: they were seeded as University.
+    sector: toSector(stored["sector"]),
   };
 
   const lists = Object.fromEntries(
@@ -469,8 +472,9 @@ export async function saveOrgSettings(
 }
 
 async function saveOrganisation(context: SaveContext, previous: AppSettings, next: AppSettings) {
-  const before = previous.organisation,
-    after = next.organisation;
+  // The sector lives in organisations.settings (saveJsonb), not in a column.
+  const { sector: _sectorBefore, ...before } = previous.organisation;
+  const { sector: _sectorAfter, ...after } = next.organisation;
   if (same(before, after) && !context.logoFile) return;
   let logoPath: string | null | undefined;
   if (context.logoFile) logoPath = await uploadLogo(context.orgId, context.logoFile);
@@ -516,6 +520,7 @@ async function saveJsonb(
     templates: { ...settings.templates, projectTemplates: undefined },
     data: { retentionMonths: settings.data.retentionMonths },
     tiers: settings.lifecycle.tiers,
+    sector: settings.organisation.sector,
     roleHomes: Object.fromEntries(settings.roles.map((role) => [role.role, role.defaultHome])),
   });
   const before = strip(previous),

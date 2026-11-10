@@ -270,8 +270,8 @@ export const defaultTierDefinitions: TierDefinition[] = [
   {
     tier: "Large",
     description:
-      "High complexity, institution-wide impact or significant spend. Adds independent assurance, rehearsed go-live and portfolio board oversight.",
-    guideline: "Over £250k, over 12 months, university-wide impact",
+      "High complexity, organisation-wide impact or significant spend. Adds independent assurance, rehearsed go-live and portfolio board oversight.",
+    guideline: "Over £250k, over 12 months, organisation-wide impact",
   },
 ];
 
