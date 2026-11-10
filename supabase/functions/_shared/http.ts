@@ -44,6 +44,27 @@ export function dbErrorResponse(error: DbError, fallback: string) {
   return json({ error: status === 500 ? fallback : error.message ?? fallback, code: error.hint ?? error.code ?? "error" }, status);
 }
 
+/**
+ * GL-4: refuses work on behalf of a user in a read-only organisation (trial or subscription
+ * ended) before a function does it with the service role, which the database's read-only
+ * trigger treats as a system write. Asks as the caller, so they must be a member. Returns a
+ * response to send back, or null when the organisation is writable.
+ */
+export async function requireWritable(client: SupabaseClient, organisationId: string) {
+  const { data, error } = await client.rpc("organisation_writable", { p_organisation_id: organisationId });
+  if (error) return dbErrorResponse(error, "Couldn't check this organisation's subscription.");
+  if (data === false)
+    return json(
+      {
+        error:
+          "This organisation is read-only because its trial or subscription has ended. An admin can subscribe in Settings › Subscription to restore editing.",
+        code: "org_read_only",
+      },
+      400,
+    );
+  return null;
+}
+
 /** Handles OPTIONS and non-POST, then runs the handler, turning anything unexpected into a 500. */
 export function serve(name: string, handler: (req: Request) => Promise<Response>) {
   Deno.serve(async (req) => {

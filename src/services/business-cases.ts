@@ -12,7 +12,14 @@
 // RLS decides who may edit; the screens only avoid offering what would be refused.
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { ServiceError, fromPostgrest, unwrap, unwrapMaybe } from "./service-error";
+import {
+  ServiceError,
+  fromPostgrest,
+  fromStorageUpload,
+  isReadOnlyError,
+  unwrap,
+  unwrapMaybe,
+} from "./service-error";
 import { deleteRows, insertRow, updateRow } from "./write";
 
 export type BusinessCaseStatus = Database["public"]["Enums"]["business_case_status"];
@@ -420,11 +427,14 @@ export async function uploadFile(storagePath: string, file: File) {
   const upload = await supabase.storage
     .from("documents")
     .upload(storagePath, file, { upsert: false, contentType: file.type });
-  if (upload.error)
+  if (upload.error) {
+    if (isReadOnlyError(upload.error))
+      throw fromStorageUpload(upload.error, "Uploading the file", "network");
     throw new ServiceError(
       "network",
       `Uploading the file: ${upload.error.message}. It's listed as "Upload incomplete"; retry or remove it.`,
     );
+  }
 }
 
 /** The one delete allowed: an incomplete upload, by its uploader (RLS checks both). */

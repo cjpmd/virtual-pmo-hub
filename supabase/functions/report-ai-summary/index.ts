@@ -7,7 +7,7 @@
 // the current model, e.g. claude-opus-5-5; no default in code), REPORT_AI_DAILY_LIMIT
 // (per organisation, default 50).
 import Anthropic from "npm:@anthropic-ai/sdk";
-import { UUID, dbErrorResponse, json, serve, signedIn } from "../_shared/http.ts";
+import { UUID, dbErrorResponse, json, requireWritable, serve, signedIn } from "../_shared/http.ts";
 import {
   FALLBACK_MODELS,
   OUTPUT_SCHEMA,
@@ -41,6 +41,16 @@ serve("report-ai-summary", async (req) => {
   const db = caller.client;
   const { data: permissions } = await db.rpc("report_permissions", { p_report_id: reportId });
   if (!permissions?.can_edit) return json({ error: "You can't change this report." }, 403);
+  // GL-4: record_ai_draft would be refused in a read-only organisation anyway, but only after
+  // the Anthropic call has been paid for, so check first.
+  const { data: report } = await db
+    .from("reports")
+    .select("organisation_id")
+    .eq("id", reportId)
+    .maybeSingle();
+  if (!report) return json({ error: "Report not found." }, 404);
+  const readOnly = await requireWritable(db, report.organisation_id);
+  if (readOnly) return readOnly;
   const { data: used } = await db.rpc("ai_drafts_today", { p_report_id: reportId });
   const limit = Number(Deno.env.get("REPORT_AI_DAILY_LIMIT") ?? 50);
   if ((used ?? 0) >= limit)

@@ -5,7 +5,7 @@
 // pack whose sending failed (it won't resend to everyone once recorded as distributed).
 // Secrets: RESEND_API_KEY, REPORTS_FROM (or RESEND_FROM), APP_URL. No key: nothing is sent and
 // the response says so.
-import { APP_URL, UUID, adminClient, json, serve, signedIn } from "../_shared/http.ts";
+import { APP_URL, UUID, adminClient, json, requireWritable, serve, signedIn } from "../_shared/http.ts";
 import { distributeReport } from "../_shared/report-distribution.ts";
 import { reportSender } from "../_shared/report-sender.ts";
 
@@ -21,6 +21,15 @@ serve("report-distribute", async (req) => {
   });
   if (!permissions?.can_publish)
     return json({ error: "PMO or the forum's secretary sends packs." }, 403);
+  // GL-4: sending is recorded with the service role, so check the organisation here.
+  const { data: report } = await caller.client
+    .from("reports")
+    .select("organisation_id")
+    .eq("id", reportId)
+    .maybeSingle();
+  if (!report) return json({ error: "Report not found." }, 404);
+  const readOnly = await requireWritable(caller.client, report.organisation_id);
+  if (readOnly) return readOnly;
   const admin = adminClient();
   const result = await distributeReport(
     {
