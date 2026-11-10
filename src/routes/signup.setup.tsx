@@ -7,8 +7,10 @@ import { useSession } from "@/components/auth/session-provider";
 import { selfSignup } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { createOrganisation, listMemberships, setLastOrganisation } from "@/services/auth";
 import { qk } from "@/services/query-keys";
+import { seedSampleData } from "@/services/sample-data";
 import { errorMessage } from "@/services/service-error";
 import { cn } from "@/lib/utils";
 import { orgFromDomain } from "@/lib/org-name";
@@ -82,6 +84,9 @@ function Setup({ userId, email }: { userId: string; email: string }) {
   const [currency, setCurrency] = useState<"GBP" | "EUR">("GBP");
   const [sector, setSector] = useState<Sector | null>(null);
   const [fyStart, setFyStart] = useState(8);
+  // GL-9: off by default. The organisation is created first; sample data is added after it.
+  const [withSample, setWithSample] = useState(false);
+  const [sampleResult, setSampleResult] = useState<"added" | string | null>(null);
   // The financial year follows the sector (August, April, January); it can still be changed.
   const chooseSector = (value: Sector) => {
     setSector(value);
@@ -100,6 +105,15 @@ function Setup({ userId, email }: { userId: string; email: string }) {
       // Open the new organisation next time. Best effort: the organisation already exists, and
       // the app falls back to the user's first membership if this doesn't stick.
       await setLastOrganisation(userId, id).catch(() => undefined);
+      if (withSample) {
+        // A failure here doesn't undo the organisation: the admin can add it from Settings.
+        try {
+          await seedSampleData(id);
+          setSampleResult("added");
+        } catch (error) {
+          setSampleResult(errorMessage(error));
+        }
+      }
       return id;
     },
     onSuccess: async () => {
@@ -256,6 +270,21 @@ function Setup({ userId, email }: { userId: string; email: string }) {
                 {defaultPhaseNames}. Rename phases, change gate criteria or add your own in Settings
                 → Lifecycle.
               </p>
+              <label className="flex items-start justify-between gap-4 rounded-lg border p-4">
+                <span>
+                  <span className="block text-sm font-semibold">Start with sample data</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    A sample portfolio, programme and five projects with tasks, milestones, a risk,
+                    an issue, a decision, a benefit and status reports, marked "Sample". Remove it
+                    any time in Settings › Data.
+                  </span>
+                </span>
+                <Switch
+                  checked={withSample}
+                  onCheckedChange={setWithSample}
+                  aria-label="Start with sample data"
+                />
+              </label>
               {create.isError && (
                 <p
                   role="alert"
@@ -270,8 +299,19 @@ function Setup({ userId, email }: { userId: string; email: string }) {
             <>
               <h1 className="text-2xl font-semibold">{name} is ready</h1>
               <p className="text-sm text-muted-foreground">
-                Your organisation is empty: add a portfolio, programmes and projects.
+                {sampleResult === "added"
+                  ? "Your organisation has a sample portfolio to explore. Remove it in Settings › Data when you're ready."
+                  : "Your organisation is empty: add a portfolio, programmes and projects."}
               </p>
+              {sampleResult && sampleResult !== "added" && (
+                <p
+                  role="alert"
+                  className="rounded-md border border-health-warn/40 bg-health-warn/10 p-3 text-sm"
+                >
+                  The sample data couldn't be added ({sampleResult}). An admin can add it later in
+                  Settings › Data.
+                </p>
+              )}
               <div className="grid gap-3">
                 <button
                   onClick={() => navigate({ to: "/portfolio" })}

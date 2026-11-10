@@ -8,6 +8,8 @@ import { DependencyTab } from "@/components/dependency-tab";
 import { ProgrammeActions } from "@/components/entity-management";
 import { FavouriteButton } from "@/components/favourite-button";
 import { ArchivedWorkspaceBadge } from "@/components/workspace-badge";
+import { SampleBadge } from "@/components/sample-badge";
+import { useSampleAdornment } from "@/components/sample-badge";
 import { HealthPill } from "@/components/health-pill";
 import { MilestoneSummary, type SummaryMilestone } from "@/components/milestone-summary";
 import { EntityHeader, Fact, KpiCard } from "@/components/pmo-ui";
@@ -83,6 +85,7 @@ const elapsedPercent = (start: string | null, finish: string | null) => {
 
 function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
   const navigate = useNavigate();
+  const sampleChip = useSampleAdornment("projectCode");
   const settings = useSettings();
   const format = useFormat();
   const [tab, setTab] = useState("overview");
@@ -138,6 +141,7 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
             <div className="flex items-center gap-3">
               <HealthPill health={programme.health} />
               <ArchivedWorkspaceBadge workspaceId={programme.workspaceId} />
+              <SampleBadge kind="programme" id={programme.id} />
               <HealthUpdating className="text-muted-foreground" />
               <FavouriteButton target={{ programmeId: programme.id }} />
               <ProgrammeActions
@@ -304,6 +308,7 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
                 rows={projectSummariesToRows(projects)}
                 columns={projectColumns()}
                 groupOptions={["status", "stage", "priority"]}
+                titleAdornment={sampleChip}
                 renderTitle={(row) => (
                   <Link
                     to="/portfolio/projects/$projectCode"

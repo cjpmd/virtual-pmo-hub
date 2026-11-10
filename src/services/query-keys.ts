@@ -111,6 +111,8 @@ export const qk = {
   dependencyLayout: (orgId: string) => ["org", orgId, "dependency-layout"] as const,
   lessons: (orgId: string) => ["org", orgId, "lessons"] as const,
   issuedTasks: (orgId: string) => ["org", orgId, "projects", "issued-tasks"] as const,
+  /** GL-9: ids of the sample records (projects, registers), for the Sample chip. */
+  sampleIds: (orgId: string) => ["org", orgId, "sample-ids"] as const,
   orgRaid: (orgId: string) => ["org", orgId, "projects", "org-raid"] as const,
   requests: (orgId: string) => ["org", orgId, "requests"] as const,
   resources: {

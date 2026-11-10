@@ -134,6 +134,20 @@ describe("selectInclusions — capping and overrides", () => {
     expect(result.map((i) => `${i.projectId}:${i.mode}`).sort()).toEqual(["a:rule", "c:pinned"]);
   });
 
+  it("never includes a sample project automatically (GL-9), and it frees no cap place", () => {
+    const withSample = projects.map((p) => (p.projectId === "a" ? { ...p, isSample: true } : p));
+    const result = selectInclusions({ ...rules, maxAutoIncluded: 2 }, withSample);
+    expect(result.map((i) => i.projectId)).toEqual(["c", "b"]);
+  });
+
+  it("a pinned sample project is included with its would-be reasons", () => {
+    const withSample = projects.map((p) => (p.projectId === "a" ? { ...p, isSample: true } : p));
+    const result = selectInclusions(rules, withSample, {}, [{ projectId: "a", mode: "pinned" }]);
+    const a = result.find((i) => i.projectId === "a");
+    expect(a?.mode).toBe("pinned");
+    expect(a?.reasons.map((r) => r.ruleId)).toEqual(["red", "budget"]);
+  });
+
   it("orders by programme then name", () => {
     const mixed = [
       project("x", "Zulu", { evidenced_rating: "red" }, "A"),

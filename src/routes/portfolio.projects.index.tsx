@@ -5,6 +5,7 @@ import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
 import { useCan } from "@/hooks/use-permissions";
 import { useMemo, useState } from "react";
 import { BoardWorkspace, type SavedView } from "@/components/board-workspace";
+import { useSampleAdornment } from "@/components/sample-badge";
 import { openIssueTask } from "@/components/issue-task-sheet";
 import { KpiCard, PageHeader } from "@/components/pmo-ui";
 import { QueryState } from "@/components/query-state";
@@ -121,6 +122,7 @@ function ProjectsBody({ items }: { items: ProjectSummary[] }) {
   const writable = useOrgWritable();
   const [creating, setCreating] = useState(false);
   const rows = useMemo(() => projectSummariesToRows(items), [items]);
+  const sampleChip = useSampleAdornment("projectCode");
   const metrics = useMemo(() => {
     const counts = { Proposed: 0, Active: 0, "On Hold": 0, Closed: 0 };
     for (const project of items) counts[project.state] += 1;
@@ -230,6 +232,7 @@ function ProjectsBody({ items }: { items: ProjectSummary[] }) {
         columns={projectColumns()}
         seededViews={seededViews}
         groupOptions={["programme", "manager", "state", "status", "stage", "tier", "priority"]}
+        titleAdornment={sampleChip}
         renderTitle={(row) => (
           <Link
             to="/portfolio/projects/$projectCode"

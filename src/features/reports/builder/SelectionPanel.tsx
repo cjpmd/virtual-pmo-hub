@@ -4,6 +4,7 @@
 // list previews rule edits instantly with the TS mirror of the rule engine.
 import { useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Pin, PinOff, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import { SampleChip } from "@/components/sample-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -239,6 +240,7 @@ export function SelectionPanel({
         name: row.name,
         programme: row.programme,
         metrics: row.metrics,
+        isSample: row.is_sample === true,
       })),
     [metrics],
   );
@@ -373,7 +375,10 @@ export function SelectionPanel({
               data-inclusion={row.projectId}
             >
               <div className="flex items-start gap-1">
-                <span className="min-w-0 flex-1 text-sm font-medium">{label(row.projectId)}</span>
+                <span className="min-w-0 flex-1 text-sm font-medium">
+                  {label(row.projectId)}
+                  {byId.get(row.projectId)?.is_sample && <SampleChip className="ml-1.5" />}
+                </span>
                 {onReorder && editable && (
                   <>
                     <Button
@@ -454,6 +459,7 @@ export function SelectionPanel({
               <li key={row.projectId} className="flex items-start gap-1 text-sm">
                 <span className="min-w-0 flex-1">
                   {label(row.projectId)}
+                  {byId.get(row.projectId)?.is_sample && <SampleChip className="ml-1.5" />}
                   <span className="block text-xs text-muted-foreground">
                     {row.reasons.length
                       ? `Would have matched: ${row.reasons.map((r) => r.label).join(", ")}`
@@ -483,6 +489,7 @@ export function SelectionPanel({
             <li key={row.project_id} className="flex items-center gap-1 text-sm">
               <span className="min-w-0 flex-1 truncate">
                 {row.code} {row.name}
+                {row.is_sample && <SampleChip className="ml-1.5" />}
               </span>
               {onSetMode && editable && (
                 <Button

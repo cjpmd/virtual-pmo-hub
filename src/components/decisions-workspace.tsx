@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { BoardWorkspace, governanceAutomationRecipes } from "@/components/board-workspace";
 import { DecisionPanel, type DecisionCreateScope } from "@/components/decision-panel";
 import { KpiCard } from "@/components/pmo-ui";
+import { useSampleAdornment } from "@/components/sample-badge";
 import { QueryState } from "@/components/query-state";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,6 +52,7 @@ function Decisions({ data }: { data: GovernanceData }) {
   const [status, setStatus] = useState("");
   const [overdueOnly, setOverdueOnly] = useState(false);
   const items = data.decisions;
+  const sampleChip = useSampleAdornment("decision");
   // GL-5: contributors see New decision (disabled while read-only); the register locks.
   const canCreate = useCan("contributor");
   const writable = useOrgWritable();
@@ -180,6 +182,7 @@ function Decisions({ data }: { data: GovernanceData }) {
         groupOptions={["group", "status", "scope"]}
         seededViews={decisionViews}
         seededAutomations={governanceAutomationRecipes}
+        titleAdornment={sampleChip}
         renderTitle={(row) => (
           <button
             onClick={(event) => {

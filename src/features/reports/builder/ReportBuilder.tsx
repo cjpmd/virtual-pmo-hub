@@ -136,6 +136,7 @@ function Builder({ report }: { report: ReportRecord }) {
       name: byId.get(row.entityId)?.name ?? "",
       reasons: row.reasons,
       mode: row.mode as "rule" | "pinned",
+      isSample: byId.get(row.entityId)?.is_sample === true,
     }));
   const sampleProjectId = deepDives[0]?.id ?? context.data?.project_ids[0] ?? null;
   const selected = draft.blocks.find((b) => b.id === selectedId) ?? null;

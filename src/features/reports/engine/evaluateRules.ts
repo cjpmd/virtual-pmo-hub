@@ -30,6 +30,8 @@ export interface ProjectMetrics {
   name: string;
   programme?: string | null;
   metrics: Record<string, unknown>;
+  /** GL-9: sample projects are never included automatically, only by pinning. */
+  isSample?: boolean;
 }
 
 export interface InclusionReason {
@@ -158,6 +160,7 @@ export function evaluateRules(
 /**
  * Steps 4–5: cap rule matches by severity then number of reasons, then merge overrides.
  * Pinned are always included; excluded are dropped but keep their would-be reasons.
+ * Sample projects (GL-9) never fill an automatic place, as in private.compute_inclusions.
  */
 export function selectInclusions(
   ruleSet: Partial<SelectionRuleSet> | null | undefined,
@@ -168,8 +171,9 @@ export function selectInclusions(
   const matches = evaluateRules(ruleSet, projects, tolerances);
   const byId = new Map(matches.map((match) => [match.projectId, match]));
   const overridden = new Map(overrides.map((override) => [override.projectId, override]));
+  const sample = new Set(projects.filter((p) => p.isSample).map((p) => p.projectId));
   const ranked = matches
-    .filter((match) => !overridden.has(match.projectId))
+    .filter((match) => !overridden.has(match.projectId) && !sample.has(match.projectId))
     .sort(
       (a, b) =>
         b.severity - a.severity ||

@@ -4,10 +4,12 @@ import { useHealthComputedAt } from "@/hooks/use-health-refresh";
 import { useMemo, useState } from "react";
 import { AutoBreadcrumbs } from "@/components/section-nav";
 import { BoardWorkspace, type BoardColumn, type BoardRow } from "@/components/board-workspace";
+import { useSampleAdornment } from "@/components/sample-badge";
 import { ChartCard, LegendItem } from "@/components/charts/chart-card";
 import { BulletChart, SegmentedBar, SortedBars, StatStrip } from "@/components/charts/primitives";
 import { ManagePortfoliosButton, StateBadge } from "@/components/entity-management";
 import { ArchivedWorkspaceBadge } from "@/components/workspace-badge";
+import { SampleBadge } from "@/components/sample-badge";
 import { useWorkspaces } from "@/hooks/use-workspaces";
 import { StatusBar } from "@/components/overview/status-bar";
 import { SummaryStrip } from "@/components/overview/summary-strip";
@@ -155,6 +157,7 @@ function PortfolioBody({
   switcher: React.ReactNode;
 }) {
   const { programme: programmeParam } = Route.useSearch();
+  const sampleChip = useSampleAdornment("programme");
   const selectedProgramme = full.programmes.some((item) => item.id === programmeParam)
     ? (programmeParam ?? null)
     : null;
@@ -459,6 +462,7 @@ function PortfolioBody({
           rows={rows}
           columns={columns}
           groupOptions={["group", "status"]}
+          titleAdornment={sampleChip}
           renderTitle={(row) => (
             <Link
               to="/portfolio/programmes/$programmeId"
@@ -751,6 +755,7 @@ function OverviewBand({
             <ManagePortfoliosButton />
             <StateBadge state={portfolio.state} />
             <ArchivedWorkspaceBadge workspaceId={portfolio.workspaceId} />
+            <SampleBadge kind="portfolio" id={portfolio.id} />
             <HealthPill health={portfolio.health} />
             <HealthUpdating className="text-pmo-muted" />
           </div>

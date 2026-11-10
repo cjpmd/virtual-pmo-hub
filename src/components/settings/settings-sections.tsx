@@ -66,6 +66,7 @@ import { setPendingLogo } from "@/components/auth/settings-sync";
 import { useOrgId } from "@/components/auth/organisation-provider";
 import { LessonsImport } from "@/components/lessons-import";
 import { ProjectImport } from "@/components/settings/project-import";
+import { SampleDataSettings } from "@/components/settings/sample-data-settings";
 import { useCan } from "@/hooks/use-permissions";
 import { useLessons } from "@/hooks/use-lessons";
 import { downloadText } from "@/lib/csv";
@@ -1842,6 +1843,7 @@ export function DataSettings() {
       </SettingsCard>
       {open === "projects" && <ProjectImport close={() => setOpen(null)} />}
       {open === "lessons" && <SettingsLessonsImport close={() => setOpen(null)} />}
+      {canExportSettings && <SampleDataSettings />}
       <SettingsCard
         title="Retention"
         description="How long closed records are kept before archiving."

@@ -7,6 +7,7 @@ import {
   type BoardRecordChange,
 } from "@/components/board-workspace";
 import { issueColumns, issuesToRows, riskColumns, risksToRows } from "@/lib/board-data";
+import { useSampleAdornment } from "@/components/sample-badge";
 import { useSettings } from "@/services/settings";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +29,8 @@ export function RaidWorkspace({
 }) {
   const settings = useSettings();
   const size = settings.risk.matrixSize;
+  const riskChip = useSampleAdornment("risk");
+  const issueChip = useSampleAdornment("issue");
   const bandFor = (score: number) =>
     [...settings.risk.bands]
       .sort((a, b) => b.minScore - a.minScore)
@@ -135,6 +138,7 @@ export function RaidWorkspace({
             rows={risksToRows(visible)}
             columns={editable ? riskColumns : readOnly(riskColumns)}
             groupOptions={["group", "formula", "response"]}
+            titleAdornment={riskChip}
             manage={editable}
             canDelete={canDelete}
             {...(onRiskChange ? { onRecordChange: onRiskChange } : {})}
@@ -159,6 +163,7 @@ export function RaidWorkspace({
             rows={issuesToRows(issues)}
             columns={editable ? issueColumns : readOnly(issueColumns)}
             groupOptions={["group", "priority"]}
+            titleAdornment={issueChip}
             manage={editable}
             canDelete={canDelete}
             {...(onIssueChange ? { onRecordChange: onIssueChange } : {})}

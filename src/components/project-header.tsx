@@ -11,6 +11,7 @@ import { JustificationForm } from "@/components/divergence-note";
 import { ProjectEditAction, ProjectMoreMenu, StateBadge } from "@/components/entity-management";
 import { FavouriteButton } from "@/components/favourite-button";
 import { ArchivedWorkspaceBadge } from "@/components/workspace-badge";
+import { SampleBadge } from "@/components/sample-badge";
 import { openIssueTask } from "@/components/issue-task-sheet";
 import { HealthMark } from "@/components/overview/project-watchlist";
 import { Button } from "@/components/ui/button";
@@ -120,6 +121,7 @@ export function ProjectHeader({
             </span>
             <StateBadge state={project.state} />
             <ArchivedWorkspaceBadge workspaceId={project.workspaceId} />
+            <SampleBadge kind="project" id={project.id} />
           </div>
           {project.businessCase && (
             <p
