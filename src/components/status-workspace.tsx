@@ -25,12 +25,8 @@ import { toast } from "sonner";
 import { QueryState } from "@/components/query-state";
 import { useAssurance } from "@/hooks/use-assurance";
 import { useBenefits } from "@/hooks/use-benefits";
-import {
-  useMilestones,
-  useMyResourceId,
-  useProjectPermissions,
-  useRaid,
-} from "@/hooks/use-hierarchy";
+import { useMilestones, useMyResourceId, useRaid } from "@/hooks/use-hierarchy";
+import { useProjectEditPermissions } from "@/hooks/use-org-access";
 import {
   useSaveStatusReportDraft,
   useStatusReports,
@@ -541,7 +537,8 @@ function Status({
   const pendingDecisions = allDecisions.filter(
     (item) => item.projectId === project.id && item.status === "Pending",
   );
-  const { canEdit } = useProjectPermissions(project.id);
+  // GL-5: no drafting or submitting while the organisation is read-only.
+  const { canEdit } = useProjectEditPermissions(project.id);
   const { profile } = useOrganisation();
   const me = useMyResourceId();
   const submitReport = useSubmitStatusReport();

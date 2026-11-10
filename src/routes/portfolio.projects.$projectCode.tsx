@@ -40,7 +40,6 @@ import {
   usePhases,
   usePortfolioNames,
   useProject,
-  useProjectPermissions,
 } from "@/hooks/use-hierarchy";
 import { useFormat } from "@/lib/format";
 import {
@@ -58,6 +57,7 @@ import { useProjectAssurance } from "@/hooks/use-assurance";
 import { useStatusReports } from "@/hooks/use-status-reports";
 import { scopedTo, type ResolvedDecision } from "@/services/decisions";
 import { useGovernance } from "@/hooks/use-governance";
+import { useProjectEditPermissions } from "@/hooks/use-org-access";
 import type { ProjectDetail } from "@/services/hierarchy";
 import { getProjectLessons, hasPhaseLessonsReview } from "@/services/lessons";
 import { useLessons } from "@/hooks/use-lessons";
@@ -196,7 +196,8 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
     () => new Map((people.data ?? []).map((person) => [person.id, person.name])),
     [people.data],
   );
-  const permissions = useProjectPermissions(project.id);
+  // GL-5: nothing editable while the organisation is read-only.
+  const permissions = useProjectEditPermissions(project.id);
   const governance = useGovernance();
   const decisions = useMemo(
     () => scopedTo(governance.data?.decisions ?? [], { projectId: project.id }),

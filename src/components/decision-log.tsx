@@ -7,6 +7,8 @@ import { DecisionPanel, type DecisionCreateScope } from "@/components/decision-p
 import { DecisionFlags, DecisionStatusPill } from "@/components/decision-pills";
 import { QueryState } from "@/components/query-state";
 import { useGovernance } from "@/hooks/use-governance";
+import { useOrgWritable } from "@/hooks/use-org-access";
+import { ReadOnlyTip } from "@/components/org-access-banner";
 import { scopedTo, type ResolvedDecision } from "@/services/decisions";
 
 export function DecisionLog({
@@ -54,15 +56,18 @@ function Cards({
   const [openId, setOpenId] = useState<string | null>(initialOpenId ?? null);
   const [creating, setCreating] = useState(false);
   const open = all.find((item) => item.id === openId);
+  const writable = useOrgWritable();
 
   return (
     <div className="space-y-4">
       {canCreate && (
         <div className="flex justify-end">
-          <Button onClick={() => setCreating(true)}>
-            <Plus />
-            New decision
-          </Button>
+          <ReadOnlyTip readOnly={!writable}>
+            <Button disabled={!writable} onClick={() => setCreating(true)}>
+              <Plus />
+              New decision
+            </Button>
+          </ReadOnlyTip>
         </div>
       )}
       <ul className="space-y-3">

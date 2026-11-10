@@ -12,6 +12,7 @@ import { useBenefitMutations, useBenefits } from "@/hooks/use-benefits";
 import { useBoardRecordSync } from "@/hooks/use-board-record-sync";
 import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
 import { useCan } from "@/hooks/use-permissions";
+import { useOrgWritable } from "@/hooks/use-org-access";
 import { benefitInputFromBoard } from "@/lib/benefit-board-data";
 import { getBenefitMetrics, getBenefitWarnings } from "@/services/benefits-value";
 import type { BenefitInput, BenefitsData } from "@/services/benefits";
@@ -53,8 +54,10 @@ function Register({ data }: { data: BenefitsData }) {
   const benefits = data.benefits,
     metrics = getBenefitMetrics(benefits),
     warnings = getBenefitWarnings(benefits);
-  const canEdit = useCan("contributor"),
-    canDelete = useCan("manager");
+  // GL-5: the register locks while the organisation is read-only.
+  const writable = useOrgWritable();
+  const canEdit = useCan("contributor") && writable,
+    canDelete = useCan("manager") && writable;
   const { portfolio } = useCurrentPortfolio();
   const mutations = useBenefitMutations();
   const rows = useMemo(() => benefitsToRows(data), [data]);

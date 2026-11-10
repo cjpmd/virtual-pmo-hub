@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { OrgAccessBanner } from "@/components/org-access-banner";
 import { SectionTabs } from "@/components/section-nav";
 import { ShellSlotsContext } from "@/components/shell-slots-context";
 import { HealthRefreshWatcher } from "@/hooks/use-health-refresh";
@@ -754,6 +755,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             </header>
 
             {/* Dark top band: filled by pages through <TopBand>; empty (no height) otherwise. */}
+            {/* GL-5: trial, payment and read-only banner (nothing for demo or a healthy plan). */}
+            <OrgAccessBanner />
             <div ref={setBandNode} className="dark bg-pmo-bg font-geist text-pmo-text" />
 
             <main

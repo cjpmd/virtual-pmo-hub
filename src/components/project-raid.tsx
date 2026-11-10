@@ -8,6 +8,7 @@ import { RaidWorkspace } from "@/components/raid-workspace";
 import type { Issue, Risk } from "@/data/types";
 import { useBoardRecordSync } from "@/hooks/use-board-record-sync";
 import { usePeople, useProjectPermissions, useRaid } from "@/hooks/use-hierarchy";
+import { useOrgWritable } from "@/hooks/use-org-access";
 import { useRaidMutations } from "@/hooks/use-project-records";
 import { fromIsoDate, toIsoDate } from "@/lib/format";
 import type { Person } from "@/services/hierarchy";
@@ -118,7 +119,12 @@ export const toIssue = (item: IssueItem, people: Map<string, string>): Issue => 
 export function ProjectRaid({ projectId }: { projectId: string }) {
   const raid = useRaid(projectId);
   const people = usePeople();
-  const permissions = useProjectPermissions(projectId);
+  const rolePermissions = useProjectPermissions(projectId);
+  // GL-5: the registers lock while the organisation is read-only (the banner says why).
+  const writable = useOrgWritable();
+  const permissions = writable
+    ? rolePermissions
+    : { ...rolePermissions, canEdit: false, canDelete: false };
   const mutations = useRaidMutations(projectId);
   const peopleList = useMemo(() => people.data ?? [], [people.data]);
   const names = useMemo(
@@ -151,7 +157,7 @@ export function ProjectRaid({ projectId }: { projectId: string }) {
     <QueryState query={raid}>
       {(data) => (
         <div className="space-y-3">
-          {!permissions.canEdit && (
+          {!rolePermissions.canEdit && (
             <p className="rounded-md border bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
               You can view this project's RAID log. Contributors on this workspace can edit it.
             </p>

@@ -185,6 +185,29 @@ Light and dark, desktop and 375 px. e2e: a trial org shows days left; a read-onl
 the banner and a disabled New project button.
 ```
 
+**Done (10/11/2026):** no database change. `services/billing.ts`: `getOrgWritable` (the GL-4
+`organisation_writable` RPC, any member), `getSubscriptionStatus` (admins only, by RLS) and the
+pure `accessBanner`, in priority order: nothing for demo; read-only (everyone: Subscribe for
+admins, "Ask your admin to subscribe" for others); then admins only: past due inside the 14-day
+grace ("update your card by <period end + 14 days>", Update card opens the Stripe portal), a
+subscription set to cancel ("ends on <date> — read-only after that", Keep subscription opens the
+portal; active or trialing), and a running trial ("N days left", stronger at 3 or fewer).
+Members see no trial or payment banner (they can't read the subscription row; decided against an
+RPC for them). `hooks/use-org-access.ts`: `useOrgAccess`, `useOrgWritable` (true while loading)
+and `useProjectEditPermissions` (a project's permissions, all false while read-only). The banner
+(`components/org-access-banner.tsx`) sits under the shell header; a write refused as read-only
+(`router.tsx`) and the return from checkout refresh it. Disabled while read-only, with a tooltip
+(`ReadOnlyTip`): New project and Issue task (Projects), New portfolio, New programme, programme
+Edit / Close / Reopen / Archive and project Edit / ⋯ menu (`entity-management.tsx`), Issue task
+and task edits (Plan › Tasks), New milestone (milestones board read-only), New report, New
+decision (Decisions register and project decision log). Read-only through
+`useProjectEditPermissions` / `useOrgWritable`: every project-page tab's `canEdit` (status
+reports, RAID, gates, escalations, approval gates, links, dependencies, decisions), the Decisions
+register and the Benefits register. The "Add milestone" links on the overview only navigate, so
+they stay. e2e: `e2e/org-access.e2e.ts` replaces the membership, workspace-role,
+`organisation_writable` and subscription responses (a real org can't be made read-only on
+production).
+
 ### GL-6 Trial-ending and payment emails [DB]
 
 After GL-4.
@@ -447,6 +470,6 @@ and delete the adapter layer. List every screen touched; e2e for that domain mus
 
 ## Progress
 
-- [x] GL-1 Migrations  - [ ] GL-2 Cron  - [x] GL-3 Hide dead ends  - [x] GL-4 Read-only  - [ ] GL-5 Banners  - [ ] GL-6 Billing emails  - [ ] GL-7 Legal pages
+- [x] GL-1 Migrations  - [ ] GL-2 Cron  - [x] GL-3 Hide dead ends  - [x] GL-4 Read-only  - [x] GL-5 Banners  - [ ] GL-6 Billing emails  - [ ] GL-7 Legal pages
 - [ ] GL-8 Sector  - [ ] GL-9 Sample data  - [ ] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [ ] GL-12 Bugs  - [ ] GL-13 Notifications  - [ ] GL-14 Committee packs
 - [ ] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [ ] GL-17 Multi-tenant  - [ ] GL-18 Bundle  - [ ] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters

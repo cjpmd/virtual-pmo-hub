@@ -123,6 +123,12 @@ export const qk = {
   financialPeriods: (orgId: string) => ["org", orgId, "projects", "financial-periods"] as const,
   lookups: (orgId: string, listKey: string) => ["org", orgId, "lookups", listKey] as const,
   settings: (orgId: string) => ["org", orgId, "settings"] as const,
+  /** GL-5: whether the organisation is writable, and the subscription row for its banner. */
+  access: {
+    all: (orgId: string) => ["org", orgId, "access"] as const,
+    writable: (orgId: string) => ["org", orgId, "access", "writable"] as const,
+    subscription: (orgId: string) => ["org", orgId, "access", "subscription"] as const,
+  },
   integrations: (orgId: string) => ["org", orgId, "integrations"] as const,
   favourites: (orgId: string) => ["org", orgId, "favourites"] as const,
   workspaceRoles: (orgId: string) => ["org", orgId, "workspace-roles"] as const,

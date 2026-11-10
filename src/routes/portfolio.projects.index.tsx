@@ -15,6 +15,8 @@ import { projectColumns } from "@/lib/board-data";
 import { useFormat } from "@/lib/format";
 import { isStatusReportOverdue, projectSummariesToRows } from "@/lib/project-rows";
 import { todayIso } from "@/lib/today";
+import { ReadOnlyTip } from "@/components/org-access-banner";
+import { useOrgWritable } from "@/hooks/use-org-access";
 import type { ProjectSummary } from "@/services/hierarchy";
 
 export const Route = createFileRoute("/portfolio/projects/")({
@@ -116,6 +118,7 @@ function ProjectsBody({ items }: { items: ProjectSummary[] }) {
   const navigate = Route.useNavigate();
   const { portfolio } = useCurrentPortfolio();
   const canCreate = useCan("manager", portfolio?.workspaceId);
+  const writable = useOrgWritable();
   const [creating, setCreating] = useState(false);
   const rows = useMemo(() => projectSummariesToRows(items), [items]);
   const metrics = useMemo(() => {
@@ -166,15 +169,19 @@ function ProjectsBody({ items }: { items: ProjectSummary[] }) {
         actions={
           <div className="flex flex-wrap gap-2">
             {canCreate && (
-              <Button onClick={() => setCreating(true)}>
-                <Plus />
-                New project
-              </Button>
+              <ReadOnlyTip readOnly={!writable}>
+                <Button disabled={!writable} onClick={() => setCreating(true)}>
+                  <Plus />
+                  New project
+                </Button>
+              </ReadOnlyTip>
             )}
-            <Button variant="outline" onClick={() => openIssueTask()}>
-              <ListPlus />
-              Issue task
-            </Button>
+            <ReadOnlyTip readOnly={!writable}>
+              <Button variant="outline" disabled={!writable} onClick={() => openIssueTask()}>
+                <ListPlus />
+                Issue task
+              </Button>
+            </ReadOnlyTip>
             <Button variant="outline" onClick={exportCsv}>
               <Download />
               Export CSV

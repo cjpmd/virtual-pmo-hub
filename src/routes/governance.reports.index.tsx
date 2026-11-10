@@ -11,6 +11,8 @@ import { useFormat } from "@/lib/format";
 import { NewReportDialog } from "@/features/reports/builder/NewReportDialog";
 import { STATUS_LABEL } from "@/features/reports/viewer/ReportLifecycle";
 import type { ReportListItem, ReportStatus } from "@/services/reports";
+import { useOrgWritable } from "@/hooks/use-org-access";
+import { ReadOnlyTip } from "@/components/org-access-banner";
 
 const title = "Reports — ORMO PMO",
   description = "Board packs and ad hoc reports, built from blocks and templates.";
@@ -30,6 +32,7 @@ export const Route = createFileRoute("/governance/reports/")({
 function Page() {
   const search = Route.useSearch();
   const query = useReports();
+  const writable = useOrgWritable();
   const [open, setOpen] = useState(!!search.create);
   return (
     <div className="space-y-6">
@@ -45,9 +48,11 @@ function Page() {
                 <LayoutTemplate className="mr-1 size-4" /> Templates
               </Link>
             </Button>
-            <Button onClick={() => setOpen(true)}>
-              <FilePlus2 className="mr-1 size-4" /> New report
-            </Button>
+            <ReadOnlyTip readOnly={!writable}>
+              <Button disabled={!writable} onClick={() => setOpen(true)}>
+                <FilePlus2 className="mr-1 size-4" /> New report
+              </Button>
+            </ReadOnlyTip>
           </div>
         }
       />
@@ -55,7 +60,7 @@ function Page() {
         {(reports) => <ReportList reports={reports} forumFilter={search.forum ?? null} />}
       </QueryState>
       <NewReportDialog
-        open={open}
+        open={open && writable}
         onOpenChange={setOpen}
         forumId={search.forum ?? null}
         meetingId={search.meeting ?? null}

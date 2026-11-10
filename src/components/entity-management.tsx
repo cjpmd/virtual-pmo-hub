@@ -38,7 +38,9 @@ import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
 import { useBenefits } from "@/hooks/use-benefits";
 import { useEntityMutations } from "@/hooks/use-entities";
 import { usePeople, usePhases, usePortfolioNames, useProgrammesLight } from "@/hooks/use-hierarchy";
+import { useOrgWritable } from "@/hooks/use-org-access";
 import { useCan, useWorkspaceRoles } from "@/hooks/use-permissions";
+import { ReadOnlyTip } from "@/components/org-access-banner";
 import { useWorkspaces } from "@/hooks/use-workspaces";
 import { ArchivedWorkspaceBadge } from "@/components/workspace-badge";
 import { currencySymbol, formatCurrency } from "@/lib/format";
@@ -243,6 +245,7 @@ function LifecycleButtons({
   onArchived?: () => void;
 }) {
   const mutations = useEntityMutations();
+  const readOnly = !useOrgWritable();
   const [closing, setClosing] = useState(false),
     [archiving, setArchiving] = useState(false);
   return (
@@ -251,7 +254,7 @@ function LifecycleButtons({
         <Button
           size="sm"
           variant="outline"
-          disabled={mutations.reopen.isPending}
+          disabled={readOnly || mutations.reopen.isPending}
           onClick={() =>
             mutations.reopen.mutate({ kind, id, lastSeen: updatedAt }, { onError: fail })
           }
@@ -260,12 +263,12 @@ function LifecycleButtons({
           Reopen
         </Button>
       ) : (
-        <Button size="sm" variant="outline" onClick={() => setClosing(true)}>
+        <Button size="sm" variant="outline" disabled={readOnly} onClick={() => setClosing(true)}>
           <Archive />
           Close {label}
         </Button>
       )}
-      <Button size="sm" variant="ghost" onClick={() => setArchiving(true)}>
+      <Button size="sm" variant="ghost" disabled={readOnly} onClick={() => setArchiving(true)}>
         Archive
       </Button>
       <CloseDialog
@@ -446,6 +449,7 @@ export function PortfolioManagerDialog({
   );
   const canManage = (workspaceId: string) =>
     roles.some((role) => role.workspaceId === workspaceId && atLeast(role.role, "pmo"));
+  const writable = useOrgWritable();
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -523,15 +527,18 @@ export function PortfolioManagerDialog({
           </div>
           <DialogFooter>
             {pmoWorkspaces.length > 0 && (
-              <Button
-                onClick={() => {
-                  setEditing(undefined);
-                  setFormOpen(true);
-                }}
-              >
-                <Plus />
-                New portfolio
-              </Button>
+              <ReadOnlyTip readOnly={!writable}>
+                <Button
+                  disabled={!writable}
+                  onClick={() => {
+                    setEditing(undefined);
+                    setFormOpen(true);
+                  }}
+                >
+                  <Plus />
+                  New portfolio
+                </Button>
+              </ReadOnlyTip>
             )}
           </DialogFooter>
         </DialogContent>
@@ -896,13 +903,16 @@ export function NewProgrammeButton() {
   const [open, setOpen] = useState(false);
   const { portfolio } = useCurrentPortfolio();
   const allowed = useCan("manager", portfolio?.workspaceId);
+  const writable = useOrgWritable();
   if (!allowed) return null;
   return (
     <>
-      <Button onClick={() => setOpen(true)}>
-        <Plus />
-        New programme
-      </Button>
+      <ReadOnlyTip readOnly={!writable}>
+        <Button disabled={!writable} onClick={() => setOpen(true)}>
+          <Plus />
+          New programme
+        </Button>
+      </ReadOnlyTip>
       <ProgrammeFormDialog open={open} onOpenChange={setOpen} />
     </>
   );
@@ -916,11 +926,12 @@ export function ProgrammeActions({
 }) {
   const [edit, setEdit] = useState(false);
   const allowed = useCan("manager", programme.workspaceId);
+  const writable = useOrgWritable();
   if (!allowed) return <StateBadge state={programme.state} />;
   return (
     <div className="flex flex-wrap items-center gap-2">
       <StateBadge state={programme.state} />
-      <Button size="sm" variant="outline" onClick={() => setEdit(true)}>
+      <Button size="sm" variant="outline" disabled={!writable} onClick={() => setEdit(true)}>
         <Pencil />
         Edit
       </Button>
@@ -965,10 +976,17 @@ export function ProjectEditAction({
 }) {
   const [edit, setEdit] = useState(false);
   const allowed = useCan("manager", project.workspaceId);
+  const writable = useOrgWritable();
   if (!allowed) return null;
   return (
     <>
-      <Button size="sm" variant="outline" className={className} onClick={() => setEdit(true)}>
+      <Button
+        size="sm"
+        variant="outline"
+        className={className}
+        disabled={!writable}
+        onClick={() => setEdit(true)}
+      >
         <Pencil />
         Edit
       </Button>
@@ -996,6 +1014,7 @@ export function ProjectMoreMenu({
 }) {
   const mutations = useEntityMutations();
   const allowed = useCan("manager", project.workspaceId);
+  const writable = useOrgWritable();
   const [closing, setClosing] = useState(false),
     [archiving, setArchiving] = useState(false);
   if (!allowed && !canHandover) return null;
@@ -1003,7 +1022,7 @@ export function ProjectMoreMenu({
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+        <DropdownMenuTrigger asChild disabled={!writable}>
           <Button size="sm" variant="outline" className={className} aria-label="More actions">
             <MoreHorizontal />
           </Button>

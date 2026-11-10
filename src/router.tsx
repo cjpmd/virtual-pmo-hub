@@ -25,6 +25,11 @@ export const getRouter = () => {
     // Every failed write is reported the same way. Screens show read errors inline.
     mutationCache: new MutationCache({
       onError: (error, _variables, _context, mutation) => {
+        // GL-5: a write refused as read-only means the banner is out of date; ask again.
+        if (isServiceError(error) && error.kind === "read_only")
+          void queryClient.invalidateQueries({
+            predicate: (query) => query.queryKey[0] === "org" && query.queryKey[2] === "access",
+          });
         if (mutation.meta?.["silent"]) return;
         toast.error(errorMessage(error));
       },

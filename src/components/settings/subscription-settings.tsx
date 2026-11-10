@@ -99,7 +99,10 @@ export function SubscriptionSettings() {
     }
     if (outcome !== "success") return;
     toast.success("Thank you. Your subscription is being set up and will show here shortly.");
-    const refresh = () => void queryClient.invalidateQueries({ queryKey: qk.settings(orgId) });
+    const refresh = () => {
+      void queryClient.invalidateQueries({ queryKey: qk.settings(orgId) });
+      void queryClient.invalidateQueries({ queryKey: qk.access.all(orgId) });
+    };
     refresh();
     // The webhook can land after Stripe redirects back; look again a little later.
     const timer = setTimeout(refresh, 5_000);

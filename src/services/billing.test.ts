@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const { invoke } = vi.hoisted(() => ({ invoke: vi.fn() }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { functions: { invoke } } }));
 import {
+  accessBanner,
   billingPortalUrl,
   billingTotal,
   checkoutUrl,
@@ -11,6 +12,7 @@ import {
   trialDaysLeft,
 } from "./billing";
 import { ServiceError } from "./service-error";
+import type { SubscriptionStatus } from "./billing";
 
 const DAY = 86_400_000;
 const now = Date.parse("2026-10-29T12:00:00Z");
@@ -106,5 +108,94 @@ describe("billing functions", () => {
     await expect(checkoutUrl("org-1", "year", 1)).rejects.toMatchObject({
       message: "Couldn't start checkout.",
     });
+  });
+});
+
+describe("accessBanner (GL-5)", () => {
+  const sub = (extra: Partial<SubscriptionStatus>): SubscriptionStatus => ({
+    plan: "trial",
+    status: "",
+    trialEndsAt: "",
+    currentPeriodEnd: "",
+    cancelAtPeriodEnd: false,
+    ...extra,
+  });
+  const admin = (subscription: SubscriptionStatus | null, writable = true) =>
+    accessBanner({ isDemo: false, isAdmin: true, writable, subscription, now });
+  const trialEnding = (days: number) =>
+    sub({ trialEndsAt: new Date(now + days * DAY).toISOString() });
+
+  it("shows nothing for the demo organisation, even if it were read-only", () => {
+    expect(
+      accessBanner({ isDemo: true, isAdmin: true, writable: false, subscription: null, now }),
+    ).toBeNull();
+    expect(admin(sub({ plan: "demo" }))).toBeNull();
+  });
+
+  it("shows nothing for an active subscription", () => {
+    expect(
+      admin(sub({ plan: "paid", status: "active", currentPeriodEnd: "2026-11-29T00:00:00Z" })),
+    ).toBeNull();
+  });
+
+  it("counts trial days left, stronger at three or fewer", () => {
+    expect(admin(trialEnding(10))).toEqual({ kind: "trial", daysLeft: 10, urgent: false });
+    expect(admin(trialEnding(4))).toEqual({ kind: "trial", daysLeft: 4, urgent: false });
+    expect(admin(trialEnding(3))).toEqual({ kind: "trial", daysLeft: 3, urgent: true });
+    expect(admin(trialEnding(0.2))).toEqual({ kind: "trial", daysLeft: 1, urgent: true });
+  });
+
+  it("shows no trial banner once the trial has ended but the database still allows writes", () => {
+    expect(admin(trialEnding(0))).toBeNull();
+    expect(admin(trialEnding(-2))).toBeNull();
+  });
+
+  it("is read-only once the database says so, for admins and members", () => {
+    expect(admin(trialEnding(-1), false)).toEqual({ kind: "read_only", isAdmin: true });
+    expect(
+      accessBanner({ isDemo: false, isAdmin: false, writable: false, subscription: null, now }),
+    ).toEqual({ kind: "read_only", isAdmin: false });
+    // Past due beyond the grace period: the database has refused writes, so read-only wins.
+    expect(
+      admin(sub({ status: "past_due", currentPeriodEnd: "2026-10-01T12:00:00Z" }), false),
+    ).toEqual({ kind: "read_only", isAdmin: true });
+  });
+
+  it("asks admins to update their card by the end of the grace period when past due", () => {
+    expect(
+      admin(sub({ plan: "paid", status: "past_due", currentPeriodEnd: "2026-10-25T12:00:00Z" })),
+    ).toEqual({ kind: "past_due", payBy: "2026-11-08T12:00:00.000Z" });
+  });
+
+  it("puts past due ahead of a cancellation", () => {
+    expect(
+      admin(
+        sub({
+          status: "past_due",
+          cancelAtPeriodEnd: true,
+          currentPeriodEnd: "2026-10-25T12:00:00Z",
+        }),
+      ),
+    ).toMatchObject({ kind: "past_due" });
+  });
+
+  it("warns admins when an active subscription is set to cancel at period end", () => {
+    expect(
+      admin(
+        sub({
+          plan: "paid",
+          status: "active",
+          cancelAtPeriodEnd: true,
+          currentPeriodEnd: "2026-11-29T00:00:00Z",
+        }),
+      ),
+    ).toEqual({ kind: "cancelling", endsOn: "2026-11-29T00:00:00Z" });
+  });
+
+  it("shows members nothing while the organisation is writable", () => {
+    for (const subscription of [null, trialEnding(2)])
+      expect(
+        accessBanner({ isDemo: false, isAdmin: false, writable: true, subscription, now }),
+      ).toBeNull();
   });
 });

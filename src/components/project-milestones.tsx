@@ -13,6 +13,8 @@ import { QueryState } from "@/components/query-state";
 import type { MilestoneType } from "@/data/types";
 import { useBoardRecordSync } from "@/hooks/use-board-record-sync";
 import { useMilestones, usePeople, usePhases, useProjectPermissions } from "@/hooks/use-hierarchy";
+import { useOrgWritable, useProjectEditPermissions } from "@/hooks/use-org-access";
+import { ReadOnlyTip } from "@/components/org-access-banner";
 import { useMilestoneMutations } from "@/hooks/use-project-records";
 import { fromIsoDate, toIsoDate } from "@/lib/format";
 import type { Person, Phase } from "@/services/hierarchy";
@@ -139,7 +141,10 @@ export function ProjectMilestones({ projectId }: { projectId: string }) {
   const [openId, setOpenId] = useState<string | "new" | null>(null);
   const hasApproval = milestones.data?.some((item) => item.type === "Approval") ?? false;
   const people = usePeople();
-  const permissions = useProjectPermissions(projectId);
+  // GL-5: the board is read-only while the organisation is; New milestone shows disabled.
+  const canAdd = useProjectPermissions(projectId).canEdit;
+  const permissions = useProjectEditPermissions(projectId);
+  const writable = useOrgWritable();
   const mutations = useMilestoneMutations(projectId);
   const peopleList = useMemo(() => people.data ?? [], [people.data]);
   const phases = usePhases();
@@ -186,11 +191,13 @@ export function ProjectMilestones({ projectId }: { projectId: string }) {
             rows={milestonesToBoardRows(items, names, phaseList, forums.data ?? [])}
             canCreate={false}
             actions={
-              permissions.canEdit && (
-                <Button onClick={() => setOpenId("new")}>
-                  <Plus />
-                  New milestone
-                </Button>
+              canAdd && (
+                <ReadOnlyTip readOnly={!writable}>
+                  <Button disabled={!writable} onClick={() => setOpenId("new")}>
+                    <Plus />
+                    New milestone
+                  </Button>
+                </ReadOnlyTip>
               )
             }
             onOpenRow={(row) => setOpenId(row.id)}
