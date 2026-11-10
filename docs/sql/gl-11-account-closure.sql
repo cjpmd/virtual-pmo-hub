@@ -753,7 +753,9 @@ begin
 
   if p_dry_run then
     return jsonb_build_object('organisation_id', p_organisation_id, 'dry_run', true,
-                              'total', v_total, 'rows', v_counts);
+                              'total', v_total, 'rows', v_counts,
+                              'storage_objects', (select count(*) from storage.objects s
+                                                  where s.name like p_organisation_id::text || '/%'));
   end if;
 
   select * into v_del from public.organisation_deletions d where d.organisation_id = p_organisation_id for update;
@@ -761,6 +763,13 @@ begin
      or v_del.purge_started_at is null or v_del.stripe_done_at is null or v_del.storage_done_at is null then
     raise exception 'This organisation isn''t ready to purge (needs a due, claimed deletion with Stripe and Storage done).'
       using errcode = '55000', hint = 'purge_not_ready';
+  end if;
+
+  -- Files are removed through the Storage API by purge-organisations first (SQL can't remove
+  -- them). Every object path starts with the organisation id; any left means Storage isn't done.
+  if exists (select 1 from storage.objects s where s.name like p_organisation_id::text || '/%') then
+    raise exception 'Storage objects remain for this organisation; remove them through the Storage API first.'
+      using errcode = '55000', hint = 'storage_not_empty';
   end if;
 
   insert into private.privileged_ops (txid, backend_pid, kind, target_organisation_id)
@@ -826,6 +835,45 @@ as $$ select s.mode from private.organisation_purge_settings s; $$;
 revoke execute on function public.organisation_purge_mode() from public, anon, authenticated;
 grant execute on function public.organisation_purge_mode() to service_role;
 
+-- When the caller last signed in: the newest timestamp in the signed JWT's amr claim (password,
+-- OTP, OAuth...). Some sign-ins carry no timestamp there (e.g. Microsoft, decided 10/11/2026),
+-- so then it falls back to the creation time of the JWT's own sign-in session (auth.sessions,
+-- matched on session_id and the user), which a token refresh doesn't change. Null = unknown.
+create function private.signed_in_at(p_uid uuid)
+returns timestamptz
+language plpgsql
+stable
+security definer
+set search_path to ''
+as $$
+declare
+  v_claims jsonb := auth.jwt();
+  v_amr bigint;
+  v_session uuid;
+  v_at timestamptz;
+begin
+  if jsonb_typeof(v_claims -> 'amr') = 'array' then
+    select max((e ->> 'timestamp')::bigint) into v_amr
+    from jsonb_array_elements(v_claims -> 'amr') e
+    where jsonb_typeof(e -> 'timestamp') = 'number';
+  end if;
+  if v_amr is not null then
+    return to_timestamp(v_amr);
+  end if;
+  begin
+    v_session := nullif(v_claims ->> 'session_id', '')::uuid;
+  exception when invalid_text_representation then
+    return null;
+  end;
+  if v_session is null then
+    return null;
+  end if;
+  select s.created_at into v_at from auth.sessions s where s.id = v_session and s.user_id = p_uid;
+  return v_at;
+end;
+$$;
+revoke execute on function private.signed_in_at(uuid) from public, anon, authenticated, service_role;
+
 -- G4. Close my own account. Called by the close-account edge function with the user's JWT;
 --     the function then deletes the auth user with the service role (needs section D first:
 --     refused until profiles_id_fkey is gone, so a deleteUser can never cascade the profile).
@@ -839,7 +887,7 @@ as $$
 declare
   v_uid uuid := (select auth.uid());
   v_p public.profiles;
-  v_signed_in bigint;
+  v_signed_in numeric;
   v_blocking text;
   v_org uuid;
   v_res uuid[];
@@ -859,10 +907,8 @@ begin
   if v_p.email = '' or lower(btrim(coalesce(p_confirm_email, ''))) is distinct from lower(v_p.email) then
     raise exception 'Type your email address exactly to confirm.' using errcode = '22023', hint = 'email_mismatch';
   end if;
-  -- Recent sign-in: the newest authentication method in the signed JWT (amr) within 10 minutes.
-  select max((e ->> 'timestamp')::bigint) into v_signed_in
-  from jsonb_array_elements(case when jsonb_typeof(auth.jwt() -> 'amr') = 'array'
-                                 then auth.jwt() -> 'amr' else '[]'::jsonb end) e;
+  -- Recent sign-in (private.signed_in_at): within 10 minutes.
+  v_signed_in := extract(epoch from private.signed_in_at(v_uid));
   if v_signed_in is null or v_signed_in < extract(epoch from now()) - 600 then
     raise exception 'Sign in again to close your account.' using errcode = '42501', hint = 'reauth_required';
   end if;

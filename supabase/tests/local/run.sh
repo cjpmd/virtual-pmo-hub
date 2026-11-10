@@ -6,6 +6,7 @@
 #   supabase/tests/local/run.sh seed     apply supabase/seed/reports_demo.sql
 #   supabase/tests/local/run.sh test     run supabase/tests/reports_*.sql
 #   supabase/tests/local/run.sh cross    run supabase/tests/cross_tenant.sql (GL-10; after migrate + seed)
+#   supabase/tests/local/run.sh purge    run supabase/tests/organisation_purge.sql (GL-11; after migrate + seed)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 BIN=/usr/lib/postgresql/16/bin
@@ -49,7 +50,14 @@ cross() {
     echo "FAIL cross_tenant.sql"; return 1
   fi
 }
+purge() {
+  if out=$(psql -v ON_ERROR_STOP=1 -At -d vpmo -f "$ROOT/supabase/tests/organisation_purge.sql" 2>&1); then
+    echo "$out" | grep -E '^organisation_purge:'; echo "PASS organisation_purge.sql"
+  else
+    echo "$out" | grep -E 'ERROR|FAIL|COVERAGE|SETUP' | head -20; echo "FAIL organisation_purge.sql"; return 1
+  fi
+}
 case "$cmd" in
-  init) init ;; migrate) init; migrate ;; seed) seed ;; test) tests ;; cross) cross ;;
+  init) init ;; migrate) init; migrate ;; seed) seed ;; test) tests ;; cross) cross ;; purge) purge ;;
   all) init; migrate; seed; tests ;;
 esac

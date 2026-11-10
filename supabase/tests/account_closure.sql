@@ -39,6 +39,22 @@ create function pg_temp.as_user(u uuid, amr_age integer default 60) returns void
          set_config('request.jwt.claim.sub', u::text, true),
          set_config('request.jwt.claim.role', 'authenticated', true),
          set_config('role', 'authenticated', true); $$;
+-- as_oauth: a sign-in whose amr has no timestamp (as Microsoft's does), with its session id.
+create function pg_temp.as_oauth(u uuid, session uuid) returns void language sql as $$
+  select set_config('request.jwt.claims', jsonb_build_object('sub', u, 'role', 'authenticated', 'session_id', session,
+           'amr', jsonb_build_array(jsonb_build_object('method', 'oauth')))::text, true),
+         set_config('request.jwt.claim.sub', u::text, true),
+         set_config('request.jwt.claim.role', 'authenticated', true),
+         set_config('role', 'authenticated', true); $$;
+-- private.signed_in_at for given claims, called as the owner.
+create function pg_temp.signed_in(u uuid, claims jsonb) returns timestamptz language plpgsql as $$
+declare v timestamptz;
+begin
+  perform set_config('request.jwt.claims', claims::text, true);
+  v := private.signed_in_at(u);
+  perform set_config('request.jwt.claims', '', true);
+  return v;
+end $$;
 create function pg_temp.as_owner() returns void language sql as $$
   select set_config('role', 'postgres', true), set_config('request.jwt.claims', '', true),
          set_config('request.jwt.claim.sub', '', true), set_config('request.jwt.claim.role', '', true); $$;
@@ -202,9 +218,48 @@ select pg_temp.as_user(pg_temp.c('b_leaver'));
 select pg_temp.raises('wrong email', $$select public.close_my_account('someone@example.com')$$, '22023', 'email_mismatch');
 select pg_temp.as_user(pg_temp.c('b_leaver'), 900);
 select pg_temp.raises('sign-in 15 minutes ago is too old', $$select public.close_my_account('gl11.b.leaver@example.com')$$, '42501', 'reauth_required');
-select pg_temp.as_user(pg_temp.c('b_leaver'));
-select pg_temp.ok('the leaver closes their account (B read-only)',
+
+-- Recent sign-in, both paths (private.signed_in_at): the amr timestamp when there is one, else
+-- the creation time of the JWT's own session.
+select pg_temp.as_owner();
+insert into auth.sessions (id, user_id, created_at) values
+  ('e1100000-0000-4000-8000-0000000000f1', pg_temp.c('b_leaver'), now() - interval '2 minutes'),
+  ('e1100000-0000-4000-8000-0000000000f2', pg_temp.c('b_leaver'), now() - interval '20 minutes'),
+  ('e1100000-0000-4000-8000-0000000000f3', pg_temp.c('b_admin'), now() - interval '1 minute');
+select pg_temp.ok('amr timestamp used when present', pg_temp.signed_in(pg_temp.c('b_leaver'),
+  jsonb_build_object('amr', jsonb_build_array(jsonb_build_object('method', 'password', 'timestamp', 1700000000)))) = to_timestamp(1700000000));
+select pg_temp.ok('amr timestamp wins over the session', pg_temp.signed_in(pg_temp.c('b_leaver'),
+  jsonb_build_object('session_id', 'e1100000-0000-4000-8000-0000000000f1',
+    'amr', jsonb_build_array(jsonb_build_object('method', 'password', 'timestamp', 1700000000)))) = to_timestamp(1700000000));
+select pg_temp.ok('no amr timestamp: the session''s creation time', pg_temp.signed_in(pg_temp.c('b_leaver'),
+  jsonb_build_object('session_id', 'e1100000-0000-4000-8000-0000000000f1', 'amr', jsonb_build_array(jsonb_build_object('method', 'oauth'))))
+  = (select created_at from auth.sessions where id = 'e1100000-0000-4000-8000-0000000000f1'));
+select pg_temp.ok('no amr at all: the session''s creation time', pg_temp.signed_in(pg_temp.c('b_leaver'),
+  jsonb_build_object('session_id', 'e1100000-0000-4000-8000-0000000000f2'))
+  = (select created_at from auth.sessions where id = 'e1100000-0000-4000-8000-0000000000f2'));
+select pg_temp.ok('another user''s session doesn''t count', pg_temp.signed_in(pg_temp.c('b_leaver'),
+  jsonb_build_object('session_id', 'e1100000-0000-4000-8000-0000000000f3', 'amr', jsonb_build_array(jsonb_build_object('method', 'oauth')))) is null);
+select pg_temp.ok('no timestamp and no session: unknown', pg_temp.signed_in(pg_temp.c('b_leaver'),
+  jsonb_build_object('amr', jsonb_build_array(jsonb_build_object('method', 'oauth')))) is null);
+select pg_temp.ok('a malformed session id: unknown', pg_temp.signed_in(pg_temp.c('b_leaver'),
+  jsonb_build_object('session_id', 'not-a-uuid')) is null);
+select pg_temp.ok('an unknown session: unknown', pg_temp.signed_in(pg_temp.c('b_leaver'),
+  jsonb_build_object('session_id', gen_random_uuid())) is null);
+
+select pg_temp.as_oauth(pg_temp.c('b_leaver'), 'e1100000-0000-4000-8000-0000000000f2');
+select pg_temp.raises('Microsoft-style sign-in 20 minutes ago: sign in again',
+  $$select public.close_my_account('gl11.b.leaver@example.com')$$, '42501', 'reauth_required');
+select pg_temp.as_oauth(pg_temp.c('b_leaver'), 'e1100000-0000-4000-8000-0000000000f3');
+select pg_temp.raises('someone else''s session: sign in again',
+  $$select public.close_my_account('gl11.b.leaver@example.com')$$, '42501', 'reauth_required');
+-- The leaver closes through the session path (no amr timestamp), with B read-only.
+select pg_temp.as_oauth(pg_temp.c('b_leaver'), 'e1100000-0000-4000-8000-0000000000f1');
+select pg_temp.ok('the leaver closes their account (session path, B read-only)',
   (public.close_my_account(' GL11.B.Leaver@example.com ') ->> 'email') = 'gl11.b.leaver@example.com');
+-- The second admin (no memberships left) closes through the amr path.
+select pg_temp.as_user(pg_temp.c('b_admin2'));
+select pg_temp.ok('the second admin closes their account (amr path)',
+  (public.close_my_account('gl11.b.admin2@example.com') ->> 'organisations')::int = 0);
 select pg_temp.as_owner();
 
 select pg_temp.ok('no markers left after closure', not exists (select 1 from private.privileged_ops));
@@ -235,9 +290,10 @@ select pg_temp.ok('closure logged; auth deletion pending',
 select pg_temp.raises('a closed profile can''t rejoin',
   $$insert into public.organisation_members (organisation_id, profile_id, role) values (pg_temp.c('org_b'), pg_temp.c('b_leaver'), 'viewer')$$,
   '42501', 'account_closed');
-delete from auth.users where id = pg_temp.c('b_leaver');
-select pg_temp.ok('auth user deleted, tombstone profile stays',
-  exists (select 1 from public.profiles where id = pg_temp.c('b_leaver'))
+delete from auth.users where id in (pg_temp.c('b_leaver'), pg_temp.c('b_admin2'));
+select pg_temp.ok('auth users deleted (sessions with them), tombstone profiles stay',
+  (select count(*) from public.profiles where id in (pg_temp.c('b_leaver'), pg_temp.c('b_admin2')) and closed_at is not null) = 2
+  and not exists (select 1 from auth.sessions where user_id = pg_temp.c('b_leaver'))
   and not exists (select 1 from public.account_closures_pending()));
 update public.organisation_subscriptions set trial_ends_at = now() + interval '14 days' where organisation_id = pg_temp.c('org_b');
 
