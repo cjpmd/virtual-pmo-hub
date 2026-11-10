@@ -7766,6 +7766,88 @@ export type Database = {
           },
         ]
       }
+      organisation_deletions: {
+        Row: {
+          attempts: number
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cancelled_email_at: string | null
+          last_error: string | null
+          organisation_id: string
+          purge_after: string
+          purge_started_at: string | null
+          reminder_1_email_at: string | null
+          reminder_7_email_at: string | null
+          requested_at: string
+          requested_by: string | null
+          scheduled_email_at: string | null
+          storage_counts: Json | null
+          storage_done_at: string | null
+          stripe_done_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_email_at?: string | null
+          last_error?: string | null
+          organisation_id: string
+          purge_after: string
+          purge_started_at?: string | null
+          reminder_1_email_at?: string | null
+          reminder_7_email_at?: string | null
+          requested_at?: string
+          requested_by?: string | null
+          scheduled_email_at?: string | null
+          storage_counts?: Json | null
+          storage_done_at?: string | null
+          stripe_done_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_email_at?: string | null
+          last_error?: string | null
+          organisation_id?: string
+          purge_after?: string
+          purge_started_at?: string | null
+          reminder_1_email_at?: string | null
+          reminder_7_email_at?: string | null
+          requested_at?: string
+          requested_by?: string | null
+          scheduled_email_at?: string | null
+          storage_counts?: Json | null
+          storage_done_at?: string | null
+          stripe_done_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organisation_deletions_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organisation_deletions_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: true
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organisation_deletions_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organisation_invite_workspaces: {
         Row: {
           invite_id: string
@@ -9154,6 +9236,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_path: string | null
+          closed_at: string | null
           created_at: string
           display_name: string
           email: string
@@ -9164,6 +9247,7 @@ export type Database = {
         }
         Insert: {
           avatar_path?: string | null
+          closed_at?: string | null
           created_at?: string
           display_name: string
           email: string
@@ -9174,6 +9258,7 @@ export type Database = {
         }
         Update: {
           avatar_path?: string | null
+          closed_at?: string | null
           created_at?: string
           display_name?: string
           email?: string
@@ -16394,6 +16479,7 @@ export type Database = {
     }
     Functions: {
       accept_invite: { Args: { p_token: string }; Returns: Json }
+      account_closures_pending: { Args: never; Returns: string[] }
       acknowledge_ai_draft: {
         Args: { p_narrative_id: string }
         Returns: undefined
@@ -16473,6 +16559,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      cancel_organisation_deletion: {
+        Args: { p_organisation_id: string }
+        Returns: undefined
+      }
       change_member_role: {
         Args: {
           p_organisation_id: string
@@ -16505,6 +16595,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      close_my_account: { Args: { p_confirm_email: string }; Returns: Json }
       commit_actuals_import: {
         Args: {
           p_file_name: string
@@ -16718,6 +16809,7 @@ export type Database = {
           workspace_id: string
         }[]
       }
+      organisation_purge_mode: { Args: never; Returns: string }
       organisation_writable: {
         Args: { p_organisation_id: string }
         Returns: boolean
@@ -16753,6 +16845,10 @@ export type Database = {
         }[]
       }
       publish_report: { Args: { p_report_id: string }; Returns: Json }
+      purge_organisation: {
+        Args: { p_dry_run?: boolean; p_organisation_id: string }
+        Returns: Json
+      }
       record_ai_draft: {
         Args: {
           p_block_instance_id: string
@@ -16944,6 +17040,10 @@ export type Database = {
       report_snapshot_by_token: {
         Args: { p_report_id: string; p_token: string }
         Returns: Json
+      }
+      request_organisation_deletion: {
+        Args: { p_confirm_name: string; p_organisation_id: string }
+        Returns: string
       }
       request_to_join: {
         Args: { p_message?: string; p_organisation_id: string }

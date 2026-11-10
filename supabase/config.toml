@@ -20,3 +20,12 @@ verify_jwt = true
 
 [functions.send-billing-notice]
 verify_jwt = true
+
+[functions.organisation-deletion]
+verify_jwt = true
+
+[functions.purge-organisations]
+verify_jwt = true
+
+[functions.close-account]
+verify_jwt = true
