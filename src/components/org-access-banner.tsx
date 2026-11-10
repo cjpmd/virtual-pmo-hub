@@ -1,7 +1,7 @@
 // GL-5: the trial, payment and read-only banner under the app shell's header. Which banner shows
 // is decided by accessBanner (services/billing.ts); writability comes from the database.
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, CalendarClock, CreditCard, Lock } from "lucide-react";
+import { AlertTriangle, CalendarClock, CreditCard, Lock, Trash2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { useSettings } from "@/services/settings";
 
 /** Tooltip text on create and edit buttons disabled while the organisation is read-only. */
 export const READ_ONLY_TIP =
-  "Read-only: this organisation's trial or subscription has ended. An admin can subscribe in Settings › Subscription.";
+  "Read-only: this organisation's trial or subscription has ended, or it is scheduled for deletion. See the banner at the top of the page.";
 
 /**
  * Wraps a button that is disabled because the organisation is read-only, so the reason shows
@@ -81,6 +81,28 @@ export function OrgAccessBanner() {
   let text: ReactNode;
   let action: ReactNode = null;
   switch (banner.kind) {
+    case "pending_deletion":
+      tone = "bad";
+      icon = <Trash2 className="size-4 shrink-0" />;
+      text = (
+        <>
+          <strong className="font-semibold">
+            This organisation is scheduled for deletion on {day(banner.purgeAfter)}.
+          </strong>{" "}
+          {banner.isAdmin
+            ? "It's read-only until then. Any admin can cancel the deletion."
+            : "It's read-only until then. Ask an admin if it should be kept."}
+        </>
+      );
+      if (banner.isAdmin)
+        action = (
+          <Button asChild size="sm" variant="outline" className="w-full sm:w-auto">
+            <Link to="/settings/$section" params={{ section: "organisation" }}>
+              Review or cancel
+            </Link>
+          </Button>
+        );
+      break;
     case "read_only":
       tone = "bad";
       icon = <Lock className="size-4 shrink-0" />;

@@ -35,6 +35,11 @@ create table if not exists auth.identities (
   provider text, provider_id text, identity_data jsonb, email text,
   created_at timestamptz default now(), updated_at timestamptz default now(), last_sign_in_at timestamptz
 );
+-- GL-11: the sign-in session (private.signed_in_at falls back to its created_at).
+create table if not exists auth.sessions (
+  id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz default now(), updated_at timestamptz default now()
+);
 create or replace function auth.uid() returns uuid language sql stable as $$
   select nullif(coalesce(current_setting('request.jwt.claim.sub', true),
     (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')), '')::uuid $$;

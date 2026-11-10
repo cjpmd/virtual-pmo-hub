@@ -130,6 +130,7 @@ export const qk = {
     all: (orgId: string) => ["org", orgId, "access"] as const,
     writable: (orgId: string) => ["org", orgId, "access", "writable"] as const,
     subscription: (orgId: string) => ["org", orgId, "access", "subscription"] as const,
+    deletion: (orgId: string) => ["org", orgId, "access", "deletion"] as const,
   },
   integrations: (orgId: string) => ["org", orgId, "integrations"] as const,
   favourites: (orgId: string) => ["org", orgId, "favourites"] as const,

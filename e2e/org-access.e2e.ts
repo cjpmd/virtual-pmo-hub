@@ -93,3 +93,44 @@ test("the demo organisation shows no banner", async ({ page }) => {
   await settle(page);
   await expect(page.locator("[data-banner]")).toHaveCount(0);
 });
+
+// GL-11: a pending deletion shows to everyone, with the date, and admins get Cancel in Settings.
+test("an organisation scheduled for deletion shows the date and Cancel deletion", async ({
+  page,
+}) => {
+  await pretendAdminOfPaidOrg(page, false, { status: "active" });
+  const purgeAfter = new Date(Date.now() + 20 * DAY).toISOString();
+  await page.route("**/rest/v1/organisation_deletions?*", (route) =>
+    route.fulfill({
+      json: {
+        requested_at: new Date(Date.now() - 10 * DAY).toISOString(),
+        purge_after: purgeAfter,
+        cancelled_at: null,
+      },
+    }),
+  );
+  await page.goto("/portfolio/projects");
+  await settle(page);
+  const banner = page.locator('[data-banner="pending_deletion"]');
+  await expect(banner).toContainText("scheduled for deletion on");
+  await banner.getByRole("link", { name: "Review or cancel" }).click();
+  await settle(page);
+  await expect(page.getByTestId("deletion-pending")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Cancel deletion" })).toBeEnabled();
+  await expectNoErrorBoundary(page);
+});
+
+test("Delete organisation needs the exact name before it can be confirmed", async ({ page }) => {
+  await pretendAdminOfPaidOrg(page, true, { status: "active" });
+  await page.route("**/rest/v1/organisation_deletions?*", (route) => route.fulfill({ json: null }));
+  await page.goto("/settings/organisation");
+  await settle(page);
+  await page.getByRole("button", { name: "Delete organisation…" }).click();
+  const dialog = page.getByRole("dialog");
+  const confirm = dialog.getByRole("button", { name: "Delete in 30 days" });
+  await expect(confirm).toBeDisabled();
+  await dialog.getByLabel(/to confirm/).fill("not the name");
+  await expect(confirm).toBeDisabled();
+  await dialog.getByRole("button", { name: "Keep organisation" }).click();
+  await expectNoErrorBoundary(page);
+});
