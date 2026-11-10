@@ -55,6 +55,7 @@ test("public site pages open signed out and link to each other", async ({ page }
     ["/security", "How we protect your data."],
     ["/privacy", "Privacy notice"],
     ["/terms", "Terms of service"],
+    ["/dpa", "Data Processing Agreement"],
   ] as const) {
     await page.goto(path);
     await expect(page).toHaveURL(new RegExp(`${path}$`));
@@ -66,9 +67,38 @@ test("public site pages open signed out and link to each other", async ({ page }
   await expect(header.getByRole("link", { name: "Security" })).toHaveAttribute("href", "/security");
   await expect(header.getByRole("link", { name: "Product" })).toHaveAttribute("href", "/product");
   const footer = page.getByRole("navigation", { name: "Footer" });
-  for (const name of ["Product", "Pricing", "Security", "Privacy", "Terms", "Contact"]) {
+  for (const name of ["Product", "Pricing", "Security", "Privacy", "Terms", "DPA", "Contact"]) {
     await expect(footer.getByRole("link", { name, exact: true })).toBeVisible();
   }
+});
+
+test("legal pages have their text, a date and a printable DPA", async ({ page }) => {
+  for (const path of ["/terms", "/privacy", "/dpa"]) {
+    await page.goto(path);
+    await expect(page.getByText(/^Last updated \d{1,2} \w+ \d{4}$/)).toBeVisible();
+    await expect(page.getByText("This page is being finalised")).toHaveCount(0);
+    await expect(page.getByRole("navigation", { name: "Contents" })).toBeVisible();
+  }
+  await expect(page.getByRole("button", { name: "Print or save as PDF" })).toBeVisible();
+  await expect(page.getByRole("table", { name: "Subprocessors" })).toBeVisible();
+
+  await page.goto("/terms");
+  await expect(
+    page.getByRole("main").getByRole("link", { name: "Data Processing Agreement" }),
+  ).toHaveAttribute("href", "/dpa");
+});
+
+test("sign-up says that creating an account accepts the terms and the DPA", async ({ page }) => {
+  await page.goto("/signup");
+  const line = page.getByText("By creating an account you agree to the");
+  await expect(line.getByRole("link", { name: "Terms of service" })).toHaveAttribute(
+    "href",
+    "/terms",
+  );
+  await expect(line.getByRole("link", { name: "Data Processing Agreement" })).toHaveAttribute(
+    "href",
+    "/dpa",
+  );
 });
 
 test("pricing switches between monthly and annual", async ({ page }) => {

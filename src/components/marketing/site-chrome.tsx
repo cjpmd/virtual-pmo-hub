@@ -168,6 +168,7 @@ const footerColumns = [
       { to: "/request-access", label: "Contact" },
       { to: "/privacy", label: "Privacy" },
       { to: "/terms", label: "Terms" },
+      { to: "/dpa", label: "DPA" },
     ],
   },
 ] as const;

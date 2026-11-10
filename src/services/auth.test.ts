@@ -11,6 +11,7 @@ const { rpc, auth } = vi.hoisted(() => ({
   },
 }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc, auth } }));
+import { TERMS_VERSION } from "@/lib/legal";
 import {
   isUnconfirmedEmail,
   joinDemoAsViewer,
@@ -57,7 +58,11 @@ describe("read-only demo entry", () => {
         password: "long-enough-password",
         options: {
           emailRedirectTo: "https://pmo.originoverthrow.com/auth/callback?next=%2Fauth%2Fdemo",
-          data: { full_name: "Visitor" },
+          data: {
+            full_name: "Visitor",
+            terms_version: TERMS_VERSION,
+            terms_accepted_at: expect.any(String),
+          },
         },
       });
     } finally {

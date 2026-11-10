@@ -1,13 +1,8 @@
-// Building blocks for the public content pages (/pricing, /product, /security, /privacy, /terms):
-// the gradient page header, a section heading and the placeholder legal page, on the --site-* tokens.
+// Building blocks for the public content pages (/pricing, /product, /security, /privacy, /terms, /dpa):
+// the gradient page header and a section heading, on the --site-* tokens. The legal pages use
+// legal-page.tsx.
 import type { ReactNode } from "react";
-import {
-  SiteFooter,
-  SiteGradientBand,
-  SiteHeader,
-  SitePage,
-} from "@/components/marketing/site-chrome";
-import { SupportLink } from "@/components/support-link";
+import { SiteGradientBand, SiteHeader } from "@/components/marketing/site-chrome";
 
 /** The gradient band with the header, the page title and an introduction. */
 export function SiteHero({
@@ -60,22 +55,5 @@ export function SiteSectionHeading({ title, children }: { title: string; childre
         </p>
       )}
     </div>
-  );
-}
-
-/** A legal page whose text isn't written yet (/privacy, /terms). */
-export function SitePlaceholderPage({ title }: { title: string }) {
-  return (
-    <SitePage>
-      <SiteHero title={title} />
-      <main className="mx-auto w-full max-w-[1240px] px-4 py-16 sm:px-8">
-        <div className="max-w-[44rem] rounded-[18px] border border-site-line bg-site-surface p-8">
-          <p className="m-0 leading-[1.65] text-site-text-muted">
-            This page is being finalised. <SupportLink className="text-site-accent-strong" />
-          </p>
-        </div>
-      </main>
-      <SiteFooter />
-    </SitePage>
   );
 }

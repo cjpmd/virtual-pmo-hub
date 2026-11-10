@@ -23,6 +23,7 @@ export const isPublicPath = (path: string) =>
   path === "/security" ||
   path === "/privacy" ||
   path === "/terms" ||
+  path === "/dpa" ||
   path === "/invite" ||
   path === "/signup" ||
   path.startsWith("/signup/") ||

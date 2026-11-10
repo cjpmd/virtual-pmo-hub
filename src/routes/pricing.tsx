@@ -46,6 +46,10 @@ const faqs: { q: string; a: string }[] = [
     a: "No. Prices exclude VAT, which is added at checkout where it applies. You can add your business tax ID at checkout.",
   },
   {
+    q: "Do you offer a Data Processing Agreement?",
+    a: "Yes. Our Data Processing Agreement (UK GDPR Article 28) forms part of our terms of service, so it applies from the day you sign up. You can read and print it from the DPA link at the foot of every page.",
+  },
+  {
     q: "How do I pay?",
     a: "By card, through Stripe. We never see or store your card details.",
   },
@@ -197,7 +201,11 @@ function PricingPage() {
             >
               Contact sales
             </Link>
-            .
+            . Our{" "}
+            <Link to="/dpa" className="font-medium text-site-accent-strong hover:underline">
+              Data Processing Agreement
+            </Link>{" "}
+            is part of the terms of every subscription.
           </p>
         </section>
 

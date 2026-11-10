@@ -19,6 +19,7 @@ import { Route as DashboardsRouteImport } from './routes/dashboards'
 import { Route as DecisionsRouteImport } from './routes/decisions'
 import { Route as DeliveryRouteImport } from './routes/delivery'
 import { Route as DependenciesRouteImport } from './routes/dependencies'
+import { Route as DpaRouteImport } from './routes/dpa'
 import { Route as GovernanceRouteImport } from './routes/governance'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as InsightsRouteImport } from './routes/insights'
@@ -174,6 +175,11 @@ const DeliveryRoute = DeliveryRouteImport.update({
 const DependenciesRoute = DependenciesRouteImport.update({
   id: '/dependencies',
   path: '/dependencies',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DpaRoute = DpaRouteImport.update({
+  id: '/dpa',
+  path: '/dpa',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GovernanceRoute = GovernanceRouteImport.update({
@@ -734,6 +740,7 @@ export interface FileRoutesByFullPath {
   '/decisions': typeof DecisionsRouteWithChildren
   '/delivery': typeof DeliveryRouteWithChildren
   '/dependencies': typeof DependenciesRouteWithChildren
+  '/dpa': typeof DpaRoute
   '/governance': typeof GovernanceRouteWithChildren
   '/home': typeof HomeRouteWithChildren
   '/insights': typeof InsightsRouteWithChildren
@@ -847,6 +854,7 @@ export interface FileRoutesByTo {
   '/assumptions': typeof AssumptionsRoute
   '/connect-microsoft': typeof ConnectMicrosoftRoute
   '/dashboards': typeof DashboardsRoute
+  '/dpa': typeof DpaRoute
   '/invite': typeof InviteRoute
   '/login': typeof LoginRoute
   '/milestones': typeof MilestonesRoute
@@ -952,6 +960,7 @@ export interface FileRoutesById {
   '/decisions': typeof DecisionsRouteWithChildren
   '/delivery': typeof DeliveryRouteWithChildren
   '/dependencies': typeof DependenciesRouteWithChildren
+  '/dpa': typeof DpaRoute
   '/governance': typeof GovernanceRouteWithChildren
   '/home': typeof HomeRouteWithChildren
   '/insights': typeof InsightsRouteWithChildren
@@ -1072,6 +1081,7 @@ export interface FileRouteTypes {
     | '/decisions'
     | '/delivery'
     | '/dependencies'
+    | '/dpa'
     | '/governance'
     | '/home'
     | '/insights'
@@ -1185,6 +1195,7 @@ export interface FileRouteTypes {
     | '/assumptions'
     | '/connect-microsoft'
     | '/dashboards'
+    | '/dpa'
     | '/invite'
     | '/login'
     | '/milestones'
@@ -1289,6 +1300,7 @@ export interface FileRouteTypes {
     | '/decisions'
     | '/delivery'
     | '/dependencies'
+    | '/dpa'
     | '/governance'
     | '/home'
     | '/insights'
@@ -1408,6 +1420,7 @@ export interface RootRouteChildren {
   DecisionsRoute: typeof DecisionsRouteWithChildren
   DeliveryRoute: typeof DeliveryRouteWithChildren
   DependenciesRoute: typeof DependenciesRouteWithChildren
+  DpaRoute: typeof DpaRoute
   GovernanceRoute: typeof GovernanceRouteWithChildren
   HomeRoute: typeof HomeRouteWithChildren
   InsightsRoute: typeof InsightsRouteWithChildren
@@ -1515,6 +1528,13 @@ declare module '@tanstack/react-router' {
       path: '/dependencies'
       fullPath: '/dependencies'
       preLoaderRoute: typeof DependenciesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dpa': {
+      id: '/dpa'
+      path: '/dpa'
+      fullPath: '/dpa'
+      preLoaderRoute: typeof DpaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/governance': {
@@ -2600,6 +2620,7 @@ const rootRouteChildren: RootRouteChildren = {
   DecisionsRoute: DecisionsRouteWithChildren,
   DeliveryRoute: DeliveryRouteWithChildren,
   DependenciesRoute: DependenciesRouteWithChildren,
+  DpaRoute: DpaRoute,
   GovernanceRoute: GovernanceRouteWithChildren,
   HomeRoute: HomeRouteWithChildren,
   InsightsRoute: InsightsRouteWithChildren,
