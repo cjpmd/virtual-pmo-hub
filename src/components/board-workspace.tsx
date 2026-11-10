@@ -152,6 +152,8 @@ interface BoardProps {
   onRowsChange?: (rows: BoardRow[]) => void;
   onEdit?: () => void;
   renderTitle?: (row: BoardRow) => ReactNode;
+  /** Shown after the title in the table (e.g. the GL-9 Sample chip); the title stays editable. */
+  titleAdornment?: (row: BoardRow) => ReactNode;
   seededViews?: SavedView[];
   actions?: ReactNode;
   seededAutomations?: string[];
@@ -494,6 +496,7 @@ export function BoardWorkspace({
   onRowsChange,
   onEdit,
   renderTitle,
+  titleAdornment,
   seededViews,
   actions,
   seededAutomations,
@@ -1077,6 +1080,7 @@ export function BoardWorkspace({
           setOpenItem={openRow}
           setColumns={setColumns}
           renderTitle={renderTitle}
+          titleAdornment={titleAdornment}
           rowEditable={rowEditable}
         />
       )}{" "}
@@ -1137,6 +1141,7 @@ function TableView({
   setOpenItem,
   setColumns,
   renderTitle,
+  titleAdornment,
   rowEditable,
 }: {
   rows: BoardRow[];
@@ -1151,6 +1156,7 @@ function TableView({
   setOpenItem: (row: BoardRow) => void;
   setColumns: (v: BoardColumn[]) => void;
   renderTitle?: BoardProps["renderTitle"];
+  titleAdornment?: BoardProps["titleAdornment"];
   rowEditable?: BoardProps["rowEditable"];
 }) {
   const cellColumn = (row: BoardRow, column: BoardColumn) =>
@@ -1306,6 +1312,7 @@ function TableView({
                                     />
                                   )}
                                 </div>
+                                {column.key === "title" && titleAdornment?.(row)}
                                 <Button
                                   size="icon"
                                   variant="ghost"

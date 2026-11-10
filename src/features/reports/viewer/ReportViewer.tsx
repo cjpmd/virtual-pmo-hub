@@ -22,6 +22,8 @@ import {
   type ReportRecord,
 } from "@/services/reports";
 import { errorMessage } from "@/services/service-error";
+import { useSampleIds } from "@/hooks/use-sample-data";
+import { isSample } from "@/services/sample-data";
 import { useReportFormat } from "../blocks/primitives";
 import type { RatingScheme } from "../blocks/types";
 import {
@@ -77,6 +79,8 @@ export function useReportView(reportId: string): {
   const metrics = useScopeMetrics(live);
   const inclusions = useInclusions(report.data && !published ? reportId : null);
   const snapshot = useReportSnapshot(published ? reportId : null);
+  // Snapshots don't store is_sample, so published packs take it from the live flag (GL-9).
+  const sampleIds = useSampleIds().data;
   const changes = useBlockData(
     live,
     CHANGES_BLOCK,
@@ -90,13 +94,17 @@ export function useReportView(reportId: string): {
     if (!snapshot.data) return { data: null, error, loading: !error };
     const s = snapshot.data;
     const scheme = toScheme(s.meta.scheme);
+    const snapshotDeepDives: DeepDiveProject[] = s.meta.deep_dives.map((project) => ({
+      ...project,
+      isSample: isSample(sampleIds, "project", project.id),
+    }));
     return {
       error: null,
       loading: false,
       data: {
         report: report.data,
         scheme,
-        deepDives: s.meta.deep_dives,
+        deepDives: snapshotDeepDives,
         forumName: s.meta.forum?.name ?? null,
         meetingDate: s.meta.meeting?.meeting_date ?? null,
         isSnapshot: true,
@@ -106,7 +114,7 @@ export function useReportView(reportId: string): {
         dataBasis: s.dataBasis,
         doc: {
           blocks: report.data.blocks,
-          deepDives: s.meta.deep_dives,
+          deepDives: snapshotDeepDives,
           scheme,
           asAt: report.data.asAt,
           audience: isPartner ? "partner" : "internal",
@@ -130,6 +138,7 @@ export function useReportView(reportId: string): {
       name: byId.get(row.entityId)?.name ?? "",
       reasons: row.reasons,
       mode: row.mode as "rule" | "pinned",
+      isSample: byId.get(row.entityId)?.is_sample === true,
     }));
   const scheme = toScheme(context.data.scheme);
   return {

@@ -4,6 +4,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { TriangleAlert } from "lucide-react";
 import { benefitAutomationRecipes, BoardWorkspace } from "@/components/board-workspace";
 import { PageHeader, KpiCard } from "@/components/pmo-ui";
+import { useSampleAdornment } from "@/components/sample-badge";
 import { benefitColumns, benefitsToRows, benefitViews } from "@/lib/benefit-board-data";
 import { useMemo } from "react";
 import { toast } from "sonner";
@@ -61,6 +62,7 @@ function Register({ data }: { data: BenefitsData }) {
   const { portfolio } = useCurrentPortfolio();
   const mutations = useBenefitMutations();
   const rows = useMemo(() => benefitsToRows(data), [data]);
+  const sampleChip = useSampleAdornment("benefit");
   const onRecordChange = useBoardRecordSync<BenefitInput>({
     toInput: (patch) => benefitInputFromBoard(patch, data.people),
     create: (input) => {
@@ -144,6 +146,7 @@ function Register({ data }: { data: BenefitsData }) {
         onRecordChange={onRecordChange}
         groupOptions={["objective", "programme", "classification", "status", "confidence"]}
         seededViews={benefitViews}
+        titleAdornment={sampleChip}
         renderTitle={(row) => (
           <Link
             to="/benefits/$benefitId"

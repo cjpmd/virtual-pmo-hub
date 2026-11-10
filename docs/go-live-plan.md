@@ -365,6 +365,30 @@ chip. "Remove sample data" in Settings archives it (never deletes). Neutral, sec
 wording from GL-8. Sample projects don't count towards anything billed. SQL first, then stop.
 ```
 
+**Done (10/11/2026):** migration `20261110120047_gl_9_sample_data` (`docs/sql/gl-9-sample-data.sql`).
+`is_sample` (default false) on portfolios, programmes, projects, work_items, milestones, risks,
+issues, decisions, benefits and status_reports. `seed_sample_data(org)` (admin only; refused with
+hint `sample_exists` while sample data is active, and by GL-4 when read-only) seeds a sector-worded
+"Sample portfolio": one programme, five projects (phases 1–5, one proposed), 16 tasks, 8
+milestones, a risk, an issue, a pending decision, a benefit and green / amber / red status reports,
+owned by the admin's own resource; no people, members or invites, so seats are unaffected.
+`remove_sample_data(org)` archives the hierarchy and closes the open risk and issue, withdraws the
+decision and closes the benefit; nothing is deleted, and sample data can be added again. Report
+builder: `private.compute_inclusions` never auto-selects a sample project (create, refresh, pin,
+publish and the scheduled pack drafts all go through it); pinned ones stay, with a Sample chip in
+the selection panel and on the pack. The scope metrics carry `is_sample` for the panel's preview.
+Front end: "Start with sample data" switch (off) on the wizard's Lifecycle step;
+Settings › Data › Sample data (admins: Add when none is active, else Remove); Sample chip
+(`components/sample-badge.tsx`, ids from `services/sample-data.ts`) on the portfolio, programme and
+project headers, the portfolio manager, the projects, programme and programme-projects boards, and
+the risk, issue, decision and benefit registers (`BoardWorkspace` `titleAdornment`). Cross-project
+task and milestone lists hide archived projects' items: task overview, My Work, My Timeline and
+the notification feed (`listPortfolioTasks`), the milestones board, dashboard widget and programme
+page (project ids from `v_projects`) already did; issued tasks (`loadIssuedTasks`) now do too.
+Tests: `supabase/tests/sample_data.sql` (25 checks, local), `services/sample-data.test.ts`,
+`evaluateRules.test.ts`, e2e `e2e/sample-data.e2e.ts` (replaces the is_sample reads; not run: e2e
+stays off production).
+
 ### GL-10 Cross-tenant security suite [DB tests only]
 
 ```
@@ -543,5 +567,5 @@ and delete the adapter layer. List every screen touched; e2e for that domain mus
 ## Progress
 
 - [x] GL-1 Migrations  - [ ] GL-2 Cron  - [x] GL-3 Hide dead ends  - [x] GL-4 Read-only  - [x] GL-5 Banners  - [x] GL-6 Billing emails  - [ ] GL-7 Legal pages
-- [x] GL-8 Sector  - [ ] GL-9 Sample data  - [ ] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [ ] GL-12 Bugs  - [ ] GL-13 Notifications  - [ ] GL-14 Committee packs
+- [x] GL-8 Sector  - [x] GL-9 Sample data  - [ ] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [ ] GL-12 Bugs  - [ ] GL-13 Notifications  - [ ] GL-14 Committee packs
 - [ ] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [ ] GL-17 Multi-tenant  - [ ] GL-18 Bundle  - [ ] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters

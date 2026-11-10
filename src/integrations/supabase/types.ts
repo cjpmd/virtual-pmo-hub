@@ -1361,6 +1361,7 @@ export type Database = {
           eligibility_confirmed_by_id: string | null
           eligibility_confirmed_date: string | null
           id: string
+          is_sample: boolean
           organisation_id: string
           owner_id: string | null
           planned_total_value: number
@@ -1389,6 +1390,7 @@ export type Database = {
           eligibility_confirmed_by_id?: string | null
           eligibility_confirmed_date?: string | null
           id?: string
+          is_sample?: boolean
           organisation_id: string
           owner_id?: string | null
           planned_total_value?: number
@@ -1417,6 +1419,7 @@ export type Database = {
           eligibility_confirmed_by_id?: string | null
           eligibility_confirmed_date?: string | null
           id?: string
+          is_sample?: boolean
           organisation_id?: string
           owner_id?: string | null
           planned_total_value?: number
@@ -4326,6 +4329,7 @@ export type Database = {
           impact_scope_note: string | null
           impact_time: boolean
           impact_time_note: string | null
+          is_sample: boolean
           needed_by_date: string | null
           organisation_id: string
           portfolio_id: string | null
@@ -4365,6 +4369,7 @@ export type Database = {
           impact_scope_note?: string | null
           impact_time?: boolean
           impact_time_note?: string | null
+          is_sample?: boolean
           needed_by_date?: string | null
           organisation_id: string
           portfolio_id?: string | null
@@ -4404,6 +4409,7 @@ export type Database = {
           impact_scope_note?: string | null
           impact_time?: boolean
           impact_time_note?: string | null
+          is_sample?: boolean
           needed_by_date?: string | null
           organisation_id?: string
           portfolio_id?: string | null
@@ -6788,6 +6794,7 @@ export type Database = {
           escalated_at: string | null
           escalated_to_forum_id: string | null
           id: string
+          is_sample: boolean
           organisation_id: string
           owner_id: string | null
           portfolio_id: string | null
@@ -6809,6 +6816,7 @@ export type Database = {
           escalated_at?: string | null
           escalated_to_forum_id?: string | null
           id?: string
+          is_sample?: boolean
           organisation_id: string
           owner_id?: string | null
           portfolio_id?: string | null
@@ -6830,6 +6838,7 @@ export type Database = {
           escalated_at?: string | null
           escalated_to_forum_id?: string | null
           id?: string
+          is_sample?: boolean
           organisation_id?: string
           owner_id?: string | null
           portfolio_id?: string | null
@@ -7541,6 +7550,7 @@ export type Database = {
           forecast_date: string
           forum_id: string | null
           id: string
+          is_sample: boolean
           organisation_id: string
           owner_id: string | null
           phase_id: string | null
@@ -7560,6 +7570,7 @@ export type Database = {
           forecast_date: string
           forum_id?: string | null
           id?: string
+          is_sample?: boolean
           organisation_id: string
           owner_id?: string | null
           phase_id?: string | null
@@ -7579,6 +7590,7 @@ export type Database = {
           forecast_date?: string
           forum_id?: string | null
           id?: string
+          is_sample?: boolean
           organisation_id?: string
           owner_id?: string | null
           phase_id?: string | null
@@ -9071,6 +9083,7 @@ export type Database = {
           health_override: Database["public"]["Enums"]["health"] | null
           health_override_reason: string | null
           id: string
+          is_sample: boolean
           name: string
           organisation_id: string
           owner_id: string | null
@@ -9088,6 +9101,7 @@ export type Database = {
           health_override?: Database["public"]["Enums"]["health"] | null
           health_override_reason?: string | null
           id?: string
+          is_sample?: boolean
           name: string
           organisation_id: string
           owner_id?: string | null
@@ -9105,6 +9119,7 @@ export type Database = {
           health_override?: Database["public"]["Enums"]["health"] | null
           health_override_reason?: string | null
           id?: string
+          is_sample?: boolean
           name?: string
           organisation_id?: string
           owner_id?: string | null
@@ -9336,6 +9351,7 @@ export type Database = {
           health_override: Database["public"]["Enums"]["health"] | null
           health_override_reason: string | null
           id: string
+          is_sample: boolean
           manager_id: string | null
           name: string
           organisation_id: string
@@ -9360,6 +9376,7 @@ export type Database = {
           health_override?: Database["public"]["Enums"]["health"] | null
           health_override_reason?: string | null
           id?: string
+          is_sample?: boolean
           manager_id?: string | null
           name: string
           organisation_id: string
@@ -9384,6 +9401,7 @@ export type Database = {
           health_override?: Database["public"]["Enums"]["health"] | null
           health_override_reason?: string | null
           id?: string
+          is_sample?: boolean
           manager_id?: string | null
           name?: string
           organisation_id?: string
@@ -10243,6 +10261,7 @@ export type Database = {
           health_override: Database["public"]["Enums"]["health"] | null
           health_override_reason: string | null
           id: string
+          is_sample: boolean
           manager_id: string | null
           name: string
           organisation_id: string
@@ -10277,6 +10296,7 @@ export type Database = {
           health_override?: Database["public"]["Enums"]["health"] | null
           health_override_reason?: string | null
           id?: string
+          is_sample?: boolean
           manager_id?: string | null
           name: string
           organisation_id: string
@@ -10311,6 +10331,7 @@ export type Database = {
           health_override?: Database["public"]["Enums"]["health"] | null
           health_override_reason?: string | null
           id?: string
+          is_sample?: boolean
           manager_id?: string | null
           name?: string
           organisation_id?: string
@@ -11684,6 +11705,7 @@ export type Database = {
           escalated_to_forum_id: string | null
           id: string
           impact: number
+          is_sample: boolean
           organisation_id: string
           owner_id: string | null
           portfolio_id: string | null
@@ -11709,6 +11731,7 @@ export type Database = {
           escalated_to_forum_id?: string | null
           id?: string
           impact: number
+          is_sample?: boolean
           organisation_id: string
           owner_id?: string | null
           portfolio_id?: string | null
@@ -11734,6 +11757,7 @@ export type Database = {
           escalated_to_forum_id?: string | null
           id?: string
           impact?: number
+          is_sample?: boolean
           organisation_id?: string
           owner_id?: string | null
           portfolio_id?: string | null
@@ -12561,6 +12585,7 @@ export type Database = {
           evidenced_schedule: Database["public"]["Enums"]["health"] | null
           financial: Database["public"]["Enums"]["health"]
           id: string
+          is_sample: boolean
           issue: Database["public"]["Enums"]["health"]
           organisation_id: string
           overall: Database["public"]["Enums"]["health"]
@@ -12594,6 +12619,7 @@ export type Database = {
           evidenced_schedule?: Database["public"]["Enums"]["health"] | null
           financial?: Database["public"]["Enums"]["health"]
           id?: string
+          is_sample?: boolean
           issue?: Database["public"]["Enums"]["health"]
           organisation_id: string
           overall?: Database["public"]["Enums"]["health"]
@@ -12627,6 +12653,7 @@ export type Database = {
           evidenced_schedule?: Database["public"]["Enums"]["health"] | null
           financial?: Database["public"]["Enums"]["health"]
           id?: string
+          is_sample?: boolean
           issue?: Database["public"]["Enums"]["health"]
           organisation_id?: string
           overall?: Database["public"]["Enums"]["health"]
@@ -14054,6 +14081,7 @@ export type Database = {
           external_source: Database["public"]["Enums"]["external_source"] | null
           finish_date: string | null
           id: string
+          is_sample: boolean
           item_type: Database["public"]["Enums"]["work_item_type"]
           labels: string[]
           milestone_id: string | null
@@ -14089,6 +14117,7 @@ export type Database = {
             | null
           finish_date?: string | null
           id?: string
+          is_sample?: boolean
           item_type?: Database["public"]["Enums"]["work_item_type"]
           labels?: string[]
           milestone_id?: string | null
@@ -14124,6 +14153,7 @@ export type Database = {
             | null
           finish_date?: string | null
           id?: string
+          is_sample?: boolean
           item_type?: Database["public"]["Enums"]["work_item_type"]
           labels?: string[]
           milestone_id?: string | null
@@ -16584,6 +16614,7 @@ export type Database = {
           impact_scope_note: string | null
           impact_time: boolean
           impact_time_note: string | null
+          is_sample: boolean
           needed_by_date: string | null
           organisation_id: string
           portfolio_id: string | null
@@ -16768,6 +16799,7 @@ export type Database = {
           impact_scope_note: string | null
           impact_time: boolean
           impact_time_note: string | null
+          is_sample: boolean
           needed_by_date: string | null
           organisation_id: string
           portfolio_id: string | null
@@ -16830,6 +16862,7 @@ export type Database = {
           impact_scope_note: string | null
           impact_time: boolean
           impact_time_note: string | null
+          is_sample: boolean
           needed_by_date: string | null
           organisation_id: string
           portfolio_id: string | null
@@ -16867,6 +16900,7 @@ export type Database = {
         Args: { p_organisation_id: string; p_profile_id: string }
         Returns: undefined
       }
+      remove_sample_data: { Args: { p_org: string }; Returns: Json }
       reopen_financial_period: {
         Args: { p_month: string; p_organisation_id: string; p_reason: string }
         Returns: {
@@ -16983,6 +17017,7 @@ export type Database = {
           impact_scope_note: string | null
           impact_time: boolean
           impact_time_note: string | null
+          is_sample: boolean
           needed_by_date: string | null
           organisation_id: string
           portfolio_id: string | null
@@ -17039,6 +17074,7 @@ export type Database = {
           evidenced_schedule: Database["public"]["Enums"]["health"] | null
           financial: Database["public"]["Enums"]["health"]
           id: string
+          is_sample: boolean
           issue: Database["public"]["Enums"]["health"]
           organisation_id: string
           overall: Database["public"]["Enums"]["health"]
@@ -17062,6 +17098,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      seed_sample_data: { Args: { p_org: string }; Returns: Json }
       set_join_requests_enabled: {
         Args: { p_enabled: boolean; p_organisation_id: string }
         Returns: undefined
@@ -17165,6 +17202,7 @@ export type Database = {
           evidenced_schedule: Database["public"]["Enums"]["health"] | null
           financial: Database["public"]["Enums"]["health"]
           id: string
+          is_sample: boolean
           issue: Database["public"]["Enums"]["health"]
           organisation_id: string
           overall: Database["public"]["Enums"]["health"]
@@ -17216,6 +17254,7 @@ export type Database = {
           impact_scope_note: string | null
           impact_time: boolean
           impact_time_note: string | null
+          is_sample: boolean
           needed_by_date: string | null
           organisation_id: string
           portfolio_id: string | null
@@ -17270,6 +17309,7 @@ export type Database = {
           impact_scope_note: string | null
           impact_time: boolean
           impact_time_note: string | null
+          is_sample: boolean
           needed_by_date: string | null
           organisation_id: string
           portfolio_id: string | null
@@ -17360,6 +17400,7 @@ export type Database = {
           impact_scope_note: string | null
           impact_time: boolean
           impact_time_note: string | null
+          is_sample: boolean
           needed_by_date: string | null
           organisation_id: string
           portfolio_id: string | null

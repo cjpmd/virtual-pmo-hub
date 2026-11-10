@@ -7,6 +7,7 @@ import { Link } from "@tanstack/react-router";
 import { AlertTriangle, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { SampleChip } from "@/components/sample-badge";
 import { useBlockData } from "@/hooks/use-reports";
 import { errorMessage } from "@/services/service-error";
 import type { ReportInput } from "@/services/reports";
@@ -20,6 +21,8 @@ export interface DeepDiveProject {
   name: string;
   reasons?: Array<{ label: string }>;
   mode?: "rule" | "pinned";
+  /** GL-9: a sample project, only ever here because someone pinned it. */
+  isSample?: boolean;
 }
 
 export type SnapshotLookup = (blockId: string, entityId: string | null) => unknown | undefined;
@@ -304,6 +307,7 @@ export function ReportDocument(props: DocumentProps) {
                 <header className="flex flex-wrap items-baseline justify-between gap-2">
                   <h2 className="font-display text-xl font-semibold">
                     <span className="text-muted-foreground">{project.code}</span> {project.name}
+                    {project.isSample && <SampleChip className="ml-2 align-middle" />}
                   </h2>
                   {props.mode === "screen" && (
                     <Link

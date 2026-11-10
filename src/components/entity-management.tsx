@@ -43,6 +43,7 @@ import { useCan, useWorkspaceRoles } from "@/hooks/use-permissions";
 import { ReadOnlyTip } from "@/components/org-access-banner";
 import { useWorkspaces } from "@/hooks/use-workspaces";
 import { ArchivedWorkspaceBadge } from "@/components/workspace-badge";
+import { SampleBadge } from "@/components/sample-badge";
 import { currencySymbol, formatCurrency } from "@/lib/format";
 import { atLeast } from "@/services/auth";
 import { getHandoverCandidates } from "@/services/benefits-value";
@@ -470,6 +471,7 @@ export function PortfolioManagerDialog({
                     <div className="flex items-center gap-2">
                       <p className="truncate font-medium">{p.name}</p>
                       <ArchivedWorkspaceBadge workspaceId={p.workspaceId} />
+                      <SampleBadge kind="portfolio" id={p.id} />
                       {p.id === current?.id && (
                         <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
                           Selected

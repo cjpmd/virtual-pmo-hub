@@ -102,6 +102,8 @@ export interface ScopeMetricsRow {
   name: string;
   programme: string | null;
   metrics: Record<string, unknown>;
+  /** GL-9: a sample project (never selected automatically). Absent on older snapshots. */
+  is_sample?: boolean;
 }
 
 const REPORT_COLUMNS =

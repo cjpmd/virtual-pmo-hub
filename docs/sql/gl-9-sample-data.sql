@@ -1,4 +1,6 @@
--- GL-9 Start with sample data. PROPOSAL, not applied. Waiting for approval.
+-- GL-9 Start with sample data. Approved 10/11/2026 (sections 1–3 as proposed; section 4 added
+-- with the approval: sample projects stay out of the report builder's automatic selection).
+-- Applied as migration 20261110120047_gl_9_sample_data.
 --
 -- Design
 -- - Marking: a plain flag, is_sample boolean not null default false, on the ten tables the
@@ -37,7 +39,8 @@
 --     benefits -> closed.
 --   These registers (risks, issues, v_decisions, benefits) don't hide rows under an archived
 --   parent, so closing them is what takes them out of the open lists. Tasks, milestones and
---   status reports are left as they are under the archived projects (see open question 1).
+--   status reports are left as they are under the archived projects; the cross-project task
+--   and milestone lists already hide those of archived projects (issued tasks now do too).
 --   Re-running it is a no-op. After removal, seed_sample_data can be run again.
 -- - Both RPCs: execute revoked from public and anon, granted to authenticated.
 -- - Additive only: no drop, delete or truncate.
@@ -130,7 +133,6 @@ begin
           'Sample programme.', v_res, v_res, v_today - 240, v_today + 365, true)
   returning id into v_programme;
 
-  -- n, names by sector, tier, phase (1-based), state, priority, start, finish, baseline slip
   for p in
     select * from (values
       (1, 'Student records upgrade', 'Online payments portal', 'Customer self-service portal',
@@ -277,6 +279,104 @@ end;
 $$;
 revoke execute on function public.remove_sample_data(uuid) from public, anon;
 grant execute on function public.remove_sample_data(uuid) to authenticated;
+
+-- ---------------------------------------------------------------------------------------------
+-- 4. Report builder: sample projects are never selected automatically
+-- ---------------------------------------------------------------------------------------------
+-- Every selection path (create_report, refresh_report_selection, set_report_inclusion,
+-- publish_report, update_report_to_template and the scheduled pack drafts in
+-- private.create_scheduled_packs, through create_report) runs private.compute_inclusions, so the
+-- rule-based insert there skips sample projects. A pinned sample project stays (pinning is the
+-- manual path) and still gets its would-be reasons. The scope metrics carry is_sample so the
+-- selection panel's instant preview (evaluateRules.ts) matches and can show the Sample chip.
+-- The three definitions below are production's (md5 of pg_get_functiondef checked equal to the
+-- repo's on 10/11/2026) with only the marked lines changed; create or replace keeps the grants.
+
+create or replace function private.rb_scope_metrics_rows(ctx jsonb)
+returns jsonb
+language sql
+stable
+set search_path to ''
+as $function$
+  select coalesce(jsonb_agg(jsonb_build_object('project_id', pm.project_id, 'code', p.code, 'name', p.name,
+      'programme', g.name, 'metrics', pm.metrics, 'is_sample', p.is_sample) order by p.name), '[]') -- GL-9: is_sample
+  from private.rb_metrics(ctx - 'entity_id') pm
+  join public.projects p on p.id = pm.project_id left join public.programmes g on g.id = p.programme_id;
+$function$;
+
+create or replace function public.report_scope_metrics(p_input jsonb)
+returns jsonb
+language sql
+stable
+set search_path to ''
+as $function$
+  with ctx as (select public.report_context(p_input) as c)
+  select coalesce(jsonb_agg(jsonb_build_object('project_id', pm.project_id, 'code', p.code, 'name', p.name,
+      'programme', g.name, 'metrics', pm.metrics, 'is_sample', p.is_sample) order by p.name), '[]') -- GL-9: is_sample
+  from ctx, public.project_metrics(private.rb_projects(ctx.c), (ctx.c ->> 'as_at')::date, nullif(ctx.c ->> 'forum_id', '')::uuid,
+    nullif(ctx.c ->> 'previous_report_id', '')::uuid) pm
+  join public.projects p on p.id = pm.project_id left join public.programmes g on g.id = p.programme_id;
+$function$;
+
+create or replace function private.compute_inclusions(p_report uuid)
+returns void
+language plpgsql
+security definer
+set search_path to ''
+as $function$
+declare
+  r public.reports;
+  v_projects uuid[];
+  v_metrics jsonb;
+  v_tol jsonb;
+  v_cap integer;
+  v_order text;
+begin
+  select * into r from public.reports where id = p_report;
+  v_projects := private.scope_project_ids(r.scope_type, r.scope_entity_id, r.scope_items);
+  select coalesce(jsonb_agg(jsonb_build_object('project_id', pm.project_id, 'name', p.name, 'metrics', pm.metrics)), '[]')
+    into v_metrics
+  from public.project_metrics(v_projects, r.as_at, r.forum_id, r.previous_report_id) pm
+  join public.projects p on p.id = pm.project_id;
+  select coalesce(f.tolerances, '{}') into v_tol from public.forums f where f.id = r.forum_id;
+  v_cap := nullif(r.selection_rules ->> 'maxAutoIncluded', '')::int;
+  v_order := coalesce(r.selection_rules ->> 'orderBy', 'severity');
+
+  create temp table if not exists rb_matches (project_id uuid, name text, reasons jsonb, severity int, matched int) on commit drop;
+  truncate rb_matches;
+  insert into rb_matches select * from private.evaluate_selection(r.selection_rules, v_metrics, v_tol);
+
+  -- Overrides for projects no longer in scope go; rule rows are rebuilt.
+  delete from public.report_inclusions i where i.report_id = r.id
+    and (i.mode = 'rule' or not (i.entity_id = any (v_projects)));
+  -- Pinned and excluded rows keep their mode and take the current would-be reasons.
+  update public.report_inclusions i set reasons = coalesce(m.reasons, '[]'), severity = m.severity
+  from (select i2.entity_id, x.reasons, x.severity from public.report_inclusions i2
+        left join rb_matches x on x.project_id = i2.entity_id where i2.report_id = r.id) m
+  where i.report_id = r.id and i.entity_id = m.entity_id;
+
+  insert into public.report_inclusions (report_id, entity_type, entity_id, mode, reasons, severity)
+  select r.id, 'project', x.project_id, 'rule', x.reasons, x.severity
+  from (select x.*, row_number() over (order by x.severity desc, x.matched desc, x.name) as rn from rb_matches x
+        where not exists (select 1 from public.report_inclusions i where i.report_id = r.id and i.entity_id = x.project_id)
+          -- GL-9: sample projects are only ever included by pinning.
+          and not exists (select 1 from public.projects sp where sp.id = x.project_id and sp.is_sample)) x
+  where v_cap is null or x.rn <= v_cap;
+
+  if v_order <> 'manual' then
+    update public.report_inclusions i set sort_order = o.rn
+    from (select i2.entity_id, row_number() over (order by
+            case when v_order = 'programme' then coalesce(pg.name, '') end,
+            case when v_order = 'severity' then coalesce(i2.severity, 0) end desc,
+            case when v_order = 'severity' then jsonb_array_length(i2.reasons) end desc,
+            p.name) as rn
+          from public.report_inclusions i2 join public.projects p on p.id = i2.entity_id
+          left join public.programmes pg on pg.id = p.programme_id
+          where i2.report_id = r.id and i2.mode <> 'excluded') o
+    where i.report_id = r.id and i.entity_id = o.entity_id;
+  end if;
+end;
+$function$;
 
 -- ---------------------------------------------------------------------------------------------
 -- Checks after applying (local Postgres first; production read-only)

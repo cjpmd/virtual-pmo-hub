@@ -8,6 +8,7 @@ import { DecisionsWorkspace } from "@/components/decisions-workspace";
 import { BoardWorkspace } from "@/components/board-workspace";
 import { RaidWorkspace } from "@/components/raid-workspace";
 import { KpiCard, PageHeader } from "@/components/pmo-ui";
+import { useSampleAdornment } from "@/components/sample-badge";
 import { Button } from "@/components/ui/button";
 import { issueColumns, issuesToRows } from "@/lib/board-data";
 import { getAssumptionMetrics, getDecisionMetrics } from "@/services/decisions";
@@ -48,6 +49,7 @@ export const Route = createFileRoute("/governance/raidd")({
 
 function Page() {
   const settings = useSettings();
+  const issueChip = useSampleAdornment("issue");
   const search = useSearch({ from: "/governance/raidd" });
   const navigate = useNavigate();
   const active: TabId = search.tab ?? "risks";
@@ -231,6 +233,7 @@ function Page() {
               { key: "project", label: "Project", type: "text" as const, width: 240 },
             ].map((column) => ({ ...column, editable: false }))}
             groupOptions={["group", "status", "priority"]}
+            titleAdornment={issueChip}
           />
           {!issues.length && (
             <p className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
