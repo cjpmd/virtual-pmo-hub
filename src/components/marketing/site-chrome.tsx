@@ -168,6 +168,7 @@ const footerColumns = [
       { to: "/request-access", label: "Contact" },
       { to: "/privacy", label: "Privacy" },
       { to: "/terms", label: "Terms" },
+      { to: "/dpa", label: "DPA" },
     ],
   },
 ] as const;
@@ -206,7 +207,7 @@ export function SiteFooter() {
       </div>
       <div className="mx-auto flex max-w-[1240px] flex-wrap justify-between gap-3 px-4 py-8 text-[13px] text-site-text-faint sm:px-8">
         <span>
-          © {new Date().getFullYear()} ORMO PMO ·{" "}
+          © {new Date().getFullYear()} ORMO PMO, a trading name of OriginOverthrow ·{" "}
           <SupportLink className="text-site-accent-strong hover:text-[#0b4fb0]" />
         </span>
         {contactEmail && (

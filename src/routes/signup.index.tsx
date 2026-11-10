@@ -144,6 +144,17 @@ function SignupPage() {
           account
         </Button>
       </form>
+      <p className="mt-4 text-center text-xs text-muted-foreground">
+        By creating an account you agree to the{" "}
+        <Link to="/terms" className="text-primary hover:underline">
+          Terms of service
+        </Link>{" "}
+        and the{" "}
+        <Link to="/dpa" className="text-primary hover:underline">
+          Data Processing Agreement
+        </Link>
+        .
+      </p>
       <p className="mt-6 text-center text-xs text-muted-foreground">
         Already have an account?{" "}
         <Link to="/login" search={next ? { next } : {}} className="text-primary hover:underline">

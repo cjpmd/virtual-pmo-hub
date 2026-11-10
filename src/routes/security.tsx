@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteFooter, SitePage } from "@/components/marketing/site-chrome";
 import { siteHead } from "@/components/marketing/site-head";
+import { SubprocessorTable } from "@/components/marketing/legal-page";
 import { SiteHero, SiteSectionHeading } from "@/components/marketing/site-page-parts";
 import { SupportLink } from "@/components/support-link";
 
@@ -17,12 +18,15 @@ export const Route = createFileRoute("/security")({
 // - Backups: the Supabase organisation is on the Free plan (no restorable backups); add a
 //   Backups section once the plan includes them, with the retention and point-in-time recovery.
 // - Edge function region: Supabase runs functions at the edge nearest the request by default.
+// - Microsoft Entra ID region: data/subprocessors.ts says "Microsoft's global infrastructure,
+//   per Microsoft's terms" until it is confirmed.
+// The subprocessor table comes from data/subprocessors.ts, shared with /privacy and /dpa.
 const sections: { title: string; text: string[] }[] = [
   {
     title: "Hosting and data location",
     text: [
       "Your organisation's records and files are stored in our database in London (Supabase, AWS eu-west-2).",
-      "Some services we rely on work outside the UK: card payments are processed by Stripe in the United States, and email is sent through Resend in Ireland. The subprocessor list below sets out each one.",
+      "Some services we rely on work outside the UK: card payments are processed by Stripe, including in the United States; email is sent through Resend in Ireland; and AI drafting, when you ask for it, uses Anthropic in the United States. The subprocessor list below sets out each one.",
     ],
   },
   {
@@ -67,21 +71,6 @@ const sections: { title: string; text: string[] }[] = [
   },
 ];
 
-// Region is left blank where the repo and the live projects don't confirm it.
-const subprocessors: { name: string; purpose: string; region: string }[] = [
-  {
-    name: "Supabase",
-    purpose: "Database, file storage, sign-in and server functions",
-    region: "UK (London)",
-  },
-  { name: "Stripe", purpose: "Subscription billing and card payments", region: "United States" },
-  { name: "Resend", purpose: "Invitation and account email", region: "EU (Ireland)" },
-  // TODO: the web host's name and region (Lovable today; Netlify planned).
-  { name: "Web host", purpose: "Serving the web application", region: "" },
-  // TODO: Microsoft Entra ID region.
-  { name: "Microsoft", purpose: "Sign in with Microsoft", region: "" },
-];
-
 function SecurityPage() {
   return (
     <SitePage>
@@ -112,37 +101,14 @@ function SecurityPage() {
           <SiteSectionHeading title="Subprocessors">
             The companies that process data on our behalf to run ORMO PMO.
           </SiteSectionHeading>
-          <div className="overflow-x-auto rounded-[18px] border border-site-line bg-site-surface">
-            <table className="w-full min-w-[520px] border-collapse text-left text-[0.95rem]">
-              <caption id="subprocessors" className="sr-only">
-                Subprocessors
-              </caption>
-              <thead className="bg-site-tint-blue text-site-text-soft">
-                <tr>
-                  <th scope="col" className="px-5 py-3 font-semibold">
-                    Subprocessor
-                  </th>
-                  <th scope="col" className="px-5 py-3 font-semibold">
-                    Purpose
-                  </th>
-                  <th scope="col" className="px-5 py-3 font-semibold">
-                    Region
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {subprocessors.map((row) => (
-                  <tr key={row.name} className="border-t border-site-line">
-                    <th scope="row" className="px-5 py-3 font-medium">
-                      {row.name}
-                    </th>
-                    <td className="px-5 py-3 text-site-text-muted">{row.purpose}</td>
-                    <td className="px-5 py-3 text-site-text-muted">{row.region}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <SubprocessorTable id="subprocessors" />
+          <p className="m-0 max-w-[44rem] leading-[1.65] text-site-text-muted">
+            Our{" "}
+            <Link to="/dpa" className="text-site-accent-strong hover:underline">
+              Data Processing Agreement
+            </Link>{" "}
+            sets out how we process personal data on your behalf.
+          </p>
         </section>
 
         <p className="m-0 max-w-[44rem] leading-[1.65] text-site-text-muted">

@@ -296,6 +296,21 @@ registered address, ICO number, contact email) and list them in your summary. Ke
 existing site styling. "Last updated" date on each page.
 ```
 
+**Live as a pre-review draft (10/11/2026), awaiting legal review:** placeholders filled (ORMO PMO
+is a trading name of OriginOverthrow, also in the site footer, ICO registration pending, support address for contact and privacy,
+liability: nil during the trial, paid capped at the lesser of 12 months' fees and £1,000;
+30-day deletion periods). `[[solicitor to confirm …]]` markers are hidden on the pages and
+listed in `docs/legal-drafts/solicitor-checklist.md`; `lib/legal.test.ts` fails if any other
+`[[…]]` is left. First draft: `/terms`, `/privacy` and the new
+`/dpa` (Article 28, incorporated by reference in the Terms, prints A4 portrait) share
+`components/marketing/legal-page.tsx`; [[placeholders]] show highlighted. One subprocessor list,
+`data/subprocessors.ts`, feeds `/security`, `/privacy` and `/dpa` (checked: Supabase eu-west-2,
+Resend eu-west-1, Stripe account in GB so Stripe Payments UK Ltd; Anthropic added; Cloudflare
+left out while Turnstile is off). The DPA is linked from the footer, Pricing, Security and the
+sign-up form ("By creating an account you agree to…"). Email sign-up records `terms_version`
+and `terms_accepted_at` in the auth user metadata (`lib/legal.ts` `TERMS_VERSION`); Microsoft
+sign-up records nothing yet. Tick GL-7 after the legal review.
+
 ### GL-8 Sector choice and financial-year defaults [DB]
 
 ```

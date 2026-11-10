@@ -1,6 +1,7 @@
 // Authentication and organisation membership: email + password, and Microsoft (Entra ID).
 import type { AuthError, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { TERMS_VERSION } from "@/lib/legal";
 import { ServiceError, fromPostgrest, fromAuth, unwrap, unwrapWrite } from "./service-error";
 
 export interface Profile {
@@ -102,6 +103,8 @@ export interface NewAccount extends CaptchaOptions {
  * can't sign in until it is confirmed. An address that already has an account gets the same
  * response (Supabase returns an obfuscated user and sends nothing), so this never reveals
  * which addresses are registered. The name becomes the profile name (private.handle_new_user).
+ * The user metadata also records the Terms (and DPA) version accepted on the sign-up form and
+ * when (`terms_version`, `terms_accepted_at`).
  */
 export async function signUpWithPassword(input: NewAccount) {
   const email = checkEmail(input.email);
@@ -110,7 +113,11 @@ export async function signUpWithPassword(input: NewAccount) {
     password: input.password,
     options: {
       emailRedirectTo: callbackUrl(input.next),
-      data: { full_name: input.name.trim() },
+      data: {
+        full_name: input.name.trim(),
+        terms_version: TERMS_VERSION,
+        terms_accepted_at: new Date().toISOString(),
+      },
       ...captcha(input.captchaToken),
     },
   });
