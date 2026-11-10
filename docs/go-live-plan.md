@@ -405,6 +405,81 @@ covers some cases. Build supabase/tests/cross_tenant.sql:
 Run on the local Postgres or a branch. Report any leak as a finding and stop before fixing it.
 ```
 
+**Done (10/11/2026), no leaks found:** `supabase/tests/cross_tenant.sql`, run with
+`supabase/tests/local/run.sh migrate && run.sh seed && run.sh cross` (about 10 s, 6,969 checks,
+all rolled back). Organisation A is the seeded organisation with the most projects; B is created
+through `create_organisation` and `seed_sample_data`; each gets a throwaway admin, contributor and
+viewer. Both are made writable first (active subscription, trial end in the future) and checked
+with `private.organisation_is_writable`; a refusal with hint `org_read_only` anywhere is a SETUP
+failure, so the GL-4 trigger can't produce a false pass.
+- Coverage: a generic filler (foreign keys resolved from each organisation's own rows, values
+  from CHECK constraints and enums) plus 22 hand-written rows gives both organisations a
+  row in every RLS table with `organisation_id`; the suite fails if one stays empty, so a new
+  table either fills on its own or needs a row in `pg_temp.ct_fill_hand`. Other meta-checks: every
+  public table has RLS, every view is `security_invoker`, every public table and view without
+  `organisation_id` has a case, no `private` table is readable by `authenticated` or `anon`, every
+  public function `authenticated` can run has a case (and no case is stale), and `anon` can run
+  only `get_invite_preview` and `report_snapshot_by_token`.
+- Tables and views (B's three users and anon against A; A's three users against B): no row
+  visible; a filtered update or delete touches none; a blind update or delete (no WHERE, so only
+  the UPDATE / DELETE policy applies) changes no other organisation's row (the actor's own rows
+  are removed first, undone afterwards); inserting a copy of a row, and the copy with its nullable
+  parent links cleared, is refused. Errors PostgreSQL raises only after the RLS check (unique,
+  foreign key, CHECK, NOT NULL) count as leaks. 939 of the inserts are refused by the tenant guard
+  (23503 "not found or not visible") before RLS runs: nothing is written, but RLS isn't what
+  stopped them. `organisations`, profiles of A-only members and both webhook tables are checked too.
+- Functions: 77 cases for the 69 public functions, called as B's admin with A's ids. Each must
+  fail or return nothing, and A's data (hashed table by table) must be unchanged and B must gain no
+  membership in A. `own` cases (create_organisation, join_demo_as_viewer, find_joinable_organisations,
+  my_workspace_roles, report previews that echo their input …) may return data but none of A's ids;
+  `like_unknown` cases (get_portfolio_overview, report_permissions) must return exactly what they
+  return for random ids.
+- Storage: B can't read, update, delete or upload A's objects in any of the five buckets (paths as
+  the app writes them), or upload at A's document path. Print tokens: B's token, a wrong token and
+  no token don't open A's snapshot; A's own token does (control).
+- The suite was checked against deliberate leaks in a throwaway transaction (a permissive select,
+  update, delete and insert policy, a storage policy, a definer function, a new RPC without a
+  case): each was reported.
+Not covered: what service-role code does (edge functions and Netlify `report-pdf`; see the
+follow-up below) and hosted Storage behaviour such as signed URLs (the local shim stands in for
+`storage.objects`; its policies are the real ones from the migrations). Sharing through
+`entity_shares` is a deliberate cross-organisation grant: the fixture shares only with a third
+organisation, and partner access needs its own positive tests. Found, not changed:
+`create_organisation('Name', 'general')` with two positional arguments is ambiguous between the
+GL-8 signature and the old wrapper (the app passes named arguments); `reports_phase6.sql` fails
+locally because the shim has no `vpmo-report-notify` cron job.
+
+**GL-10 follow-up: service-role code audit (to do).** Code-level audit that each function below
+checks the caller's organisation membership (and role) before it acts on an organisation's data
+with the service role, and only on the records that check covered. One line per function, with
+what to confirm:
+- `report-publish`: the caller's `publish_report` runs first under their own JWT; confirm the
+  service-role print token, `record_report_event` and signed URL run only after it succeeded, and
+  only for that report.
+- `report-distribute`: confirm `report_permissions` (which flag) and `requireWritable` gate every
+  service-role step, and the organisation comes from the report row, not the request.
+- `report-ai-summary`: confirm it uses only the caller's client (no service role found in the
+  code) and that `report_permissions` gates the Anthropic call.
+- `send-invite`: confirm `issue_invite_token`, `mark_invite_sent` and `record_invite_email_id` run
+  only for invite ids returned by the caller's `create_invites` / `resend_invite`.
+- `notify-join-request`: confirm `claim_join_request_notification` only emails for a request the
+  caller authored, and only that organisation's admins.
+- `manage-subscription`: confirm the caller's admin membership of the body's `organisation_id` is
+  checked before any service-role read or Stripe change.
+- `create-checkout-session`, `create-portal-session`: confirm the `organisation_members` admin check
+  covers the organisation the Stripe customer and session are created for.
+- `stripe-webhook`: no user; confirm the Stripe signature is checked first and that the
+  organisation taken from subscription, customer or invoice metadata is cross-checked against the
+  stored `stripe_customer_id` / `stripe_subscription_id` before writing.
+- `resend-webhook`: no user; confirm the Svix signature is checked first and only invite delivery
+  status is written, matched by the stored Resend email id.
+- `report-notify`, `send-billing-notice`: no user; confirm `isServiceRole` is the only way in and
+  recipients come from the queued rows' own organisation.
+- Netlify `report-pdf`: shared secret `REPORT_PDF_SECRET`, no user. Confirm only `report-publish`
+  holds the secret, that the print token is checked against the report (the page load does it
+  through `report_snapshot_by_token`), and that `app_url` from the body is pinned to the app's
+  host: today Chromium opens whatever URL the caller sends.
+
 ### GL-11 Account closure and organisation deletion [DB]
 
 Design first.
@@ -567,5 +642,5 @@ and delete the adapter layer. List every screen touched; e2e for that domain mus
 ## Progress
 
 - [x] GL-1 Migrations  - [ ] GL-2 Cron  - [x] GL-3 Hide dead ends  - [x] GL-4 Read-only  - [x] GL-5 Banners  - [x] GL-6 Billing emails  - [ ] GL-7 Legal pages
-- [x] GL-8 Sector  - [x] GL-9 Sample data  - [ ] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [ ] GL-12 Bugs  - [ ] GL-13 Notifications  - [ ] GL-14 Committee packs
+- [x] GL-8 Sector  - [x] GL-9 Sample data  - [x] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [ ] GL-12 Bugs  - [ ] GL-13 Notifications  - [ ] GL-14 Committee packs
 - [ ] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [ ] GL-17 Multi-tenant  - [ ] GL-18 Bundle  - [ ] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters

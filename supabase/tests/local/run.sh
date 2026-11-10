@@ -5,6 +5,7 @@
 #   supabase/tests/local/run.sh migrate  drop + recreate db "vpmo", apply shim + all migrations
 #   supabase/tests/local/run.sh seed     apply supabase/seed/reports_demo.sql
 #   supabase/tests/local/run.sh test     run supabase/tests/reports_*.sql
+#   supabase/tests/local/run.sh cross    run supabase/tests/cross_tenant.sql (GL-10; after migrate + seed)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 BIN=/usr/lib/postgresql/16/bin
@@ -40,7 +41,15 @@ tests() {
   done
   return $fail
 }
+cross() {
+  if out=$(psql -v ON_ERROR_STOP=1 -At -d vpmo -f "$ROOT/supabase/tests/cross_tenant.sql" 2>&1); then
+    echo "$out" | grep -E '^(summary|inserts refused)' ; echo "PASS cross_tenant.sql"
+  else
+    echo "$out" | grep -v NOTICE | grep -vE '^(BEGIN|CREATE [A-Z]+|INSERT [0-9 ]+|UPDATE [0-9]+|GRANT|DO|ROLLBACK|t|f)?$'
+    echo "FAIL cross_tenant.sql"; return 1
+  fi
+}
 case "$cmd" in
-  init) init ;; migrate) init; migrate ;; seed) seed ;; test) tests ;;
+  init) init ;; migrate) init; migrate ;; seed) seed ;; test) tests ;; cross) cross ;;
   all) init; migrate; seed; tests ;;
 esac
