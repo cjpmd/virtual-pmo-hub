@@ -1518,6 +1518,59 @@ export type Database = {
           },
         ]
       }
+      billing_notices: {
+        Row: {
+          attempts: number
+          created_at: string
+          details: Json
+          error: string | null
+          id: string
+          kind: string
+          organisation_id: string
+          period_key: string
+          recipient_count: number | null
+          sent_at: string | null
+          skipped_count: number | null
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          details?: Json
+          error?: string | null
+          id?: string
+          kind: string
+          organisation_id: string
+          period_key: string
+          recipient_count?: number | null
+          sent_at?: string | null
+          skipped_count?: number | null
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          details?: Json
+          error?: string | null
+          id?: string
+          kind?: string
+          organisation_id?: string
+          period_key?: string
+          recipient_count?: number | null
+          sent_at?: string | null
+          skipped_count?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_notices_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       budget_baselines: {
         Row: {
           approved_at: string
@@ -8046,6 +8099,7 @@ export type Database = {
           scheduled_seats: number | null
           seats_total: number
           status: string | null
+          status_changed_at: string | null
           stripe_customer_id: string | null
           stripe_schedule_id: string | null
           stripe_subscription_id: string | null
@@ -8069,6 +8123,7 @@ export type Database = {
           scheduled_seats?: number | null
           seats_total?: number
           status?: string | null
+          status_changed_at?: string | null
           stripe_customer_id?: string | null
           stripe_schedule_id?: string | null
           stripe_subscription_id?: string | null
@@ -8092,6 +8147,7 @@ export type Database = {
           scheduled_seats?: number | null
           seats_total?: number
           status?: string | null
+          status_changed_at?: string | null
           stripe_customer_id?: string | null
           stripe_schedule_id?: string | null
           stripe_subscription_id?: string | null
@@ -16584,6 +16640,16 @@ export type Database = {
           tier: string
         }[]
       }
+      mark_billing_notice: {
+        Args: {
+          p_error: string
+          p_id: string
+          p_outcome: string
+          p_recipient_count: number
+          p_skipped_count: number
+        }
+        Returns: undefined
+      }
       mark_invite_sent: {
         Args: { p_actor: string; p_error?: string; p_invite_id: string }
         Returns: undefined
@@ -16612,6 +16678,7 @@ export type Database = {
         Args: { p_organisation_id: string }
         Returns: boolean
       }
+      pending_billing_notices: { Args: never; Returns: Json }
       pending_report_notifications: { Args: never; Returns: Json }
       project_metrics: {
         Args: {

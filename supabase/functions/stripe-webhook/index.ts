@@ -2,16 +2,20 @@
 // verify_jwt is off; every request is checked against the Stripe signature instead.
 // Idempotent on event id (public.stripe_webhook_events). Always re-reads the subscription
 // from Stripe, so out-of-order events can't leave stale data.
-// Secrets: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET.
+// Secrets: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET; RESEND_API_KEY, RESEND_FROM, APP_URL for the
+// GL-6 payment-failed email.
 import Stripe from "npm:stripe@16.12.0";
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 // Shared client: the API version is pinned there (see the note before upgrading).
 import { RESTORE_KEYS, priceId, scheduleNextPhase, stripe } from "../_shared/billing.ts";
+import { sendBillingNotices } from "../_shared/billing-notices.ts";
+import { sendEmail } from "../_shared/email.ts";
 const cryptoProvider = Stripe.createSubtleCryptoProvider();
 const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
   auth: { persistSession: false },
 });
 const ENDED = ["canceled", "incomplete_expired"];
+const APP_URL = (Deno.env.get("APP_URL") ?? "https://pmo.originoverthrow.com").replace(/\/$/, "");
 
 const NO_SCHEDULED_CHANGE = {
   stripe_schedule_id: null,
@@ -133,6 +137,46 @@ async function syncSubscription(subscriptionId: string) {
   if (error) throw error;
 }
 
+// GL-6: one "payment failed" email per renewal invoice to the organisation's admins (Stripe's own
+// failed-payment email is switched off in the dashboard). Queued once per invoice (unique key),
+// then sent straight away; a send failure is left for the daily 08:00 run and never makes Stripe
+// retry the event. First-invoice failures (checkout) and seat-change invoices aren't renewals.
+async function paymentFailedNotice(subscriptionId: string, invoice: Stripe.Invoice) {
+  const { data: row } = await admin
+    .from("organisation_subscriptions")
+    .select("organisation_id")
+    .eq("stripe_subscription_id", subscriptionId)
+    .maybeSingle();
+  if (!row?.organisation_id) return;
+  const { error } = await admin.from("billing_notices").upsert(
+    {
+      organisation_id: row.organisation_id,
+      kind: "payment_failed",
+      period_key: invoice.id,
+      details: {
+        invoice_id: invoice.id,
+        amount_due: invoice.amount_due,
+        currency: invoice.currency,
+        attempt_count: invoice.attempt_count,
+      },
+    },
+    { onConflict: "organisation_id,kind,period_key", ignoreDuplicates: true },
+  );
+  if (error) throw error;
+  try {
+    const configured = Boolean(Deno.env.get("RESEND_API_KEY") && Deno.env.get("RESEND_FROM"));
+    const result = await sendBillingNotices(
+      { rpc: (fn, args) => admin.rpc(fn, args) },
+      APP_URL,
+      configured ? sendEmail : null,
+      { organisationId: row.organisation_id },
+    );
+    console.log("stripe-webhook: billing notices", result);
+  } catch (err) {
+    console.error("stripe-webhook: billing notices", (err as Error).message);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   const signature = req.headers.get("stripe-signature");
@@ -204,6 +248,9 @@ Deno.serve(async (req) => {
         const invoice = event.data.object as Stripe.Invoice;
         const subId = typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id;
         if (subId) await syncSubscription(subId);
+        if (subId && event.type === "invoice.payment_failed" && invoice.billing_reason === "subscription_cycle") {
+          await paymentFailedNotice(subId, invoice);
+        }
         break;
       }
       default:

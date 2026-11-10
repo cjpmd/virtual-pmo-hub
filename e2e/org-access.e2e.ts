@@ -53,6 +53,7 @@ async function pretendAdminOfPaidOrg(
         seats_total: 0,
         trial_ends_at: null,
         current_period_end: null,
+        status_changed_at: null,
         cancel_at_period_end: false,
         billing_contact: null,
         stripe_customer_id: null,

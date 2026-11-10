@@ -118,6 +118,7 @@ describe("accessBanner (GL-5)", () => {
     trialEndsAt: "",
     currentPeriodEnd: "",
     cancelAtPeriodEnd: false,
+    statusChangedAt: "",
     ...extra,
   });
   const admin = (subscription: SubscriptionStatus | null, writable = true) =>
@@ -161,7 +162,22 @@ describe("accessBanner (GL-5)", () => {
     ).toEqual({ kind: "read_only", isAdmin: true });
   });
 
-  it("asks admins to update their card by the end of the grace period when past due", () => {
+  it("asks admins to update their card within 14 days of the failed payment (GL-6)", () => {
+    // Stripe has moved the period end to the end of the unpaid period; the grace runs from the
+    // failure, not from there.
+    expect(
+      admin(
+        sub({
+          plan: "paid",
+          status: "past_due",
+          statusChangedAt: "2026-11-05T09:00:00Z",
+          currentPeriodEnd: "2026-12-05T09:00:00Z",
+        }),
+      ),
+    ).toEqual({ kind: "past_due", payBy: "2026-11-19T09:00:00.000Z" });
+  });
+
+  it("falls back to the period end when the failure time is unknown", () => {
     expect(
       admin(sub({ plan: "paid", status: "past_due", currentPeriodEnd: "2026-10-25T12:00:00Z" })),
     ).toEqual({ kind: "past_due", payBy: "2026-11-08T12:00:00.000Z" });

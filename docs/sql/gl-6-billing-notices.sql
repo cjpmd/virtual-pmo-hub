@@ -1,4 +1,4 @@
--- GL-6 Trial-ending and payment emails. PROPOSAL: not applied. Additive only (new column, new
+-- GL-6 Trial-ending and payment emails. Additive only (new column, new
 -- table, new functions, one replaced function, one cron job); nothing is dropped or deleted.
 --
 -- How it works
@@ -28,8 +28,18 @@
 --   * Every notice is re-checked when it is sent (pending_billing_notices returns
 --     still_applies), so an organisation that subscribed or paid in between gets nothing.
 --
--- Section 1b changes how the past_due grace period is measured. Read its note; it is
--- recommended but separable.
+-- Approved 10/11/2026, including section 1b. Recipients whose address Resend last reported as
+-- bounced or suppressed (organisation_invites.email_status, 2.1) are skipped and counted in
+-- skipped_count; a notice whose admins are all skipped is marked 'skipped'.
+
+-- =====================================================================================
+-- 0. "VPMO Test Outsider Org" is a test organisation: give it a year of trial so no billing
+--    email goes to its test admin. Matched by id, so on a branch or local database (where the
+--    row doesn't exist) it updates nothing. "Originoverthrow" is deliberately left as it is.
+-- =====================================================================================
+update public.organisation_subscriptions
+set trial_ends_at = now() + interval '1 year'
+where organisation_id = 'a98e388d-97fb-4a5a-a83e-f9ee88dbaaaf' and plan = 'trial';
 
 -- =====================================================================================
 -- 1a. When did the Stripe status last change? Needed for the read_only window (and 1b).
@@ -50,12 +60,15 @@ language plpgsql
 set search_path to ''
 as $$
 begin
+  -- Stamped whenever status changes, unless the same statement sets status_changed_at itself
+  -- (only the service role and tests write this table).
   if tg_op = 'INSERT' then
-    new.status_changed_at := case when new.status is not null then now() end;
-  elsif new.status is distinct from old.status then
+    if new.status is not null and new.status_changed_at is null then
+      new.status_changed_at := now();
+    end if;
+  elsif new.status is distinct from old.status
+        and new.status_changed_at is not distinct from old.status_changed_at then
     new.status_changed_at := now();
-  else
-    new.status_changed_at := old.status_changed_at;
   end if;
   return new;
 end;
@@ -67,7 +80,7 @@ create trigger organisation_subscriptions_status_changed
   for each row execute function private.track_subscription_status();
 
 -- =====================================================================================
--- 1b. (Recommended) Measure the past_due grace from when the payment failed.
+-- 1b. Measure the past_due grace from when the payment failed.
 --     Today (GL-4) a past_due organisation stays writable until current_period_end + 14 days.
 --     But Stripe advances current_period_end to the END of the new period when it creates the
 --     renewal invoice, before trying to charge it. So after a failed renewal the grace is
@@ -75,8 +88,7 @@ create trigger organisation_subscriptions_status_changed
 --     "update your card by" that date. With Stripe's default Smart Retries (8 tries in 2
 --     weeks, then cancel) the subscription is canceled first anyway, so in practice the
 --     14-day grace never applies. Measuring from status_changed_at makes it 14 days from the
---     first failure, as intended. If you'd rather not, I drop this section and
---     past_due_grace_ends_at uses current_period_end + 14 days, as now.
+--     first failure, as intended.
 -- =====================================================================================
 create or replace function private.past_due_grace_ends_at(p_status_changed_at timestamptz, p_period_end timestamptz)
 returns timestamptz
@@ -109,14 +121,12 @@ as $$
   ), true);
 $$;
 revoke execute on function private.organisation_is_writable(uuid) from public, anon, authenticated;
--- Front end (if 1b is approved): GL-5's accessBanner computes the grace date from
--- current_period_end; it changes to status_changed_at + 14 days (admins already read the row).
+-- Front end: GL-5's accessBanner reads status_changed_at for the "update your card by" date.
 
 -- =====================================================================================
 -- 2. The notices table. Organisation-scoped (describes the organisation's billing, not work in
---    a workspace), so organisation_id only: please approve adding billing_notices to the
---    AGENTS.md exception list. Service role only, like stripe_webhook_events: RLS on, no
---    policies, no client grants. The read-only trigger is attached as the rule requires; the
+--    a workspace), so organisation_id only (on the AGENTS.md exception list). Service role
+--    only, like stripe_webhook_events: RLS on, no policies, no client grants. The read-only trigger is attached as the rule requires; the
 --    only writers are cron and the service role, which it lets through (is_system_write).
 -- =====================================================================================
 create table public.billing_notices (
@@ -128,6 +138,7 @@ create table public.billing_notices (
   status          text not null default 'pending' check (status in ('pending', 'sent', 'skipped', 'failed')),
   attempts        integer not null default 0,
   recipient_count integer,
+  skipped_count   integer,
   error           text,
   created_at      timestamptz not null default now(),
   sent_at         timestamptz,
@@ -232,7 +243,15 @@ as $$
           else false
         end and coalesce(s.plan, '') <> 'demo',
       'recipients', (
-        select coalesce(jsonb_agg(jsonb_build_object('email', p.email, 'name', p.display_name) order by p.email), '[]'::jsonb)
+        -- bounced: the latest Resend delivery status recorded for this address (on any
+        -- invitation, 2.1) is bounced or suppressed.
+        select coalesce(jsonb_agg(jsonb_build_object('email', p.email, 'name', p.display_name,
+            'bounced', coalesce((
+              select i.email_status in ('bounced', 'suppressed')
+              from public.organisation_invites i
+              where lower(i.email) = lower(trim(p.email)) and i.email_status is not null
+              order by i.email_status_at desc nulls last
+              limit 1), false)) order by p.email), '[]'::jsonb)
         from public.organisation_members m
         join public.profiles p on p.id = m.profile_id
         where m.organisation_id = n.organisation_id and m.role = 'admin'
@@ -246,8 +265,10 @@ as $$
 $$;
 
 -- p_outcome: 'sent' (p_recipient_count emails went out), 'skipped' (p_error says why) or
--- 'error' (counts an attempt; the fifth makes it 'failed').
-create or replace function public.mark_billing_notice(p_id uuid, p_outcome text, p_recipient_count integer, p_error text)
+-- 'error' (counts an attempt; the fifth makes it 'failed'). p_skipped_count: admins not
+-- emailed because their address bounced.
+create or replace function public.mark_billing_notice(p_id uuid, p_outcome text, p_recipient_count integer,
+  p_skipped_count integer, p_error text)
 returns void
 language plpgsql
 security definer
@@ -265,15 +286,16 @@ begin
                end,
       attempts = attempts + 1,
       recipient_count = p_recipient_count,
+      skipped_count = p_skipped_count,
       error = left(p_error, 500),
       sent_at = case when p_outcome = 'error' then sent_at else now() end
   where id = p_id and status = 'pending';
 end;
 $$;
 
-revoke all on function public.pending_billing_notices(), public.mark_billing_notice(uuid, text, integer, text)
+revoke all on function public.pending_billing_notices(), public.mark_billing_notice(uuid, text, integer, integer, text)
   from public, anon, authenticated;
-grant execute on function public.pending_billing_notices(), public.mark_billing_notice(uuid, text, integer, text)
+grant execute on function public.pending_billing_notices(), public.mark_billing_notice(uuid, text, integer, integer, text)
   to service_role;
 
 -- =====================================================================================

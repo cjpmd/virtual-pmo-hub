@@ -85,6 +85,8 @@ export interface SubscriptionStatus {
   trialEndsAt: string;
   currentPeriodEnd: string;
   cancelAtPeriodEnd: boolean;
+  /** When the Stripe status last changed; for past_due, when the payment first failed (GL-6). */
+  statusChangedAt: string;
 }
 
 /** The subscription row for the banner. RLS shows it to organisation admins only (else null). */
@@ -92,7 +94,9 @@ export async function getSubscriptionStatus(orgId: string): Promise<Subscription
   const row = unwrapMaybe(
     await supabase
       .from("organisation_subscriptions")
-      .select("plan, status, trial_ends_at, current_period_end, cancel_at_period_end")
+      .select(
+        "plan, status, trial_ends_at, current_period_end, cancel_at_period_end, status_changed_at",
+      )
       .eq("organisation_id", orgId)
       .maybeSingle(),
     "Loading the subscription",
@@ -104,14 +108,17 @@ export async function getSubscriptionStatus(orgId: string): Promise<Subscription
         trialEndsAt: row.trial_ends_at ?? "",
         currentPeriodEnd: row.current_period_end ?? "",
         cancelAtPeriodEnd: row.cancel_at_period_end ?? false,
+        statusChangedAt: row.status_changed_at ?? "",
       }
     : null;
 }
 
 /**
- * Days a past_due subscription keeps write access after its period end. Mirrors the 14 days in
- * private.organisation_is_writable; used only to show the "update your card by" date (the
- * database alone decides whether writes are allowed).
+ * Days a past_due subscription keeps write access after the payment first failed
+ * (status_changed_at; the period end only when that is unknown). Mirrors
+ * private.past_due_grace_ends_at (GL-6); used only to show the "update your card by" date (the
+ * database alone decides whether writes are allowed). Not the period end: Stripe has already
+ * moved that to the end of the unpaid period.
  */
 export const PAST_DUE_GRACE_DAYS = 14;
 
@@ -149,8 +156,9 @@ export function accessBanner({
   if (isDemo) return null;
   if (!writable) return { kind: "read_only", isAdmin };
   if (!isAdmin || !sub || sub.plan === "demo") return null;
-  if (sub.status === "past_due" && sub.currentPeriodEnd) {
-    const end = new Date(sub.currentPeriodEnd).getTime();
+  const failedAt = sub.statusChangedAt || sub.currentPeriodEnd;
+  if (sub.status === "past_due" && failedAt) {
+    const end = new Date(failedAt).getTime();
     if (!Number.isNaN(end))
       return {
         kind: "past_due",
