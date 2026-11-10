@@ -2,8 +2,9 @@
 // create-portal-session check that the caller is an organisation admin, talk to Stripe and
 // return { url } (or { error, code }); the stripe-webhook function writes the result back to
 // organisation_subscriptions. Prices are excl. VAT; Stripe Tax adds VAT at checkout.
+import { supabase } from "@/integrations/supabase/client";
 import { invokeFunction } from "./functions";
-import { ServiceError } from "./service-error";
+import { ServiceError, unwrap, unwrapMaybe } from "./service-error";
 
 export type BillingInterval = "month" | "year";
 
@@ -64,4 +65,106 @@ export async function startCheckout(orgId: string, interval: BillingInterval, se
 /** Sends the browser to the Stripe customer portal, which returns to /settings/subscription. */
 export async function openBillingPortal(orgId: string) {
   window.location.assign(await billingPortalUrl(orgId));
+}
+
+// GL-5: the trial, payment and read-only banner in the app shell.
+
+/**
+ * Whether the organisation accepts writes, as the database decides it
+ * (public.organisation_writable → private.organisation_is_writable). Any member may ask.
+ */
+export const getOrgWritable = async (orgId: string): Promise<boolean> =>
+  unwrap(
+    await supabase.rpc("organisation_writable", { p_organisation_id: orgId }),
+    "Checking the organisation's subscription",
+  );
+
+export interface SubscriptionStatus {
+  plan: string;
+  status: string;
+  trialEndsAt: string;
+  currentPeriodEnd: string;
+  cancelAtPeriodEnd: boolean;
+}
+
+/** The subscription row for the banner. RLS shows it to organisation admins only (else null). */
+export async function getSubscriptionStatus(orgId: string): Promise<SubscriptionStatus | null> {
+  const row = unwrapMaybe(
+    await supabase
+      .from("organisation_subscriptions")
+      .select("plan, status, trial_ends_at, current_period_end, cancel_at_period_end")
+      .eq("organisation_id", orgId)
+      .maybeSingle(),
+    "Loading the subscription",
+  );
+  return row
+    ? {
+        plan: row.plan ?? "",
+        status: row.status ?? "",
+        trialEndsAt: row.trial_ends_at ?? "",
+        currentPeriodEnd: row.current_period_end ?? "",
+        cancelAtPeriodEnd: row.cancel_at_period_end ?? false,
+      }
+    : null;
+}
+
+/**
+ * Days a past_due subscription keeps write access after its period end. Mirrors the 14 days in
+ * private.organisation_is_writable; used only to show the "update your card by" date (the
+ * database alone decides whether writes are allowed).
+ */
+export const PAST_DUE_GRACE_DAYS = 14;
+
+/** A trial with this many days or fewer left gets the stronger banner. */
+export const TRIAL_URGENT_DAYS = 3;
+
+export type AccessBanner =
+  | { kind: "read_only"; isAdmin: boolean }
+  | { kind: "past_due"; payBy: string }
+  | { kind: "cancelling"; endsOn: string }
+  | { kind: "trial"; daysLeft: number; urgent: boolean };
+
+export interface AccessBannerInput {
+  isDemo: boolean;
+  isAdmin: boolean;
+  /** From getOrgWritable. */
+  writable: boolean;
+  /** From getSubscriptionStatus (admins only; null for everyone else). */
+  subscription: SubscriptionStatus | null;
+  now?: number;
+}
+
+/**
+ * Which banner the shell shows, in priority order: read-only (everyone), then for admins a
+ * failed payment inside the grace period, a subscription set to cancel, and a running trial.
+ * Nothing for the demo organisation or a healthy subscription.
+ */
+export function accessBanner({
+  isDemo,
+  isAdmin,
+  writable,
+  subscription: sub,
+  now = Date.now(),
+}: AccessBannerInput): AccessBanner | null {
+  if (isDemo) return null;
+  if (!writable) return { kind: "read_only", isAdmin };
+  if (!isAdmin || !sub || sub.plan === "demo") return null;
+  if (sub.status === "past_due" && sub.currentPeriodEnd) {
+    const end = new Date(sub.currentPeriodEnd).getTime();
+    if (!Number.isNaN(end))
+      return {
+        kind: "past_due",
+        payBy: new Date(end + PAST_DUE_GRACE_DAYS * 86_400_000).toISOString(),
+      };
+  }
+  if (
+    (sub.status === "active" || sub.status === "trialing") &&
+    sub.cancelAtPeriodEnd &&
+    sub.currentPeriodEnd
+  )
+    return { kind: "cancelling", endsOn: sub.currentPeriodEnd };
+  if (["active", "trialing", "past_due"].includes(sub.status)) return null;
+  const daysLeft = trialDaysLeft(sub.trialEndsAt, now);
+  if (daysLeft === null || daysLeft <= 0) return null;
+  return { kind: "trial", daysLeft, urgent: daysLeft <= TRIAL_URGENT_DAYS };
 }

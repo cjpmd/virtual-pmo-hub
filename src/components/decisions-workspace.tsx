@@ -18,6 +18,8 @@ import { useBoardRecordSync } from "@/hooks/use-board-record-sync";
 import { useGovernance, useGovernanceMutations } from "@/hooks/use-governance";
 import { usePortfolioNames } from "@/hooks/use-hierarchy";
 import { useCan } from "@/hooks/use-permissions";
+import { useOrgWritable } from "@/hooks/use-org-access";
+import { ReadOnlyTip } from "@/components/org-access-banner";
 import type { DecisionStatus } from "@/data/types";
 import {
   decisionColumnsFor,
@@ -49,7 +51,10 @@ function Decisions({ data }: { data: GovernanceData }) {
   const [status, setStatus] = useState("");
   const [overdueOnly, setOverdueOnly] = useState(false);
   const items = data.decisions;
-  const canEdit = useCan("contributor");
+  // GL-5: contributors see New decision (disabled while read-only); the register locks.
+  const canCreate = useCan("contributor");
+  const writable = useOrgWritable();
+  const canEdit = canCreate && writable;
   const mutations = useGovernanceMutations();
   const metrics = getDecisionMetrics(items);
   const filtered = useMemo(
@@ -146,11 +151,15 @@ function Decisions({ data }: { data: GovernanceData }) {
           />
           Overdue only
         </label>
-        {canEdit && (
-          <Button className="ml-auto" onClick={() => setPickingScope(true)}>
-            <Plus />
-            New decision
-          </Button>
+        {canCreate && (
+          <span className="ml-auto">
+            <ReadOnlyTip readOnly={!writable}>
+              <Button disabled={!writable} onClick={() => setPickingScope(true)}>
+                <Plus />
+                New decision
+              </Button>
+            </ReadOnlyTip>
+          </span>
         )}
       </div>
       <BoardWorkspace

@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { useOrgId } from "@/components/auth/organisation-provider";
 import { QueryState } from "@/components/query-state";
 import { useProjectPermissions } from "@/hooks/use-hierarchy";
+import { useOrgWritable } from "@/hooks/use-org-access";
+import { ReadOnlyTip, READ_ONLY_TIP } from "@/components/org-access-banner";
 import { invalidateRollups } from "@/hooks/use-project-records";
 import { useProjectTasks } from "@/hooks/use-work-items";
 import { today } from "@/lib/today";
@@ -1110,6 +1112,7 @@ function TaskEditor({
   const rows = useMemo(() => buildRows(tasks, collapsed), [tasks, collapsed]);
   const planner = taskSource !== "Native";
   const { canEdit } = useProjectPermissions(projectId);
+  const writable = useOrgWritable();
   const orgId = useOrgId(),
     queryClient = useQueryClient(),
     router = useRouter();
@@ -1188,6 +1191,10 @@ function TaskEditor({
   const setTasks = (value: TaskView[] | ((current: TaskView[]) => TaskView[]), delay = 700) => {
     if (!canEdit) {
       toast.error("You can view this project's tasks but not change them.");
+      return;
+    }
+    if (!writable) {
+      toast.error(READ_ONLY_TIP);
       return;
     }
     const next = typeof value === "function" ? value(latest.current) : value;
@@ -1471,10 +1478,12 @@ function TaskEditor({
             </a>
           )}
           {/* Plan › Tasks shows Issue task here; the project header hides its copy on this tab. */}
-          <Button onClick={() => openIssueTask(projectId)}>
-            <ListPlus />
-            Issue task
-          </Button>
+          <ReadOnlyTip readOnly={!writable}>
+            <Button disabled={!writable} onClick={() => openIssueTask(projectId)}>
+              <ListPlus />
+              Issue task
+            </Button>
+          </ReadOnlyTip>
         </div>
       </div>
       {notice && (
