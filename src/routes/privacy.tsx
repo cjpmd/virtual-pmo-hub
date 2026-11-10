@@ -3,7 +3,8 @@ import { LegalPage, SubprocessorTable, type LegalSection } from "@/components/ma
 import { siteHead } from "@/components/marketing/site-head";
 
 // Draft for legal review (GL-7): not to be merged to main until the owner says so.
-// [[placeholders]] are filled in after the review.
+// [[solicitor to confirm …]] markers are hidden on the page and listed in
+// docs/legal-drafts/solicitor-checklist.md.
 export const Route = createFileRoute("/privacy")({
   head: () =>
     siteHead(
@@ -21,8 +22,8 @@ const sections: LegalSection[] = [
     id: "who",
     title: "Who we are",
     blocks: [
-      "ORMO PMO is provided by [[legal entity name]], a company registered in Scotland with company number [[company number]], whose registered office is at [[registered office address]]. We are registered with the Information Commissioner’s Office under number [[ICO registration number]].",
-      "For questions about this notice or your personal data, email [[privacy contact email]].",
+      "ORMO PMO is a trading name of its owner, a sole trader based in Scotland. Our registration with the Information Commissioner’s Office is pending. [[solicitor to confirm: owner’s name and address for the business-name disclosure]]",
+      "For questions about this notice or your personal data, email support@ormo-pmo.originoverthrow.com.",
     ],
   },
   {
@@ -100,11 +101,11 @@ const sections: LegalSection[] = [
     title: "How long we keep it",
     blocks: [
       [
-        "Account details: while your account is open. If you close your account, we delete or anonymise your account details within [[account deletion period]] days; records you authored stay with your organisation.",
-        "Organisation content: for as long as the organisation exists. An organisation whose trial or subscription has lapsed becomes read-only; we don’t delete its data for that reason. When an organisation is closed, its data is deleted within [[deletion period after closure]] days.",
+        "Account details: while your account is open. If you close your account, we delete or anonymise your account details within 30 days; records you authored stay with your organisation.",
+        "Organisation content: for as long as the organisation exists. An organisation whose trial or subscription has lapsed becomes read-only; we don’t delete its data for that reason. When an organisation is closed, its data is deleted within 30 days.",
         "Billing records: six years after the end of the financial year they relate to, for tax purposes. [[solicitor to confirm]]",
-        "Server and security logs: [[log retention period]].",
-        "Backups: copies of deleted data can remain in backups until they are overwritten, on our database provider’s normal cycle of [[backup retention period]]. We don’t restore deleted data from backups except to recover the Service.",
+        "Server and security logs: kept by our hosting and database providers for up to 7 days, or longer where needed to investigate a security incident. [[solicitor to confirm: log retention]]",
+        "Backups: our current database plan doesn’t keep automatic backups. When it does, they will be kept for 7 days, and copies of deleted data can remain in them until they expire. We don’t restore deleted data from backups except to recover the Service. [[solicitor to confirm: backups]]",
       ],
     ],
   },
@@ -113,7 +114,7 @@ const sections: LegalSection[] = [
     title: "Your rights",
     blocks: [
       "Under UK data protection law you have the right to ask for a copy of your personal data, to have it corrected or erased, to restrict or object to how we use it, and to receive it in a portable form. Where we rely on consent, you can withdraw it at any time.",
-      "To exercise a right, email [[privacy contact email]]. We will reply within one month. For content your organisation controls, we will pass your request to the organisation.",
+      "To exercise a right, email support@ormo-pmo.originoverthrow.com. We will reply within one month. For content your organisation controls, we will pass your request to the organisation.",
     ],
   },
   {
@@ -134,7 +135,7 @@ const sections: LegalSection[] = [
     id: "complaints",
     title: "Complaints",
     blocks: [
-      "If you’re unhappy with how we have handled your personal data, please tell us first at [[privacy contact email]]. You also have the right to complain to the Information Commissioner’s Office (ICO): ico.org.uk/make-a-complaint, or 0303 123 1113.",
+      "If you’re unhappy with how we have handled your personal data, please tell us first at support@ormo-pmo.originoverthrow.com. You also have the right to complain to the Information Commissioner’s Office (ICO): ico.org.uk/make-a-complaint, or 0303 123 1113.",
     ],
   },
   {

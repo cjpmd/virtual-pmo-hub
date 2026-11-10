@@ -18,7 +18,8 @@ export const Route = createFileRoute("/security")({
 // - Backups: the Supabase organisation is on the Free plan (no restorable backups); add a
 //   Backups section once the plan includes them, with the retention and point-in-time recovery.
 // - Edge function region: Supabase runs functions at the edge nearest the request by default.
-// - Microsoft Entra ID region (the subprocessor list, data/subprocessors.ts, shows [[Entra region]]).
+// - Microsoft Entra ID region: data/subprocessors.ts says "Microsoft's global infrastructure,
+//   per Microsoft's terms" until it is confirmed.
 // The subprocessor table comes from data/subprocessors.ts, shared with /privacy and /dpa.
 const sections: { title: string; text: string[] }[] = [
   {

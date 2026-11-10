@@ -73,8 +73,12 @@ test("public site pages open signed out and link to each other", async ({ page }
 });
 
 test("legal pages have their text, a date and a printable DPA", async ({ page }) => {
-  for (const path of ["/terms", "/privacy", "/dpa"]) {
+  for (const path of ["/security", "/terms", "/privacy", "/dpa"]) {
     await page.goto(path);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    // No placeholder or solicitor marker may show on a live page.
+    expect(await page.locator("body").innerText()).not.toContain("[[");
+    if (path === "/security") continue;
     await expect(page.getByText(/^Last updated \d{1,2} \w+ \d{4}$/)).toBeVisible();
     await expect(page.getByText("This page is being finalised")).toHaveCount(0);
     await expect(page.getByRole("navigation", { name: "Contents" })).toBeVisible();

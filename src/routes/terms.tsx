@@ -4,7 +4,8 @@ import { siteHead } from "@/components/marketing/site-head";
 import { TERMS_VERSION } from "@/lib/legal";
 
 // Draft for legal review (GL-7): not to be merged to main until the owner says so.
-// [[placeholders]] are filled in after the review.
+// [[solicitor to confirm …]] markers are hidden on the page and listed in
+// docs/legal-drafts/solicitor-checklist.md.
 export const Route = createFileRoute("/terms")({
   head: () =>
     siteHead(
@@ -21,7 +22,7 @@ const sections: LegalSection[] = [
     id: "about",
     title: "About these terms",
     blocks: [
-      "ORMO PMO (the “Service”) is provided by [[legal entity name]], a company registered in Scotland with company number [[company number]], whose registered office is at [[registered office address]] (“we”, “us”). You can contact us at [[contact email]].",
+      "ORMO PMO (the “Service”) is a trading name of its owner, a sole trader based in Scotland (“we”, “us”). We are not a limited company. You can contact us at support@ormo-pmo.originoverthrow.com. [[solicitor to confirm: owner’s name and address for the business-name disclosure]]",
       "These terms form a contract between us and the organisation that creates or subscribes to an ORMO PMO organisation (the “Customer”, “you”). The person who accepts them confirms that they have authority to bind the Customer. The Service is for business use only; it is not offered to consumers.",
       <p key="dpa" className="m-0 text-[15px] leading-[1.7] text-site-text-muted">
         Our{" "}
@@ -44,7 +45,7 @@ const sections: LegalSection[] = [
     title: "Accounts and administrators",
     blocks: [
       "Each person who uses the Service needs their own account, with a confirmed email address or a Microsoft work account. Accounts must not be shared.",
-      "The person who creates an organisation becomes its first administrator. Administrators invite people, set their roles, manage seats and billing, and can remove people. You are responsible for who you give access to, for what your users do in the Service, and for keeping sign-in details secure. Tell us promptly at [[contact email]] if you suspect unauthorised access.",
+      "The person who creates an organisation becomes its first administrator. Administrators invite people, set their roles, manage seats and billing, and can remove people. You are responsible for who you give access to, for what your users do in the Service, and for keeping sign-in details secure. Tell us promptly at support@ormo-pmo.originoverthrow.com if you suspect unauthorised access.",
     ],
   },
   {
@@ -53,7 +54,7 @@ const sections: LegalSection[] = [
     blocks: [
       "A new organisation gets a free trial of 14 days, with no card needed. During the trial the organisation may have up to 10 paid seats and any number of viewers.",
       "When the trial ends without a subscription, the organisation becomes read-only (see “Read-only access”). Nothing is deleted.",
-      "The trial is provided as it is, without the commitments on availability and support in these terms. [[solicitor to confirm]]",
+      "During the free trial the Service is provided “as is”, without the commitments on availability and support in these terms, and our liability is limited as set out in “Liability”.",
     ],
   },
   {
@@ -136,8 +137,9 @@ const sections: LegalSection[] = [
     blocks: [
       "Nothing in these terms limits or excludes liability for death or personal injury caused by negligence, for fraud or fraudulent misrepresentation, for your obligation to pay fees, or for anything else that cannot be limited or excluded by law.",
       "Subject to that, neither party is liable for any loss of profit, revenue, business, goodwill or anticipated savings, or for any indirect or consequential loss, however it arises.",
-      "Subject to the above, each party’s total liability arising out of or in connection with these terms in any 12-month period, whether in contract, delict (including negligence), breach of statutory duty or otherwise, is limited to the greater of (a) the fees paid and payable by you for the Service in the 12 months before the event giving rise to the claim, and (b) [[minimum liability amount]].",
-      "Data protection: each party’s liability for breach of the DPA or of data protection law is [[solicitor to confirm: a separate cap, or the general cap above]].",
+      "Free trial: subject to the first paragraph of this section, to the fullest extent permitted by law we have no liability to you arising out of or in connection with the Service during a free trial, which is provided “as is”. [[solicitor to confirm: nil liability during the trial]]",
+      "Paid subscriptions: subject to the first paragraph of this section, our total liability arising out of or in connection with these terms, whether in contract, delict (including negligence), breach of statutory duty or otherwise, is limited to the lesser of (a) the fees paid or payable by you for the Service in the 12 months before the event giving rise to the claim, and (b) £1,000. [[solicitor to confirm: cap deliberately tight; review before larger customers]]",
+      "These limits also apply to liability under the DPA and data protection law. [[solicitor to confirm: data protection liability]]",
       "The Service is provided for project and portfolio management. It isn’t professional, financial or legal advice, and you are responsible for decisions you make using it.",
     ],
   },
@@ -147,7 +149,7 @@ const sections: LegalSection[] = [
     blocks: [
       "You can cancel your subscription at any time in Settings › Subscription; it ends at the end of the current period. An organisation can be closed by its administrators.",
       "Either party may end these terms by notice if the other materially breaches them and doesn’t put the breach right within 30 days of being asked to, or becomes insolvent.",
-      "You can export your data from the Service at any time, including while the organisation is read-only. When an organisation is closed, we delete Customer Data within [[deletion period after closure]] days, except where the law requires us to keep it. Copies in our backups are overwritten on the backup provider’s normal cycle. [[solicitor to confirm]]",
+      "You can export your data from the Service at any time, including while the organisation is read-only. When an organisation is closed, we delete Customer Data within 30 days, except where the law requires us to keep it. Copies in backups expire as described in our Privacy notice. [[solicitor to confirm: deletion after closure and backups]]",
       "The sections on your data, liability, and governing law survive the end of these terms.",
     ],
   },
@@ -168,7 +170,7 @@ const sections: LegalSection[] = [
         "These terms, with the DPA and any order made through the Service, are the entire agreement between us about the Service.",
         "If any part of these terms is found unenforceable, the rest stays in force.",
         "No one other than the parties has any right to enforce these terms. [[solicitor to confirm: Contract (Third Party Rights) (Scotland) Act 2017]]",
-        "Notices to you go to your administrators’ email addresses; notices to us go to [[contact email]].",
+        "Notices to you go to your administrators’ email addresses; notices to us go to support@ormo-pmo.originoverthrow.com.",
       ],
     ],
   },

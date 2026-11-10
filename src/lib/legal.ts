@@ -7,3 +7,11 @@ export const TERMS_VERSION = "2026-11-10";
 
 /** Shown as "Last updated" on each legal page. */
 export const LEGAL_LAST_UPDATED = "10 November 2026";
+
+/** Matches a "[[solicitor to confirm …]]" review marker, with the space before it. */
+const SOLICITOR_MARKER = /\s*\[\[solicitor to confirm[^\]]*\]\]/g;
+
+/** Text as shown on a legal page: review markers for the solicitor are left out. */
+export function withoutSolicitorMarkers(text: string) {
+  return text.replace(SOLICITOR_MARKER, "");
+}

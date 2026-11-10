@@ -52,7 +52,7 @@ const sections: LegalSection[] = [
     id: "parties",
     title: "Parties and scope",
     blocks: [
-      "This Data Processing Agreement (“DPA”) is between [[legal entity name]], company number [[company number]], registered office [[registered office address]] (the “Processor”, “we”), and the organisation that has accepted the ORMO PMO Terms of service (the “Customer”).",
+      "This Data Processing Agreement (“DPA”) is between the owner of ORMO PMO, a sole trader based in Scotland trading as ORMO PMO (the “Processor”, “we”), and the organisation that has accepted the ORMO PMO Terms of service (the “Customer”).",
       <p key="terms" className={textClass}>
         It forms part of the{" "}
         <Link to="/terms" className={linkClass}>
@@ -61,7 +61,7 @@ const sections: LegalSection[] = [
         (version {TERMS_VERSION}) and applies to personal data that we process on the Customer’s
         behalf in providing ORMO PMO (“Customer Personal Data”). It is accepted with the Terms; no
         separate signature is needed. If the Customer would like a signed copy, contact{" "}
-        <LegalText text="[[contact email]]" />.
+        support@ormo-pmo.originoverthrow.com.
       </p>,
       "Terms such as “controller”, “processor”, “personal data”, “processing” and “personal data breach” have the meanings given in the UK GDPR. “Data Protection Law” means the UK GDPR, the Data Protection Act 2018, and other UK law on the processing of personal data that applies.",
     ],
@@ -169,7 +169,7 @@ const sections: LegalSection[] = [
     id: "end",
     title: "Deletion or return at the end",
     blocks: [
-      "The Customer can export its data from the Service at any time, including when its organisation is read-only. When the Terms end and the organisation is closed, we will delete Customer Personal Data within [[deletion period after closure]] days, unless the law requires us to keep it. Copies in backups are overwritten on our database provider’s normal cycle of [[backup retention period]] and are not restored except to recover the Service. [[solicitor to confirm]]",
+      "The Customer can export its data from the Service at any time, including when its organisation is read-only. When the Terms end and the organisation is closed, we will delete Customer Personal Data within 30 days, unless the law requires us to keep it. Our current database plan doesn’t keep automatic backups; when it does, backups will be kept for 7 days, and are not restored except to recover the Service. [[solicitor to confirm]]",
     ],
   },
   {

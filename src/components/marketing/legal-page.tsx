@@ -1,6 +1,7 @@
 // The public legal pages (/terms, /privacy, /dpa): the site hero, a "last updated" line, a
-// numbered contents list and numbered sections, on the --site-* tokens. [[placeholders]] in the
-// text are highlighted so they can't be missed before the legal review. With `printable`, a
+// numbered contents list and numbered sections, on the --site-* tokens. [[solicitor to confirm …]]
+// markers in the text are hidden (they are listed in docs/legal-drafts/solicitor-checklist.md);
+// any other [[placeholder]] is highlighted so it can't be missed. With `printable`, a
 // "Print or save as PDF" button prints the document alone on A4 portrait (styles.css,
 // .legal-doc).
 import { Printer } from "lucide-react";
@@ -9,7 +10,7 @@ import { SiteFooter, SitePage } from "@/components/marketing/site-chrome";
 import { SiteHero } from "@/components/marketing/site-page-parts";
 import { SupportLink } from "@/components/support-link";
 import { subprocessors } from "@/data/subprocessors";
-import { LEGAL_LAST_UPDATED } from "@/lib/legal";
+import { LEGAL_LAST_UPDATED, withoutSolicitorMarkers } from "@/lib/legal";
 
 /** A paragraph (string), a bulleted list (string[]), or anything else to render as it is. */
 export type LegalBlock = string | string[] | ReactNode;
@@ -20,19 +21,21 @@ export interface LegalSection {
   blocks: LegalBlock[];
 }
 
-/** Text with each [[placeholder]] highlighted. */
+/** Text with each [[placeholder]] highlighted and [[solicitor to confirm …]] markers removed. */
 export function LegalText({ text }: { text: string }) {
   return (
     <>
-      {text.split(/(\[\[[^\]]+\]\])/).map((part, index) =>
-        part.startsWith("[[") && part.endsWith("]]") ? (
-          <mark key={index} className="rounded bg-amber-100 px-1 text-amber-900">
-            {part}
-          </mark>
-        ) : (
-          <Fragment key={index}>{part}</Fragment>
-        ),
-      )}
+      {withoutSolicitorMarkers(text)
+        .split(/(\[\[[^\]]+\]\])/)
+        .map((part, index) =>
+          part.startsWith("[[") && part.endsWith("]]") ? (
+            <mark key={index} className="rounded bg-amber-100 px-1 text-amber-900">
+              {part}
+            </mark>
+          ) : (
+            <Fragment key={index}>{part}</Fragment>
+          ),
+        )}
     </>
   );
 }
