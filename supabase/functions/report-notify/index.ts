@@ -7,10 +7,12 @@
 import { APP_URL, adminClient, json, serve } from "../_shared/http.ts";
 import { sendPendingNotices } from "../_shared/report-notify.ts";
 import { reportSender } from "../_shared/report-sender.ts";
+import { isServiceRoleRequest } from "../_shared/service-role.ts";
 
 serve("report-notify", async (req) => {
-  const auth = req.headers.get("Authorization") ?? "";
-  if (auth !== `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`)
+  // verify_jwt is on: the gateway checked the signature; this checks it is the service role
+  // (GL-6 follow-up: the Vault key no longer equals the runtime's SUPABASE_SERVICE_ROLE_KEY).
+  if (!isServiceRoleRequest(req.headers.get("Authorization"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")))
     return json({ error: "Service role only." }, 403);
   const admin = adminClient();
   const result = await sendPendingNotices(

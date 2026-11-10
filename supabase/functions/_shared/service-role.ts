@@ -1,6 +1,7 @@
 // GL-6: is this request from the service role? For functions called by pg_cron through pg_net
-// with the key stored in Vault. Deployed with verify_jwt = true, so the gateway has already
-// checked the token's signature against the project's JWT secret; this reads its role claim.
+// with the key stored in Vault (send-billing-notice, report-notify). Deployed with
+// verify_jwt = true, so the gateway has already checked the token's signature against the
+// project's JWT secret; this reads its role claim.
 // The key in Vault is the legacy service-role JWT, which no longer equals the runtime's
 // SUPABASE_SERVICE_ROLE_KEY, so comparing strings refused it (found 10/11/2026). The runtime key
 // itself is still accepted. Never use this in a function deployed with verify_jwt = false.

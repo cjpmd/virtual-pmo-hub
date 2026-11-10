@@ -249,11 +249,26 @@ gets no email; Originoverthrow is unchanged (trial ends 12/11). Tests:
 `_shared/billing-notices.test.ts`, `_shared/service-role.test.ts`.
 `send-billing-notice` (verify_jwt on) accepts any token whose `role` claim is `service_role`: the
 Vault key is the legacy service-role JWT and no longer equals the runtime's
-`SUPABASE_SERVICE_ROLE_KEY`. **Found, not fixed:** `report-notify` compares the strings, so it has
-been answering 403 to the cron job ("Service role only"); draft-pack-ready emails aren't going out.
+`SUPABASE_SERVICE_ROLE_KEY`. `report-notify` compared the strings too: fixed in the GL-6
+follow-up below.
 Stripe dashboard: switch off "Send emails when card payments fail"; keep receipts, the 7-day
 trial reminder (only Stripe trials carried over at checkout), upcoming renewals, expiring cards and
 the 3D Secure link.
+
+**GL-6 follow-up (10/11/2026):** `report-notify` compared the caller's key with the runtime's
+`SUPABASE_SERVICE_ROLE_KEY`, but the Vault secret `report_notify_service_key` is the legacy
+service-role JWT, which no longer matches. Every call from the cron job (`vpmo-report-notify`,
+every 15 minutes, via `private.trigger_report_notify`) got 403, so no draft-pack-ready email went
+out. It now uses `_shared/service-role.ts` like `send-billing-notice`: verify_jwt stays on (the
+gateway checks the signature) and the function accepts a token whose `role` claim is
+`service_role`, or the runtime key itself. Deployed as `report-notify` version 2. Checked on
+production: the only database functions that call an edge function with the Vault key are
+`private.trigger_report_notify` and `private.run_billing_notices`; no other edge function compares
+keys (the rest only use `SUPABASE_SERVICE_ROLE_KEY` to build their own client). Proof: the call
+from the database with the Vault URL and key answers 200; one test notice queued on the withdrawn
+"Portfolio Report Test" report (demo organisation), addressed only to Resend's test inbox
+`delivered@resend.dev`, was sent and marked sent by `private.trigger_report_notify()`, leaving
+the queue empty. That test row stays in `report_notifications` (sent).
 
 ### GL-7 Terms, Privacy, DPA and Security pages
 
