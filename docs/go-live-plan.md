@@ -389,6 +389,18 @@ Tests: `supabase/tests/sample_data.sql` (25 checks, local), `services/sample-dat
 `evaluateRules.test.ts`, e2e `e2e/sample-data.e2e.ts` (replaces the is_sample reads; not run: e2e
 stays off production).
 
+**GL-9 follow-up (to do) [DB]:** published packs don't store whether a deep-dive project is sample.
+The signed-in viewer works it out from the live `is_sample` flag (`ReportViewer.tsx`), but the
+public print link (`/report-print/<id>?token=`, `report_snapshot_by_token`, anon) and the PDF made
+from it have no access to that flag, so they show no Sample chip. Fix: in `public.publish_report`
+(latest definition in `20261104150000_rb7_batched_block_data`), add `'is_sample', p.is_sample` to
+each entry of the snapshot's `meta.deep_dives`, so the flag is frozen with the pack like the code
+and name. Then read `project.is_sample` from the snapshot in `report-print.$reportId.tsx` and
+`ReportViewer.tsx` (falling back to the live flag for packs published before the change, where it's
+absent), and drop the viewer's live lookup for snapshots that carry it. Snapshots stay immutable:
+older packs aren't rewritten. SQL first, then stop; test on the local Postgres that a published pack
+with a pinned sample project carries `is_sample: true` and that the print route shows the chip.
+
 ### GL-10 Cross-tenant security suite [DB tests only]
 
 ```
@@ -404,6 +416,107 @@ covers some cases. Build supabase/tests/cross_tenant.sql:
 - Storage buckets and report print tokens: B can't fetch A's objects or snapshots.
 Run on the local Postgres or a branch. Report any leak as a finding and stop before fixing it.
 ```
+
+**Done (10/11/2026), no leaks found:** `supabase/tests/cross_tenant.sql`, run with
+`supabase/tests/local/run.sh migrate && run.sh seed && run.sh cross` (about 10 s, 6,969 checks,
+all rolled back). Organisation A is the seeded organisation with the most projects; B is created
+through `create_organisation` and `seed_sample_data`; each gets a throwaway admin, contributor and
+viewer. Both are made writable first (active subscription, trial end in the future) and checked
+with `private.organisation_is_writable`; a refusal with hint `org_read_only` anywhere is a SETUP
+failure, so the GL-4 trigger can't produce a false pass.
+- Coverage: a generic filler (foreign keys resolved from each organisation's own rows, values
+  from CHECK constraints and enums) plus 22 hand-written rows gives both organisations a
+  row in every RLS table with `organisation_id`; the suite fails if one stays empty, so a new
+  table either fills on its own or needs a row in `pg_temp.ct_fill_hand`. Other meta-checks: every
+  public table has RLS, every view is `security_invoker`, every public table and view without
+  `organisation_id` has a case, no `private` table is readable by `authenticated` or `anon`, every
+  public function `authenticated` can run has a case (and no case is stale), and `anon` can run
+  only `get_invite_preview` and `report_snapshot_by_token`.
+- Tables and views (B's three users and anon against A; A's three users against B): no row
+  visible; a filtered update or delete touches none; a blind update or delete (no WHERE, so only
+  the UPDATE / DELETE policy applies) changes no other organisation's row (the actor's own rows
+  are removed first, undone afterwards); inserting a copy of a row, and the copy with its nullable
+  parent links cleared, is refused. Errors PostgreSQL raises only after the RLS check (unique,
+  foreign key, CHECK, NOT NULL) count as leaks. 939 of the inserts are refused by the tenant guard
+  (23503 "not found or not visible") before RLS runs: nothing is written, but RLS isn't what
+  stopped them. `organisations`, profiles of A-only members and both webhook tables are checked too.
+- Functions: 77 cases for the 69 public functions, called as B's admin with A's ids. Each must
+  fail or return nothing, and A's data (hashed table by table) must be unchanged and B must gain no
+  membership in A. `own` cases (create_organisation, join_demo_as_viewer, find_joinable_organisations,
+  my_workspace_roles, report previews that echo their input …) may return data but none of A's ids;
+  `like_unknown` cases (get_portfolio_overview, report_permissions) must return exactly what they
+  return for random ids.
+- Storage: B can't read, update, delete or upload A's objects in any of the five buckets (paths as
+  the app writes them), or upload at A's document path. Print tokens: B's token, a wrong token and
+  no token don't open A's snapshot; A's own token does (control).
+- The suite was checked against deliberate leaks in a throwaway transaction (a permissive select,
+  update, delete and insert policy, a storage policy, a definer function, a new RPC without a
+  case): each was reported.
+Not covered: what service-role code does (edge functions and Netlify `report-pdf`; see the
+follow-up below) and hosted Storage behaviour such as signed URLs (the local shim stands in for
+`storage.objects`; its policies are the real ones from the migrations). Sharing through
+`entity_shares` is a deliberate cross-organisation grant: the fixture shares only with a third
+organisation, and partner access needs its own positive tests. Found, not changed:
+`create_organisation('Name', 'general')` with two positional arguments is ambiguous between the
+GL-8 signature and the old wrapper (the app passes named arguments); `reports_phase6.sql` fails
+locally because the shim has no `vpmo-report-notify` cron job.
+
+**GL-10 follow-up: service-role code audit (done 10/11/2026).** Each function that uses the
+service role (or a shared secret) was read, with the SQL of every RPC it calls, to check it
+confirms the caller's organisation membership (and role) before acting on an organisation's data,
+and only on the records that check covered. Every service-role-only RPC they call
+(`issue_invite_token`, `mark_invite_sent`, `record_invite_email_id`, `claim_join_request_notification`,
+`record_invite_email_event`, `issue_report_print_token`, `record_report_event`,
+`report_distribution`, `pending_report_notifications`, `mark_report_notification_sent`,
+`pending_billing_notices`, `mark_billing_notice`) is closed to `authenticated`.
+- `report-publish` **pass**: `publish_report` runs first under the caller's JWT (PMO in the
+  report's workspace or the forum's secretary, report approved or an ad hoc draft); the print token,
+  `record_report_event` and signed URL run only after it succeeds, for that report only. A second
+  call on a published report fails, so it can't re-trigger sending.
+- `report-distribute` **pass**: `report_permissions.can_publish` as the caller, the organisation
+  read from the report through the caller's RLS (not the request), then `requireWritable`, before
+  any service-role step.
+- `report-ai-summary` **pass**: no service role at all; `can_edit`, `requireWritable` and the daily
+  limit gate the Anthropic call.
+- `send-invite` **pass**: `create_invites` / `resend_invite` (admin checks in SQL) run as the
+  caller; the service-role calls use only the invite ids they returned or accepted, and
+  `issue_invite_token` refuses accepted, revoked, expired or already-tokened invites.
+- `notify-join-request` **pass**: `claim_join_request_notification` matches only a pending request
+  whose `profile_id` is the caller, once; recipients are that organisation's admins.
+- `manage-subscription`, `create-checkout-session`, `create-portal-session` **pass**: the caller's
+  admin membership of the body's organisation is checked before any service-role read, write or
+  Stripe call; Stripe calls use the ids stored for that organisation.
+- `stripe-webhook` **pass, one low finding (fixed)**: the Stripe signature is checked first and
+  events are idempotent on id, but `syncSubscription` took the organisation from subscription or
+  customer metadata before the stored mapping, without cross-checking. Fixed: the stored
+  `stripe_customer_id` mapping now wins; metadata is used only when no mapping exists; a mismatch, or
+  a customer mapped to two organisations, is logged and nothing is written
+  (`_shared/stripe-org.ts`, unit-tested). Deployed as `stripe-webhook` version 15 (10/11/2026;
+  production had one mapped customer and no duplicates); an unsigned request gets 400.
+- `resend-webhook` **pass**: Svix signature checked first (constant time, 5-minute window),
+  idempotent on svix-id, writes only delivery status to the invite with the matching stored Resend
+  email id.
+- `report-notify`, `send-billing-notice` **pass**: service-role tokens only (`isServiceRoleRequest`
+  behind verify_jwt); recipients are worked out in the database from the queued row's own
+  organisation (users can only read those queues).
+- Report roles (forum secretary / chair) come from `resources.profile_id`, which has a foreign key
+  to `organisation_members`, so they only ever name a current member.
+- Netlify `report-pdf` **fail (fixed)**: anyone holding `REPORT_PDF_SECRET` could make headless
+  Chromium open any `app_url` (SSRF) and store whatever it rendered as any published report's PDF,
+  which is then attached to the forum emails; the print token was only checked by the print page.
+  Fixed (`netlify/lib/report-pdf-guard.ts`, unit-tested): `app_url` must be one of
+  `REPORT_PDF_ALLOWED_ORIGINS` (comma-separated, default `https://pmo.originoverthrow.com`; parsed
+  origins compared, credentials refused) and the page URL is built from that origin; the token is
+  checked with `report_snapshot_by_token` before anything is rendered or stored (403 otherwise);
+  the secret is compared in constant time. Server PDF stays off (`REPORT_SERVER_PDF`); nothing is
+  deployed to Netlify. Add preview hosts to `REPORT_PDF_ALLOWED_ORIGINS` there if they need it.
+- Deployed vs repo (10/11/2026): all 12 edge functions on production were fetched and diffed. Every
+  entrypoint is byte-identical to the repo. Shared modules differ only where a function was
+  deployed before a later change it doesn't use: `report-publish`, `send-invite`,
+  `notify-join-request` and `manage-subscription` carry `_shared/http.ts` from before
+  `requireWritable` (GL-4); `send-invite` and `notify-join-request` carry `_shared/email-templates.ts`
+  from before `layout` was exported (GL-6); `send-billing-notice` carries `_shared/service-role.ts`
+  with an older header comment (code identical). No redeploy needed for those.
 
 ### GL-11 Account closure and organisation deletion [DB]
 
@@ -598,5 +711,5 @@ and delete the adapter layer. List every screen touched; e2e for that domain mus
 ## Progress
 
 - [x] GL-1 Migrations  - [ ] GL-2 Cron  - [x] GL-3 Hide dead ends  - [x] GL-4 Read-only  - [x] GL-5 Banners  - [x] GL-6 Billing emails  - [ ] GL-7 Legal pages
-- [x] GL-8 Sector  - [x] GL-9 Sample data  - [ ] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [ ] GL-12 Bugs  - [ ] GL-13 Notifications  - [ ] GL-14 Committee packs
+- [x] GL-8 Sector  - [x] GL-9 Sample data  - [x] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [ ] GL-12 Bugs  - [ ] GL-13 Notifications  - [ ] GL-14 Committee packs
 - [ ] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [ ] GL-17 Multi-tenant  - [ ] GL-18 Bundle  - [ ] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters
