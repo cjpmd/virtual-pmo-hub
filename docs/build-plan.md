@@ -80,6 +80,10 @@ rather than being deleted, because `scripts/generate-seed.ts` and `scripts/healt
 use them; `npx tsc --noEmit -p scripts` now typechecks the scripts. `vite-tsconfig-paths` stays:
 `@lovable.dev/vite-tanstack-config` loads it internally and lists it as a peer dependency, so
 there is no plugin in our `vite.config.ts` to replace with `resolve.tsconfigPaths`.
+Finished in GL-19 (11/11/2026): the remaining items were already gone (the popover, the
+`src/data` mock modules, mock values in `data/integrations.ts`, the "Stage 4c" comments); the
+last stale comments (the programme route's "prototype id", `lib/format.ts`'s "mock data layer")
+were removed, and `eslint src` / `eslint .` report 0 errors.
 
 ### 0.3 Migration history and database advisor fixes
 Database change: yes.
@@ -654,7 +658,7 @@ scheduled pack drafts (`forums.auto_create_packs`, daily job), `lessons_learned`
 
 ## Progress
 
-- [x] 0.1 Test harness  - [ ] 0.2 Clean-up  - [x] 0.3 Migration history and indexes  - [x] 0.4 Copy  - [x] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
+- [x] 0.1 Test harness  - [x] 0.2 Clean-up  - [x] 0.3 Migration history and indexes  - [x] 0.4 Copy  - [x] 0.5 Benefits timeout  - [x] 0.6 Sign-in without personal email
 - [x] 1.1 Data import/export  - [x] 1.2 Pack export  - [x] 1.3 Dashboards and views  - [x] 1.4 Calendar and automations flag  - [x] 1.5 Notes and map layout  - [x] 1.6 Workspaces  - [ ] 1.7 Board date sort  - [x] 1.9 Progress chart polish
 - [x] 2.1 Invites  - [ ] 2.2 Self sign-up  - [x] 2.3 Stripe
 - [ ] 3.1 Sprint schema  - [ ] 3.2 Sprint UI  - [ ] 3.3 Reports and forecast
