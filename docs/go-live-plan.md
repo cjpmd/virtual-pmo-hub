@@ -566,6 +566,19 @@ To finish: run section D; add the Vault secret `organisation_purge_url`
 (`https://xvdlmtkzfmbcegkmampz.supabase.co/functions/v1/purge-organisations`); optionally set the
 edge-function secret `OPS_ALERT_EMAIL`. Tick GL-11 after the first purge has been run by hand.
 
+**GL-11 follow-up (11/11/2026):** migration `20261111090600_gl_11_deletion_message`
+(`docs/sql/gl-11-deletion-message.sql`): a write refused while a deletion is pending now says "This
+organisation is scheduled for deletion on <date>, so it is read-only. An admin can cancel the deletion
+in Settings › Organisation." (same errcode and hint `org_read_only`; `services/service-error.ts` shows
+the database's sentence for this case). The three GL-11 edge functions were fetched and byte-compared
+with the repo: `close-account` and `organisation-deletion` matched; `purge-organisations` carried an
+older header comment in `_shared/service-role.ts` (code identical) and was redeployed (version 2), now
+identical. GL-10's fixture gets a hand-written `divergence_justifications` row: its insert trigger
+needs a divergent project, and the generic filler found one only by ctid order, which earlier
+rolled-back suites change, so `organisation_purge.sql` failed when run after the other suites.
+`requireWritable` in `_shared/http.ts` (edge functions) still says trial / subscription for any
+read-only organisation.
+
 ### GL-11b Full organisation export
 
 After GL-11's SQL; before its deletion UI goes live (the deletion dialog offers it).
