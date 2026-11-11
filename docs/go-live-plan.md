@@ -692,6 +692,35 @@ lazy-load charts, PPTX export, the report builder and the dependency map. Report
 after sizes and first-load time on the public homepage and /portfolio. Don't change behaviour.
 ```
 
+**Done (11/11/2026), not merged:** no database change. Measured with Vite manifests and
+source-map-explorer (one-off, not added as dependencies). Route-level splitting was already on (TanStack
+Start splits every route); PPTX export was already loaded on demand; the report builder and the
+dependency map are only in their own routes. What was large: the entry chunk held the signed-in app
+(gate, shell, notifications and the services behind them) for every page, public ones included, and
+recharts (about 360 kB) came with every board (the board's Chart view) and the portfolio overview
+(the milestone delivery profile). Changes: the root route loads `components/signed-in-shell.tsx`
+(AuthGate, AppShell, Issue task sheet) lazily for signed-in pages, after mount (SSR shows the same
+"Loading your workspace…" splash as before, so hydration matches); `isPublicPath` and `Splash` moved
+to `lib/public-paths.ts` and `components/auth/splash.tsx` (still re-exported from `auth-gate`); the
+board Chart view is `components/board-chart-view.tsx`, loaded when a board switches to Chart;
+`CumulativeArea` draws through `components/charts/cumulative-area.tsx`, loaded on demand behind a
+placeholder of the same height. Vite no longer warns about chunk size.
+
+| JS on first load (production build) | Before | After |
+|---|---|---|
+| Main entry chunk | 679 kB | 478 kB |
+| Public homepage `/` | 1,106 kB (333 kB gzip), 26 files | 787 kB (234 kB gzip), 18 files |
+| `/portfolio` until first render | 1,803 kB (537 kB gzip), 68 files | 1,395 kB (444 kB gzip), 118 files |
+| `/portfolio` including the deferred chart | same | 1,796 kB (554 kB gzip), 124 files |
+| Any board page (e.g. `/portfolio/projects`) | + recharts (about 360 kB) | no recharts until Chart is chosen |
+
+Homepage load, median of 5 (local Node build, external requests blocked, no compression): unthrottled
+load event 156 → 117 ms; Slow 4G (1.6 Mbps, 150 ms RTT) with 4× CPU throttling, first contentful
+paint 3,548 → 3,024 ms and load 6,975 → 5,338 ms. `/portfolio` needs a signed-in session, so it was
+measured by bundle only: about 93 kB gzip less before first render (about 0.5 s at 1.6 Mbps); the
+chart then loads behind its placeholder, and its total bytes are about the same as before (slightly
+more chunk overhead).
+
 ### GL-19 Finish clean-up 0.2
 
 No database change.
@@ -748,4 +777,4 @@ and delete the adapter layer. List every screen touched; e2e for that domain mus
 
 - [x] GL-1 Migrations  - [ ] GL-2 Cron  - [x] GL-3 Hide dead ends  - [x] GL-4 Read-only  - [x] GL-5 Banners  - [x] GL-6 Billing emails  - [ ] GL-7 Legal pages
 - [x] GL-8 Sector  - [x] GL-9 Sample data  - [x] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [ ] GL-12 Bugs  - [ ] GL-13 Notifications  - [ ] GL-14 Committee packs
-- [ ] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [ ] GL-17 Multi-tenant  - [ ] GL-18 Bundle  - [ ] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters
+- [ ] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [ ] GL-17 Multi-tenant  - [x] GL-18 Bundle  - [ ] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters

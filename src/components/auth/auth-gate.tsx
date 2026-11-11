@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { Link, Navigate, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Eye, LoaderCircle, LogOut } from "lucide-react";
+import { Eye, LogOut } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 import { SupportLink } from "@/components/support-link";
 import { Button } from "@/components/ui/button";
@@ -10,40 +10,12 @@ import { errorMessage } from "@/services/service-error";
 import { OrganisationProvider, useOrganisationState } from "./organisation-provider";
 import { useSession } from "./session-provider";
 import { SettingsSync } from "./settings-sync";
+import { Splash } from "./splash";
+import { isPublicPath } from "@/lib/public-paths";
 
-/** Paths anyone can open. Everything else needs a session and an organisation. */
-export const isPublicPath = (path: string) =>
-  path === "/" ||
-  path === "/login" ||
-  path === "/signin" ||
-  path.startsWith("/auth/") ||
-  path === "/request-access" ||
-  path === "/pricing" ||
-  path === "/product" ||
-  path === "/security" ||
-  path === "/privacy" ||
-  path === "/terms" ||
-  path === "/dpa" ||
-  path === "/invite" ||
-  path === "/signup" ||
-  path.startsWith("/signup/") ||
-  // Server-side PDF rendering of a published pack, authorised by a short-lived print token.
-  path.startsWith("/report-print/");
-
-export function Splash({ label = "Loading your workspace…" }: { label?: string }) {
-  return (
-    <div
-      className="grid min-h-screen place-items-center bg-background"
-      role="status"
-      aria-live="polite"
-    >
-      <div className="flex items-center gap-3 text-sm text-foreground/75">
-        <LoaderCircle className="size-5 animate-spin" />
-        {label}
-      </div>
-    </div>
-  );
-}
+// GL-18: isPublicPath and Splash live in small modules so the root route and public pages can
+// use them without loading the gate (and the signed-in app behind it).
+export { isPublicPath, Splash };
 
 /**
  * Route protection. Signed-out visitors go to /login (and come back afterwards, unless they

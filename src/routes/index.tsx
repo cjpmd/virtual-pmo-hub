@@ -1,5 +1,5 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { Splash } from "@/components/auth/auth-gate";
+import { Splash } from "@/components/auth/splash";
 import { useSession } from "@/components/auth/session-provider";
 import { siteFontLinks } from "@/components/marketing/site-fonts";
 import { PublicHome } from "@/components/public-home";

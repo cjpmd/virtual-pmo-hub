@@ -1,18 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import {
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip as ChartTooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Activity,
   BellRing,
@@ -63,6 +49,11 @@ import {
   type ViewConfig,
 } from "@/services/saved-views";
 import { errorMessage } from "@/services/service-error";
+// GL-18: the Chart view is the only part of the board that uses recharts, so it loads on demand
+// instead of putting recharts on every page with a board.
+const ChartView = lazy(() =>
+  import("./board-chart-view").then((module) => ({ default: module.BoardChartView })),
+);
 /** The status a board uses for "closed", from the options it offers. */
 function closedStatusFor(options: string[] | undefined): string {
   const order = ["Closed", "Done", "Completed", "Realised", "Embedded", "Superseded", "Approved"];
@@ -1098,7 +1089,19 @@ export function BoardWorkspace({
       )}{" "}
       {view === "timeline" && <Timeline rows={shown} setOpenItem={openRow} />}{" "}
       {view === "calendar" && <CalendarView rows={shown} setOpenItem={openRow} />}{" "}
-      {view === "chart" && <ChartView rows={shown} groupBy={groupBy || "status"} />}{" "}
+      {view === "chart" && (
+        <Suspense
+          fallback={
+            <div
+              className="h-[22rem] rounded-lg border border-border/70 bg-card"
+              aria-busy="true"
+              aria-label="Loading chart"
+            />
+          }
+        >
+          <ChartView rows={shown} groupBy={groupBy || "status"} />
+        </Suspense>
+      )}{" "}
       {planner && <p className="text-right text-xs text-muted-foreground">Synced with Planner</p>}
       {openItem && (
         <ItemPanel
@@ -1613,41 +1616,6 @@ function CalendarView({
             </div>
           );
         })}
-      </div>
-    </div>
-  );
-}
-function ChartView({ rows, groupBy }: { rows: BoardRow[]; groupBy: string }) {
-  const data = Array.from(new Set(rows.map((row) => String(row[groupBy] ?? "Unassigned")))).map(
-    (name) => ({
-      name,
-      value: rows.filter((row) => String(row[groupBy] ?? "Unassigned") === name).length,
-    }),
-  );
-  return (
-    <div className="grid gap-5 rounded-lg border border-border/70 bg-card p-5 lg:grid-cols-2">
-      <div className="h-80">
-        <ResponsiveContainer>
-          <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-            <YAxis allowDecimals={false} />
-            <ChartTooltip />
-            <Bar dataKey="value" fill="var(--primary)" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="h-80">
-        <ResponsiveContainer>
-          <PieChart>
-            <Pie data={data} dataKey="value" nameKey="name" innerRadius={65} outerRadius={105}>
-              {data.map((_, index) => (
-                <Cell key={index} fill={`var(--chart-${(index % 5) + 1})`} />
-              ))}
-            </Pie>
-            <ChartTooltip />
-          </PieChart>
-        </ResponsiveContainer>
       </div>
     </div>
   );
