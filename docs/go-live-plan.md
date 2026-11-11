@@ -669,6 +669,15 @@ and verifiable. Cover how the viewer, print route, PPTX export and report_snapsh
 RLS on the bucket matches report visibility. SQL and design first, then stop.
 ```
 
+**Design written (11/11/2026), not built:** `docs/design/pack-overflow-storage.md`. Recommends
+per-block overflow: blocks over 256 KB are published with a SHA-256 and their payload staged in
+`private.report_snapshot_staging`, then `report-publish` moves them to the private bucket
+`report-snapshots/<org>/<report>/<snapshot>.json` and records the pointer in an insert-only
+`report_snapshot_objects` (the snapshot row never changes). The viewer downloads through a bucket
+policy that mirrors `report_snapshots_select` and checks the hash; the print route gets 60-second
+signed URLs from a token-checked edge function; PPTX needs no change. SQL sketch and decisions in
+the doc.
+
 ### GL-17 Multi-tenant health refresh measurement
 
 After GL-10. Supabase branch, or the local Postgres until we're on Pro.
