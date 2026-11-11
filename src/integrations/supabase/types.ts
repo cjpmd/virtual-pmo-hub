@@ -14198,8 +14198,7 @@ export type Database = {
           external_etag?: string | null
           external_id?: string | null
           external_source?:
-            | Database["public"]["Enums"]["external_source"]
-            | null
+            Database["public"]["Enums"]["external_source"] | null
           finish_date?: string | null
           id?: string
           is_sample?: boolean
@@ -14234,8 +14233,7 @@ export type Database = {
           external_etag?: string | null
           external_id?: string | null
           external_source?:
-            | Database["public"]["Enums"]["external_source"]
-            | null
+            Database["public"]["Enums"]["external_source"] | null
           finish_date?: string | null
           id?: string
           is_sample?: boolean
@@ -14748,15 +14746,13 @@ export type Database = {
           superseded_by_id: string | null
           superseded_by_ref: string | null
           superseded_by_status:
-            | Database["public"]["Enums"]["decision_status"]
-            | null
+            Database["public"]["Enums"]["decision_status"] | null
           supersedes_id: string | null
           target_meeting_after_needed_by: boolean | null
           target_meeting_date: string | null
           target_meeting_id: string | null
           target_meeting_status:
-            | Database["public"]["Enums"]["meeting_status"]
-            | null
+            Database["public"]["Enums"]["meeting_status"] | null
           target_papers_deadline: string | null
           title: string | null
           today: string | null
@@ -14766,14 +14762,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "decisions_chosen_option_fkey"
-            columns: ["chosen_option_id", "pending_successor_id"]
+            columns: ["chosen_option_id", "superseded_by_id"]
             isOneToOne: false
             referencedRelation: "decision_options"
             referencedColumns: ["id", "decision_id"]
           },
           {
             foreignKeyName: "decisions_chosen_option_fkey"
-            columns: ["chosen_option_id", "superseded_by_id"]
+            columns: ["chosen_option_id", "pending_successor_id"]
             isOneToOne: false
             referencedRelation: "decision_options"
             referencedColumns: ["id", "decision_id"]
@@ -15477,8 +15473,7 @@ export type Database = {
           measurement_id: string | null
           measurement_overdue: boolean | null
           measurement_status:
-            | Database["public"]["Enums"]["measurement_status"]
-            | null
+            Database["public"]["Enums"]["measurement_status"] | null
           name: string | null
           organisation_id: string | null
           outcome_id: string | null
@@ -16809,6 +16804,19 @@ export type Database = {
           workspace_id: string
         }[]
       }
+      organisation_export_plan: {
+        Args: { p_organisation_id: string }
+        Returns: Json
+      }
+      organisation_export_rows: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_organisation_id: string
+          p_table: string
+        }
+        Returns: Json
+      }
       organisation_purge_mode: { Args: never; Returns: string }
       organisation_writable: {
         Args: { p_organisation_id: string }
@@ -17211,6 +17219,10 @@ export type Database = {
         Args: { p_business_case_id: string }
         Returns: string
       }
+      start_organisation_export: {
+        Args: { p_organisation_id: string }
+        Returns: string
+      }
       submit_business_case: {
         Args: { p_version_id: string }
         Returns: {
@@ -17580,10 +17592,7 @@ export type Database = {
         | "pmo_adjustment"
         | "migration"
       benefit_classification:
-        | "cash_releasing"
-        | "non_cash_releasing"
-        | "qualitative"
-        | "societal"
+        "cash_releasing" | "non_cash_releasing" | "qualitative" | "societal"
       benefit_review_type: "scheduled" | "post_implementation"
       benefit_status:
         | "identified"
@@ -17597,53 +17606,28 @@ export type Database = {
       benefit_type: "benefit" | "disbenefit"
       booking_type: "soft" | "hard"
       business_case_status:
-        | "draft"
-        | "submitted"
-        | "approved"
-        | "rejected"
-        | "superseded"
+        "draft" | "submitted" | "approved" | "rejected" | "superseded"
       capability_status: "planned" | "in_progress" | "delivered" | "accepted"
       change_status: "proposed" | "approved" | "rejected"
       confidence: "low" | "medium" | "high"
       conflict_resolution: "kept_planner" | "reapplied"
       criticality: "low" | "medium" | "high"
       decision_event_type:
-        | "edited"
-        | "deferred"
-        | "made"
-        | "superseded"
-        | "reversed"
-        | "withdrawn"
+        "edited" | "deferred" | "made" | "superseded" | "reversed" | "withdrawn"
       decision_status:
-        | "pending"
-        | "made"
-        | "superseded"
-        | "reversed"
-        | "withdrawn"
+        "pending" | "made" | "superseded" | "reversed" | "withdrawn"
       delivery_status: "on_track" | "future" | "late" | "overdue" | "completed"
       dependency_type:
-        | "sequencing"
-        | "alignment"
-        | "information"
-        | "resource"
-        | "external"
+        "sequencing" | "alignment" | "information" | "resource" | "external"
       dependency_validation:
-        | "inferred"
-        | "proposed"
-        | "confirmed"
-        | "closed"
-        | "broken"
+        "inferred" | "proposed" | "confirmed" | "closed" | "broken"
       document_scope: "project" | "programme" | "capability" | "business_case"
       entity_state: "active" | "closed"
       external_source: "planner_basic" | "planner_premium" | "import"
       financial_kind: "budget" | "actual" | "forecast"
       forecast_capture_source: "close" | "scheduled"
       forum_cadence:
-        | "weekly"
-        | "fortnightly"
-        | "monthly"
-        | "quarterly"
-        | "ad_hoc"
+        "weekly" | "fortnightly" | "monthly" | "quarterly" | "ad_hoc"
       forum_level: "project" | "programme" | "portfolio" | "organisation"
       forum_role: "chair" | "secretary" | "member" | "contributor" | "observer"
       gate_check_key:
@@ -17662,16 +17646,9 @@ export type Database = {
       measurement_status: "submitted" | "validated" | "queried"
       meeting_status: "planned" | "held" | "cancelled"
       milestone_type:
-        | "delivery"
-        | "gate"
-        | "key_date"
-        | "external_dependency"
-        | "approval"
+        "delivery" | "gate" | "key_date" | "external_dependency" | "approval"
       ms_connection_status:
-        | "not_connected"
-        | "pending_approval"
-        | "connected"
-        | "needs_reconnect"
+        "not_connected" | "pending_approval" | "connected" | "needs_reconnect"
       offer_response: "accepted" | "declined" | "proposed_date"
       open_closed: "open" | "closed"
       outbox_status: "queued" | "sending" | "retrying" | "failed"
@@ -17687,11 +17664,7 @@ export type Database = {
       project_state: "proposed" | "active" | "on_hold" | "closed"
       project_tier: "small" | "medium" | "large"
       report_status:
-        | "draft"
-        | "in_review"
-        | "approved"
-        | "published"
-        | "withdrawn"
+        "draft" | "in_review" | "approved" | "published" | "withdrawn"
       reporting_cadence: "weekly" | "fortnightly" | "monthly"
       request_status: "new" | "in_review" | "on_hold" | "approved" | "rejected"
       risk_response: "avoid" | "reduce" | "transfer" | "accept"
@@ -17700,12 +17673,7 @@ export type Database = {
       status_report_status: "draft" | "submitted"
       sync_health: "healthy" | "warning" | "failing"
       sync_log_kind:
-        | "read"
-        | "write"
-        | "throttled"
-        | "failed"
-        | "deleted"
-        | "directory"
+        "read" | "write" | "throttled" | "failed" | "deleted" | "directory"
       sync_mode: "polling" | "live_updates" | "change_tracking"
       task_source: "native" | "planner_basic" | "planner_premium"
       work_item_status:
@@ -17758,8 +17726,7 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
@@ -17783,8 +17750,7 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
@@ -17808,8 +17774,7 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
   EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
@@ -18013,3 +17978,4 @@ export const Constants = {
     },
   },
 } as const
+

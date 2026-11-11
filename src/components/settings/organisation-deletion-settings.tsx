@@ -1,6 +1,6 @@
 // GL-11: Settings › Organisation › Delete organisation (admins). Asking makes the organisation
 // read-only at once and deletes its data after 30 days; any admin can cancel until then. The
-// exports are offered first (a full export is GL-11b). See docs/design/account-closure.md.
+// exports are offered first (Export all data, GL-11b). See docs/design/account-closure.md.
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Trash2, Undo2 } from "lucide-react";
@@ -124,7 +124,8 @@ export function OrganisationDeletionSettings() {
               <Link to="/settings/$section" params={{ section: "data" }} className="underline">
                 Settings › Data
               </Link>{" "}
-              has the portfolio and settings exports.
+              has Export all data (zip), with every record as JSON, plus the portfolio and settings
+              exports.
             </p>
             <div className="space-y-2">
               <Label htmlFor="confirm-org-name">

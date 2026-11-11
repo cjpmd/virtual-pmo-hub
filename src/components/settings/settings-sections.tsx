@@ -72,6 +72,8 @@ import { useCan } from "@/hooks/use-permissions";
 import { useLessons } from "@/hooks/use-lessons";
 import { downloadText } from "@/lib/csv";
 import { portfolioCsv, settingsJson } from "@/services/data-transfer";
+import { exportAllData } from "@/services/organisation-export";
+import { errorMessage } from "@/services/service-error";
 import { toast } from "sonner";
 
 const sample = 1_248_500;
@@ -1786,6 +1788,23 @@ export function DataSettings() {
   const canExportSettings = useCanEditSettings("admin");
   const [open, setOpen] = useState<"projects" | "lessons" | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [exportingAll, setExportingAll] = useState(false);
+  // GL-11b: every organisation table as JSON in a zip, built by the export-organisation edge
+  // function; the browser follows the 24-hour signed link to download it.
+  const exportEverything = async () => {
+    setExportingAll(true);
+    try {
+      const result = await exportAllData(orgId);
+      window.location.assign(result.url);
+      toast.success(
+        `Export ready: ${result.rows.toLocaleString("en-GB")} records from ${result.tables} tables. The link works for 24 hours.`,
+      );
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setExportingAll(false);
+    }
+  };
   const exportPortfolio = async () => {
     setExporting(true);
     try {
@@ -1836,12 +1855,31 @@ export function DataSettings() {
               Export settings (JSON)
             </Button>
           )}
+          {canExportSettings && (
+            <Button
+              variant="outline"
+              disabled={exportingAll}
+              onClick={() => void exportEverything()}
+              data-testid="export-all-data"
+            >
+              <Download />
+              {exportingAll ? "Preparing export…" : "Export all data (zip)"}
+            </Button>
+          )}
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
           The portfolio export has ISO dates (YYYY-MM-DD) and plain amounts in{" "}
           {settings.regional.baseCurrency}, and re-imports with the same columns. Importing projects
           is for PMO members and admins; exporting settings is for admins.
         </p>
+        {canExportSettings && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Export all data gives admins a zip with every record in the organisation as JSON (one
+            file per table) and a manifest listing your uploaded files. It works while the
+            organisation is read-only. The download link lasts 24 hours and the zip is removed after
+            7 days.
+          </p>
+        )}
       </SettingsCard>
       {open === "projects" && <ProjectImport close={() => setOpen(null)} />}
       {open === "lessons" && <SettingsLessonsImport close={() => setOpen(null)} />}

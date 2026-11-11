@@ -606,6 +606,27 @@ Settings › Data gets "Export all data (zip)". Files in Storage are listed, not
 Plan first; SQL for the bucket and its policies, then stop.
 ```
 
+**Built (11/11/2026), not applied or deployed:** migration `20261111100000_gl_11b_organisation_export`
+(`docs/sql/gl-11b-organisation-export.sql`), tested on the local Postgres only. Private bucket
+`exports` (zips only, 500 MB; no storage policy names it, so only the service role reads or writes).
+`private.organisation_export_tables()` lists every public table with `organisation_id` from the
+catalog, plus `organisations` (the row itself) and `profiles` (current members, with emails),
+ordered by primary key, leaving out `token_hash` columns; private job tables, webhook logs and auth
+aren't exported. Service-role RPCs `organisation_export_plan(org)` (tables, row counts, schema
+version) and `organisation_export_rows(org, table, offset, limit ≤ 5,000)`;
+`start_organisation_export(org)` (authenticated: org admins only, works while read-only or pending
+deletion, one export every 2 minutes, audit action `organisation.exported`, which needed the audit
+check constraint re-created). Edge function `export-organisation`: starts as the caller, then pages
+every table into `tables/<table>.json` (streamed into the zip with fflate), lists Storage objects
+in `manifest.json` (not zipped), uploads `exports/<org>/<timestamp>.zip` and returns a 24-hour
+signed URL; it removes that organisation's zips older than 7 days as it goes, and `{mode:
+"cleanup"}` (service role; daily job `vpmo-export-cleanup` at 03:40 UTC through the Vault secret
+`organisation_export_url`) removes everyone's. The purge already walks every bucket, so exports are
+purged with the organisation. Settings › Data: "Export all data (zip)" (admins); the deletion dialog
+points to it. Tests: `supabase/tests/organisation_export.sql` (29 checks), `cross_tenant.sql` (case
+for the new RPC), `_shared/organisation-export.test.ts`; the function typechecks with `deno check`.
+To finish: apply the migration, deploy `export-organisation`, add the Vault secret.
+
 ### GL-12 Bugs: board date sort and selection hint
 
 No database change.

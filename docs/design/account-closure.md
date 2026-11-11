@@ -191,6 +191,10 @@ attachments themselves aren't zipped in v1, because of size; each one can still 
 the purge. The deletion dialog and Settings › Data both offer it. This is the largest piece of the
 build. It can ship as its own package (GL-11b) if you'd rather not hold the rest up.
 
+**Built in GL-11b** (`docs/go-live-plan.md`, `docs/sql/gl-11b-organisation-export.sql`): as above, with
+the export started by `start_organisation_export` (admin check, 2-minute rate limit, audited) and
+secrets (`token_hash`) left out.
+
 ### 2.6 Timing and legal wording
 
 - Purge after 30 days, run by the daily job (08:xx London, alongside GL-6), so it happens on day 30
