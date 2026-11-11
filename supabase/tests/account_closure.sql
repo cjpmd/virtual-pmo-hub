@@ -315,6 +315,21 @@ select pg_temp.ok('admin asks; purge in 30 days', (select r between now() + inte
   from (select public.request_organisation_deletion(pg_temp.c('org_a'), 'GL11 Org A') r offset 0) x));
 select pg_temp.raises('pending: writes refused', $$update public.portfolios set name = name || '!' where organisation_id = pg_temp.c('org_a')$$,
   'P0001', 'org_read_only');
+-- The refusal names the deletion and its date, not the trial / subscription.
+do $$
+declare v_message text;
+begin
+  begin
+    update public.portfolios set name = name || '!' where organisation_id = pg_temp.c('org_a');
+  exception when others then
+    get stacked diagnostics v_message = message_text;
+  end;
+  perform pg_temp.ok('pending: the refusal says scheduled for deletion, with the date (' || coalesce(v_message, 'none') || ')',
+    v_message = 'This organisation is scheduled for deletion on '
+      || to_char((select purge_after from public.organisation_deletions where organisation_id = pg_temp.c('org_a'))
+                 at time zone 'Europe/London', 'FMDD FMMonth YYYY')
+      || ', so it is read-only. An admin can cancel the deletion in Settings › Organisation.');
+end $$;
 select pg_temp.raises('asking twice', $$select public.request_organisation_deletion(pg_temp.c('org_a'), 'GL11 Org A')$$, '23505', 'deletion_pending');
 select pg_temp.as_user(pg_temp.c('a_member'));
 select pg_temp.ok('a member reads the date', (select purge_after from public.organisation_deletions

@@ -265,6 +265,16 @@ begin
     -- GL-11: a cancelled request (a pending one would make the organisation read-only).
     ('organisation_deletions', $s$insert into public.organisation_deletions (organisation_id, requested_at, purge_after, cancelled_at)
        values (%1$L, now() - interval '2 days', now() + interval '28 days', now() - interval '1 day')$s$),
+    -- Its insert trigger accepts only a project whose latest report is better than the evidence
+    -- (v_project_divergence), which the generic filler hit only when its ctid order happened to
+    -- pick such a project: earlier rolled-back suites change that order. Picked explicitly here.
+    ('divergence_justifications', $s$insert into public.divergence_justifications (organisation_id, workspace_id, project_id,
+         status_report_id, text, declared_at_time, evidenced_at_time, divergence_days_at_time)
+       select p.organisation_id, p.workspace_id, p.id, v.latest_report_id, 'GL10 justification', v.declared, v.evidenced,
+         coalesce(v.divergence_days, 0)
+       from public.v_project_divergence v join public.projects p on p.id = v.project_id
+       where p.organisation_id = %1$L and v.divergent and v.latest_report_id is not null
+       order by p.created_at, p.id limit 1$s$),
     ('assumptions',$s$insert into public.assumptions (organisation_id, workspace_id, project_id, assumption, ref)
        select organisation_id, workspace_id, id, 'GL10 assumption', 'GL10-A1' from public.projects where organisation_id = %1$L order by created_at limit 1$s$),
     ('business_cases', $s$insert into public.business_cases (organisation_id, workspace_id, project_id, title)

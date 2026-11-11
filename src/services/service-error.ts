@@ -12,7 +12,7 @@ export type ServiceErrorKind =
   | "network" // the request did not reach the server
   | "timeout" // the database gave up (statement timeout) or the gateway did
   | "cancelled" // the read was abandoned because the person left the page
-  | "read_only" // the organisation's trial or subscription has ended (GL-4)
+  | "read_only" // trial or subscription ended (GL-4), or deletion pending (GL-11)
   | "unknown";
 
 export class ServiceError extends Error {
@@ -53,11 +53,19 @@ const messages: Record<ServiceErrorKind, string> = {
  * so that is matched too.
  */
 const READ_ONLY_HINT = "org_read_only";
+/** GL-11: the database's own sentence when the refusal is a pending deletion (it has the date). */
+const PENDING_DELETION = /^This organisation is scheduled for deletion\b/;
 export const isReadOnlyError = (
   error: { hint?: string | null; message?: string } | null | undefined,
 ) =>
   !!error &&
-  (error.hint === READ_ONLY_HINT || /^This organisation is read-only\b/.test(error.message ?? ""));
+  (error.hint === READ_ONLY_HINT ||
+    /^This organisation is read-only\b/.test(error.message ?? "") ||
+    PENDING_DELETION.test(error.message ?? ""));
+
+/** The sentence for a read-only refusal: the deletion one as the database wrote it, else ours. */
+const readOnlyText = (error: { message?: string }) =>
+  PENDING_DELETION.test(error.message ?? "") ? (error.message as string) : messages.read_only;
 
 /** A storage upload error: the read-only refusal, or the caller's usual error. */
 export function fromStorageUpload(
@@ -66,7 +74,7 @@ export function fromStorageUpload(
   fallback: ServiceErrorKind,
 ): ServiceError {
   if (isReadOnlyError(error))
-    return new ServiceError("read_only", `${context}: ${messages.read_only}`, { cause: error });
+    return new ServiceError("read_only", `${context}: ${readOnlyText(error)}`, { cause: error });
   return new ServiceError(fallback, `${context}: ${error.message}`, { cause: error });
 }
 
@@ -91,7 +99,7 @@ export function fromPostgrest(
   if (isReadOnlyError(error)) {
     return new ServiceError(
       "read_only",
-      context ? `${context}: ${messages.read_only}` : messages.read_only,
+      context ? `${context}: ${readOnlyText(error)}` : readOnlyText(error),
       { code, detail: [error.message, error.hint].filter(Boolean).join(" — "), cause: error },
     );
   }

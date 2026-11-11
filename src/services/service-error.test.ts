@@ -19,6 +19,21 @@ describe("read-only refusals (GL-4)", () => {
     expect(error.code).toBe("P0001");
   });
 
+  it("GL-11: keeps the database's sentence for a pending deletion (it has the date)", () => {
+    const deletion =
+      "This organisation is scheduled for deletion on 10 December 2026, so it is read-only. An admin can cancel the deletion in Settings › Organisation.";
+    const error = fromPostgrest(
+      pgError({ code: "P0001", message: deletion, hint: "org_read_only" }),
+      "Saving the project",
+    );
+    expect(error.kind).toBe("read_only");
+    expect(error.message).toBe(`Saving the project: ${deletion}`);
+    expect(isReadOnlyError({ message: deletion })).toBe(true);
+    expect(fromStorageUpload({ message: deletion }, "Uploading", "unknown").message).toBe(
+      `Uploading: ${deletion}`,
+    );
+  });
+
   it("works without a context", () => {
     const error = fromPostgrest(pgError({ code: "P0001", message: "x", hint: "org_read_only" }));
     expect(error.kind).toBe("read_only");
