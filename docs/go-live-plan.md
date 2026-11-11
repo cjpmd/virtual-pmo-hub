@@ -711,7 +711,7 @@ prototype data" comments are gone from both detail routes and `lib/today.ts`. Re
 stale comments (programme route "prototype id": the lookup is by id only; `lib/format.ts` "mock
 data layer"), and moved two misplaced `eslint-disable-next-line` directives in
 `portfolio.index.tsx` onto the dependency arrays they were meant for (two warnings gone).
-`npx eslint src` and `npx eslint .`: 0 errors (102 and 100 warnings, mostly react-refresh and
+`npx eslint src` and `npx eslint .`: 0 errors, 100 warnings (mostly react-refresh and
 exhaustive-deps). Remaining "prototype" wording is in the adapter layers GL-21 removes.
 
 ### GL-20 Split the oversized components (one per session)
