@@ -63,6 +63,7 @@ import {
   type ViewConfig,
 } from "@/services/saved-views";
 import { errorMessage } from "@/services/service-error";
+import { compareBoardRows, formatSortKey, parseSortKey } from "@/lib/board-sort";
 /** The status a board uses for "closed", from the options it offers. */
 function closedStatusFor(options: string[] | undefined): string {
   const order = ["Closed", "Done", "Completed", "Realised", "Embedded", "Superseded", "Approved"];
@@ -707,6 +708,11 @@ export function BoardWorkspace({
     recordEdit(id, { [field]: value } as Partial<BoardRow>);
     onEdit?.();
   };
+  const sortCompare = useMemo(() => {
+    const { key, direction } = parseSortKey(sortKey);
+    if (!key) return null;
+    return compareBoardRows(key, columns.find((column) => column.key === key)?.type, direction);
+  }, [sortKey, columns]);
   const shown = useMemo(
     () =>
       rows
@@ -715,14 +721,8 @@ export function BoardWorkspace({
             row.title.toLowerCase().includes(filter.toLowerCase()) &&
             (activeSaved?.filters ?? []).every((item) => matchesFilter(row, item)),
         )
-        .sort((a, b) =>
-          sortKey
-            ? String(a[sortKey] ?? "").localeCompare(String(b[sortKey] ?? ""), "en-GB", {
-                numeric: true,
-              })
-            : 0,
-        ),
-    [rows, filter, sortKey, activeSaved],
+        .sort((a, b) => (sortCompare ? sortCompare(a, b) : 0)),
+    [rows, filter, sortCompare, activeSaved],
   );
   const groups = groupBy
     ? Array.from(new Set(shown.map((row) => String(row[groupBy] ?? "Unassigned"))))
@@ -987,8 +987,10 @@ export function BoardWorkspace({
           <label className="flex items-center gap-1 text-xs text-muted-foreground">
             Sort
             <select
-              value={sortKey}
-              onChange={(event) => setSortKey(event.target.value)}
+              value={parseSortKey(sortKey).key}
+              onChange={(event) =>
+                setSortKey(formatSortKey(event.target.value, parseSortKey(sortKey).direction))
+              }
               className="h-8 rounded border bg-background px-2"
             >
               <option value="">None</option>
@@ -999,6 +1001,24 @@ export function BoardWorkspace({
               ))}
             </select>
           </label>
+          {sortKey && (
+            <button
+              type="button"
+              onClick={() => {
+                const { key, direction } = parseSortKey(sortKey);
+                setSortKey(formatSortKey(key, direction === "asc" ? "desc" : "asc"));
+              }}
+              className="h-8 rounded border bg-background px-2 text-xs"
+              aria-label={
+                parseSortKey(sortKey).direction === "asc"
+                  ? "Ascending order: switch to descending"
+                  : "Descending order: switch to ascending"
+              }
+              data-testid="board-sort-direction"
+            >
+              {parseSortKey(sortKey).direction === "asc" ? "↑ Asc" : "↓ Desc"}
+            </button>
+          )}
           <details className="relative">
             <summary className="flex h-8 cursor-pointer list-none items-center gap-1 rounded px-2 text-xs hover:bg-accent">
               <Columns3 className="size-4" />

@@ -441,6 +441,7 @@ function Builder({ report }: { report: ReportRecord }) {
                   tolerances={tolerances}
                   metrics={metricRows}
                   inclusions={inclusions.data ?? []}
+                  selectionLoadedAt={inclusions.dataUpdatedAt}
                   editable={editable}
                   saved={!autosave.dirty}
                   refreshing={mutations.refreshSelection.isPending}
