@@ -1,6 +1,7 @@
--- docs/sql/gl-15-approval-reminders.sql: PROPOSAL, not applied. Tested on the local Postgres only
--- (supabase/tests/approval_reminders.sql, 34 checks; cross_tenant, organisation_purge, read_only_mode,
--- organisation_export pass). Identical to supabase/migrations/20261112120000_gl_15_approval_reminders.sql.
+-- docs/sql/gl-15-approval-reminders.sql: approved and applied to production on 12/11/2026 (recorded
+-- as version 20261112112636). Tested first on the local Postgres (supabase/tests/approval_reminders.sql,
+-- 34 checks; cross_tenant, organisation_purge, read_only_mode, organisation_export pass). Identical to
+-- supabase/migrations/20261112112636_gl_15_approval_reminders.sql.
 -- Nothing destructive: no drop, delete or truncate.
 
 -- GL-15 Report approver reminders (deferred item RB-34; report builder spec §12: "to approvers
