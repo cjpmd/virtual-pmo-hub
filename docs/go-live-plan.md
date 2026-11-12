@@ -622,6 +622,19 @@ Work package GL-12.
    whenever the rules differ from those the current selection was computed with. Unit-test.
 ```
 
+**Done (11/11/2026), not merged:** no database change. Board Sort (`lib/board-sort.ts`): columns of
+type `date` or `timeline` (by start, else finish) and the `start` / `finish` keys compare by calendar
+date through `toIsoDay`; blanks, "—" and unreadable dates go last in both directions; text and
+numbers keep the numeric en-GB collation. Sort gained an Asc / Desc toggle; descending is stored
+as `-key` in the view's `sortKey`, so saved views keep working with no schema change. Selection
+panel (`engine/selectionStale.ts`): stale when the effective rules (enabled rules' metric, op,
+threshold after forum tolerances, severity; mode, cap, order) differ from those in force when the
+saved selection was last fetched, or when the saved rule rows differ from the preview in projects
+or reasons (rule, op, threshold), which also catches a saved-but-unrefreshed threshold after a
+reload. Not caught after a reload: a changed rule that matches no project (the database doesn't
+store the rules a selection was computed with). e2e `e2e/board-sort.e2e.ts` (not run: e2e stays
+off production).
+
 ### GL-13 Real notifications [DB]
 
 ```
@@ -776,5 +789,5 @@ and delete the adapter layer. List every screen touched; e2e for that domain mus
 ## Progress
 
 - [x] GL-1 Migrations  - [ ] GL-2 Cron  - [x] GL-3 Hide dead ends  - [x] GL-4 Read-only  - [x] GL-5 Banners  - [x] GL-6 Billing emails  - [ ] GL-7 Legal pages
-- [x] GL-8 Sector  - [x] GL-9 Sample data  - [x] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [ ] GL-12 Bugs  - [ ] GL-13 Notifications  - [ ] GL-14 Committee packs
+- [x] GL-8 Sector  - [x] GL-9 Sample data  - [x] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [x] GL-12 Bugs  - [ ] GL-13 Notifications  - [ ] GL-14 Committee packs
 - [ ] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [ ] GL-17 Multi-tenant  - [x] GL-18 Bundle  - [ ] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters
