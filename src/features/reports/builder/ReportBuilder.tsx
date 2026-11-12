@@ -36,7 +36,7 @@ import {
   type ReportRecord,
 } from "@/services/reports";
 import { errorMessage } from "@/services/service-error";
-import { getBlock, newInstance } from "../blocks/registry";
+import { getBlock, newInstance, supportsScope } from "../blocks/registry";
 import type { BlockInstance } from "../blocks/types";
 import type { SelectionRuleSet } from "../engine/evaluateRules";
 import { NarrativeEditingContext, type NarrativeEditing } from "../blocks/narrative-context";
@@ -532,5 +532,5 @@ function TemplateVersion({
 export const unsupportedBlocks = (blocks: BlockInstance[], scope: ReportRecord["scopeType"]) =>
   blocks.filter((b) => {
     const definition = getBlock(b.blockKey);
-    return definition && !definition.supportedScopes.includes(scope);
+    return definition && !supportsScope(definition, scope);
   });

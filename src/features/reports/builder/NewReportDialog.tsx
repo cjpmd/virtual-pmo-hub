@@ -1,5 +1,6 @@
 // "New report": from a template or ad hoc (spec §3 J2), for a forum (optional, with a meeting)
-// and a scope (one project, programme or portfolio, or a custom list of projects).
+// and a scope (one project, programme, portfolio or funding collection, or a custom list of
+// projects).
 import { useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useForums, useMeetings } from "@/hooks/use-forums";
 import { usePortfolioNames, useProgrammeNames, useProjectNames } from "@/hooks/use-hierarchy";
+import { useCollections } from "@/hooks/use-collections";
 import { useForumReporting, useReportMutations, useTemplates } from "@/hooks/use-reports";
 import { errorMessage } from "@/services/service-error";
 import type { ScopeType } from "@/services/reports";
@@ -39,6 +41,7 @@ export function NewReportDialog({
   const projects = useProjectNames();
   const programmes = useProgrammeNames();
   const portfolios = usePortfolioNames();
+  const collections = useCollections();
   const { create } = useReportMutations();
   const [kind, setKind] = useState<"template" | "ad_hoc">(presetForum ? "template" : "ad_hoc");
   const [templateId, setTemplateId] = useState<string>("");
@@ -63,8 +66,10 @@ export function NewReportDialog({
       return (programmes.data ?? []).map((p) => ({ id: p.id, name: p.name }));
     if (scopeType === "portfolio")
       return (portfolios.data ?? []).map((p) => ({ id: p.id, name: p.name }));
+    if (scopeType === "collection")
+      return (collections.data ?? []).map((c) => ({ id: c.id, name: c.name }));
     return [];
-  }, [scopeType, projects.data, programmes.data, portfolios.data]);
+  }, [scopeType, projects.data, programmes.data, portfolios.data, collections.data]);
   const availableTemplates = (templates.data ?? []).filter((t) => !t.archivedAt);
 
   const submit = async () => {
@@ -209,6 +214,7 @@ export function NewReportDialog({
                 <option value="project">Project</option>
                 <option value="programme">Programme</option>
                 <option value="portfolio">Portfolio</option>
+                <option value="collection">Collection</option>
                 <option value="custom">Custom list</option>
               </select>
               {scopeType !== "custom" && (

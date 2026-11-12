@@ -1,6 +1,12 @@
 // Block registry: registerBlock(), getBlock(), listBlocks() (spec §6.1). Definitions live in
 // ./catalogue/*; importing ./catalogue registers them all.
-import type { AnyBlockDefinition, BlockCategory, BlockDefinition, BlockInstance } from "./types";
+import type {
+  AnyBlockDefinition,
+  BlockCategory,
+  BlockDefinition,
+  BlockInstance,
+  ScopeLevel,
+} from "./types";
 
 const blocks = new Map<string, AnyBlockDefinition>();
 
@@ -10,6 +16,15 @@ export function registerBlock<C, D>(definition: BlockDefinition<C, D>) {
 }
 
 export const getBlock = (key: string): AnyBlockDefinition | undefined => blocks.get(key);
+
+/**
+ * Whether a block can render in a scope. A collection is a hand-picked list of projects, so a
+ * block that supports a custom list supports a collection too (GL-14).
+ */
+export const supportsScope = (definition: AnyBlockDefinition, scope: ScopeLevel | "any") =>
+  scope === "any" ||
+  definition.supportedScopes.includes(scope) ||
+  (scope === "collection" && definition.supportedScopes.includes("custom"));
 
 export const listBlocks = (): AnyBlockDefinition[] =>
   [...blocks.values()].sort((a, b) => a.name.localeCompare(b.name));

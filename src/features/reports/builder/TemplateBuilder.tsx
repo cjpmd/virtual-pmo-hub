@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useOrgId } from "@/components/auth/organisation-provider";
 import { usePortfolioNames, useProgrammeNames, useProjectNames } from "@/hooks/use-hierarchy";
+import { useCollections } from "@/hooks/use-collections";
 import {
   useRatingSchemes,
   useRiskMatrices,
@@ -86,12 +87,15 @@ function Builder({ template }: { template: TemplateRecord }) {
   const projects = useProjectNames();
   const programmes = useProgrammeNames();
   const portfolios = usePortfolioNames();
+  const collections = useCollections();
   const options =
     sample.type === "project"
       ? (projects.data ?? []).map((p) => ({ id: p.id, name: `${p.code} ${p.name}` }))
       : sample.type === "programme"
         ? (programmes.data ?? []).map((p) => ({ id: p.id, name: p.name }))
-        : (portfolios.data ?? []).map((p) => ({ id: p.id, name: p.name }));
+        : sample.type === "collection"
+          ? (collections.data ?? []).map((c) => ({ id: c.id, name: c.name }))
+          : (portfolios.data ?? []).map((p) => ({ id: p.id, name: p.name }));
   const input: ReportInput | null = useMemo(
     () =>
       sample.id
@@ -200,7 +204,7 @@ function Builder({ template }: { template: TemplateRecord }) {
               setDraft({ ...draft, scopeType: e.target.value as Draft["scopeType"] })
             }
           >
-            {["any", "project", "programme", "portfolio", "custom"].map((s) => (
+            {["any", "project", "programme", "portfolio", "collection", "custom"].map((s) => (
               <option key={s} value={s}>
                 {s.charAt(0).toUpperCase() + s.slice(1)}
               </option>
@@ -254,6 +258,7 @@ function Builder({ template }: { template: TemplateRecord }) {
               <option value="project">Project</option>
               <option value="programme">Programme</option>
               <option value="portfolio">Portfolio</option>
+              <option value="collection">Collection</option>
             </select>
             <select
               id="t-sample"

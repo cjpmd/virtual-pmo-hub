@@ -19,7 +19,7 @@ import { createLimiter } from "@/lib/limit";
 const liveDataLimit = createLimiter(2);
 
 export type ReportStatus = "draft" | "in_review" | "approved" | "published" | "withdrawn";
-export type ScopeType = "project" | "programme" | "portfolio" | "custom";
+export type ScopeType = "project" | "programme" | "portfolio" | "custom" | "collection";
 
 export interface ScopeItem {
   entity_type: "project" | "programme";

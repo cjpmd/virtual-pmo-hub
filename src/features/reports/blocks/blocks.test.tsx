@@ -10,8 +10,10 @@ import { z } from "zod";
 import fixtures from "./__fixtures__/phase1.json";
 import fixtures2 from "./__fixtures__/phase2.json";
 import fixtures34 from "./__fixtures__/phase34.json";
+import fixturesFunding from "./__fixtures__/funding.json";
+import { potPosition, realisedWidth, requestedNote, type CoverageData } from "./catalogue/funding";
 import { ALL_BLOCKS } from "./catalogue";
-import { getBlock, listBlocks, registerBlock, resolveConfig } from "./registry";
+import { getBlock, listBlocks, registerBlock, resolveConfig, supportsScope } from "./registry";
 import type { BlockInstance, RenderContext } from "./types";
 import { FALLBACK_SCHEME } from "@/services/reports";
 
@@ -441,6 +443,28 @@ describe("Phase 3 and 4 blocks", () => {
     raid_movement: { since: "2026-10-01", has_previous: false, new: [], closed: [], rescored: [] },
     lessons_learned: { since: "2026-10-01", rows: [] },
     linked_records: { rows: [] },
+    programme_coverage: {
+      currency: "GBP",
+      rows: [],
+      totals: { projects: 0, budget: null, forecast: null },
+      collection: null,
+    },
+    benefits_value: {
+      currency: "GBP",
+      benefits: 0,
+      planned: 0,
+      realised: 0,
+      percent: 0,
+      cash_releasing_realised: 0,
+      cash_releasing_planned: 0,
+      at_risk: 0,
+      disbenefit_value: 0,
+      objectives: [],
+      behind_count: 0,
+      behind: [],
+      overdue_count: 0,
+      overdue: [],
+    },
   };
   for (const [key, data] of Object.entries(EMPTY34)) {
     it(`${key} renders empty data`, () => {
@@ -457,10 +481,10 @@ describe("Phase 3 and 4 blocks", () => {
 });
 
 describe("ALL_BLOCKS registry (tree-shaking guard)", () => {
-  it("ALL_BLOCKS contains exactly 37 definitions", () => {
+  it("ALL_BLOCKS contains exactly 39 definitions", () => {
     // This test fails if a new block is added without updating catalogue/index.ts,
     // or if the explicit import chain is broken and blocks get tree-shaken.
-    expect(ALL_BLOCKS).toHaveLength(37);
+    expect(ALL_BLOCKS).toHaveLength(39);
   });
   it("ALL_BLOCKS matches what the registry contains", () => {
     const registryKeys = listBlocks()
@@ -480,5 +504,93 @@ describe("data basis (A2)", () => {
         "Ratings as at 31 Oct 2026; financials and RAID current at publish (no history before 4 Nov 2026)",
     });
     expect(screen.getByText(/Data basis: Ratings as at 31 Oct 2026/)).toBeTruthy();
+  });
+});
+
+describe("funding pack blocks (GL-14)", () => {
+  for (const [key, data] of Object.entries(fixturesFunding)) {
+    it(`${key} renders fixture data`, () => {
+      const { container } = renderBlock(key, data);
+      expect(container.textContent?.length).toBeGreaterThan(0);
+    });
+  }
+  it("programme coverage shows the pot against what is requested", () => {
+    renderBlock("programme_coverage", fixturesFunding.programme_coverage);
+    expect(screen.getByText("Digital Care")).toBeTruthy();
+    expect(screen.getByText("Over the pot")).toBeTruthy();
+    expect(
+      screen.getByText("From 1 business case, 1 project request and 2 project budgets"),
+    ).toBeTruthy();
+    expect(screen.getByText("Business case")).toBeTruthy();
+    expect(screen.getAllByText("Project budget")).toHaveLength(2);
+  });
+  it("programme coverage outside a collection has no pot", () => {
+    const { container } = renderBlock("programme_coverage", {
+      ...fixturesFunding.programme_coverage,
+      collection: null,
+    });
+    expect(container.querySelector("[data-pot]")).toBeNull();
+  });
+  it("potPosition: over, under and no pot", () => {
+    const base: NonNullable<CoverageData["collection"]> = {
+      name: "Fund",
+      pot: 100,
+      requested: 150,
+      awarded: 0,
+      remaining: 100,
+    };
+    expect(potPosition(base)).toEqual({ over: true, amount: 50 });
+    expect(potPosition({ ...base, requested: "40" })).toEqual({ over: false, amount: 60 });
+    expect(potPosition({ ...base, pot: null })).toBeNull();
+  });
+  it("requestedNote names the sources, and falls back for older packs", () => {
+    const base: NonNullable<CoverageData["collection"]> = {
+      name: "Fund",
+      pot: 100,
+      requested: 150,
+      awarded: 0,
+      remaining: 100,
+    };
+    expect(requestedNote(base)).toBe("Budgets of the projects in the collection");
+    expect(
+      requestedNote({ ...base, requested_by_source: { budget: { projects: 3, amount: 150 } } }),
+    ).toBe("From 3 project budgets");
+    expect(
+      requestedNote({
+        ...base,
+        requested_by_source: {
+          business_case: { projects: 2, amount: 100 },
+          budget: { projects: 1, amount: 50 },
+        },
+      }),
+    ).toBe("From 2 business cases and 1 project budget");
+  });
+  it("benefits value lists objectives, behind profile and overdue measurements", () => {
+    renderBlock("benefits_value", fixturesFunding.benefits_value);
+    expect(screen.getByText("Better patient flow")).toBeTruthy();
+    expect(screen.getByText(/Agency spend/)).toBeTruthy();
+    expect(screen.getByText(/10 days overdue, unowned/)).toBeTruthy();
+    expect(screen.getByText("and 1 more")).toBeTruthy();
+    expect(screen.getByText(/Disbenefits planned/)).toBeTruthy();
+  });
+  it("realisedWidth caps at 100 and survives a zero plan", () => {
+    expect(realisedWidth(200, 50)).toBe(25);
+    expect(realisedWidth(100, 250)).toBe(100);
+    expect(realisedWidth(0, 0)).toBe(0);
+  });
+  it("the cover shows its cover text", () => {
+    const { container } = renderBlock("report_cover", {
+      ...fixtures.scope.report_cover,
+      cover_text: "Papers for the funding round.",
+    });
+    expect(container.querySelector("[data-cover-text]")?.textContent).toBe(
+      "Papers for the funding round.",
+    );
+  });
+  it("a collection scope accepts the blocks a custom list does", () => {
+    expect(supportsScope(getBlock("project_status_grid")!, "collection")).toBe(true);
+    expect(supportsScope(getBlock("requests_pipeline")!, "collection")).toBe(true);
+    expect(supportsScope(getBlock("programme_coverage")!, "project")).toBe(false);
+    expect(supportsScope(getBlock("programme_coverage")!, "any")).toBe(true);
   });
 });

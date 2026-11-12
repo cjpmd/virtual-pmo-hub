@@ -1,0 +1,119 @@
+{
+  "programme_coverage": {
+    "currency": "GBP",
+    "rows": [
+      {
+        "programme_id": "d0000000-0000-4000-8000-000000000401",
+        "name": "Digital Care",
+        "projects": 3,
+        "budget": 3000000,
+        "forecast": 3230000
+      },
+      {
+        "programme_id": "d0000000-0000-4000-8000-000000000402",
+        "name": "Estates",
+        "projects": 1,
+        "budget": 1000000,
+        "forecast": 990000
+      }
+    ],
+    "totals": {
+      "projects": 4,
+      "budget": 4000000,
+      "forecast": 4220000
+    },
+    "collection": {
+      "name": "Innovation Fund",
+      "pot": 2500000,
+      "requested": 2950000,
+      "awarded": 1150000,
+      "remaining": 1350000,
+      "requested_by_source": {
+        "business_case": {
+          "projects": 1,
+          "amount": 600000
+        },
+        "request": {
+          "projects": 1,
+          "amount": 350000
+        },
+        "budget": {
+          "projects": 2,
+          "amount": 2000000
+        }
+      },
+      "requested_rows": [
+        {
+          "project_id": "p1",
+          "code": "RD01",
+          "name": "Electronic Patient Record",
+          "requested": 600000,
+          "source": "business_case"
+        },
+        {
+          "project_id": "p2",
+          "code": "RD02",
+          "name": "Patient Portal",
+          "requested": 350000,
+          "source": "request"
+        },
+        {
+          "project_id": "p3",
+          "code": "RD03",
+          "name": "Virtual Wards",
+          "requested": 1000000,
+          "source": "budget"
+        },
+        {
+          "project_id": "p7",
+          "code": "RD07",
+          "name": "Car Park Rebuild",
+          "requested": 1000000,
+          "source": "budget"
+        }
+      ]
+    }
+  },
+  "benefits_value": {
+    "currency": "GBP",
+    "benefits": 3,
+    "planned": 650000,
+    "realised": 120000,
+    "percent": 18,
+    "cash_releasing_realised": 120000,
+    "cash_releasing_planned": 650000,
+    "at_risk": 2,
+    "disbenefit_value": 30000,
+    "objectives": [
+      {
+        "id": "o1",
+        "name": "Better patient flow",
+        "planned": 200000,
+        "realised": 50000,
+        "count": 1
+      }
+    ],
+    "behind_count": 2,
+    "behind": [
+      {
+        "id": "b1",
+        "ref": "BEN-001",
+        "title": "Reduced paper records storage",
+        "realised": 0,
+        "realised_percent": 0
+      }
+    ],
+    "overdue_count": 1,
+    "overdue": [
+      {
+        "id": "m1",
+        "ref": "BEN-002",
+        "benefit": "Fewer agency staff",
+        "measure": "Agency spend",
+        "next_due_date": "2026-11-02",
+        "days_overdue": 10,
+        "owner": null
+      }
+    ]
+  }
+}

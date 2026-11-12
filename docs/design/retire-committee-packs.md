@@ -148,3 +148,39 @@ Options as written before the decisions:
 ## 6. What this package delivered
 
 This document only. No code, SQL or production change.
+
+## 7. Phase A built and applied (12/11/2026, not merged)
+
+Migration `20261112115133_gl_14a_report_builder_gaps` (`docs/sql/gl-14a-report-builder-gaps.sql`).
+Section 0 (four CHECK constraints widened) was run by hand first; the migration's own section 0
+only acts where a constraint doesn't allow `collection` yet, so applying it on production ran no
+drop. Tested on the local Postgres first; on production every replaced or new function is
+byte-identical (md5) to the local build, and both blocks return data for a real collection
+(8 projects, all requested from budgets today).
+
+- **G1 (D-a)** `collection` scope on reports, templates and forums. `private.scope_project_ids`
+  reads `collection_projects` live, so a report follows changes to its collection;
+  `can_view_entity('collection')` and `create_report` (organisation and workspace from the
+  collection). The builder treats a collection like a custom list for block support
+  (`supportsScope` in `blocks/registry.ts`). Collection is offered in New report, the template
+  builder (scope and preview) and forum report settings. The selection engine is unchanged (it
+  works on project metrics, not scope), so no parity cases changed.
+- **G3 (D-b)** `programme_coverage` block: projects, budget and forecast per programme; for a
+  collection, pot, requested, awarded and what's left. Requested per project is, first that exists,
+  the business case's `funding_requested` (latest non-superseded version with one, on the project's
+  case or the case of the request it was converted from), the converted request's estimated cost,
+  else the project budget; the block lists each project's amount and source and the stat says
+  "From 1 business case, 1 project request and 2 project budgets". Production on 12/11/2026: no
+  business case version has `funding_requested` yet, one project was converted from a request.
+- **G6 (D-c)** `benefits_value` block (`benefits_summary` unchanged): planned, realised, %
+  realised, cash-releasing realised of planned, at risk (low confidence or behind profile), by
+  strategic objective, behind profile and overdue measurements (before the as-at date), with
+  `getValueMetrics`' rules.
+- **G2** `report_cover` config `cover_text` (plain text, 2,000 characters), stored in the block
+  data so a published pack keeps it; the cover shows a collection's name as its scope.
+- **G13** system template "Funding committee" (scope collection, forum type committee): one
+  always-true rule ("In this collection") gives every project a deep-dive, ordered by programme.
+- **G11** `get_portfolio_overview` committee markers also come from published committee /
+  portfolio board / collection packs (meeting date, else as-at). The project chart doesn't draw
+  committee markers, so `get_project_overview` is unchanged.
+- D-d (`showLogo`) is client-side and left for Phase B with the Settings change.
