@@ -1,6 +1,6 @@
 # GL-14 — One pack system: retire Committee (Funding) packs
 
-Status: **plan approved with decisions (12/11/2026), not built.** Written 11/11/2026; Chris's
+Status: **Phase A applied and Phase B built (12/11/2026); Phase C optional.** Written 11/11/2026; Chris's
 decisions D-a to D-d and the archive decision are in §5 and override the options below.
 Sources: `src/components/committee-pack.tsx` (1,128 lines), `committee-pack-list.tsx`,
 `services/committee-packs.ts`, `hooks/use-committee-packs.ts`, `routes/governance.committee-packs.tsx`,
@@ -184,3 +184,33 @@ byte-identical (md5) to the local build, and both blocks return data for a real 
   portfolio board / collection packs (meeting date, else as-at). The project chart doesn't draw
   committee markers, so `get_project_overview` is unchanged.
 - D-d (`showLogo`) is client-side and left for Phase B with the Settings change.
+
+## 8. Phase B built (12/11/2026, not merged)
+
+Front end only; no schema change, no settings rewrite.
+
+- **Redirect (7):** `routes/governance.committee-packs.tsx` is a `beforeLoad` redirect to
+  `/governance/reports`; `?collection=<id>` is passed on. The Reports list takes `collection` in its
+  search and shows a "Filter by collection" select whenever a collection filter is set or any report
+  is collection-scoped (`filterByCollection`, `features/reports/collection-reports.ts`).
+- **Navigation:** "Funding packs" removed from Governance (`lib/navigation.ts`). There is no command
+  palette and Home never linked to packs.
+- **Collection page (6, G12):** "Generate funding pack" became "New report for this collection"
+  (governance collections only, disabled while read-only). It opens
+  `/governance/reports?create=true&collection=<id>`; `NewReportDialog` takes `collectionId`, starts
+  on "From a template" with scope = that collection, and picks the template from
+  `defaultCollectionTemplate` (the system "Funding committee", else an organisation's own
+  collection template) once templates load. "Past packs" became "Reports for this collection": the
+  collection's published reports, newest meeting (else as-at) first, from `useReports()`.
+- **Settings (9, D-d):** the Funding pack template card is gone. Settings › Templates › "Board and
+  committee packs" has the logo switch, saved as `templates.reports.showLogo`; `reportShowLogo`
+  (`lib/report-branding.ts`) reads it, else the old `templates.committeePack.showLogo`, else true,
+  and the report cover (`blocks/catalogue/narrative.tsx`) uses it. `committeePack` stays in the
+  settings type and defaults so stored settings still load and the dormant pack code compiles.
+- **Copy (10):** `/product` and `/pricing` say "board and committee packs"; Settings' Templates blurb
+  and the collection page description no longer mention funding packs.
+- **Kept (Phase C):** `committee-pack.tsx`, `committee-pack-list.tsx`, `services/committee-packs.ts`,
+  `hooks/use-committee-packs.ts` and the progress chart's read of `committee_packs`.
+- **Tests:** `collection-reports.test.ts`, `report-branding.test.ts`; `e2e/committee-packs.e2e.ts`
+  now checks the redirect (with and without a collection), navigation, Settings › Templates and the
+  collection page's new action (not run: e2e stays off production).

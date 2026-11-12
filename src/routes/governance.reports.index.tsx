@@ -13,6 +13,8 @@ import { STATUS_LABEL } from "@/features/reports/viewer/ReportLifecycle";
 import type { ReportListItem, ReportStatus } from "@/services/reports";
 import { useOrgWritable } from "@/hooks/use-org-access";
 import { ReadOnlyTip } from "@/components/org-access-banner";
+import { useCollections } from "@/hooks/use-collections";
+import { filterByCollection } from "@/features/reports/collection-reports";
 
 const title = "Reports — ORMO PMO",
   description = "Board packs and ad hoc reports, built from blocks and templates.";
@@ -20,8 +22,9 @@ const title = "Reports — ORMO PMO",
 export const Route = createFileRoute("/governance/reports/")({
   validateSearch: (
     search: Record<string, unknown>,
-  ): { forum?: string; meeting?: string; create?: boolean } => ({
+  ): { forum?: string; meeting?: string; collection?: string; create?: boolean } => ({
     ...(typeof search["forum"] === "string" && { forum: search["forum"] }),
+    ...(typeof search["collection"] === "string" && { collection: search["collection"] }),
     ...(typeof search["meeting"] === "string" && { meeting: search["meeting"] }),
     ...((search["create"] === true || search["create"] === "true") && { create: true }),
   }),
@@ -57,13 +60,20 @@ function Page() {
         }
       />
       <QueryState query={query}>
-        {(reports) => <ReportList reports={reports} forumFilter={search.forum ?? null} />}
+        {(reports) => (
+          <ReportList
+            reports={reports}
+            forumFilter={search.forum ?? null}
+            collectionFilter={search.collection ?? null}
+          />
+        )}
       </QueryState>
       <NewReportDialog
         open={open && writable}
         onOpenChange={setOpen}
         forumId={search.forum ?? null}
         meetingId={search.meeting ?? null}
+        collectionId={search.collection ?? null}
       />
     </div>
   );
@@ -72,11 +82,15 @@ function Page() {
 function ReportList({
   reports,
   forumFilter,
+  collectionFilter,
 }: {
   reports: ReportListItem[];
   forumFilter: string | null;
+  collectionFilter: string | null;
 }) {
   const format = useFormat();
+  const collections = useCollections();
+  const [collection, setCollection] = useState<string>(collectionFilter ?? "");
   const [status, setStatus] = useState<ReportStatus | "">("");
   const [forum, setForum] = useState<string>(forumFilter ?? "");
   const forums = useMemo(
@@ -87,7 +101,7 @@ function ReportList({
     ],
     [reports],
   );
-  const rows = reports.filter(
+  const rows = filterByCollection(reports, collection || null).filter(
     (r) => (!status || r.status === status) && (!forum || r.forumId === forum),
   );
   return (
@@ -119,6 +133,21 @@ function ReportList({
             </option>
           ))}
         </select>
+        {(collection || reports.some((r) => r.scopeType === "collection")) && (
+          <select
+            aria-label="Filter by collection"
+            className="h-9 rounded-md border bg-background px-2 text-sm"
+            value={collection}
+            onChange={(e) => setCollection(e.target.value)}
+          >
+            <option value="">All collections</option>
+            {(collections.data ?? []).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
       {rows.length === 0 ? (
         <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
