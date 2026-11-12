@@ -10636,6 +10636,63 @@ export type Database = {
           },
         ]
       }
+      report_approval_reminders: {
+        Row: {
+          created_at: string
+          id: string
+          organisation_id: string
+          recipients: Json
+          remind_on: string
+          report_id: string
+          result: Json | null
+          sent_at: string | null
+          skipped_at: string | null
+          submitted_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organisation_id: string
+          recipients?: Json
+          remind_on: string
+          report_id: string
+          result?: Json | null
+          sent_at?: string | null
+          skipped_at?: string | null
+          submitted_at: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organisation_id?: string
+          recipients?: Json
+          remind_on?: string
+          report_id?: string
+          result?: Json | null
+          sent_at?: string | null
+          skipped_at?: string | null
+          submitted_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_approval_reminders_report_id_organisation_id_fkey"
+            columns: ["report_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "report_approval_reminders_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       report_events: {
         Row: {
           actor: string | null
@@ -16770,6 +16827,10 @@ export type Database = {
           tier: string
         }[]
       }
+      mark_approval_reminder_sent: {
+        Args: { p_id: string; p_result: Json }
+        Returns: undefined
+      }
       mark_billing_notice: {
         Args: {
           p_error: string
@@ -16822,6 +16883,7 @@ export type Database = {
         Args: { p_organisation_id: string }
         Returns: boolean
       }
+      pending_approval_reminders: { Args: never; Returns: Json }
       pending_billing_notices: { Args: never; Returns: Json }
       pending_report_notifications: { Args: never; Returns: Json }
       project_metrics: {
