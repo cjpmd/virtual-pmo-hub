@@ -96,3 +96,91 @@ export async function sendPendingNotices(
   }
   return { notices: notices.length, sent, failed };
 }
+
+// GL-15 approver reminders. private.queue_approval_reminders (run by the same 15-minute job)
+// queues one row per report in review per working day, from the first working day after it was
+// submitted, addressed to the people who can approve it (the forum's chair; PMO / admins when
+// the forum has no chair or doesn't require approval). The database only returns rows whose
+// report is still in review with the same submission, so a decided report is never reminded.
+export interface PendingApprovalReminder {
+  id: string;
+  report_id: string;
+  remind_on: string;
+  recipients: Array<{ email: string; name: string | null; role: string }>;
+  title: string;
+  forum: string | null;
+  meeting_date: string | null;
+  submitted_at: string;
+  working_days_waiting: number;
+}
+
+export function approvalReminderEmail(reminder: PendingApprovalReminder, link: string) {
+  const forum = reminder.forum ?? "Your forum";
+  const subject = `${forum}: "${reminder.title}" is waiting for your approval`;
+  const waiting = reminder.working_days_waiting;
+  const meeting = reminder.meeting_date
+    ? ` The meeting is on ${ukDate(reminder.meeting_date)}.`
+    : "";
+  const body = `The pack "${reminder.title}" was submitted for approval on ${ukDate(reminder.submitted_at.slice(0, 10))} and has been waiting ${waiting} working ${waiting === 1 ? "day" : "days"}.${meeting} Approve it, or return it with a comment saying what needs changing.`;
+  return {
+    subject,
+    text: `${body}\n\nOpen the pack: ${link}\n\nYou'll get this reminder each working day until the pack is approved or returned.`,
+    html: `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#111;max-width:620px">
+<h1 style="font-size:18px">${escapeHtml(subject)}</h1>
+<p style="line-height:1.5">${escapeHtml(body)}</p>
+<p><a href="${escapeHtml(link)}" style="background:#0a2a6b;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">Open the pack</a></p>
+<p style="font-size:12px;color:#555">You get this as the forum's chair (or as PMO when the forum has no chair or doesn't require approval), each working day until the pack is approved or returned.</p>
+</body></html>`,
+  };
+}
+
+export const reportLink = (appUrl: string, reportId: string) =>
+  `${appUrl.replace(/\/$/, "")}/governance/reports/${reportId}`;
+
+/** Lower-cased, valid, distinct addresses in a stable order (the order fixes the idempotency keys). */
+export const recipientAddresses = (recipients: Array<{ email: string }>) =>
+  [
+    ...new Set(
+      recipients.map((r) => r.email.trim().toLowerCase()).filter((e) => /.+@.+\..+/.test(e)),
+    ),
+  ].sort();
+
+export async function sendApprovalReminders(
+  admin: AdminLike,
+  appUrl: string,
+  send: Sender | null,
+): Promise<NotifyResult> {
+  const { data, error } = await admin.rpc("pending_approval_reminders", {});
+  if (error) throw new Error(error.message);
+  const reminders = (data ?? []) as PendingApprovalReminder[];
+  if (!reminders.length) return { notices: 0, sent: 0, failed: 0 };
+  if (!send)
+    return { notices: reminders.length, sent: 0, failed: 0, skipped: "RESEND_API_KEY is not set" };
+  let sent = 0;
+  let failed = 0;
+  for (const reminder of reminders) {
+    const to = recipientAddresses(reminder.recipients);
+    const email = approvalReminderEmail(reminder, reportLink(appUrl, reminder.report_id));
+    let reminderSent = 0;
+    const errors: string[] = [];
+    for (const [index, address] of to.entries()) {
+      const result = await send({
+        to: address,
+        ...email,
+        idempotencyKey: `report-${reminder.report_id}-approval/${reminder.remind_on}/${index}`,
+      });
+      if (result.error) errors.push(`${address}: ${result.error}`);
+      else reminderSent += 1;
+    }
+    sent += reminderSent;
+    failed += errors.length;
+    // Failures stay queued for the next 15-minute run that day (sends that went through are
+    // protected by their idempotency keys); the next day's reminder supersedes it.
+    if (!errors.length)
+      await admin.rpc("mark_approval_reminder_sent", {
+        p_id: reminder.id,
+        p_result: { sent: reminderSent, recipients: to.length },
+      });
+  }
+  return { notices: reminders.length, sent, failed };
+}
