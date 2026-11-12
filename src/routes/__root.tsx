@@ -9,15 +9,35 @@ import {
   useRouterState,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { Fragment, useEffect, type ReactNode } from "react";
+import { Fragment, lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { AppShell } from "../components/app-shell";
-import { IssueTaskSheet } from "../components/issue-task-sheet";
-import { AuthGate, isPublicPath } from "../components/auth/auth-gate";
+import { isPublicPath } from "../lib/public-paths";
+import { Splash } from "../components/auth/splash";
 import { SessionProvider } from "../components/auth/session-provider";
 import { Toaster } from "../components/ui/sonner";
+
+// GL-18: the signed-in app (gate, shell, Issue task sheet) loads only for signed-in pages.
+const SignedInShell = lazy(() =>
+  import("../components/signed-in-shell").then((module) => ({ default: module.SignedInShell })),
+);
+
+/**
+ * Signed-in pages render the loading splash on the server and on the first client render (as
+ * AuthGate always did while the session loads), then load the shell. Rendering the lazy shell
+ * during hydration would mismatch: by the time its chunk arrives the session has moved on.
+ */
+function SignedInApp({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return <Splash />;
+  return (
+    <Suspense fallback={<Splash />}>
+      <SignedInShell>{children}</SignedInShell>
+    </Suspense>
+  );
+}
 
 function NotFoundComponent() {
   return (
@@ -151,12 +171,9 @@ function RootComponent() {
         {bare ? (
           <Outlet />
         ) : (
-          <AuthGate>
-            <AppShell>
-              <Outlet />
-              <IssueTaskSheet />
-            </AppShell>
-          </AuthGate>
+          <SignedInApp>
+            <Outlet />
+          </SignedInApp>
         )}
       </SessionProvider>
       <Toaster richColors closeButton />
