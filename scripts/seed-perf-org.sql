@@ -32,8 +32,9 @@ $f$;
 insert into public.organisations (id, name, short_name, slug, region, settings)
 select org, 'Perf Test University', 'PTU', 'perf-test-university', 'uk', private.default_org_settings()
 from perf_ids;
-insert into public.organisation_subscriptions (organisation_id, plan, seats_total)
-select org, 'trial', 500 from perf_ids;
+-- A trial needs an end date (GL-4 constraint); a year keeps the organisation writable.
+insert into public.organisation_subscriptions (organisation_id, plan, seats_total, trial_ends_at)
+select org, 'trial', 500, now() + interval '1 year' from perf_ids;
 select private.seed_org_defaults(org) from perf_ids;
 insert into public.workspaces (id, organisation_id, name, description)
 select ws, org, 'Performance test', '500-project organisation for measuring the health views.' from perf_ids;
