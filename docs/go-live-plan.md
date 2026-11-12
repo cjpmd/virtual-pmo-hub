@@ -709,6 +709,30 @@ per day (propose a small table or column if needed; SQL first, then stop if so).
 read-only organisations. Unit-test the selection logic.
 ```
 
+**Done (12/11/2026), applied, not merged:** migration `20261112112636_gl_15_approval_reminders`
+(`docs/sql/gl-15-approval-reminders.sql`), approved and applied to production after testing on the local Postgres. A report's approval is
+its `in_review` status, not `approval_steps` (project gate steps name a role, not a person, and have
+no assigned time), so the reminder goes to whoever `can_approve_report` allows: the forum's chair(s)
+when approval is required and the forum has a chair, else the report's PMO / admins
+(`private.report_approver_recipients`). `report_approval_reminders` holds one row per (report,
+`submitted_at`, day), unique; `private.queue_approval_reminders` (run by the existing
+`private.trigger_report_notify`, every 15 minutes) queues one from 08:00 local time on each weekday
+from the first weekday after submission, skips read-only organisations, and marks unsent rows
+skipped when the report leaves review (`decided`), the organisation turns read-only, or the next
+day's row supersedes it. Weekdays only; holiday calendars aren't used (they belong to resources).
+`report-notify` sends them after the draft-ready notices (`sendApprovalReminders`, key
+`report-<id>-approval/<day>/<n>`) and marks them through the service-role RPCs
+`pending_approval_reminders` / `mark_approval_reminder_sent`. Only the report's PMO / admins can read the
+table. Tests: `supabase/tests/approval_reminders.sql` (34 checks), `_shared/report-notify.test.ts`.
+Applied 12/11/2026, then `report-notify` deployed as version 5 (repo files; the shared modules it
+doesn't change are as before; its header comment still names the pre-rename version 20261112120000).
+Read-only checks on production: migration recorded as `20261112112636`, RLS and both triggers on the
+table, `pending_approval_reminders` / `mark_approval_reminder_sent` closed to `anon` and
+`authenticated` and open to `service_role`, `queue_approval_reminders` closed to `authenticated`, no
+direct insert, `trigger_report_notify` queues reminders, `vpmo-report-notify` succeeded on its 11:30
+UTC run with the new function, `report-notify` answers 401 without a token, and the recipient rule
+returns the PMO / admins for production's one forum report (approval required, no chair). No report is in review on production, so no reminder has been queued or sent yet.
+
 ### GL-16 Large packs overflow to Storage [DB]
 
 Design first.
@@ -878,4 +902,4 @@ and delete the adapter layer. List every screen touched; e2e for that domain mus
 
 - [x] GL-1 Migrations  - [ ] GL-2 Cron  - [x] GL-3 Hide dead ends  - [x] GL-4 Read-only  - [x] GL-5 Banners  - [x] GL-6 Billing emails  - [ ] GL-7 Legal pages
 - [x] GL-8 Sector  - [x] GL-9 Sample data  - [x] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [x] GL-12 Bugs  - [ ] GL-13 Notifications  - [ ] GL-14 Committee packs
-- [ ] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [x] GL-17 Multi-tenant  - [ ] GL-17b Refresh under RLS  - [x] GL-18 Bundle  - [x] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters
+- [x] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [x] GL-17 Multi-tenant  - [ ] GL-17b Refresh under RLS  - [x] GL-18 Bundle  - [x] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters
