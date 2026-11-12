@@ -23,6 +23,17 @@ export interface ReportSnapshot {
   dataBasis: string | null;
 }
 
+/** Deep-dives as stored. Packs published since the GL-9 follow-up carry `is_sample`, frozen with
+ *  the pack; older ones don't, so `isSample` stays undefined and the viewer falls back to the
+ *  live flag (the public print route can't read it and shows no chip for those). */
+export function snapshotDeepDives(raw: unknown): DeepDiveProject[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((entry: DeepDiveProject & { is_sample?: unknown }) => {
+    const { is_sample, ...project } = entry;
+    return typeof is_sample === "boolean" ? { ...project, isSample: is_sample } : project;
+  });
+}
+
 export function snapshotFrom(rows: SnapshotRow[]): ReportSnapshot {
   const map = new Map(
     rows.map((row) => [`${row.blockInstanceId}:${row.entityId ?? ""}`, row.data]),
@@ -32,7 +43,7 @@ export function snapshotFrom(rows: SnapshotRow[]): ReportSnapshot {
   return {
     meta: {
       scheme: meta.scheme ?? null,
-      deep_dives: meta.deep_dives ?? [],
+      deep_dives: snapshotDeepDives(meta.deep_dives),
       forum: meta.forum ?? null,
       meeting: meta.meeting ?? null,
     },
