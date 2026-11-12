@@ -203,7 +203,12 @@ export interface ProjectTemplate {
 export interface TemplateSettings {
   projectTemplates: ProjectTemplate[];
   statusReportSections: string[];
+  /** Funding packs (retired in GL-14). Kept so stored settings still load; `showLogo` is read
+   *  as the fallback for `reports.showLogo`. */
   committeePack: { sectionOrder: string[]; coverText: string; showLogo: boolean };
+  /** Board and committee packs (report builder). No default on purpose: unset falls back to
+   *  `committeePack.showLogo` (see lib/report-branding.ts). */
+  reports?: { showLogo?: boolean };
 }
 
 // ---- 13. Data & audit ----

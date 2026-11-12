@@ -1,90 +1,63 @@
-// Committee pack PDF export (work package 1.2). window.print is replaced so no print dialog
-// opens: the stub fires beforeprint/afterprint like the browser does and records what the page
-// looked like in between. Never issues a pack: issued packs can't be changed or deleted.
-import { expect, expectNoErrorBoundary, settle, setTheme, test } from "./fixtures";
-import type { Locator, Page } from "@playwright/test";
+// GL-14 Phase B: Funding packs are retired. The old route redirects to Reports (keeping a
+// collection filter), "Funding packs" is gone from navigation, and a governance collection
+// starts a collection-scoped report instead of generating a pack. Nothing is written.
+import { expect, expectNoErrorBoundary, settle, test } from "./fixtures";
 
-const PACKS = "/governance/committee-packs";
-
-interface PrintState {
-  calls: number;
-  dark: boolean;
-  title: string;
-  pages: number;
-}
-
-async function stubPrint(page: Page) {
-  await page.addInitScript(() => {
-    const state = { calls: 0, dark: false, title: "", pages: 0 };
-    (window as unknown as { __print: typeof state }).__print = state;
-    window.print = () => {
-      window.dispatchEvent(new Event("beforeprint"));
-      state.calls++;
-      state.dark = document.documentElement.classList.contains("dark");
-      state.title = document.title;
-      state.pages = document.querySelectorAll(".pack-print-root .pack-print-page").length;
-      window.dispatchEvent(new Event("afterprint"));
-    };
-  });
-}
-const printState = (page: Page) =>
-  page.evaluate(() => (window as unknown as { __print: PrintState }).__print);
-
-/** Exports the open pack and checks the print flow: light theme, every page, theme restored. */
-async function exportOpenPack(page: Page, dialog: Locator) {
-  const header = dialog.locator("header");
-  const pageCount = Number(
-    (await header.getByText(/· \d+ pages/).textContent())!.match(/(\d+) pages/)![1],
-  );
-  const before = (await printState(page)).calls;
-  await dialog.getByRole("button", { name: "Export to PDF" }).click();
-  const state = await printState(page);
-  expect(state.calls).toBe(before + 1);
-  expect(state.dark, "prints in the light theme").toBe(false);
-  expect(state.title).toMatch(/pack – /);
-  expect(state.pages).toBe(pageCount);
-  // afterprint puts the dark theme back.
-  await expect(page.locator("html")).toHaveClass(/(^|\s)dark(\s|$)/);
-
-  // In print media only the pack pages show, in the order they were built.
-  await page.emulateMedia({ media: "print" });
-  await expect(dialog).toBeHidden();
-  await expect(page.locator(".pack-print-root")).toBeVisible();
-  await expect(page.locator(".pack-print-page")).toHaveCount(pageCount);
-  await expect(page.locator(".pack-print-page").first()).toBeVisible();
-  await page.emulateMedia({ media: null });
-  await expect(dialog).toBeVisible();
+test("/governance/committee-packs redirects to Reports", async ({ page }) => {
+  await page.goto("/governance/committee-packs");
+  await expect(page).toHaveURL(/\/governance\/reports\/?(\?.*)?$/);
+  await settle(page);
+  await expect(page.getByRole("heading", { name: "Reports", level: 1 })).toBeVisible();
   await expectNoErrorBoundary(page);
-}
+});
 
-test.describe("Funding packs", () => {
-  test.beforeEach(async ({ page }) => {
-    await stubPrint(page);
-    await page.goto(PACKS);
-    await settle(page);
-    await expect(page.getByRole("heading", { name: "Funding packs", level: 1 })).toBeVisible();
-    await setTheme(page, "dark");
-  });
+test("the redirect keeps a collection filter", async ({ page }) => {
+  await page.goto("/governance/committee-packs?collection=00000000-0000-0000-0000-000000000000");
+  await expect(page).toHaveURL(/\/governance\/reports\/?\?collection=0{8}-/);
+  await expectNoErrorBoundary(page);
+});
 
-  test("a draft pack exports to PDF through the print flow", async ({ page }) => {
-    const generate = page.getByRole("button", { name: "Generate pack" });
-    test.skip((await generate.count()) === 0, "No governance collections in the demo organisation");
-    await generate.first().click();
-    const dialog = page.getByRole("dialog", { name: "Funding pack preview" });
-    await expect(dialog.getByText(/Preview · \d+ pages/)).toBeVisible();
-    await expect(dialog.getByRole("button", { name: "Export to PowerPoint" })).toHaveCount(0);
-    await settle(page);
-    await exportOpenPack(page, dialog);
-  });
+test("navigation has no Funding packs entry", async ({ page }) => {
+  await page.goto("/governance/reports");
+  await settle(page);
+  await expect(page.getByRole("link", { name: "Funding packs" })).toHaveCount(0);
+  await expect(page.locator('a[href="/governance/committee-packs"]')).toHaveCount(0);
+});
 
-  test("an issued pack exports from its stored snapshot", async ({ page }) => {
-    const exports = page.locator("main").getByRole("button", { name: "Export to PDF" });
-    test.skip((await exports.count()) === 0, "No issued packs in the demo organisation");
-    await exports.first().click();
-    const dialog = page.getByRole("dialog", { name: "Funding pack preview" });
-    await expect(dialog.getByText(/Issued · read-only · \d+ pages/)).toBeVisible();
-    await expect(dialog.getByRole("button", { name: "Issue pack" })).toHaveCount(0);
+test("Settings › Templates has pack branding and no Funding pack template", async ({ page }) => {
+  await page.goto("/settings/templates");
+  await settle(page);
+  await expect(page.getByText("Board and committee packs")).toBeVisible();
+  await expect(page.getByRole("switch", { name: "Show logo" })).toBeVisible();
+  await expect(page.getByText("Funding pack template")).toHaveCount(0);
+  await expectNoErrorBoundary(page);
+});
+
+test("a governance collection starts a collection report", async ({ page }) => {
+  await page.goto("/portfolio/collections");
+  await settle(page);
+  const hrefs = await page
+    .locator("a[href]")
+    .evaluateAll((links) => links.map((link) => link.getAttribute("href") ?? ""));
+  const collections = [
+    ...new Set(hrefs.filter((path) => /^\/portfolio\/collections\/[^/?#]+$/.test(path))),
+  ];
+  let found = false;
+  for (const href of collections) {
+    await page.goto(href);
     await settle(page);
-    await exportOpenPack(page, dialog);
-  });
+    const start = page.getByRole("link", { name: "New report for this collection" });
+    if ((await start.count()) === 0) continue;
+    found = true;
+    await expect(page.getByRole("button", { name: "Generate funding pack" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Reports for this collection" })).toBeVisible();
+    await start.click();
+    const dialog = page.getByRole("dialog", { name: "New report" });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByLabel(/^Scope/)).toHaveValue("collection");
+    await expect(dialog.getByLabel("Scope item")).toHaveValue(href.split("/").pop()!);
+    await expectNoErrorBoundary(page);
+    break;
+  }
+  test.skip(!found, "No governance collection the user can start a report for");
 });

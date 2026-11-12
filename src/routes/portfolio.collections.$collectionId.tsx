@@ -1,7 +1,6 @@
 import { currencySymbol, formatCurrency } from "@/lib/format";
 import { formatCompactCurrency } from "@/lib/format";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
 import { CheckCircle2, Clock3, FileText, Presentation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/pmo-ui";
@@ -9,9 +8,12 @@ import { BoardWorkspace } from "@/components/board-workspace";
 import { projectColumns } from "@/lib/board-data";
 import { projectSummariesToRows } from "@/lib/project-rows";
 import { HealthPill } from "@/components/health-pill";
-import { CollectionCommitteePack } from "@/components/committee-pack";
-import { CommitteePackList } from "@/components/committee-pack-list";
-import { useCommitteePacks } from "@/hooks/use-committee-packs";
+import { Badge } from "@/components/ui/badge";
+import { ReadOnlyTip } from "@/components/org-access-banner";
+import { useOrgWritable } from "@/hooks/use-org-access";
+import { useReports } from "@/hooks/use-reports";
+import { useFormat } from "@/lib/format";
+import { collectionReports } from "@/features/reports/collection-reports";
 import { QueryState } from "@/components/query-state";
 import { useBenefits } from "@/hooks/use-benefits";
 import { useCollections } from "@/hooks/use-collections";
@@ -25,7 +27,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/portfolio/collections/$collectionId")({
   head: () => {
     const title = "Collection — ORMO PMO";
-    const description = "Governance view and funding packs for a portfolio collection.";
+    const description = "Governance view and board packs for a portfolio collection.";
     return {
       meta: [
         { title },
@@ -68,8 +70,7 @@ function CollectionPage() {
 }
 function CollectionBody({ collection, projects }: { collection: Collection; projects: Project[] }) {
   const metrics = collectionMetrics(projects);
-  const [preview, setPreview] = useState(false);
-  const packs = useCommitteePacks();
+  const writable = useOrgWritable();
   const canGenerate = collection.type === "Governance";
   return (
     <div className="space-y-6">
@@ -86,10 +87,24 @@ function CollectionBody({ collection, projects }: { collection: Collection; proj
         description="A cross-portfolio view used to focus governance discussion, decisions and delivery assurance."
         actions={
           canGenerate ? (
-            <Button onClick={() => setPreview(true)}>
-              <Presentation className="size-4" />
-              Generate funding pack
-            </Button>
+            <ReadOnlyTip readOnly={!writable}>
+              {writable ? (
+                <Button asChild>
+                  <Link
+                    to="/governance/reports"
+                    search={{ create: true, collection: collection.id }}
+                  >
+                    <Presentation className="size-4" />
+                    New report for this collection
+                  </Link>
+                </Button>
+              ) : (
+                <Button disabled>
+                  <Presentation className="size-4" />
+                  New report for this collection
+                </Button>
+              )}
+            </ReadOnlyTip>
           ) : undefined
         }
       />
@@ -133,21 +148,58 @@ function CollectionBody({ collection, projects }: { collection: Collection; proj
       )}
       <section>
         <div className="mb-4">
-          <h2 className="font-display text-xl font-semibold">Past packs</h2>
+          <h2 className="font-display text-xl font-semibold">Reports for this collection</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Packs issued for previous committee meetings.
+            Packs published for this collection&apos;s meetings.
           </p>
         </div>
-        <CommitteePackList query={packs} collectionId={collection.id} />
+        <CollectionReportList collectionId={collection.id} />
       </section>
-      {preview && (
-        <CollectionCommitteePack
-          collection={collection}
-          onClose={() => setPreview(false)}
-          onIssued={() => setPreview(false)}
-        />
-      )}
     </div>
+  );
+}
+function CollectionReportList({ collectionId }: { collectionId: string }) {
+  const query = useReports();
+  const format = useFormat();
+  return (
+    <QueryState query={query}>
+      {(reports) => {
+        const rows = collectionReports(reports, collectionId);
+        if (rows.length === 0)
+          return (
+            <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+              No published reports for this collection yet.
+            </p>
+          );
+        return (
+          <ul className="divide-y rounded-lg border" data-testid="collection-reports">
+            {rows.map((r) => (
+              <li
+                key={r.id}
+                className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <Link
+                    to="/governance/reports/$reportId"
+                    params={{ reportId: r.id }}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    {r.title}
+                  </Link>
+                  <p className="text-xs text-muted-foreground">
+                    {r.forumName ?? "No forum"}
+                    {r.meetingDate
+                      ? ` · meeting ${format.date(r.meetingDate)}`
+                      : ` · as at ${format.date(r.asAt)}`}
+                  </p>
+                </div>
+                <Badge>Published</Badge>
+              </li>
+            ))}
+          </ul>
+        );
+      }}
+    </QueryState>
   );
 }
 function Metric({ label, value, detail }: { label: string; value: string; detail?: string }) {

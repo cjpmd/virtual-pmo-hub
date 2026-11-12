@@ -1,7 +1,7 @@
 // "New report": from a template or ad hoc (spec §3 J2), for a forum (optional, with a meeting)
 // and a scope (one project, programme, portfolio or funding collection, or a custom list of
 // projects).
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,17 +22,21 @@ import { useForumReporting, useReportMutations, useTemplates } from "@/hooks/use
 import { errorMessage } from "@/services/service-error";
 import type { ScopeType } from "@/services/reports";
 import { todayIso } from "@/lib/today";
+import { defaultCollectionTemplate } from "@/features/reports/collection-reports";
 
 export function NewReportDialog({
   open,
   onOpenChange,
   forumId: presetForum,
   meetingId: presetMeeting,
+  collectionId: presetCollection,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   forumId?: string | null;
   meetingId?: string | null;
+  /** Start scoped to this funding collection, from the "Funding committee" template (GL-14). */
+  collectionId?: string | null;
 }) {
   const navigate = useNavigate();
   const templates = useTemplates();
@@ -43,13 +47,17 @@ export function NewReportDialog({
   const portfolios = usePortfolioNames();
   const collections = useCollections();
   const { create } = useReportMutations();
-  const [kind, setKind] = useState<"template" | "ad_hoc">(presetForum ? "template" : "ad_hoc");
+  const [kind, setKind] = useState<"template" | "ad_hoc">(
+    presetForum || presetCollection ? "template" : "ad_hoc",
+  );
   const [templateId, setTemplateId] = useState<string>("");
   const [forumId, setForumId] = useState<string>(presetForum ?? "");
   const meetings = useMeetings(forumId || null);
   const [meetingId, setMeetingId] = useState<string>(presetMeeting ?? "");
-  const [scopeType, setScopeType] = useState<ScopeType>("project");
-  const [scopeEntityId, setScopeEntityId] = useState("");
+  const [scopeType, setScopeType] = useState<ScopeType>(
+    presetCollection ? "collection" : "project",
+  );
+  const [scopeEntityId, setScopeEntityId] = useState(presetCollection ?? "");
   const [custom, setCustom] = useState<string[]>([]);
   const [title, setTitle] = useState("");
   const [asAt, setAsAt] = useState("");
@@ -71,6 +79,14 @@ export function NewReportDialog({
     return [];
   }, [scopeType, projects.data, programmes.data, portfolios.data, collections.data]);
   const availableTemplates = (templates.data ?? []).filter((t) => !t.archivedAt);
+  // A collection preset picks the Funding committee template once the templates have loaded.
+  const [templatePreset, setTemplatePreset] = useState(!!presetCollection);
+  useEffect(() => {
+    if (!templatePreset || !templates.data) return;
+    setTemplatePreset(false);
+    const preset = defaultCollectionTemplate(templates.data);
+    if (preset) setTemplateId((current) => current || preset.id);
+  }, [templatePreset, templates.data]);
 
   const submit = async () => {
     setError(null);

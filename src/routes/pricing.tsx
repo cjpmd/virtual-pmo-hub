@@ -22,7 +22,7 @@ type Interval = "month" | "year";
 const included = [
   "Portfolios, programmes and projects with rolled-up health",
   "Milestones, tasks, gates and dependencies",
-  "RAIDD, change control, boards, board packs and funding packs",
+  "RAIDD, change control, boards, and board and committee packs",
   "Benefits register, pathway and realisation",
   "Resource allocation and scenarios",
   "Dashboards, reports and data export",
