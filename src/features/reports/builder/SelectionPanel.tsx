@@ -20,6 +20,7 @@ import {
 } from "../engine/evaluateRules";
 import { METRICS, OP_LABEL, getMetric, metricValueText, type RuleOp } from "../engine/metrics";
 import { useReportFormat } from "../blocks/primitives";
+import { ruleSetKey, selectionIsStale } from "../engine/selectionStale";
 
 export function ReasonChip({ reason }: { reason: InclusionReason }) {
   const f = useReportFormat();
@@ -214,6 +215,7 @@ export function SelectionPanel({
   inclusions,
   editable,
   saved,
+  selectionLoadedAt,
   onRefresh,
   refreshing,
   onSetMode,
@@ -228,6 +230,8 @@ export function SelectionPanel({
   editable: boolean;
   /** Rules saved (autosave caught up), so Refresh selection applies these rules. */
   saved: boolean;
+  /** When the saved selection was last fetched (query dataUpdatedAt); 0 or absent if not. */
+  selectionLoadedAt?: number;
   onRefresh?: () => void;
   refreshing?: boolean;
   onSetMode?: (projectId: string, mode: "pinned" | "excluded" | null) => void;
@@ -263,20 +267,20 @@ export function SelectionPanel({
   const excluded = list.filter((row) => row.mode === "excluded");
   const listed = new Set(list.map((row) => row.projectId));
   const others = metrics.filter((row) => !listed.has(row.project_id));
-  const stale =
-    saved_ !== null &&
-    JSON.stringify(
-      preview
-        .filter((r) => r.mode === "rule")
-        .map((r) => r.projectId)
-        .sort(),
-    ) !==
-      JSON.stringify(
-        saved_
-          .filter((r) => r.mode === "rule")
-          .map((r) => r.projectId)
-          .sort(),
-      );
+  // GL-12: stale whenever the rules differ from those the saved selection was computed with,
+  // not only when the matching projects change. The baseline is taken each time the saved
+  // selection is fetched (selectionLoadedAt), e.g. after Refresh selection or a pin.
+  const rulesKey = ruleSetKey(ruleSet, tolerances);
+  const [baseline, setBaseline] = useState({ loadedAt: selectionLoadedAt, key: rulesKey });
+  if (baseline.loadedAt !== selectionLoadedAt)
+    setBaseline({ loadedAt: selectionLoadedAt, key: rulesKey });
+  const stale = selectionIsStale({
+    saved: saved_,
+    preview,
+    rulesKey,
+    baselineRulesKey:
+      selectionLoadedAt && baseline.loadedAt === selectionLoadedAt ? baseline.key : null,
+  });
   const setRule = (index: number, rule: SelectionRule) =>
     onRulesChange({ ...ruleSet, rules: ruleSet.rules.map((r, i) => (i === index ? rule : r)) });
   const label = (id: string) => {
