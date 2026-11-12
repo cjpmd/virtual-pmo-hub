@@ -599,9 +599,9 @@ function OverviewBand({
       range: chartRange,
       redRiskMinScore: rpc.data?.redRiskMinScore ?? 15,
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- build closes over the listed values
   const progress = useMemo(
     () => build(range),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- build closes over the listed values
     [
       scopedInputs,
       milestones,
@@ -616,9 +616,9 @@ function OverviewBand({
       rpc.data?.redRiskMinScore,
     ],
   );
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- signals always use the financial year
   const fyProgress = useMemo(
     () => build("fy"),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- signals always use the financial year
     [
       scopedInputs,
       milestones,
