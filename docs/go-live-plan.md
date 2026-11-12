@@ -679,6 +679,13 @@ keep existing committee packs readable as an archive (never deleted), redirect
 command palette and Home. Stop for my review before building.
 ```
 
+**Plan written (11/11/2026), not built:** `docs/design/retire-committee-packs.md`. Production has
+0 committee packs (3 collections, 3 reports, none published). Gaps to close in the report builder
+first: a `collection` scope, programme coverage and benefits-value blocks, cover text, a "Funding
+committee" template, and progress-chart meeting markers from published reports; then redirect,
+remove the nav entry, keep issued packs readable as an archive, and move `showLogo`. Decisions D-a
+to D-d in the plan.
+
 ### GL-15 Report approver reminders
 
 ```
