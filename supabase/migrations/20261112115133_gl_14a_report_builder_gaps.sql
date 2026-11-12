@@ -18,22 +18,37 @@
 -- D-d (showLogo) is client-side and belongs to Phase B; nothing here.
 --
 -- Section 0 swaps four CHECK constraints (drop + add with the wider list). Nothing is lost,
--- but it is a DROP, so per CLAUDE.md it is also in its own section of
--- docs/sql/gl-14a-report-builder-gaps.sql to run by hand in the SQL editor first. Running it
--- twice is harmless (drop if exists, then the same constraint again). Everything else is
--- create / create or replace / insert.
+-- but it is a DROP, so per CLAUDE.md it is in its own section of
+-- docs/sql/gl-14a-report-builder-gaps.sql, run by hand in the SQL editor first (done on
+-- production 12/11/2026). Here it only acts where a constraint doesn't allow 'collection' yet
+-- (a fresh database built from the repo), so applying this migration on production runs no
+-- drop. Everything else is create / create or replace / insert.
 
 -- =====================================================================================
--- 0. Wider scope_type checks (run by hand first; see the docs/sql file)
+-- 0. Wider scope_type checks (run by hand first on production; here only where still needed)
 -- =====================================================================================
-alter table public.reports drop constraint if exists reports_scope_type_check,
-  add constraint reports_scope_type_check check (scope_type in ('project', 'programme', 'portfolio', 'custom', 'collection'));
-alter table public.report_templates drop constraint if exists report_templates_scope_type_check,
-  add constraint report_templates_scope_type_check check (scope_type in ('project', 'programme', 'portfolio', 'custom', 'collection', 'any'));
-alter table public.forums drop constraint if exists forums_scope_type_check,
-  add constraint forums_scope_type_check check (scope_type in ('project', 'programme', 'portfolio', 'custom', 'collection'));
-alter table public.forums drop constraint if exists forums_scope_entity_check,
-  add constraint forums_scope_entity_check check ((scope_type in ('project', 'programme', 'portfolio', 'collection')) = (scope_entity_id is not null) or scope_type is null);
+do $$
+declare
+  c record;
+begin
+  for c in select * from (values
+      ('reports', 'reports_scope_type_check',
+       $c$check (scope_type in ('project', 'programme', 'portfolio', 'custom', 'collection'))$c$),
+      ('report_templates', 'report_templates_scope_type_check',
+       $c$check (scope_type in ('project', 'programme', 'portfolio', 'custom', 'collection', 'any'))$c$),
+      ('forums', 'forums_scope_type_check',
+       $c$check (scope_type in ('project', 'programme', 'portfolio', 'custom', 'collection'))$c$),
+      ('forums', 'forums_scope_entity_check',
+       $c$check ((scope_type in ('project', 'programme', 'portfolio', 'collection')) = (scope_entity_id is not null) or scope_type is null)$c$)
+    ) v(tbl, con, def)
+  loop
+    if not exists (select 1 from pg_constraint k
+                   where k.conrelid = format('public.%I', c.tbl)::regclass and k.conname = c.con
+                     and pg_get_constraintdef(k.oid) like '%''collection''%') then
+      execute format('alter table public.%I drop constraint if exists %I, add constraint %I %s', c.tbl, c.con, c.con, c.def);
+    end if;
+  end loop;
+end $$;
 -- reports_check ((scope_type = 'custom') = (scope_entity_id is null)) already requires a
 -- collection id for a collection scope.
 

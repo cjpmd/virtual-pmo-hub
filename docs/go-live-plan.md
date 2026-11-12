@@ -697,9 +697,9 @@ remove the nav entry and move `showLogo`. **Decided 12/11/2026:** D-a a real `co
 show pot vs requested; D-c a new `benefits_value` block; D-d `showLogo` client-side as proposed; no
 read-only archive (production has 0 committee packs): `/governance/committee-packs` redirects to
 `/governance/reports` and leaves navigation.
-**Phase A built (12/11/2026), not applied, not merged:** migration
-`20261112130000_gl_14a_report_builder_gaps` (`docs/sql/gl-14a-report-builder-gaps.sql`, section 0
-run by hand); details in `docs/design/retire-committee-packs.md` §7. Phase B (redirect, navigation,
+**Phase A applied (12/11/2026), not merged:** migration
+`20261112115133_gl_14a_report_builder_gaps` (`docs/sql/gl-14a-report-builder-gaps.sql`, section 0
+run by hand first); details in `docs/design/retire-committee-packs.md` §7. Phase B (redirect, navigation,
 collection page, Settings, copy, `showLogo`) is a later package.
 
 ### GL-15 Report approver reminders

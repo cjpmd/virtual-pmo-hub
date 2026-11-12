@@ -149,10 +149,14 @@ Options as written before the decisions:
 
 This document only. No code, SQL or production change.
 
-## 7. Phase A built (12/11/2026, not applied, not merged)
+## 7. Phase A built and applied (12/11/2026, not merged)
 
-Migration `20261112130000_gl_14a_report_builder_gaps` (`docs/sql/gl-14a-report-builder-gaps.sql`;
-section 0, four CHECK constraints widened, is run by hand first). Tested on the local Postgres only.
+Migration `20261112115133_gl_14a_report_builder_gaps` (`docs/sql/gl-14a-report-builder-gaps.sql`).
+Section 0 (four CHECK constraints widened) was run by hand first; the migration's own section 0
+only acts where a constraint doesn't allow `collection` yet, so applying it on production ran no
+drop. Tested on the local Postgres first; on production every replaced or new function is
+byte-identical (md5) to the local build, and both blocks return data for a real collection
+(8 projects, all requested from budgets today).
 
 - **G1 (D-a)** `collection` scope on reports, templates and forums. `private.scope_project_ids`
   reads `collection_projects` live, so a report follows changes to its collection;
