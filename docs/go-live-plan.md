@@ -743,6 +743,12 @@ docs/build-plan.md, and docs/perf.md). Measure with 1, 2 and 5 tenants on a Supa
 recommend with numbers, and stop for my decision before any change. Tick 6.1 when decided.
 ```
 
+**Measured (12/11/2026), waiting for your decision:** local Postgres, 1 / 2 / 5 tenants of 500
+projects (`docs/perf.md` § Multi-tenant health refresh, `scripts/perf-multi-tenant/`). One
+organisation's refresh 3.9 s → 12.8 s → 62 s; nightly refresh-and-check 7.8 s → 48 s → 711 s;
+signed-in reads flat. Option C (refresh under RLS as an organisation admin) measured 4.4 s at 5
+tenants; option B (no `MATERIALIZED`) 80 s. Recommended: C, plus per-organisation snapshot capture.
+
 ### GL-18 Smaller main bundle
 
 No database change.

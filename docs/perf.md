@@ -135,3 +135,82 @@ Signed in as an organisation admin through RLS, writable organisation. "Trigger"
 | Hosted, the same, first (cold) run                         | 2.0 ms                   |               | 72.8 ms    |
 
 Local figures are medians of 7 runs, each in its own rolled-back transaction. About 0.035 ms a row: roughly 5% of a 500-row import and 2–3% of a single update, inside the run-to-run noise of the totals. A board paste moves one task, so it is the single-row case. A storage upload adds one call of the same lookup.
+
+## Multi-tenant health refresh (GL-17, 12/11/2026)
+
+Measured on the local Postgres only (no Supabase branch without Pro): 1, 2 and 5 copies of the
+500-project perf organisation (`scripts/perf-multi-tenant/run.sh`; no schema change), `jit = off`
+as hosted. `scripts/seed-perf-org.sql` now sets `trial_ends_at` (it failed GL-4's trial constraint). Local is several times slower than hosted (the demo organisation's
+project health took 25 s locally against 8.4 s hosted before the 0.5 fixes), so read the figures
+for how they grow, not as hosted times. Each run is in a rolled-back subtransaction; medians of 3
+unless marked (best of 2, or one run). Production on 12/11/2026: 4 organisations, 44 projects
+(largest 43).
+
+| Local, ms                                         | 1 tenant (500 projects) | 2 tenants (1,000) | 5 tenants (2,500) |
+| ------------------------------------------------- | ----------------------- | ----------------- | ----------------- |
+| `refresh_health_current(one org)` (every edit, via the queue) | 3,938       | 12,794            | 62,295 (best of 2) |
+| — `live_project_health(org)`                      | 1,302                   | 4,340             | 20,431            |
+| — `live_programme_health(org)`                    | 1,530                   | 3,229             | 17,502            |
+| — `live_portfolio_health(org)`                    | 1,703                   | 5,335             | 28,371            |
+| `refresh_all_health_current()`                    | 3,646 (best of 2)       | 25,390 (best of 2) | 332,732 (best of 2) |
+| Nightly `full_health_refresh_and_check`           | 7,780 (best of 2)       | 48,111 (best of 2) | 710,812 (one run) |
+| `capture_health_snapshots()` (02:15, all orgs)    | 4,570 (best of 2)       | 14,464 (best of 2) | 85,568 (one run)  |
+| Signed-in admin of one org: `v_project_health`    | 576                     | 548               | 671               |
+| Signed-in admin of one org: `v_portfolio_health`  | 2,137                   | 1,640             | 1,782             |
+| Signed-in admin of one org: `project_health_current` | 0                    | 1                 | 0                 |
+
+What it shows:
+
+- **One organisation's refresh grows faster than the tenant count:** 3.3× at 2 tenants, 16× at 5
+  (expected 2× and 5× from the handover note). The refresh runs as the owner (no RLS), and the
+  views' materialised CTEs compute every tenant's rows before the organisation filter, with joins
+  across the whole set. Every edit queues one of these for its organisation, so at 5 tenants of
+  this size a writer would wait about a minute locally (roughly 20 s hosted) for "Updating
+  health…", longer than the 10-second drain interval.
+- **The nightly refresh grows with the square or worse:** 7.8 s → 48 s → 711 s locally (about
+  4 minutes hosted at 5 tenants). `check_health_current` recomputes everything a second time.
+- **Signed-in reads don't grow:** RLS limits them to the member's organisation, and the app reads
+  the stored `*_health_current` tables (under 1 ms).
+- `capture_health_snapshots` (one pass over all organisations) also grows faster than linear:
+  4.6 s → 14 s → 86 s.
+
+### The options, measured at 5 tenants (same data)
+
+| Option (handover §"Pre-second-customer task") | One org's refresh, local | Result |
+| --- | --- | --- |
+| Today (owner, no RLS) | 62.3 s (project 20.4 + programme 17.5 + portfolio 28.4) | grows with tenants |
+| **C. Refresh with an organisation member's claims (RLS)** | **4.4 s** (project 1.6 + programme 1.0 + portfolio 1.7), same as 1 tenant (4.5 s) | flat |
+| B. Drop `MATERIALIZED` from the 12 views' CTEs | 79.5 s (project 25.3 + programme 19.9 + portfolio 30.8); signed-in `v_portfolio_health` 5.8 s (from 1.8 s) | worse; identical output (0 rows differ) |
+| A. Organisation-scoped functions | not built; would cost about the 1-tenant figure (4.5 s), like C | flat, but every view becomes a function |
+
+Option C was timed by running copies of the three `live_*` functions as security invoker, signed
+in as an admin of tenant 1 (`options.sql`); option B by rewriting the views without
+`MATERIALIZED` inside a rolled-back transaction (`option_b.sql`), which kept every row identical
+but let the planner choose worse plans and still not push the organisation filter down.
+
+### Recommendation: C, then make the nightly jobs per organisation
+
+Run each organisation's refresh under RLS as that organisation, instead of as the owner:
+
+- `refresh_health_current(org)` sets `role authenticated` and the claims of one of that
+  organisation's admins (there is always one: the last admin can't leave or be demoted) for the
+  three reads, then writes the `*_health_current` rows as now. Same for
+  `health_current_mismatches` (the nightly check).
+- Cost per refresh stays about what one tenant costs (4.4 s locally at 5 tenants, against 62 s),
+  so the nightly run grows linearly: about 5 × (4.4 + 4.4) ≈ 45 s locally at 5 tenants, against
+  711 s.
+- RLS overhead is already in the 4.4 s (it is the signed-in path the app's reads take every day).
+- Caveats to settle in the build package: what an organisation with no member left does (skip it;
+  the purge removes it anyway); a dedicated refresh role is not an option (no session setting may
+  bypass a guard, CLAUDE.md); archived workspaces cap roles at viewer but stay readable, so the
+  rows are the same; `entity_shares` only adds rows from other organisations, which the
+  `organisation_id = p_org` filter already drops. Check with `health_current_mismatches` against
+  the owner's result for every organisation before switching.
+- Also make `capture_health_snapshots` read the stored `*_health_current` rows (refreshed minutes
+  before) or run per organisation the same way: it is the other job that grows faster than linear.
+- Option A remains the longer-term shape if the views ever need organisation-scoped ad-hoc use;
+  it isn't needed for the refresh.
+
+Timing: not urgent at production's size (44 projects in total), but do it before a second
+organisation with more than about 150 projects goes live: at 2 tenants of 500 projects one
+organisation's refresh already takes 3.3 times as long.
