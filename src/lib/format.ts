@@ -17,7 +17,7 @@ const SHORT_MONTHS = [
   "Dec",
 ];
 
-/** Dates are held as DD/MM/YYYY throughout the mock data layer. */
+/** A Date from the DD/MM/YYYY strings the boards hold, or a database date (YYYY-MM-DD). */
 export function parseDate(value: string | Date | undefined): Date | undefined {
   if (value instanceof Date) return value;
   if (!value) return undefined;

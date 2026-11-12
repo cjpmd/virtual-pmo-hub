@@ -717,6 +717,16 @@ mock values in data/integrations.ts, the notifications popover), run eslint over
 (not just changed files) with 0 errors, and tick 0.2.
 ```
 
+**Done (11/11/2026), not merged:** most of 0.2 had already landed: `notifications-popover.tsx`,
+`services/pmo.ts` and the `src/data` mock modules are gone (fixtures live in `scripts/fixtures/`),
+`data/integrations.ts` holds only types and the static permission list, and the "Stage 4c / still
+prototype data" comments are gone from both detail routes and `lib/today.ts`. Removed the last
+stale comments (programme route "prototype id": the lookup is by id only; `lib/format.ts` "mock
+data layer"), and moved two misplaced `eslint-disable-next-line` directives in
+`portfolio.index.tsx` onto the dependency arrays they were meant for (two warnings gone).
+`npx eslint src` and `npx eslint .`: 0 errors, 100 warnings (mostly react-refresh and
+exhaustive-deps). Remaining "prototype" wording is in the adapter layers GL-21 removes.
+
 ### GL-20 Split the oversized components (one per session)
 
 No database change. No behaviour change: the full e2e suite must pass before and after.
@@ -761,4 +771,4 @@ and delete the adapter layer. List every screen touched; e2e for that domain mus
 
 - [x] GL-1 Migrations  - [ ] GL-2 Cron  - [x] GL-3 Hide dead ends  - [x] GL-4 Read-only  - [x] GL-5 Banners  - [x] GL-6 Billing emails  - [ ] GL-7 Legal pages
 - [x] GL-8 Sector  - [x] GL-9 Sample data  - [x] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [x] GL-12 Bugs  - [ ] GL-13 Notifications  - [ ] GL-14 Committee packs
-- [ ] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [ ] GL-17 Multi-tenant  - [ ] GL-18 Bundle  - [ ] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters
+- [ ] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [ ] GL-17 Multi-tenant  - [ ] GL-18 Bundle  - [x] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters

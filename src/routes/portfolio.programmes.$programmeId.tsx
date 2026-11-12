@@ -58,7 +58,6 @@ const tabs = [
 
 function ProgrammePage() {
   const { programmeId: param } = Route.useParams();
-  // Links from screens not yet on Supabase may still carry the prototype id.
   const programme = useProgramme(param);
   return (
     <QueryState
