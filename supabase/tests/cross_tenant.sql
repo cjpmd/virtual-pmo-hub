@@ -413,6 +413,7 @@ insert into ct_cases (fn, call, expect, note) values
   -- GL-11. The name is A's real one (read as the owner) so only the admin check can refuse it.
   ('request_organisation_deletion(uuid,text)', $c$select public.request_organisation_deletion('{a_org}', '{a_org_name}')$c$, 'empty', null),
   ('cancel_organisation_deletion(uuid)', $c$select public.cancel_organisation_deletion('{a_org}')$c$, 'empty', null),
+  ('start_organisation_export(uuid)', $c$select public.start_organisation_export('{a_org}')$c$, 'empty', null),
   ('close_my_account(text)', $c$select public.close_my_account('gl10-a-admin@example.invalid')$c$, 'empty',
    'takes no ids: closes only the caller''s own account, and only with the caller''s own email'),
   ('acknowledge_ai_draft(uuid)', $c$select public.acknowledge_ai_draft('{a_narrative}')$c$, 'empty', null),
