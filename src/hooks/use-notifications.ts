@@ -1,17 +1,22 @@
-// The notification feed, worked out from live data the user can see (there is no
-// notifications table yet): their overdue tasks, work issued to them awaiting a response,
-// decisions past needed-by, overdue measurements on benefits they own and off-track
-// dependencies. Read state is a per-browser convenience, shared by the bell and the page.
-import { useCallback, useMemo, useSyncExternalStore } from "react";
-import { useMeasurementsDue } from "@/hooks/use-benefits";
-import { useDependencies } from "@/hooks/use-dependencies";
-import { useGovernance } from "@/hooks/use-governance";
-import { useMyResourceId } from "@/hooks/use-hierarchy";
-import { useIssuedTasks } from "@/hooks/use-issued-tasks";
-import { useSystemDraftedPacks } from "@/hooks/use-reports";
-import { usePortfolioTasks } from "@/hooks/use-work-items";
-import { todayIso } from "@/lib/today";
-import { measurementDaysOverdue } from "@/services/benefits-value";
+// The notification feed (GL-13), read from the notifications table: the database raises them
+// (daily rules at 07:00 and immediate triggers), so the bell no longer loads tasks, decisions,
+// benefits and dependencies on every page. Read state is stored on the row; the old per-browser
+// read list (localStorage) is no longer used and is cleared once. Kinds the user switched off
+// for in-app in Settings › Account are hidden.
+import { useCallback, useEffect, useMemo } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useOrgId, useOrganisation } from "@/components/auth/organisation-provider";
+import { qk } from "@/services/query-keys";
+import {
+  getMyNotificationPreferences,
+  listNotifications,
+  markNotificationsRead,
+  NOTIFICATION_LABEL,
+  setMyNotificationPreferences,
+  type NotificationPreferences,
+  type NotificationRow,
+} from "@/services/notifications";
 
 export interface FeedItem {
   id: string;
@@ -19,110 +24,101 @@ export interface FeedItem {
   kind: string;
   text: string;
   channel: "In-app";
+  link: string | null;
+  /** The thing it was about no longer applies (task done, decision made …). */
+  resolved: boolean;
+  read: boolean;
 }
 
-const READ_KEY = "virtual-pmo-notifications-read";
-const listeners = new Set<() => void>();
-let cache: string[] | null = null;
-const readIds = (): string[] => {
-  if (cache) return cache;
-  try {
-    cache = JSON.parse(localStorage.getItem(READ_KEY) ?? "[]") as string[];
-  } catch {
-    cache = [];
-  }
-  return cache;
-};
-const subscribe = (listener: () => void) => {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-};
-const EMPTY: string[] = [];
+const LEGACY_READ_KEY = "virtual-pmo-notifications-read";
+const EMPTY_PREFERENCES: NotificationPreferences = { digest: null, inApp: {}, email: {} };
+
+/** Rows → feed: hides kinds switched off in-app; open items first, newest first. */
+export function toFeed(
+  rows: readonly NotificationRow[],
+  preferences: NotificationPreferences = EMPTY_PREFERENCES,
+): FeedItem[] {
+  return rows
+    .filter((row) => preferences.inApp[row.kind] !== false)
+    .map((row) => ({
+      id: row.id,
+      date: row.createdAt.slice(0, 10),
+      kind: NOTIFICATION_LABEL[row.kind],
+      text: row.text,
+      channel: "In-app" as const,
+      link: row.link,
+      resolved: row.resolvedAt !== null,
+      read: row.readAt !== null,
+    }))
+    .sort(
+      (a, b) =>
+        Number(a.resolved) - Number(b.resolved) ||
+        b.date.localeCompare(a.date) ||
+        a.id.localeCompare(b.id),
+    );
+}
+
+/** Unread and still open: what the bell counts. */
+export const unreadCount = (feed: readonly FeedItem[]) =>
+  feed.filter((item) => !item.read && !item.resolved).length;
+
+export function useNotificationPreferences() {
+  const { profile } = useOrganisation();
+  const queryClient = useQueryClient();
+  const key = qk.notificationPreferences(profile.id);
+  const query = useQuery({
+    queryKey: key,
+    queryFn: () => getMyNotificationPreferences(profile.id),
+  });
+  const save = useMutation({
+    mutationFn: setMyNotificationPreferences,
+    onSuccess: (saved) => queryClient.setQueryData(key, saved),
+    onError: (error) => toast.error(error.message),
+  });
+  return { preferences: query.data ?? EMPTY_PREFERENCES, query, save };
+}
 
 export function useNotifications() {
-  const me = useMyResourceId();
-  const tasks = usePortfolioTasks().data?.tasks;
-  const issued = useIssuedTasks().data?.items;
-  const decisions = useGovernance().data?.decisions;
-  // Only the measures on the user's own benefits, not the full benefits set: the bell runs on
-  // every page.
-  const measurements = useMeasurementsDue(me).data;
-  const dependencies = useDependencies().data?.dependencies;
-  // Packs the system drafted that this user can edit (secretary, chair, PMO).
-  const draftedPacks = useSystemDraftedPacks().data;
-  const read = useSyncExternalStore(subscribe, readIds, () => EMPTY);
-  const feed = useMemo((): FeedItem[] => {
-    const today = todayIso();
-    const items: FeedItem[] = [];
-    const byProject = new Map<string, number>();
-    for (const task of tasks ?? [])
-      if (me && task.assigneeIds.includes(me) && task.deliveryStatus === "Overdue")
-        byProject.set(task.projectName, (byProject.get(task.projectName) ?? 0) + 1);
-    for (const [project, count] of byProject)
-      items.push({
-        id: `overdue:${project}`,
-        date: today,
-        kind: "Overdue alert",
-        text: `${count} of your ${project} task${count === 1 ? " is" : "s are"} overdue.`,
-        channel: "In-app",
-      });
-    for (const item of (issued ?? []).filter(
-      (entry) => entry.assigneeId === me && entry.status === "Issued",
-    ))
-      items.push({
-        id: `issued:${item.offerId}`,
-        date: item.issuedAt.slice(0, 10),
-        kind: "Approval request",
-        text: `${item.issuer} issued you “${item.title}” (${item.projectName}). Accept, decline or propose a date.`,
-        channel: "In-app",
-      });
-    for (const decision of (decisions ?? []).filter(
-      (entry) => entry.status === "Pending" && entry.overdue,
-    ))
-      items.push({
-        id: `decision:${decision.id}`,
-        date: decision.neededBy,
-        kind: "Decision",
-        text: `${decision.reference} passed its needed-by date and is still pending at ${decision.forum}.`,
-        channel: "In-app",
-      });
-    for (const due of measurements ?? []) {
-      const daysOverdue = measurementDaysOverdue(due.nextDue);
-      if (!daysOverdue) continue;
-      items.push({
-        id: `measure:${due.measureId}:${due.nextDue}`,
-        date: due.nextDue,
-        kind: "Measurement",
-        text: `${due.benefitReference} measurement “${due.measureName}” is ${daysOverdue} day${daysOverdue === 1 ? "" : "s"} overdue.`,
-        channel: "In-app",
-      });
-    }
-    for (const dependency of (dependencies ?? []).filter((entry) => entry.health === "Off Track"))
-      items.push({
-        id: `dependency:${dependency.id}`,
-        date: dependency.requiredBy,
-        kind: "Dependency",
-        text: `${dependency.reference} is off track: ${dependency.healthReason}`,
-        channel: "In-app",
-      });
-    for (const pack of draftedPacks ?? [])
-      items.push({
-        id: `drafted-pack:${pack.reportId}`,
-        date: pack.createdAt.slice(0, 10),
-        kind: "Draft pack ready",
-        text: `“${pack.title}” was drafted when the papers deadline passed. Review it and submit it for approval.`,
-        channel: "In-app",
-      });
-    return items.sort((a, b) => b.date.localeCompare(a.date));
-  }, [me, tasks, issued, decisions, measurements, dependencies, draftedPacks]);
-  const markRead = useCallback((ids: string[]) => {
-    cache = Array.from(new Set([...readIds(), ...ids]));
+  const orgId = useOrgId();
+  const queryClient = useQueryClient();
+  const { preferences } = useNotificationPreferences();
+  const query = useQuery({
+    queryKey: qk.notifications(orgId),
+    queryFn: () => listNotifications(orgId),
+    // New rows arrive from the database, not from this tab.
+    refetchInterval: 5 * 60 * 1000,
+  });
+  useEffect(() => {
     try {
-      localStorage.setItem(READ_KEY, JSON.stringify(cache));
+      localStorage.removeItem(LEGACY_READ_KEY);
     } catch {
-      // Not persisted; this tab still updates.
+      // Storage unavailable: nothing to clear.
     }
-    listeners.forEach((listener) => listener());
   }, []);
-  return { feed, read, markRead, unread: feed.filter((item) => !read.includes(item.id)).length };
+  const feed = useMemo(() => toFeed(query.data ?? [], preferences), [query.data, preferences]);
+  const read = useMemo(() => feed.filter((item) => item.read).map((item) => item.id), [feed]);
+  const mark = useMutation({
+    mutationFn: (ids: string[] | null) => markNotificationsRead(orgId, ids ?? undefined),
+    onMutate: async (ids) => {
+      await queryClient.cancelQueries({ queryKey: qk.notifications(orgId) });
+      const now = new Date().toISOString();
+      queryClient.setQueryData<NotificationRow[]>(qk.notifications(orgId), (rows) =>
+        rows?.map((row) =>
+          !row.readAt && (!ids || ids.includes(row.id)) ? { ...row, readAt: now } : row,
+        ),
+      );
+    },
+    onError: (error) => toast.error(error.message),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: qk.notifications(orgId) }),
+  });
+  const { mutate } = mark;
+  const markRead = useCallback(
+    (ids: string[]) => {
+      const unreadIds = ids.filter((id) => !read.includes(id));
+      if (unreadIds.length) mutate(unreadIds);
+    },
+    [mutate, read],
+  );
+  const markAllRead = useCallback(() => mutate(null), [mutate]);
+  return { feed, read, markRead, markAllRead, unread: unreadCount(feed), query };
 }

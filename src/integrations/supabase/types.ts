@@ -7766,6 +7766,82 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          due_date: string
+          email_skipped_at: string | null
+          emailed_at: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          kind: string
+          link: string | null
+          organisation_id: string
+          read_at: string | null
+          recipient_id: string
+          resolved_at: string | null
+          text: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          due_date: string
+          email_skipped_at?: string | null
+          emailed_at?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          kind: string
+          link?: string | null
+          organisation_id: string
+          read_at?: string | null
+          recipient_id: string
+          resolved_at?: string | null
+          text: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          due_date?: string
+          email_skipped_at?: string | null
+          emailed_at?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          kind?: string
+          link?: string | null
+          organisation_id?: string
+          read_at?: string | null
+          recipient_id?: string
+          resolved_at?: string | null
+          text?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       organisation_deletions: {
         Row: {
           attempts: number
@@ -16845,6 +16921,15 @@ export type Database = {
         Args: { p_actor: string; p_error?: string; p_invite_id: string }
         Returns: undefined
       }
+      mark_notification_digest_done: { Args: never; Returns: undefined }
+      mark_notification_emails: {
+        Args: { p_ids: string[]; p_outcome: string }
+        Returns: number
+      }
+      mark_notifications_read: {
+        Args: { p_ids?: string[]; p_organisation: string }
+        Returns: number
+      }
       mark_report_notification_sent: {
         Args: { p_id: string; p_result: Json }
         Returns: undefined
@@ -16885,6 +16970,7 @@ export type Database = {
       }
       pending_approval_reminders: { Args: never; Returns: Json }
       pending_billing_notices: { Args: never; Returns: Json }
+      pending_notification_emails: { Args: { p_mode: string }; Returns: Json }
       pending_report_notifications: { Args: never; Returns: Json }
       project_metrics: {
         Args: {
@@ -17273,6 +17359,10 @@ export type Database = {
         Args: { p_enabled: boolean; p_organisation_id: string }
         Returns: undefined
       }
+      set_my_notification_preferences: {
+        Args: { p_preferences: Json }
+        Returns: Json
+      }
       set_report_inclusion: {
         Args: { p_entity_id: string; p_mode: string; p_report_id: string }
         Returns: undefined
@@ -17452,6 +17542,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      unsubscribe_notification_emails: {
+        Args: { p_token: string }
+        Returns: boolean
       }
       update_pending_decision: {
         Args: {

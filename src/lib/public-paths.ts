@@ -14,5 +14,7 @@ export const isPublicPath = (path: string) =>
   path === "/invite" ||
   path === "/signup" ||
   path.startsWith("/signup/") ||
+  // GL-13: the unsubscribe link in notification emails works signed out.
+  path === "/notifications/unsubscribe" ||
   // Server-side PDF rendering of a published pack, authorised by a short-lived print token.
   path.startsWith("/report-print/");

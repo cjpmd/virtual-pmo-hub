@@ -24,6 +24,7 @@ import { SettingsCard, TextField } from "@/components/settings/settings-shell";
 import { appRoleLabel } from "@/services/org-settings";
 import { saveDisplayName } from "@/services/org-settings";
 import { qk } from "@/services/query-keys";
+import { MyNotificationSettings } from "@/components/settings/my-notification-settings";
 
 export function AccountSettings() {
   const { profile, organisation } = useOrganisation();
@@ -81,6 +82,7 @@ export function AccountSettings() {
           )}
         </form>
       </SettingsCard>
+      <MyNotificationSettings />
       <CloseAccountSettings email={profile.email} />
     </>
   );

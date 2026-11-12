@@ -32,6 +32,7 @@ projects list, project detail); Stage 4c applied it to every screen.
 | `work-items.ts`, `issued-tasks.ts`, `status-reports.ts`           | project tasks (diff-based save), portfolio and personal task views; issued work (offers); status reports                                               |
 | `resources.ts`, `assurance.ts`                                    | capacity planning; declared versus evidenced RAG                                                                                                       |
 | `integrations.ts`, `favourites.ts`, `org-settings.ts`, `auth.ts`  | Microsoft 365 state, starred items, organisation settings, sign-up/sign-in                                                                             |
+| `notifications.ts`                                                | the signed-in user's notifications (`notifications`, raised in the database), mark read, personal notification preferences, unsubscribe (GL-13) |
 
 ## Writes (`src/services/write.ts`)
 
