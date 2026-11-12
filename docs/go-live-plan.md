@@ -401,6 +401,16 @@ absent), and drop the viewer's live lookup for snapshots that carry it. Snapshot
 older packs aren't rewritten. SQL first, then stop; test on the local Postgres that a published pack
 with a pinned sample project carries `is_sample: true` and that the print route shows the chip.
 
+**GL-9 follow-up built (12/11/2026), NOT applied, not merged:** migration
+`20261112140000_gl_9_snapshot_sample` (`docs/sql/gl-9-snapshot-sample.sql`): `publish_report` replaced
+with one change, `'is_sample', p.is_sample` on each `meta.deep_dives` entry. `snapshotFrom`
+(`hooks/use-report-snapshots.ts`, used by the viewer and the public print route) reads it as
+`isSample`, so the print route and its PDF show the Sample chip for packs published from now on;
+`ReportViewer` uses the stored flag and loads the live sample ids only when an older pack's
+deep-dive lacks it. Tests: `supabase/tests/sample_data.sql` (27 checks: a published pack records the
+pinned sample project as sample and the real one as not), `use-report-snapshots.test.ts`; the report
+suites pass as on main. Types unchanged.
+
 ### GL-10 Cross-tenant security suite [DB tests only]
 
 ```
