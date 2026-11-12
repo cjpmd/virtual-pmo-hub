@@ -14,7 +14,7 @@ const ORG = "d0000000-0000-4000-8000-000000000100";
 const AT = new Date("2026-11-11T09:30:05.123Z");
 const plan: ExportPlan = {
   organisation_id: ORG,
-  schema_version: "20261111100000",
+  schema_version: "20261112093456",
   generated_at: AT.toISOString(),
   tables: [
     { table: "projects", rows: 3, order_by: ["id"], omitted_columns: [] },
@@ -54,7 +54,7 @@ describe("organisation export helpers", () => {
     ]);
     expect(manifest.total_rows).toBe(4);
     expect(manifest.storage_objects.count).toBe(1);
-    expect(manifest.schema_version).toBe("20261111100000");
+    expect(manifest.schema_version).toBe("20261112093456");
     expect(manifest.organisation).toEqual({ id: ORG, name: "Org" });
   });
 

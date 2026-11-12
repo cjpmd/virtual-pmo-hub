@@ -191,10 +191,11 @@ select pg_temp.raises('a second export within two minutes is refused',
   format('select public.start_organisation_export(%L)', pg_temp.c('org_a')), 'P0001', 'rate_limited');
 select pg_temp.as_owner();
 select pg_temp.ok('the export is audited',
-  (select count(*) from public.audit_log where organisation_id = pg_temp.c('org_a') and action = 'organisation.exported'
+  (select count(*) from public.audit_log where organisation_id = pg_temp.c('org_a') and action = 'update'
+     and entity_table = 'organisations' and detail ->> 'event' = 'organisation.exported'
      and actor_id = pg_temp.c('a_admin') and entity_id = pg_temp.c('org_a')) = 1);
 update public.audit_log set created_at = now() - interval '3 minutes'
- where organisation_id = pg_temp.c('org_a') and action = 'organisation.exported';
+ where organisation_id = pg_temp.c('org_a') and detail ->> 'event' = 'organisation.exported';
 select pg_temp.as_user(pg_temp.c('a_admin'));
 select public.request_organisation_deletion(pg_temp.c('org_a'), 'GL11b Org A');
 select pg_temp.ok('the admin starts an export while deletion is pending', public.start_organisation_export(pg_temp.c('org_a')) is not null);
