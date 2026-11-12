@@ -162,7 +162,12 @@ section 0, four CHECK constraints widened, is run by hand first). Tested on the 
   builder (scope and preview) and forum report settings. The selection engine is unchanged (it
   works on project metrics, not scope), so no parity cases changed.
 - **G3 (D-b)** `programme_coverage` block: projects, budget and forecast per programme; for a
-  collection, pot, requested (the collection projects' budgets), awarded and what's left.
+  collection, pot, requested, awarded and what's left. Requested per project is, first that exists,
+  the business case's `funding_requested` (latest non-superseded version with one, on the project's
+  case or the case of the request it was converted from), the converted request's estimated cost,
+  else the project budget; the block lists each project's amount and source and the stat says
+  "From 1 business case, 1 project request and 2 project budgets". Production on 12/11/2026: no
+  business case version has `funding_requested` yet, one project was converted from a request.
 - **G6 (D-c)** `benefits_value` block (`benefits_summary` unchanged): planned, realised, %
   realised, cash-releasing realised of planned, at risk (low confidence or behind profile), by
   strategic objective, behind profile and overdue measurements (before the as-at date), with

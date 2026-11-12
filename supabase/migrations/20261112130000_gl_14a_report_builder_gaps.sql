@@ -4,7 +4,9 @@
 --       collection; its projects are read from collection_projects whenever the selection is
 --       computed, so the report follows changes to the collection.
 --   G3  programme_coverage block: projects, budget and forecast per programme, plus pot vs
---       requested vs awarded for a collection scope (D-b).
+--       requested vs awarded for a collection scope (D-b). Requested comes from the business
+--       case's funding requested, else the request's estimated cost, else the project budget,
+--       labelled per project.
 --   G6  benefits_value block (D-c; benefits_summary unchanged): planned, realised, % realised,
 --       cash-releasing realised, at risk, by strategic objective, behind profile, overdue
 --       measurements, using the same rules as services/benefits-value.ts getValueMetrics.
@@ -561,7 +563,14 @@ $function$;
 -- =====================================================================================
 -- programme_coverage (G3, D-b): projects, budget and forecast per programme (projects with no
 -- programme grouped as "No programme"), totals, and for a collection scope the pot against the
--- requested total (the collection projects' budgets) and the awarded total.
+-- requested total and the awarded total.
+-- "Requested" per project, first that exists:
+--   1. business_case: funding_requested on the latest version of the project's business case
+--      (or the case on the request it was converted from) that has one and isn't superseded;
+--   2. request: the estimated cost of the request the project was converted from (above 0);
+--   3. budget: the project's budget.
+-- Each project's amount carries its source, and the totals are split by source, so the pack says
+-- which figures are asks and which are budgets.
 create function private.rb_programme_coverage(ctx jsonb, cfg jsonb)
 returns jsonb
 language sql
@@ -569,8 +578,11 @@ stable
 set search_path = ''
 as $$
   with p as (
-    select p.id, p.programme_id, coalesce(g.name, 'No programme') as programme_name, p.budget, p.forecast
-    from public.v_projects p left join public.programmes g on g.id = p.programme_id
+    select p.id, p.code, p.name, p.programme_id, coalesce(g.name, 'No programme') as programme_name, p.budget, p.forecast,
+      pr.converted_from_request_id
+    from public.v_projects p
+    join public.projects pr on pr.id = p.id
+    left join public.programmes g on g.id = p.programme_id
     where p.id = any (private.rb_projects(ctx))
   ),
   grouped as (
@@ -580,13 +592,35 @@ as $$
   coll as (
     select c.id, c.name, c.pot_amount from public.collections c
     where ctx ->> 'scope_type' = 'collection' and c.id = nullif(ctx ->> 'scope_entity_id', '')::uuid
+  ),
+  asked as (
+    select p.id, p.code, p.name, p.budget,
+      (select v.funding_requested from public.business_cases bc
+         join public.business_case_versions v on v.business_case_id = bc.id
+       where (bc.project_id = p.id or (p.converted_from_request_id is not null and bc.request_id = p.converted_from_request_id))
+         and v.funding_requested is not null and v.status <> 'superseded'
+       order by v.version desc limit 1) as case_amount,
+      (select nullif(r.estimated_cost, 0) from public.project_requests r where r.id = p.converted_from_request_id) as request_amount
+    from p where exists (select 1 from coll)
+  ),
+  req as (
+    select a.id, a.code, a.name,
+      coalesce(a.case_amount, a.request_amount, a.budget) as requested,
+      case when a.case_amount is not null then 'business_case'
+           when a.request_amount is not null then 'request'
+           else 'budget' end as source
+    from asked a
   )
   select jsonb_build_object('currency', ctx ->> 'currency',
     'rows', coalesce((select jsonb_agg(to_jsonb(g) order by g.programme_id is null, g.budget desc nulls last, g.name) from grouped g), '[]'),
     'totals', jsonb_build_object('projects', (select count(*) from p), 'budget', (select sum(budget) from p),
       'forecast', (select sum(forecast) from p)),
     'collection', (select jsonb_build_object('name', c.name, 'pot', c.pot_amount,
-        'requested', (select sum(budget) from p),
+        'requested', (select sum(requested) from req),
+        'requested_by_source', (select coalesce(jsonb_object_agg(x.source, jsonb_build_object('projects', x.n, 'amount', x.amount)), '{}')
+          from (select source, count(*)::integer as n, sum(requested) as amount from req group by source) x),
+        'requested_rows', coalesce((select jsonb_agg(jsonb_build_object('project_id', r.id, 'code', r.code, 'name', r.name,
+            'requested', r.requested, 'source', r.source) order by r.code) from req r), '[]'),
         'awarded', (select sum(cp.award_amount) from public.collection_projects cp
                     where cp.collection_id = c.id and cp.project_id in (select id from p)),
         'remaining', c.pot_amount - coalesce((select sum(cp.award_amount) from public.collection_projects cp

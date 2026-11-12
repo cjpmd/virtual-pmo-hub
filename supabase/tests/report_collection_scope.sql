@@ -99,14 +99,41 @@ begin
   assert pg_temp.block(rep, 'report_cover') -> 'cover_text' = 'null'::jsonb, 'no cover text by default';
   checks := checks + 3;
 
-  -- programme_coverage: per programme, totals, pot vs requested vs awarded.
+  -- programme_coverage: per programme, totals, pot vs requested vs awarded. With no business case
+  -- or request, every project's "requested" is its budget.
   d := pg_temp.block(rep, 'programme_coverage');
   assert (d -> 'totals' ->> 'projects')::int = 4 and (d -> 'totals' ->> 'budget')::numeric = 4000000, 'coverage totals: ' || (d -> 'totals')::text;
   assert (select sum((r ->> 'projects')::int) from jsonb_array_elements(d -> 'rows') r) = 4, 'rows add up';
   assert (d -> 'collection' ->> 'pot')::numeric = 2500000 and (d -> 'collection' ->> 'requested')::numeric = 4000000
      and (d -> 'collection' ->> 'awarded')::numeric = 1150000 and (d -> 'collection' ->> 'remaining')::numeric = 1350000
      and d -> 'collection' ->> 'name' = 'Innovation Fund', 'pot vs requested: ' || (d -> 'collection')::text;
-  checks := checks + 3;
+  assert d -> 'collection' -> 'requested_by_source' = '{"budget":{"projects":4,"amount":4000000.00}}', 'all budget: ' || (d -> 'collection' -> 'requested_by_source')::text;
+  checks := checks + 4;
+
+  -- Requested from a business case (RD01: latest non-superseded version with an amount) and from
+  -- the request a project was converted from (RD02); RD03 and RD07 fall back to budget.
+  perform pg_temp.as_postgres();
+  declare
+    bc uuid;
+    rq uuid;
+  begin
+    insert into public.business_cases (organisation_id, workspace_id, project_id, title)
+    values (org, ws, pg_temp.pid(1), 'EPR business case') returning id into bc;
+    insert into public.business_case_versions (organisation_id, workspace_id, business_case_id, version, funding_requested)
+    values (org, ws, bc, 1, 600000);
+    insert into public.project_requests (organisation_id, workspace_id, portfolio_id, title, estimated_cost)
+    values (org, ws, 'd0000000-0000-4000-8000-000000000400', 'Patient Portal request', 350000) returning id into rq;
+    update public.projects set converted_from_request_id = rq where id = pg_temp.pid(2);
+  end;
+  perform pg_temp.as_user(u_pmo);
+  d := pg_temp.block(rep, 'programme_coverage');
+  assert (d -> 'collection' ->> 'requested')::numeric = 600000 + 350000 + 1000000 + 1000000, 'requested mixes sources: ' || (d -> 'collection' ->> 'requested');
+  assert d -> 'collection' -> 'requested_by_source' @> '{"business_case":{"projects":1,"amount":600000.00},"request":{"projects":1,"amount":350000.00},"budget":{"projects":2,"amount":2000000.00}}',
+    'split by source: ' || (d -> 'collection' -> 'requested_by_source')::text;
+  assert d -> 'collection' -> 'requested_rows' @> '[{"code":"RD01","source":"business_case","requested":600000.00},{"code":"RD02","source":"request","requested":350000.00},{"code":"RD03","source":"budget"}]',
+    'per project: ' || (d -> 'collection' -> 'requested_rows')::text;
+  assert (d -> 'totals' ->> 'budget')::numeric = 4000000, 'budget totals unchanged';
+  checks := checks + 4;
 
   -- Benefits value: a cash-releasing benefit on an objective, a disbenefit, an overdue measure.
   perform pg_temp.as_postgres();

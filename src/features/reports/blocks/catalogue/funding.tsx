@@ -18,6 +18,21 @@ export interface CoverageRow {
   budget: Money;
   forecast: Money;
 }
+/** Where a project's "requested" amount comes from (first that exists, in this order). */
+export type RequestedSource = "business_case" | "request" | "budget";
+export const REQUESTED_SOURCE_LABEL: Record<RequestedSource, string> = {
+  business_case: "Business case",
+  request: "Project request",
+  budget: "Project budget",
+};
+const SOURCES: RequestedSource[] = ["business_case", "request", "budget"];
+export interface RequestedRow {
+  project_id: string;
+  code: string;
+  name: string;
+  requested: Money;
+  source: RequestedSource;
+}
 export interface CoverageData {
   currency: string;
   rows: CoverageRow[];
@@ -26,9 +41,27 @@ export interface CoverageData {
     name: string;
     pot: Money;
     requested: Money;
+    /** Packs published before GL-14A's follow-up don't have these (requested = budgets). */
+    requested_by_source?: Partial<Record<RequestedSource, { projects: number; amount: Money }>>;
+    requested_rows?: RequestedRow[];
     awarded: Money;
     remaining: Money;
   } | null;
+}
+
+/** "From 1 business case, 1 project request and 2 project budgets", in source order. */
+export function requestedNote(collection: NonNullable<CoverageData["collection"]>) {
+  const by = collection.requested_by_source;
+  if (!by) return "Budgets of the projects in the collection";
+  const parts = SOURCES.filter((s) => by[s]?.projects).map((s) => {
+    const n = by[s]!.projects;
+    const label = REQUESTED_SOURCE_LABEL[s].toLowerCase();
+    return `${n} ${n === 1 ? label : `${label}s`}`;
+  });
+  if (!parts.length) return "No projects in the collection";
+  const list =
+    parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;
+  return `From ${list}`;
 }
 
 /** "Over the pot by …" / "… left in the pot" for the requested total against the pot. */
@@ -58,7 +91,7 @@ function Coverage({
           <Stat
             label="Requested"
             value={f.money(data.collection.requested)}
-            note="Budgets of the projects in the collection"
+            note={requestedNote(data.collection)}
             tone={position?.over ? "bad" : undefined}
           />
           <Stat label="Awarded" value={f.money(data.collection.awarded ?? 0)} />
@@ -95,6 +128,26 @@ function Coverage({
             : []),
         ]}
       />
+      {data.collection?.requested_rows && data.collection.requested_rows.length > 0 && (
+        <Table
+          rows={data.collection.requested_rows}
+          rowKey={(r) => r.project_id}
+          caption="Requested by project"
+          cols={[
+            {
+              key: "n",
+              header: "Project",
+              cell: (r) => (
+                <span>
+                  <span className="text-muted-foreground">{r.code}</span> {r.name}
+                </span>
+              ),
+            },
+            { key: "r", header: "Requested", align: "right", cell: (r) => f.money(r.requested) },
+            { key: "s", header: "From", cell: (r) => REQUESTED_SOURCE_LABEL[r.source] ?? r.source },
+          ]}
+        />
+      )}
       {data.rows.length > 0 && (
         <BlockNote>
           {data.totals.projects} {data.totals.projects === 1 ? "project" : "projects"} ·{" "}

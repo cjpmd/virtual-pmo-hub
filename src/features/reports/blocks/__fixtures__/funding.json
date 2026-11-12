@@ -25,9 +25,53 @@
     "collection": {
       "name": "Innovation Fund",
       "pot": 2500000,
-      "requested": 4000000,
+      "requested": 2950000,
       "awarded": 1150000,
-      "remaining": 1350000
+      "remaining": 1350000,
+      "requested_by_source": {
+        "business_case": {
+          "projects": 1,
+          "amount": 600000
+        },
+        "request": {
+          "projects": 1,
+          "amount": 350000
+        },
+        "budget": {
+          "projects": 2,
+          "amount": 2000000
+        }
+      },
+      "requested_rows": [
+        {
+          "project_id": "p1",
+          "code": "RD01",
+          "name": "Electronic Patient Record",
+          "requested": 600000,
+          "source": "business_case"
+        },
+        {
+          "project_id": "p2",
+          "code": "RD02",
+          "name": "Patient Portal",
+          "requested": 350000,
+          "source": "request"
+        },
+        {
+          "project_id": "p3",
+          "code": "RD03",
+          "name": "Virtual Wards",
+          "requested": 1000000,
+          "source": "budget"
+        },
+        {
+          "project_id": "p7",
+          "code": "RD07",
+          "name": "Car Park Rebuild",
+          "requested": 1000000,
+          "source": "budget"
+        }
+      ]
     }
   },
   "benefits_value": {

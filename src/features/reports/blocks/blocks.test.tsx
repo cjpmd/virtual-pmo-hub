@@ -11,7 +11,7 @@ import fixtures from "./__fixtures__/phase1.json";
 import fixtures2 from "./__fixtures__/phase2.json";
 import fixtures34 from "./__fixtures__/phase34.json";
 import fixturesFunding from "./__fixtures__/funding.json";
-import { potPosition, realisedWidth, type CoverageData } from "./catalogue/funding";
+import { potPosition, realisedWidth, requestedNote, type CoverageData } from "./catalogue/funding";
 import { ALL_BLOCKS } from "./catalogue";
 import { getBlock, listBlocks, registerBlock, resolveConfig, supportsScope } from "./registry";
 import type { BlockInstance, RenderContext } from "./types";
@@ -518,7 +518,11 @@ describe("funding pack blocks (GL-14)", () => {
     renderBlock("programme_coverage", fixturesFunding.programme_coverage);
     expect(screen.getByText("Digital Care")).toBeTruthy();
     expect(screen.getByText("Over the pot")).toBeTruthy();
-    expect(screen.getByText("Budgets of the projects in the collection")).toBeTruthy();
+    expect(
+      screen.getByText("From 1 business case, 1 project request and 2 project budgets"),
+    ).toBeTruthy();
+    expect(screen.getByText("Business case")).toBeTruthy();
+    expect(screen.getAllByText("Project budget")).toHaveLength(2);
   });
   it("programme coverage outside a collection has no pot", () => {
     const { container } = renderBlock("programme_coverage", {
@@ -538,6 +542,28 @@ describe("funding pack blocks (GL-14)", () => {
     expect(potPosition(base)).toEqual({ over: true, amount: 50 });
     expect(potPosition({ ...base, requested: "40" })).toEqual({ over: false, amount: 60 });
     expect(potPosition({ ...base, pot: null })).toBeNull();
+  });
+  it("requestedNote names the sources, and falls back for older packs", () => {
+    const base: NonNullable<CoverageData["collection"]> = {
+      name: "Fund",
+      pot: 100,
+      requested: 150,
+      awarded: 0,
+      remaining: 100,
+    };
+    expect(requestedNote(base)).toBe("Budgets of the projects in the collection");
+    expect(
+      requestedNote({ ...base, requested_by_source: { budget: { projects: 3, amount: 150 } } }),
+    ).toBe("From 3 project budgets");
+    expect(
+      requestedNote({
+        ...base,
+        requested_by_source: {
+          business_case: { projects: 2, amount: 100 },
+          budget: { projects: 1, amount: 50 },
+        },
+      }),
+    ).toBe("From 2 business cases and 1 project budget");
   });
   it("benefits value lists objectives, behind profile and overdue measurements", () => {
     renderBlock("benefits_value", fixturesFunding.benefits_value);
