@@ -1,8 +1,9 @@
 // GL-11b: full organisation export (docs/design/account-closure.md §2.5).
 // Body { organisation_id } with the caller's JWT:
 //   1. public.start_organisation_export as the caller: organisation admins only, one export every
-//      two minutes, audited ('organisation.exported'). Works while the organisation is read-only
-//      or pending deletion (no requireWritable: exporting is how an admin keeps their data).
+//      two minutes, audited (action 'update' on organisations, detail.event
+//      'organisation.exported'). Works while the organisation is read-only or pending deletion
+//      (no requireWritable: exporting is how an admin keeps their data).
 //   2. As the service role, only for that organisation: organisation_export_plan (every public
 //      table with organisation_id, generated from the catalog, plus the organisation row and its
 //      members' profiles), then organisation_export_rows page by page into tables/<table>.json.

@@ -1,22 +1,23 @@
--- GL-11b: full organisation export. PROPOSAL, NOT APPLIED (written while Chris was away,
--- 11/11/2026). Identical to supabase/migrations/20261111100000_gl_11b_organisation_export.sql.
--- Tested on the local Postgres only: supabase/tests/organisation_export.sql (29 checks), and
+-- GL-11b: full organisation export. APPLIED to production on 12/11/2026, recorded as version
+-- 20261112093456 (name gl_11b_organisation_export). Identical to
+-- supabase/migrations/20261112093456_gl_11b_organisation_export.sql.
+-- Tested on the local Postgres: supabase/tests/organisation_export.sql (29 checks), and
 -- cross_tenant.sql, organisation_purge.sql, read_only_mode.sql, account_closure.sql,
--- billing_notices.sql, sample_data.sql all still pass.
+-- billing_notices.sql, sample_data.sql all pass.
 --
--- To apply (in this order):
---   1. Apply this file as a migration. Keep the version 20261111100000 (name
---      gl_11b_organisation_export) so the repo and production histories match (GL-1); if the tool
---      assigns its own version, rename the repo file to match.
---   2. Deploy the edge function export-organisation (verify_jwt = true, already in
+-- Steps:
+--   1. Applied as a migration (done 12/11/2026).
+--   2. Edge function export-organisation deployed (verify_jwt = true, as in
 --      supabase/config.toml). It needs no new secrets.
---   3. In the SQL editor, the Vault secret for the daily clean-up:
+--   3. Still to do, by you in the SQL editor: the Vault secret for the daily clean-up:
 --        select vault.create_secret('https://xvdlmtkzfmbcegkmampz.supabase.co/functions/v1/export-organisation', 'organisation_export_url');
 --   Until step 3, exports work, and each new export removes that organisation's zips older than
 --   7 days; only organisations that never export again keep old zips.
 --
--- Destructive statements: none on data. Section 2 drops and re-adds the audit_log action check
--- constraint (as 20261106140827_convert_request_to_project did) to add 'organisation.exported'.
+-- Destructive statements: none. (Revised 12/11/2026 before it was applied: the first draft
+-- dropped and re-added audit_log_action_check to add 'organisation.exported'; the export is now
+-- audited as 'update' on 'organisations' with detail.event = 'organisation.exported', as GL-11
+-- does for deletion requests.)
 --
 -- GL-11b: full organisation export (docs/design/account-closure.md §2.5, docs/sql/gl-11b-organisation-export.sql).
 -- The edge function export-organisation reads every organisation table as the service role and
@@ -25,8 +26,8 @@
 -- days (the edge function's cleanup mode, called daily by vpmo-export-cleanup).
 -- Works while the organisation is read-only or pending deletion: the only write is the audit
 -- row, and audit_log is exempt from the read-only trigger.
--- Additive only: one bucket, one audit action, four functions and one cron job. The audit action
--- needs the check constraint re-created (drop + add, as earlier migrations did); no data changes.
+-- Additive only: one bucket, four functions and one cron job. No new audit action (the audit
+-- row reuses 'update' with detail.event, so audit_log_action_check is untouched); no data changes.
 
 -- 1. The bucket. Private, zips only, 500 MB per object. No storage.objects policy names it, so
 --    signed-in users can't list, read or write it; only the service role (the edge function)
@@ -36,30 +37,9 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 values ('exports', 'exports', false, 524288000, array['application/zip'])
 on conflict (id) do nothing;
 
--- 2. Audit action 'organisation.exported'.
-alter table public.audit_log drop constraint audit_log_action_check;
-alter table public.audit_log add constraint audit_log_action_check check (action in (
-  -- row changes (private.audit_row_change)
-  'insert', 'update', 'delete',
-  -- invitations
-  'invite.created', 'invite.sent', 'invite.send_failed', 'invite.revoked', 'invite.accepted',
-  'invite.bounced', 'invite.suppressed', 'invite.complained',
-  -- members
-  'member.role_changed', 'member.removed',
-  -- join requests and domains
-  'join_settings.changed', 'join_domain.added', 'join_domain.removed',
-  'join_request.created', 'join_request.withdrawn', 'join_request.approved', 'join_request.declined',
-  -- billing
-  'billing.seats_added', 'billing.seat_reduction_scheduled', 'billing.scheduled_change_cancelled',
-  'billing.interval_switch_scheduled',
-  'seats.changed', 'seats.change_scheduled', 'seats.scheduled_change_cleared',
-  -- request conversion
-  'request.converted',
-  -- GL-11b full export
-  'organisation.exported'
-));
-comment on constraint audit_log_action_check on public.audit_log is
-  'Row operations plus work package events. Add new event names here.';
+-- 2. Audit: no new action. audit_log.action is a fixed list and widening it means dropping its
+--    check constraint, so (as GL-11 did for deletion requests) an export is recorded as
+--    action 'update' on 'organisations' with detail.event = 'organisation.exported'.
 
 -- 3. What is exported. Every public base table with organisation_id (generated from the catalog,
 --    as private.purge_organisation does, so new tables are included without a change here), plus
@@ -199,13 +179,16 @@ begin
     raise exception 'Only organisation admins can export all data.' using errcode = '42501', hint = 'not_admin';
   end if;
   if exists (select 1 from public.audit_log a
-             where a.organisation_id = p_organisation_id and a.action = 'organisation.exported'
+             where a.organisation_id = p_organisation_id and a.action = 'update'
+               and a.entity_table = 'organisations' and a.entity_id = p_organisation_id
+               and a.detail ->> 'event' = 'organisation.exported'
                and a.created_at > now() - interval '2 minutes') then
     raise exception 'An export was started in the last two minutes. Please wait and try again.'
       using errcode = 'P0001', hint = 'rate_limited';
   end if;
   insert into public.audit_log (organisation_id, actor_id, action, entity_table, entity_id, detail)
-  values (p_organisation_id, v_uid, 'organisation.exported', 'organisations', p_organisation_id, '{}'::jsonb);
+  values (p_organisation_id, v_uid, 'update', 'organisations', p_organisation_id,
+          jsonb_build_object('event', 'organisation.exported', 'value', 'Full data export (zip)'));
   return now();
 end;
 $$;

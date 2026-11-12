@@ -606,7 +606,7 @@ Settings › Data gets "Export all data (zip)". Files in Storage are listed, not
 Plan first; SQL for the bucket and its policies, then stop.
 ```
 
-**Built (11/11/2026), not applied or deployed:** migration `20261111100000_gl_11b_organisation_export`
+**Built (11/11/2026); applied 12/11/2026, waiting on the Vault secret:** migration `20261112093456_gl_11b_organisation_export`
 (`docs/sql/gl-11b-organisation-export.sql`), tested on the local Postgres only. Private bucket
 `exports` (zips only, 500 MB; no storage policy names it, so only the service role reads or writes).
 `private.organisation_export_tables()` lists every public table with `organisation_id` from the
@@ -615,8 +615,8 @@ ordered by primary key, leaving out `token_hash` columns; private job tables, we
 aren't exported. Service-role RPCs `organisation_export_plan(org)` (tables, row counts, schema
 version) and `organisation_export_rows(org, table, offset, limit ≤ 5,000)`;
 `start_organisation_export(org)` (authenticated: org admins only, works while read-only or pending
-deletion, one export every 2 minutes, audit action `organisation.exported`, which needed the audit
-check constraint re-created). Edge function `export-organisation`: starts as the caller, then pages
+deletion, one export every 2 minutes, audited as action `update` on `organisations` with
+`detail.event = 'organisation.exported'`, so the audit check constraint isn't touched). Edge function `export-organisation`: starts as the caller, then pages
 every table into `tables/<table>.json` (streamed into the zip with fflate), lists Storage objects
 in `manifest.json` (not zipped), uploads `exports/<org>/<timestamp>.zip` and returns a 24-hour
 signed URL; it removes that organisation's zips older than 7 days as it goes, and `{mode:
@@ -625,7 +625,17 @@ signed URL; it removes that organisation's zips older than 7 days as it goes, an
 purged with the organisation. Settings › Data: "Export all data (zip)" (admins); the deletion dialog
 points to it. Tests: `supabase/tests/organisation_export.sql` (29 checks), `cross_tenant.sql` (case
 for the new RPC), `_shared/organisation-export.test.ts`; the function typechecks with `deno check`.
-To finish: apply the migration, deploy `export-organisation`, add the Vault secret.
+Applied 12/11/2026 (merged to main before it was applied, so the live button failed until then).
+The first draft dropped and re-added `audit_log_action_check`; it was edited in place before
+applying to reuse `update`, as GL-11 does. Production recorded version `20261112093456` and the
+repo file was renamed to match. `export-organisation` was already deployed (version 2, verify_jwt
+on) with the merge, with code identical to the repo. Read-only checks on production: 143 tables
+exported, the `exports` bucket private with no storage policy naming it, the RPCs closed to
+`anon` (plan and rows to `authenticated` too), an unauthenticated start refused (42501), no
+`token_hash` in any organisation's invite rows, the function answering 401 without a token, the
+cron job `vpmo-export-cleanup` at 03:40 UTC. Regenerated types matched the committed file (the RPCs
+were already typed). To finish: add the Vault secret `organisation_export_url` (line in
+`docs/sql/gl-11b-organisation-export.sql`), then try "Export all data (zip)" as an admin.
 
 ### GL-12 Bugs: board date sort and selection hint
 
@@ -683,8 +693,10 @@ command palette and Home. Stop for my review before building.
 0 committee packs (3 collections, 3 reports, none published). Gaps to close in the report builder
 first: a `collection` scope, programme coverage and benefits-value blocks, cover text, a "Funding
 committee" template, and progress-chart meeting markers from published reports; then redirect,
-remove the nav entry, keep issued packs readable as an archive, and move `showLogo`. Decisions D-a
-to D-d in the plan.
+remove the nav entry and move `showLogo`. **Decided 12/11/2026:** D-a a real `collection` scope; D-b
+show pot vs requested; D-c a new `benefits_value` block; D-d `showLogo` client-side as proposed; no
+read-only archive (production has 0 committee packs): `/governance/committee-packs` redirects to
+`/governance/reports` and leaves navigation.
 
 ### GL-15 Report approver reminders
 
@@ -717,7 +729,9 @@ per-block overflow: blocks over 256 KB are published with a SHA-256 and their pa
 `report_snapshot_objects` (the snapshot row never changes). The viewer downloads through a bucket
 policy that mirrors `report_snapshots_select` and checks the hash; the print route gets 60-second
 signed URLs from a token-checked edge function; PPTX needs no change. SQL sketch and decisions in
-the doc.
+the doc. **Approved 12/11/2026, build deferred until a pack needs it:** option C, the proposed
+thresholds (256 KB per block, 2 MB inline, 50 MB per pack), overflowed payloads included in the
+GL-11b export zip, retries on `vpmo-report-notify`'s 15-minute schedule.
 
 ### GL-17 Multi-tenant health refresh measurement
 

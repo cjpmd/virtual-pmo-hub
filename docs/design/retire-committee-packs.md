@@ -1,6 +1,7 @@
 # GL-14 — One pack system: retire Committee (Funding) packs
 
-Status: **plan for review, no code** (11/11/2026). Written while Chris was away; nothing built.
+Status: **plan approved with decisions (12/11/2026), not built.** Written 11/11/2026; Chris's
+decisions D-a to D-d and the archive decision are in §5 and override the options below.
 Sources: `src/components/committee-pack.tsx` (1,128 lines), `committee-pack-list.tsx`,
 `services/committee-packs.ts`, `hooks/use-committee-packs.ts`, `routes/governance.committee-packs.tsx`,
 `routes/portfolio.collections.$collectionId.tsx`, `services/progress-chart.ts`, Settings › Templates,
@@ -60,9 +61,10 @@ Other places that depend on it:
 | `forums` | 21 |
 | organisations | 4 |
 
-No pack has ever been saved on production, so "keep existing packs readable as an archive" costs
-nothing today. The plan still keeps the table and a read-only viewer, because packs could be issued
-between now and the change, and the table is immutable by design.
+No pack has ever been saved on production, so there is nothing to archive. **Decided
+(12/11/2026): no read-only archive viewer.** `/governance/committee-packs` redirects to
+`/governance/reports` and leaves navigation; the `committee_packs` table stays (never dropped, no
+schema change), empty.
 
 ## 3. Gap: what Funding packs do that the report builder doesn't
 
@@ -99,13 +101,12 @@ Phased so nothing is lost and each step can ship alone.
 
 **Phase B — switch over (front end only)**
 6. Collection page: "New report for this collection" (G12); the issued list shows the collection's
-   published reports, plus any old funding packs under "Earlier funding packs".
+   published reports. (No "Earlier funding packs" list: production has none.)
 7. `/governance/committee-packs` **redirects to `/governance/reports`** (router `beforeLoad`
    redirect, keeping any `?collection=` as a filter). Remove "Funding packs" from navigation. Nothing on Home links to it.
-8. Archive viewer: issued funding packs stay readable from the collection page (and a "Funding
-   packs (archive)" link on the reports list, shown only when the organisation has any). Reuse
-   `CommitteePack` in its existing issued / read-only mode; drafts can no longer be created.
-   `committee_packs` keeps its triggers (no delete), so the archive can't be lost.
+8. ~~Archive viewer~~ **Dropped (12/11/2026):** production has 0 committee packs, so there is no
+   read-only archive. Drafts can no longer be created; `committee_packs` stays as an empty table
+   with its triggers.
 9. Settings › Templates: remove the Funding pack template card; move `showLogo` to a report-builder
    "Branding" setting (`templates.reports.showLogo`, defaulting to the old value) and update
    `narrative.tsx`.
@@ -118,6 +119,18 @@ Phased so nothing is lost and each step can ship alone.
     destructive statement for Chris to run by hand.
 
 ## 5. Risks and decisions for Chris
+
+**Decisions (Chris, 12/11/2026):**
+
+| # | Decision |
+|---|---|
+| D-a | A real **`collection` scope** (G1), not a custom scope. |
+| D-b | **Yes:** show the pot vs requested (`collections.pot_amount` against the collection's requested total), as part of G3's programme-coverage block. |
+| D-c | A **new `benefits_value` block** (G6); `benefits_summary` is unchanged. |
+| D-d | `showLogo` moves **client-side as proposed**: a settings-JSON change with a fallback read of the old key; no SQL. |
+| Archive | Production has 0 committee packs, so **no read-only archive**: `/governance/committee-packs` redirects to `/governance/reports` and is removed from navigation (and the command palette). |
+
+Options as written before the decisions:
 
 - **D-a: Collection scope or custom scope?** Recommended: a real `collection` scope (follows changes
   to the collection; the collection page can list its reports). Custom scope needs no schema change

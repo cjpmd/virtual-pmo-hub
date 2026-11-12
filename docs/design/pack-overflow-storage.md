@@ -1,7 +1,7 @@
 # GL-16 — Large report packs overflow to Storage
 
-Status: **design and SQL sketch for review, nothing built or applied** (11/11/2026, written while
-Chris was away). Decision RB-29 refused packs over 2 MB of snapshot data; this replaces the refusal
+Status: **approved, build deferred until a pack needs it** (decisions 12/11/2026, §4). Nothing
+built or applied; design and SQL sketch written 11/11/2026. Decision RB-29 refused packs over 2 MB of snapshot data; this replaces the refusal
 with an overflow to a private Storage bucket, keeping snapshots immutable and verifiable.
 
 ## 1. Today
@@ -177,6 +177,19 @@ because overflow writes are system writes (no signed-in user), which GL-4 alread
   overflowed block renders.
 
 ## 4. Decisions for Chris
+
+**Decided (Chris, 12/11/2026):**
+
+| # | Decision |
+|---|---|
+| 1 | **Option C**: per-block overflow to Storage. |
+| 2 | The proposed thresholds: **256 KB** per block to overflow, **2 MB** inline per pack, **50 MB** per pack. |
+| 3 | **Include** overflowed payloads in the GL-11b export zip (not just list them). |
+| 4 | Retries **reuse `vpmo-report-notify`'s 15-minute schedule**; no new cron job. |
+
+Build is deferred until a real pack needs it (RB-29's 2 MB refusal stays until then).
+
+Questions as written before the decisions:
 
 1. **Option C (per-block overflow to Storage)**, or option A (keep it in Postgres, simpler)?
 2. Thresholds: 256 KB per block to overflow, 2 MB inline, 50 MB per pack?
