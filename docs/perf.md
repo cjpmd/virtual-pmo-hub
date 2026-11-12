@@ -188,7 +188,7 @@ in as an admin of tenant 1 (`options.sql`); option B by rewriting the views with
 `MATERIALIZED` inside a rolled-back transaction (`option_b.sql`), which kept every row identical
 but let the planner choose worse plans and still not push the organisation filter down.
 
-### Recommendation: C, then make the nightly jobs per organisation
+### Recommendation: C, then make the nightly jobs per organisation (decided 12/11/2026: C, built as GL-17b)
 
 Run each organisation's refresh under RLS as that organisation, instead of as the owner:
 

@@ -663,4 +663,4 @@ scheduled pack drafts (`forums.auto_create_packs`, daily job), `lessons_learned`
 - [x] 2.1 Invites  - [ ] 2.2 Self sign-up  - [x] 2.3 Stripe
 - [ ] 3.1 Sprint schema  - [ ] 3.2 Sprint UI  - [ ] 3.3 Reports and forecast
 - [ ] 4.1 Notifications  - [ ] 4.2 AI drafting  - [ ] 4.3 Automations  - [ ] 4.4 Programme report
-- [ ] 5.x Planner  - [ ] 6.1 Multi-tenant refresh and RLS suite
+- [ ] 5.x Planner  - [x] 6.1 Multi-tenant refresh and RLS suite (measured and decided in GL-17; built as GL-17b)

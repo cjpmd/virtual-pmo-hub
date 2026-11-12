@@ -743,11 +743,32 @@ docs/build-plan.md, and docs/perf.md). Measure with 1, 2 and 5 tenants on a Supa
 recommend with numbers, and stop for my decision before any change. Tick 6.1 when decided.
 ```
 
-**Measured (12/11/2026), waiting for your decision:** local Postgres, 1 / 2 / 5 tenants of 500
-projects (`docs/perf.md` § Multi-tenant health refresh, `scripts/perf-multi-tenant/`). One
-organisation's refresh 3.9 s → 12.8 s → 62 s; nightly refresh-and-check 7.8 s → 48 s → 711 s;
-signed-in reads flat. Option C (refresh under RLS as an organisation admin) measured 4.4 s at 5
-tenants; option B (no `MATERIALIZED`) 80 s. Recommended: C, plus per-organisation snapshot capture.
+**Done (12/11/2026):** measured on the local Postgres, 1 / 2 / 5 tenants of 500 projects
+(`docs/perf.md` § Multi-tenant health refresh, `scripts/perf-multi-tenant/`). One organisation's
+refresh 3.9 s → 12.8 s → 62 s; nightly refresh-and-check 7.8 s → 48 s → 711 s; signed-in reads
+flat. Option C (refresh under RLS as an organisation admin) measured 4.4 s at 5 tenants; option B
+(no `MATERIALIZED`) 80 s. **Decided 12/11/2026: option C**, built as GL-17b.
+
+### GL-17b Health refresh per organisation under RLS [DB]
+
+After GL-17. **Before a second organisation with 150+ projects goes live.**
+
+```
+Work package GL-17b. Build option C from GL-17 (docs/perf.md § Multi-tenant health refresh):
+- private.refresh_health_current(org) computes the three live_* reads under RLS as that
+  organisation: set role authenticated with the claims of one of its admins for the reads, then
+  writes the *_health_current rows as now. No session setting or GUC that bypasses a guard
+  (CLAUDE.md); an organisation with no admin left is skipped and logged.
+- private.health_current_mismatches(org) (the nightly check) runs the same way, so
+  full_health_refresh_and_check costs about N × one organisation, not N².
+- private.capture_health_snapshots per organisation: read the stored *_health_current rows
+  (refreshed minutes before), or run per organisation under RLS the same way; say which.
+- Parity before switching: health_current_mismatches compared with today's owner (no RLS)
+  result for every organisation, zero differences, on the local Postgres with the 5-tenant perf
+  data and on production (read-only comparison) before the switch.
+- Re-measure with scripts/perf-multi-tenant/run.sh (1, 2 and 5 tenants) and update docs/perf.md.
+SQL first, then stop.
+```
 
 ### GL-18 Smaller main bundle
 
@@ -857,4 +878,4 @@ and delete the adapter layer. List every screen touched; e2e for that domain mus
 
 - [x] GL-1 Migrations  - [ ] GL-2 Cron  - [x] GL-3 Hide dead ends  - [x] GL-4 Read-only  - [x] GL-5 Banners  - [x] GL-6 Billing emails  - [ ] GL-7 Legal pages
 - [x] GL-8 Sector  - [x] GL-9 Sample data  - [x] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [x] GL-12 Bugs  - [ ] GL-13 Notifications  - [ ] GL-14 Committee packs
-- [ ] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [ ] GL-17 Multi-tenant  - [x] GL-18 Bundle  - [x] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters
+- [ ] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [x] GL-17 Multi-tenant  - [ ] GL-17b Refresh under RLS  - [x] GL-18 Bundle  - [x] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters
