@@ -33,6 +33,7 @@ import {
   listBlocks,
   newInstance,
   resolveConfig,
+  supportsScope,
 } from "../blocks/registry";
 import type { AnyBlockDefinition, BlockCategory, BlockInstance, ScopeLevel } from "../blocks/types";
 import {
@@ -47,7 +48,7 @@ const LIB_PREFIX = "lib:";
 const ZONES = { report: "zone:report", deep_dive: "zone:deep_dive" } as const;
 
 const supports = (definition: AnyBlockDefinition, scope: ScopeLevel | "any") =>
-  scope === "any" || definition.supportedScopes.includes(scope);
+  supportsScope(definition, scope);
 
 // ---------------------------------------------------------------- library
 function LibraryItem({ definition, onAdd }: { definition: AnyBlockDefinition; onAdd: () => void }) {

@@ -21,6 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useForumMembers, useForums } from "@/hooks/use-forums";
 import { usePortfolioNames, useProgrammeNames, useProjectNames } from "@/hooks/use-hierarchy";
+import { useCollections } from "@/hooks/use-collections";
 import {
   useForumReporting,
   useForumReportingMutations,
@@ -172,6 +173,7 @@ function ForumSettingsSheet({
   const projects = useProjectNames();
   const programmes = useProgrammeNames();
   const portfolios = usePortfolioNames();
+  const collections = useCollections();
   const { update, setRole } = useForumReportingMutations();
   const [form, setForm] = useState(() => ({
     forumType: (settings.forumType ?? "custom") as ForumType,
@@ -194,7 +196,9 @@ function ForumSettingsSheet({
         ? (programmes.data ?? []).map((p) => ({ id: p.id, name: p.name }))
         : form.scopeType === "portfolio"
           ? (portfolios.data ?? []).map((p) => ({ id: p.id, name: p.name }))
-          : [];
+          : form.scopeType === "collection"
+            ? (collections.data ?? []).map((c) => ({ id: c.id, name: c.name }))
+            : [];
   const tolValue = (key: string) => {
     const t = form.tolerances[key];
     return t !== null && typeof t === "object" ? t.value : t;
@@ -298,6 +302,7 @@ function ForumSettingsSheet({
                 <option value="project">Project</option>
                 <option value="programme">Programme</option>
                 <option value="portfolio">Portfolio</option>
+                <option value="collection">Collection</option>
               </select>
               {form.scopeType && (
                 <select

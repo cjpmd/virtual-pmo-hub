@@ -3,7 +3,8 @@
 import type { FC } from "react";
 import type { z } from "zod";
 
-export type ScopeLevel = "project" | "programme" | "portfolio" | "custom";
+/** "collection" (GL-14): a funding collection's projects, a hand-picked list like "custom". */
+export type ScopeLevel = "project" | "programme" | "portfolio" | "custom" | "collection";
 
 export type BlockCategory =
   | "meta"

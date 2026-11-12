@@ -27,14 +27,18 @@ interface CoverData {
   project_count: number;
   /** What the figures are as at (e.g. "All figures as at 31 Oct 2026"). */
   data_basis?: string | null;
+  /** The block's optional cover text (config cover_text, GL-14), as stored when published. */
+  cover_text?: string | null;
 }
+
+const coverSchema = z.object({ cover_text: z.string().max(2000).default("") });
 
 function Cover({
   data,
   ctx,
 }: {
   data: CoverData;
-  config: Record<string, never>;
+  config: z.infer<typeof coverSchema>;
   ctx: RenderContext;
 }) {
   const f = useReportFormat();
@@ -78,6 +82,11 @@ function Cover({
             Data basis: {data.data_basis}
           </p>
         )}
+        {data.cover_text && (
+          <p className="mt-3 max-w-3xl whitespace-pre-line text-sm leading-6" data-cover-text>
+            {data.cover_text}
+          </p>
+        )}
       </div>
       <div className="flex flex-wrap items-start gap-3">
         <div>
@@ -100,16 +109,17 @@ function Cover({
   );
 }
 
-export const _report_cover = registerBlock<Record<string, never>, CoverData>({
+export const _report_cover = registerBlock<z.infer<typeof coverSchema>, CoverData>({
   key: "report_cover",
   version: 1,
   name: "Cover",
   category: "meta",
-  description: "Title, forum, meeting date, as-at, overall rating and rationale, author.",
+  description:
+    "Title, forum, meeting date, as-at, overall rating and rationale, author, and optional cover text.",
   supportedScopes: ["project", "programme", "portfolio", "custom"],
   perEntity: false,
-  configSchema: z.object({}).passthrough() as never,
-  defaultConfig: {},
+  configSchema: coverSchema,
+  defaultConfig: { cover_text: "" },
   Renderer: Cover,
   partnerSafe: true,
   phase: 1,
