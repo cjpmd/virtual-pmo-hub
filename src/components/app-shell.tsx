@@ -83,7 +83,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [statusNode, setStatusNode] = useState<HTMLElement | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dark, setDark] = useState(false);
-  const { feed: notifications, read: readNotifications, markRead, unread } = useNotifications();
+  const {
+    feed: notifications,
+    read: readNotifications,
+    markRead,
+    markAllRead,
+    unread,
+  } = useNotifications();
   const [inbox, setInbox] = useState(false);
   const [palette, setPalette] = useState(false);
   const [query, setQuery] = useState("");
@@ -655,7 +661,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => markRead(notifications.map((item) => item.id))}
+                          onClick={markAllRead}
+                          disabled={unread === 0}
                         >
                           <CheckCheck />
                           Mark all read
@@ -665,10 +672,19 @@ export function AppShell({ children }: { children: ReactNode }) {
                         {notifications.slice(0, 6).map((item) => (
                           <button
                             key={item.id}
-                            onClick={() => markRead([item.id])}
+                            onClick={() => {
+                              markRead([item.id]);
+                              if (item.link) {
+                                setInbox(false);
+                                void navigate({ href: item.link });
+                              }
+                            }}
                             className={cn(
                               "block w-full py-3 text-left",
-                              !readNotifications.includes(item.id) && "font-semibold",
+                              !readNotifications.includes(item.id) &&
+                                !item.resolved &&
+                                "font-semibold",
+                              item.resolved && "text-muted-foreground",
                             )}
                           >
                             <span className="text-[10px] uppercase text-primary">{item.kind}</span>

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { BellRing, CheckCheck } from "lucide-react";
 import { AutoBreadcrumbs } from "@/components/section-nav";
@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/format";
 import { useSettings } from "@/services/settings";
 import { cn } from "@/lib/utils";
-import { useNotifications } from "@/hooks/use-notifications";
+import { useNotificationPreferences, useNotifications } from "@/hooks/use-notifications";
+import { effectiveDigest, DIGEST_LABEL } from "@/lib/notification-settings";
 const title = "Notifications — ORMO PMO",
   description = "Everything the workspace has told you, and how you are told.";
 export const Route = createFileRoute("/home/notifications")({
@@ -26,7 +27,10 @@ export const Route = createFileRoute("/home/notifications")({
 
 function Page() {
   const settings = useSettings();
-  const { feed, read, markRead } = useNotifications();
+  const { feed, read, markRead, markAllRead, unread } = useNotifications();
+  const { preferences } = useNotificationPreferences();
+  const navigate = useNavigate();
+  const digest = effectiveDigest(settings.notifications, preferences.digest);
   const [filter, setFilter] = useState("All");
   const kinds = ["All", ...Array.from(new Set(feed.map((item) => item.kind)))];
   const shown = feed.filter((item) => filter === "All" || item.kind === filter);
@@ -36,9 +40,9 @@ function Page() {
       <PageHeader
         eyebrow="Personal workspace"
         title="Notifications"
-        description="Everything the workspace has raised with you. Channels and per-event toggles are configured in Settings → Notifications."
+        description="Everything the workspace has raised with you. Choose what you're told, and how, in Settings → Account."
         actions={
-          <Button variant="outline" onClick={() => markRead(feed.map((item) => item.id))}>
+          <Button variant="outline" onClick={markAllRead} disabled={unread === 0}>
             <CheckCheck />
             Mark all read
           </Button>
@@ -47,14 +51,14 @@ function Page() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           label="Unread"
-          value={String(feed.filter((item) => !read.includes(item.id)).length)}
-          detail={`${feed.length} needing attention`}
+          value={String(unread)}
+          detail={`${feed.filter((item) => !item.resolved).length} needing attention`}
           icon="projects"
         />
         <KpiCard
-          label="Digest"
-          value={settings.notifications.digest}
-          detail="Delivery cadence"
+          label="Email"
+          value={DIGEST_LABEL[digest]}
+          detail={preferences.digest ? "Your choice" : "Organisation default"}
           icon="forecast"
         />
         <KpiCard
@@ -92,24 +96,34 @@ function Page() {
           {shown.map((item) => (
             <button
               key={item.id}
-              onClick={() => markRead([item.id])}
+              onClick={() => {
+                markRead([item.id]);
+                if (item.link) void navigate({ href: item.link });
+              }}
               className={cn(
                 "flex w-full items-start gap-3 p-4 text-left hover:bg-accent/30",
-                !read.includes(item.id) && "bg-primary/[0.03]",
+                !read.includes(item.id) && !item.resolved && "bg-primary/[0.03]",
+                item.resolved && "text-muted-foreground",
               )}
             >
               <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-md bg-accent text-accent-foreground">
                 <BellRing className="size-4" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className={cn("text-sm", !read.includes(item.id) && "font-semibold")}>
+                <p
+                  className={cn(
+                    "text-sm",
+                    !read.includes(item.id) && !item.resolved && "font-semibold",
+                  )}
+                >
                   {item.text}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {item.kind} · {item.channel} · {formatDate(item.date)}
+                  {item.kind} · {formatDate(item.date)}
+                  {item.resolved && " · Resolved"}
                 </p>
               </div>
-              {!read.includes(item.id) && (
+              {!read.includes(item.id) && !item.resolved && (
                 <span className="mt-2 size-2 shrink-0 rounded-full bg-primary" />
               )}
             </button>

@@ -1,6 +1,7 @@
 // GL-3: features that aren't live stay hidden from customers (Planner sync behind
 // VITE_PLANNER_SYNC, sprint delivery behind VITE_SPRINT_DELIVERY, the email / Teams / digest
-// notification settings until GL-13). Runs with the flags at their defaults (off).
+// notification settings until GL-13; Teams until Planner sync). Runs with the flags at their
+// defaults (off).
 import { expect, expectNoErrorBoundary, settle, test } from "./fixtures";
 
 test("/connect-microsoft redirects to Settings", async ({ page }) => {
@@ -17,13 +18,17 @@ test("Settings › Integrations says Planner sync is coming later", async ({ pag
   await expectNoErrorBoundary(page);
 });
 
-test("Settings › Notifications offers In-app only", async ({ page }) => {
+test("Settings › Notifications offers In-app and Email, not Teams", async ({ page }) => {
+  // GL-13 brought back Email and the digest; Teams waits for Planner sync.
   await page.goto("/settings/notifications");
   await settle(page);
   await expect(page.getByRole("switch", { name: "In-app", exact: true })).toBeVisible();
-  await expect(page.getByRole("switch", { name: "Email", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("switch", { name: "Email", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Default email digest")).toBeVisible();
   await expect(page.getByRole("switch", { name: "Microsoft Teams", exact: true })).toHaveCount(0);
-  await expect(page.getByText("Digest frequency")).toHaveCount(0);
+  // Only events the database raises are offered.
+  await expect(page.getByRole("switch", { name: "Gate criteria failing" })).toHaveCount(0);
+  await expect(page.getByRole("switch", { name: "Task overdue" })).toBeVisible();
   await expectNoErrorBoundary(page);
 });
 

@@ -30,7 +30,6 @@ import {
   dayNames,
   locales,
   monthNames,
-  notificationEvents,
   timeZones,
 } from "@/data/settings-data";
 import type { AppSettings, PermissionKey, TermKey } from "@/data/settings-types";
@@ -75,6 +74,7 @@ import { portfolioCsv, settingsJson } from "@/services/data-transfer";
 import { exportAllData } from "@/services/organisation-export";
 import { errorMessage } from "@/services/service-error";
 import { toast } from "sonner";
+import { SUPPORTED_EVENTS } from "@/lib/notification-settings";
 
 const sample = 1_248_500;
 const patch = <K extends keyof AppSettings>(key: K, value: Partial<AppSettings[K]>) =>
@@ -1574,11 +1574,18 @@ export function NotificationSettings() {
   const set = (value: Partial<AppSettings["notifications"]>) => patch("notifications", value);
   return (
     <>
-      <SettingsCard title="Channels" description="Where notifications are delivered.">
+      <SettingsCard
+        title="Channels"
+        description="Where notifications are delivered. Each person can turn kinds off, or change how often they get email, in Settings › Account."
+      >
         <div className="grid gap-3 sm:grid-cols-3">
-          {/* Email, Teams and the digest come back with real notifications (GL-13); Teams with
-              Planner sync. The stored values are left as they are. */}
-          {([["inApp", "In-app"]] as const).map(([key, label]) => (
+          {/* Teams comes back with Planner sync; its stored value is left as it is. */}
+          {(
+            [
+              ["inApp", "In-app"],
+              ["email", "Email"],
+            ] as const
+          ).map(([key, label]) => (
             <label key={key} className="flex items-center justify-between rounded-md border p-4">
               <span className="text-sm font-medium">{label}</span>
               <Switch
@@ -1590,11 +1597,25 @@ export function NotificationSettings() {
               />
             </label>
           ))}
+          <SelectField
+            label="Default email digest"
+            value={notifications.channels.email ? notifications.digest : "Off"}
+            onChange={(value) => set({ digest: value as AppSettings["notifications"]["digest"] })}
+            options={
+              notifications.channels.email
+                ? [
+                    { value: "Real time", label: "As they happen" },
+                    { value: "Daily", label: "Daily (07:30)" },
+                    { value: "Weekly", label: "Weekly (Mondays)" },
+                  ]
+                : [{ value: "Off", label: "Email is off" }]
+            }
+          />
         </div>
       </SettingsCard>
       <SettingsCard
         title="Events"
-        description="Turn individual notifications on or off."
+        description="Turn individual notifications on or off for everyone in the organisation."
         actions={
           <div className="flex gap-2">
             <Button
@@ -1602,7 +1623,10 @@ export function NotificationSettings() {
               variant="outline"
               onClick={() =>
                 set({
-                  events: Object.fromEntries(notificationEvents.map((event) => [event, true])),
+                  events: {
+                    ...notifications.events,
+                    ...Object.fromEntries(SUPPORTED_EVENTS.map((event) => [event, true])),
+                  },
                 })
               }
             >
@@ -1613,7 +1637,10 @@ export function NotificationSettings() {
               variant="outline"
               onClick={() =>
                 set({
-                  events: Object.fromEntries(notificationEvents.map((event) => [event, false])),
+                  events: {
+                    ...notifications.events,
+                    ...Object.fromEntries(SUPPORTED_EVENTS.map((event) => [event, false])),
+                  },
                 })
               }
             >
@@ -1623,14 +1650,14 @@ export function NotificationSettings() {
         }
       >
         <div className="grid gap-2 sm:grid-cols-2">
-          {notificationEvents.map((event) => (
+          {SUPPORTED_EVENTS.map((event) => (
             <label
               key={event}
               className="flex items-center justify-between gap-3 rounded-md border px-3 py-2.5"
             >
               <span className="text-sm">{event}</span>
               <Switch
-                checked={Boolean(notifications.events[event])}
+                checked={notifications.events[event] !== false}
                 onCheckedChange={(value) =>
                   set({ events: { ...notifications.events, [event]: value } })
                 }
