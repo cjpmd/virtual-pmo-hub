@@ -1,5 +1,5 @@
 -- GL-9 follow-up: published packs record whether each deep-dive project was sample data.
--- NOT APPLIED to production: tested on the local Postgres only (supabase/tests/sample_data.sql).
+-- Applied to production on 15/11/2026 after testing on the local Postgres (supabase/tests/sample_data.sql).
 -- docs/sql/gl-9-snapshot-sample.sql is identical. Nothing destructive: one function replaced
 -- (create or replace keeps its grants); snapshots already published are not rewritten.
 --
