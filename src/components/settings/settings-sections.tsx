@@ -75,6 +75,7 @@ import { portfolioCsv, settingsJson } from "@/services/data-transfer";
 import { exportAllData } from "@/services/organisation-export";
 import { errorMessage } from "@/services/service-error";
 import { toast } from "sonner";
+import { reportShowLogo } from "@/lib/report-branding";
 
 const sample = 1_248_500;
 const patch = <K extends keyof AppSettings>(key: K, value: Partial<AppSettings[K]>) =>
@@ -1648,14 +1649,6 @@ export function TemplateSettings() {
   const settings = useSettings();
   const templates = settings.templates;
   const set = (value: Partial<AppSettings["templates"]>) => patch("templates", value);
-  const move = (index: number, direction: -1 | 1) => {
-    const order = [...templates.committeePack.sectionOrder];
-    const target = index + direction;
-    if (target < 0 || target >= order.length) return;
-    const [item] = order.splice(index, 1);
-    if (item) order.splice(target, 0, item);
-    set({ committeePack: { ...templates.committeePack, sectionOrder: order } });
-  };
   return (
     <>
       <SettingsCard
@@ -1695,60 +1688,17 @@ export function TemplateSettings() {
         />
       </SettingsCard>
       <SettingsCard
-        title="Funding pack template"
-        description="Page order, cover text and whether the organisation logo appears."
+        title="Board and committee packs"
+        description="Branding on the cover of reports built in Governance › Reports."
       >
-        <div className="space-y-2">
-          {templates.committeePack.sectionOrder.map((section, index) => (
-            <div key={section} className="flex items-center gap-2 rounded-md border px-3 py-2">
-              <span className="grid size-6 place-items-center rounded bg-muted text-xs font-semibold">
-                {index + 1}
-              </span>
-              <span className="flex-1 text-sm">{section}</span>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => move(index, -1)}
-                disabled={index === 0}
-                aria-label={`Move ${section} up`}
-              >
-                ↑
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => move(index, 1)}
-                disabled={index === templates.committeePack.sectionOrder.length - 1}
-                aria-label={`Move ${section} down`}
-              >
-                ↓
-              </Button>
-            </div>
-          ))}
-        </div>
-        <div className="mt-4 grid gap-4">
-          <Field label="Cover text">
-            <Textarea
-              rows={2}
-              value={templates.committeePack.coverText}
-              onChange={(event) =>
-                set({
-                  committeePack: { ...templates.committeePack, coverText: event.target.value },
-                })
-              }
-            />
-          </Field>
-          <label className="flex items-center justify-between rounded-md border p-4">
-            <span className="text-sm font-medium">Show the organisation logo on the cover</span>
-            <Switch
-              checked={templates.committeePack.showLogo}
-              onCheckedChange={(value) =>
-                set({ committeePack: { ...templates.committeePack, showLogo: value } })
-              }
-              aria-label="Show logo"
-            />
-          </label>
-        </div>
+        <label className="flex items-center justify-between rounded-md border p-4">
+          <span className="text-sm font-medium">Show the organisation logo on the cover</span>
+          <Switch
+            checked={reportShowLogo(settings)}
+            onCheckedChange={(value) => set({ reports: { ...templates.reports, showLogo: value } })}
+            aria-label="Show logo"
+          />
+        </label>
       </SettingsCard>
     </>
   );

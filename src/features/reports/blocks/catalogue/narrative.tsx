@@ -12,6 +12,7 @@ import { useNarrativeEditing } from "../narrative-context";
 import { BlockNote, Empty, RatingChip, useReportFormat } from "../primitives";
 import type { RenderContext } from "../types";
 import { orgDisplayNames, orgInitials, useSettings } from "@/services/settings";
+import { reportShowLogo } from "@/lib/report-branding";
 
 // ---------------------------------------------------------------- report_cover
 interface CoverData {
@@ -43,7 +44,7 @@ function Cover({
 }) {
   const f = useReportFormat();
   const settings = useSettings();
-  const showLogo = settings.templates.committeePack.showLogo;
+  const showLogo = reportShowLogo(settings);
   const logoUrl = settings.organisation.logoDataUrl;
   const { name: orgName, shortName } = orgDisplayNames(settings);
   return (

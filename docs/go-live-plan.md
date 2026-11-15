@@ -701,6 +701,13 @@ read-only archive (production has 0 committee packs): `/governance/committee-pac
 `20261112115133_gl_14a_report_builder_gaps` (`docs/sql/gl-14a-report-builder-gaps.sql`, section 0
 run by hand first); details in `docs/design/retire-committee-packs.md` §7. Phase B (redirect, navigation,
 collection page, Settings, copy, `showLogo`) is a later package.
+**Phase B built (12/11/2026), not merged:** front end only; details in
+`docs/design/retire-committee-packs.md` §8. `/governance/committee-packs` redirects to
+`/governance/reports` (keeping `?collection=` as a filter), "Funding packs" left navigation, the
+collection page starts a collection-scoped report from the "Funding committee" template and lists
+the collection's published reports, Settings › Templates has a "Board and committee packs" logo
+switch (`templates.reports.showLogo`, falling back to the old key), and the product and pricing
+copy say "board and committee packs". Phase C (deleting the draft-building code) stays optional.
 
 ### GL-15 Report approver reminders
 
@@ -905,5 +912,5 @@ and delete the adapter layer. List every screen touched; e2e for that domain mus
 ## Progress
 
 - [x] GL-1 Migrations  - [ ] GL-2 Cron  - [x] GL-3 Hide dead ends  - [x] GL-4 Read-only  - [x] GL-5 Banners  - [x] GL-6 Billing emails  - [ ] GL-7 Legal pages
-- [x] GL-8 Sector  - [x] GL-9 Sample data  - [x] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [x] GL-12 Bugs  - [ ] GL-13 Notifications  - [ ] GL-14 Committee packs
+- [x] GL-8 Sector  - [x] GL-9 Sample data  - [x] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [x] GL-12 Bugs  - [ ] GL-13 Notifications  - [x] GL-14 Committee packs
 - [x] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [x] GL-17 Multi-tenant  - [ ] GL-17b Refresh under RLS  - [x] GL-18 Bundle  - [x] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters
