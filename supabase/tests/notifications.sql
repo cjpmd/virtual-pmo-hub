@@ -258,7 +258,10 @@ begin
   exception when insufficient_privilege then perform pg_temp.as_postgres();
   end;
   checks := checks + 1;
-  -- A fresh decision due for the chair (immediate) and a task for Pete (daily).
+  -- Vera's address bounced (latest Resend status on an invitation), as send-billing-notice checks.
+  insert into public.organisation_invites (organisation_id, email, role, email_status, email_status_at)
+  values (org, 'viewer@reports-demo.test', 'viewer', 'bounced', now());
+  -- A fresh decision due for the chair (immediate) and a task for Pete and Vera (daily).
   update public.decisions set status = 'pending', needed_by_date = date '2026-11-13' where id = dec;
   update public.work_items set status = 'in_progress', finish_date = date '2026-11-11' where id = task;
   perform private.generate_notifications(org);
@@ -273,13 +276,26 @@ begin
   pend := public.pending_notification_emails('digest');
   assert pend @> '[{"email": "pm@reports-demo.test", "digest": "daily"}]', 'digest includes Pete: ' || pend::text;
   assert not pend @> '[{"email": "chair@reports-demo.test"}]', 'digest leaves out the immediate people';
+  assert not pend @> '[{"email": "viewer@reports-demo.test"}]', 'bounced address not emailed: ' || pend::text;
+  assert (select bool_and(jsonb_array_length(x -> 'items') > 0 and (x ->> 'total')::int > 0) from jsonb_array_elements(pend) x),
+    'every entry has something in it';
+  perform public.mark_notification_emails(array(select (i ->> 'id')::uuid from jsonb_array_elements(pend) x,
+    jsonb_array_elements(x -> 'items') i), 'sent');
+  assert public.pending_notification_emails('digest') = '[]'::jsonb, 'nothing left: no empty digests';
   perform pg_temp.as_postgres();
+  assert (select bool_and(email_skip_reason = 'bounced') and count(*) > 0 from public.notifications
+          where recipient_id = u_viewer and kind = 'task_overdue' and resolved_at is null and email_skipped_at is not null),
+    'bounced recorded as skipped';
+  assert (select bool_and(email_skip_reason = 'read_or_resolved') from public.notifications
+          where read_at is not null and email_skipped_at is not null), 'read rows skipped with their reason';
+  assert (select bool_and(email_skip_reason = 'in_app_only') from public.notifications where kind = 'pack_drafted'),
+    'draft packs in-app only';
   -- Read notifications aren't emailed (they were marked read above, so they are skipped now).
   assert (select count(*) from public.notifications where read_at is not null and emailed_at is null and email_skipped_at is null) = 0,
     'read rows are skipped';
   -- Draft packs are never in the digest (report-notify emails them).
   assert not exists (select 1 from public.notifications where kind = 'pack_drafted' and emailed_at is not null), 'no draft packs';
-  checks := checks + 8;
+  checks := checks + 13;
 
   -- Unsubscribe: anon with the token turns the digest off; a wrong token does nothing.
   perform pg_temp.as_role('anon');
@@ -294,8 +310,20 @@ begin
   update public.organisation_subscriptions set plan = 'trial', status = null, trial_ends_at = now() - interval '1 day'
   where organisation_id = org;
   if not private.organisation_is_writable(org) then
+    -- In-app carries on: a newly overdue task is still raised.
+    update public.work_items set finish_date = date '2026-11-08' where id = task;
     res := private.generate_notifications(org);
-    assert res ->> 'skipped' = 'read_only', 'read-only organisation skipped: ' || res::text;
+    assert not res ? 'skipped' and pg_temp.open_count('task_overdue', u_pm) = 1
+       and (select due_date from public.notifications where entity_id = task and recipient_id = u_pm and resolved_at is null) = date '2026-11-08',
+       'read-only organisation: in-app notifications continue: ' || res::text;
+    -- Email doesn't: nobody in the organisation is emailed, and the rows record why.
+    perform pg_temp.as_role('service_role');
+    assert public.pending_notification_emails('digest') = '[]'::jsonb
+       and public.pending_notification_emails('immediate') = '[]'::jsonb, 'read-only: no email';
+    perform pg_temp.as_postgres();
+    assert (select email_skip_reason from public.notifications where entity_id = task and recipient_id = u_pm and due_date = date '2026-11-08')
+       = 'read_only', 'read-only recorded as the skip reason';
+    checks := checks + 3;
     -- Marking read still works while read-only (no read-only trigger on notifications).
     perform pg_temp.as_user(u_chair);
     perform public.mark_notifications_read(org);

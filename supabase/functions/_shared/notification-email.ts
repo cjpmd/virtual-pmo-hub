@@ -68,6 +68,12 @@ const ADDRESS = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const base = (appUrl: string) => appUrl.replace(/\/$/, "");
 export const unsubscribeLink = (appUrl: string, token: string) =>
   `${base(appUrl)}/notifications/unsubscribe?token=${encodeURIComponent(token)}`;
+/** RFC 8058 one-click unsubscribe: mail clients POST "List-Unsubscribe=One-Click" to the same
+ *  /notifications/unsubscribe link, which the app's server handler accepts. */
+export const unsubscribeHeaders = (appUrl: string, token: string) => ({
+  "List-Unsubscribe": `<${unsubscribeLink(appUrl, token)}>`,
+  "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+});
 export const settingsLink = (appUrl: string) => `${base(appUrl)}/settings/account`;
 /** An app path from the database ("/home/my-work") as a full link; anything else is ignored. */
 export const itemLink = (appUrl: string, link: string | null) =>
@@ -162,6 +168,7 @@ async function sendMode(
       ...email,
       idempotencyKey: `notifications/${entry.organisation_id}/${entry.recipient_id}/${ids[0]}/${ids.length}`,
       tags: [{ name: "type", value: mode === "immediate" ? "notification" : "notification_digest" }],
+      headers: unsubscribeHeaders(appUrl, entry.unsubscribe_token),
     });
     if (sent.error) {
       // Left waiting: the next run (or tomorrow's digest) tries again.

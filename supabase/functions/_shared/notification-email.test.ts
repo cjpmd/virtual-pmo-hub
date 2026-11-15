@@ -82,6 +82,10 @@ describe("sendNotificationEmails", () => {
     expect(send).toHaveBeenCalledTimes(2);
     expect(send.mock.calls[0]![0].to).toBe("pete@example.org");
     expect(send.mock.calls[0]![0].idempotencyKey).toBe("notifications/org1/p1/n2/2");
+    expect(send.mock.calls[0]![0].headers).toEqual({
+      "List-Unsubscribe": `<https://pmo.example.org/notifications/unsubscribe?token=${"t".repeat(64)}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    });
     expect(a.calls.map(([fn]) => fn)).toEqual([
       "pending_notification_emails",
       "mark_notification_emails",

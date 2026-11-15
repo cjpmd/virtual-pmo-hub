@@ -675,7 +675,7 @@ stays hidden until Planner sync. Move the read state out of localStorage into th
 SQL first, then stop. Tick 4.1 when done.
 ```
 
-**Built (12/11/2026), NOT applied, not merged:** migration `20261112130000_gl_13_notifications`
+**Built (12/11/2026); applied and deployed 15/11/2026, not merged:** migration `20261115152409_gl_13_notifications`
 (`docs/sql/gl-13-notifications.sql`), tested on the local Postgres only. `public.notifications` (one
 row per recipient, kind, entity and due date; RLS: own rows; no direct writes; no read-only trigger,
 like `user_favourites`, listed in AGENTS.md and `read_only_mode.sql`). Kinds: `task_overdue`,
@@ -697,6 +697,16 @@ and only the events that are raised (Teams stays hidden), Settings â€º Account â
 Tests: `supabase/tests/notifications.sql` (64 checks), `cross_tenant.sql` (cases for the new RPCs,
 `unsubscribe_notification_emails` on the anon list), `read_only_mode.sql`, `organisation_purge.sql`,
 `account_closure.sql`; unit tests for the email module, the feed and the settings helpers.
+**Before applying (15/11/2026):** read-only organisations keep getting in-app notifications but
+no email; empty digests can't be produced; addresses Resend last reported as bounced or suppressed
+are skipped (same rule as `send-billing-notice`, `private.email_bounced`), and every skipped row
+records why in `notifications.email_skip_reason`; emails carry `List-Unsubscribe` and
+`List-Unsubscribe-Post: List-Unsubscribe=One-Click`, and `/notifications/unsubscribe` takes the
+one-click POST through a TanStack Start server handler (the page itself now asks for a click, so
+link scanners can't unsubscribe anyone). Applied to production (recorded `20261115152409`; all 18
+functions md5-identical to the local build), types regenerated (match apart from existing line
+wrapping), `send-notification-email` deployed (version 1, verify_jwt on; 401 without a token, 403
+for the anon key). To finish: add the Vault secret `notification_email_url` (line in the SQL file).
 
 ### GL-14 One pack system: retire Committee packs
 

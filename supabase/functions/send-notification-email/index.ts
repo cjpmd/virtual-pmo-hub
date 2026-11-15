@@ -1,6 +1,6 @@
 // GL-13: emails notifications ("as they happen", and the daily / weekly digest). Service role
 // only: called every 15 minutes by the vpmo-notifications job in migration
-// 20261112130000_gl_13_notifications (URL from the Vault secret notification_email_url, key from
+// 20261115152409_gl_13_notifications (URL from the Vault secret notification_email_url, key from
 // report_notify_service_key), with body {"mode": "immediate" | "all"}.
 // Secrets: RESEND_API_KEY, RESEND_FROM, APP_URL.
 import { APP_URL, adminClient, json, serve } from "../_shared/http.ts";

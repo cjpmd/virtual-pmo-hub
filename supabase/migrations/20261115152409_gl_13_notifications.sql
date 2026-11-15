@@ -1,5 +1,5 @@
 -- GL-13 Real notifications (build plan 4.1). docs/sql/gl-13-notifications.sql is identical.
--- NOT APPLIED to production: tested on the local Postgres only (supabase/tests/notifications.sql).
+-- Applied to production on 15/11/2026 after testing on the local Postgres (supabase/tests/notifications.sql).
 -- Additive only: no drop or truncate, and nothing is deleted when it is applied. The one delete is
 -- inside a trigger function: closing an account removes that person's own notifications (§7).
 --
@@ -10,7 +10,7 @@
 --     they were about no longer applies (task done, decision made, dependency back on track).
 --   * private.generate_notifications(org): the five daily rules the browser hook used to work out
 --     (overdue tasks, decisions due or overdue, overdue benefit measurements, off-track
---     dependencies, system-drafted packs) for every writable organisation.
+--     dependencies, system-drafted packs) for every organisation, read-only ones included.
 --   * Immediate triggers: a task issued to you (work_item_offers insert) and a decision recorded
 --     on your project or that you were to make (decisions.status leaving pending).
 --   * Per-user preferences in profiles.preferences -> 'notifications' (no new table): email
@@ -27,9 +27,15 @@
 -- Read-only organisations (GL-4)
 --   public.notifications has NO zz_org_read_only trigger, like user_favourites: its rows are a
 --   person's own inbox, written by the system, and marking one read must keep working while the
---   organisation is read-only. The generator and the email job skip organisations that aren't
---   writable (lapsed, or pending deletion), so nothing new is raised for them. The exemption is
---   listed in supabase/tests/read_only_mode.sql and AGENTS.md.
+--   organisation is read-only. In-app notifications carry on for read-only organisations (lapsed,
+--   or pending deletion); email doesn't: their rows are marked email-skipped ('read_only'). The
+--   exemption is listed in supabase/tests/read_only_mode.sql and AGENTS.md.
+--
+-- Email rules (pending_notification_emails), each skipped row records why in email_skip_reason:
+--   in_app_only (draft packs: report-notify emails them), read_or_resolved, too_old (8 days),
+--   not_member, read_only, turned_off (organisation or person), no_address, bounced (the
+--   address's latest Resend status is bounced or suppressed, the rule send-billing-notice uses).
+--   Only people with at least one row left get an email, so there are no empty digests.
 
 -- =====================================================================================
 -- 1. Table
@@ -50,12 +56,15 @@ create table public.notifications (
   resolved_at timestamptz,
   emailed_at timestamptz,
   email_skipped_at timestamptz,
+  email_skip_reason text,
   constraint notifications_kind_check check (kind in (
     'task_overdue', 'task_issued', 'decision_due', 'decision_recorded',
     'measurement_overdue', 'dependency_off_track', 'pack_drafted')),
   constraint notifications_entity_type_check check (entity_type in (
     'work_item', 'work_item_offer', 'decision', 'benefit_measure', 'dependency', 'report')),
   constraint notifications_text_check check (char_length(text) between 1 and 500),
+  constraint notifications_email_skip_reason_check check (email_skip_reason is null or email_skip_reason in (
+    'in_app_only', 'read_or_resolved', 'too_old', 'not_member', 'read_only', 'turned_off', 'no_address', 'bounced')),
   constraint notifications_link_check check (link is null or (link like '/%' and char_length(link) <= 300)),
   constraint notifications_unique unique (recipient_id, kind, entity_id, due_date),
   foreign key (workspace_id, organisation_id) references public.workspaces (id, organisation_id)
@@ -292,9 +301,7 @@ declare
   v_n integer;
   r record;
 begin
-  if not private.organisation_is_writable(p_org) then
-    return jsonb_build_object('organisation_id', p_org, 'skipped', 'read_only');
-  end if;
+  -- Read-only organisations are not skipped: in-app notifications carry on (email doesn't).
 
   -- 4a. Overdue tasks, to their assignees: one per task, keyed by its finish date.
   for r in
@@ -533,11 +540,29 @@ create table private.notification_runs (
 );
 revoke all on private.notification_runs from public, anon, authenticated;
 
+-- Whether Resend last reported this address as bounced or suppressed: its latest delivery status
+-- on any invitation (2.1), the rule send-billing-notice uses (GL-6).
+create function private.email_bounced(p_email text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce((
+    select i.email_status in ('bounced', 'suppressed')
+    from public.organisation_invites i
+    where lower(i.email) = lower(trim(p_email)) and i.email_status is not null
+    order by i.email_status_at desc nulls last
+    limit 1), false);
+$$;
+revoke execute on function private.email_bounced(text) from public, anon, authenticated;
+
 -- Emails due. p_mode 'immediate': everyone whose digest is "as they happen". p_mode 'digest':
 -- everyone on daily, and on weekly when it's Monday in London. One entry per (organisation,
--- person) with up to 50 items and a fresh unsubscribe token. Rows that will never be emailed
--- (person or organisation switched it off, already read or resolved, draft packs, not a member
--- any more, read-only organisation) are marked email_skipped_at here.
+-- person) with at least one notification (never an empty digest), up to 50 items and a fresh
+-- unsubscribe token. Rows that will never be emailed are marked email_skipped_at here, with the
+-- reason in email_skip_reason (first that applies, in the order below).
 create function public.pending_notification_emails(p_mode text)
 returns jsonb
 language plpgsql
@@ -554,8 +579,23 @@ begin
     raise exception 'mode must be immediate or digest' using errcode = '22023';
   end if;
 
-  update public.notifications n set email_skipped_at = now()
-  where n.emailed_at is null and n.email_skipped_at is null and (
+  update public.notifications n
+  set email_skipped_at = now(),
+      email_skip_reason = case
+        when n.kind = 'pack_drafted' then 'in_app_only'
+        when n.read_at is not null or n.resolved_at is not null then 'read_or_resolved'
+        when n.created_at < now() - interval '8 days' then 'too_old'
+        when not exists (select 1 from public.organisation_members m
+                         where m.organisation_id = n.organisation_id and m.profile_id = n.recipient_id) then 'not_member'
+        when not private.organisation_is_writable(n.organisation_id) then 'read_only'
+        when private.notification_digest(n.organisation_id, n.recipient_id) = 'off'
+          or not private.notification_kind_enabled(n.organisation_id, n.kind)
+          or not private.notification_channel_on(n.recipient_id, n.kind, 'email') then 'turned_off'
+        when nullif(trim(p.email), '') is null then 'no_address'
+        when private.email_bounced(p.email) then 'bounced'
+      end
+  from public.profiles p
+  where p.id = n.recipient_id and n.emailed_at is null and n.email_skipped_at is null and (
     n.kind = 'pack_drafted'
     or n.read_at is not null or n.resolved_at is not null
     or n.created_at < now() - interval '8 days'
@@ -563,7 +603,9 @@ begin
     or not private.organisation_is_writable(n.organisation_id)
     or private.notification_digest(n.organisation_id, n.recipient_id) = 'off'
     or not private.notification_kind_enabled(n.organisation_id, n.kind)
-    or not private.notification_channel_on(n.recipient_id, n.kind, 'email'));
+    or not private.notification_channel_on(n.recipient_id, n.kind, 'email')
+    or nullif(trim(p.email), '') is null
+    or private.email_bounced(p.email));
 
   for r in
     select n.organisation_id, n.recipient_id, o.name as organisation_name, p.email, p.display_name,
@@ -574,13 +616,13 @@ begin
     join public.organisations o on o.id = n.organisation_id
     join public.profiles p on p.id = n.recipient_id
     where n.emailed_at is null and n.email_skipped_at is null
-      and coalesce(p.email, '') <> ''
       and case private.notification_digest(n.organisation_id, n.recipient_id)
             when 'immediate' then p_mode = 'immediate'
             when 'daily' then p_mode = 'digest'
             when 'weekly' then p_mode = 'digest' and v_weekly
             else false end
     group by n.organisation_id, n.recipient_id, o.name, p.email, p.display_name
+    having count(*) > 0
   loop
     v_token := replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '');
     insert into private.notification_unsubscribe_tokens (token_hash, profile_id)
@@ -597,7 +639,8 @@ begin
 end;
 $$;
 
--- Marks the notifications in one email: 'sent' sets emailed_at, 'skipped' email_skipped_at.
+-- Marks the notifications in one email: 'sent' sets emailed_at, 'skipped' email_skipped_at
+-- (reason no_address: the edge function found the address unusable).
 -- Only rows still waiting change, so a retry can't double-mark.
 create function public.mark_notification_emails(p_ids uuid[], p_outcome text)
 returns integer
@@ -613,7 +656,9 @@ begin
   end if;
   update public.notifications
   set emailed_at = case when p_outcome = 'sent' then now() end,
-      email_skipped_at = case when p_outcome = 'skipped' then now() end
+      email_skipped_at = case when p_outcome = 'skipped' then now() end,
+      -- The edge function skips only addresses it can't send to.
+      email_skip_reason = case when p_outcome = 'skipped' then 'no_address' end
   where id = any (p_ids) and emailed_at is null and email_skipped_at is null;
   get diagnostics v_count = row_count;
   return v_count;

@@ -17,6 +17,8 @@ export type EmailMessage = {
   /** <email-type>/<entity-id>/<per-send part>: a retry never sends twice; a new send gets a new key. */
   idempotencyKey: string;
   tags?: Array<{ name: string; value: string }>;
+  /** Extra email headers, e.g. List-Unsubscribe (GL-13). */
+  headers?: Record<string, string>;
 };
 
 export type EmailError = { status: number; name: string; message: string };
@@ -51,6 +53,7 @@ export async function sendEmail(message: EmailMessage): Promise<EmailResult> {
     html: message.html,
     text: message.text,
     ...(message.tags ? { tags: message.tags } : {}),
+    ...(message.headers ? { headers: message.headers } : {}),
   });
 
   for (let attempt = 1; ; attempt += 1) {

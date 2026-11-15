@@ -7770,6 +7770,7 @@ export type Database = {
         Row: {
           created_at: string
           due_date: string
+          email_skip_reason: string | null
           email_skipped_at: string | null
           emailed_at: string | null
           entity_id: string
@@ -7787,6 +7788,7 @@ export type Database = {
         Insert: {
           created_at?: string
           due_date: string
+          email_skip_reason?: string | null
           email_skipped_at?: string | null
           emailed_at?: string | null
           entity_id: string
@@ -7804,6 +7806,7 @@ export type Database = {
         Update: {
           created_at?: string
           due_date?: string
+          email_skip_reason?: string | null
           email_skipped_at?: string | null
           emailed_at?: string | null
           entity_id?: string

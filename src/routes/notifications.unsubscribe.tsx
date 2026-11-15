@@ -1,37 +1,48 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { handleOneClickUnsubscribe } from "@/lib/one-click-unsubscribe";
 import { unsubscribeNotificationEmails } from "@/services/notifications";
 
 // GL-13: the unsubscribe link in notification emails. Public (works signed out): the token in
-// the link turns the person's notification emails off. They can turn them back on in
+// the link turns the person's notification emails off; they can turn them back on in
 // Settings › Account.
+//   * POST (RFC 8058 one-click, from the email's List-Unsubscribe-Post header): handled on the
+//     server, no page.
+//   * GET (someone clicks the link): the page asks them to confirm, so a mail scanner that
+//     prefetches links can't unsubscribe anyone.
 export const Route = createFileRoute("/notifications/unsubscribe")({
   validateSearch: (search: Record<string, unknown>): { token?: string } => ({
     ...(typeof search["token"] === "string" && { token: search["token"] }),
   }),
+  server: {
+    handlers: {
+      POST: ({ request }) => handleOneClickUnsubscribe(request, unsubscribeNotificationEmails),
+    },
+  },
   head: () => ({
     meta: [{ title: "Unsubscribe — ORMO PMO" }, { name: "robots", content: "noindex" }],
   }),
   component: Unsubscribe,
 });
 
-type State = "working" | "done" | "invalid" | "error";
+type State = "ready" | "working" | "done" | "invalid" | "error";
 
 function Unsubscribe() {
   const { token } = Route.useSearch();
-  const [state, setState] = useState<State>(token ? "working" : "invalid");
-  useEffect(() => {
+  const [state, setState] = useState<State>(token ? "ready" : "invalid");
+  const confirm = () => {
     if (!token) return;
-    let live = true;
+    setState("working");
     unsubscribeNotificationEmails(token)
-      .then((ok) => live && setState(ok ? "done" : "invalid"))
-      .catch(() => live && setState("error"));
-    return () => {
-      live = false;
-    };
-  }, [token]);
+      .then((ok) => setState(ok ? "done" : "invalid"))
+      .catch(() => setState("error"));
+  };
   const message: Record<State, { title: string; body: string }> = {
+    ready: {
+      title: "Unsubscribe from notification emails?",
+      body: "You'll stop getting ORMO PMO notification emails. You'll still see notifications in the app, and you can turn emails back on in Settings › Account.",
+    },
     working: { title: "Unsubscribing…", body: "One moment." },
     done: {
       title: "You're unsubscribed",
@@ -43,7 +54,7 @@ function Unsubscribe() {
     },
     error: {
       title: "Something went wrong",
-      body: "We couldn't unsubscribe you just now. Try the link again, or turn emails off in Settings › Account.",
+      body: "We couldn't unsubscribe you just now. Try again, or turn emails off in Settings › Account.",
     },
   };
   return (
@@ -52,7 +63,12 @@ function Unsubscribe() {
       <p className="text-sm text-muted-foreground" role="status">
         {message[state].body}
       </p>
-      <div>
+      <div className="flex flex-wrap gap-2">
+        {(state === "ready" || state === "working" || state === "error") && (
+          <Button onClick={confirm} disabled={state === "working"}>
+            Unsubscribe
+          </Button>
+        )}
         <Button asChild variant="outline">
           <Link to="/settings/$section" params={{ section: "account" }}>
             Notification settings
