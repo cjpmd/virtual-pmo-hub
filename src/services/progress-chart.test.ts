@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildProgressChart, fyStart, type ProgressInputs } from "./progress-chart";
+import {
+  buildProgressChart,
+  committeeDatesFromReports,
+  fyStart,
+  type ProgressInputs,
+  type PublishedPackRow,
+} from "./progress-chart";
 
 const empty: ProgressInputs = {
   money: [],
@@ -53,5 +59,36 @@ describe("progress chart", () => {
   it("hides benefits-chain series until pathway snapshots exist", () => {
     const chart = buildProgressChart({ ...base, inputs: empty });
     expect(chart.available.has("capabilities")).toBe(false);
+  });
+});
+
+describe("committeeDatesFromReports (GL-14 Phase C)", () => {
+  const row = (over: Partial<PublishedPackRow>): PublishedPackRow => ({
+    title: "Pack",
+    as_at: "2026-10-01",
+    scope_type: "project",
+    forum: null,
+    meeting: null,
+    ...over,
+  });
+
+  it("keeps committee, portfolio board and collection packs, dated by meeting else as-at", () => {
+    expect(
+      committeeDatesFromReports([
+        row({ title: "Board", forum: { forum_type: "project_board" } }),
+        row({ title: "Ad hoc" }),
+        row({
+          title: "Committee",
+          forum: { forum_type: "committee" },
+          meeting: { meeting_date: "2026-11-03" },
+        }),
+        row({ title: "Portfolio", forum: { forum_type: "portfolio_board" }, as_at: "2026-09-15" }),
+        row({ title: "Funding", scope_type: "collection", as_at: "2026-10-20" }),
+      ]),
+    ).toEqual([
+      { date: "2026-09-15", title: "Portfolio" },
+      { date: "2026-10-20", title: "Funding" },
+      { date: "2026-11-03", title: "Committee" },
+    ]);
   });
 });

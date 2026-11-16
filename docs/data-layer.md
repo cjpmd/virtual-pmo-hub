@@ -26,13 +26,12 @@ projects list, project detail); Stage 4c applied it to every screen.
 | `project-records.ts`                                              | milestones, risks, issues, forecast history, organisation-wide RAID                                                                                    |
 | `benefits.ts`, `benefits-value.ts`, `benefits-map.ts`             | benefits domain (load + pure calculations)                                                                                                             |
 | `decisions.ts`                                                    | decisions, assumptions, change requests                                                                                                                |
-| `dependencies.ts`, `roadmaps.ts`, `requests.ts`, `collections.ts` | as named; collections also load committee-pack facts                                                                                                   |
-| `committee-packs.ts`                                              | issued packs (`committee_packs`): list, issue. Issued packs are immutable. No UI since GL-14 (retired; the table stays) |
+| `dependencies.ts`, `roadmaps.ts`, `requests.ts`, `collections.ts` | as named                                                                                                                                               |
 | `lessons.ts`, `gates.ts`                                          | lessons, improvement actions, phase reviews; stage-gate checklist and lifecycle helpers                                                                |
 | `work-items.ts`, `issued-tasks.ts`, `status-reports.ts`           | project tasks (diff-based save), portfolio and personal task views; issued work (offers); status reports                                               |
 | `resources.ts`, `assurance.ts`                                    | capacity planning; declared versus evidenced RAG                                                                                                       |
 | `integrations.ts`, `favourites.ts`, `org-settings.ts`, `auth.ts`  | Microsoft 365 state, starred items, organisation settings, sign-up/sign-in                                                                             |
-| `notifications.ts`                                                | the signed-in user's notifications (`notifications`, raised in the database), mark read, personal notification preferences, unsubscribe (GL-13) |
+| `notifications.ts`                                                | the signed-in user's notifications (`notifications`, raised in the database), mark read, personal notification preferences, unsubscribe (GL-13)        |
 
 ## Writes (`src/services/write.ts`)
 
