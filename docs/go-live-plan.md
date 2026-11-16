@@ -314,8 +314,8 @@ sign-up form ("By creating an account you agree to…"). Email sign-up records `
 and `terms_accepted_at` in the auth user metadata (`lib/legal.ts` `TERMS_VERSION`); Microsoft
 sign-up records nothing yet. Tick GL-7 after the legal review.
 
-**GL-7 follow-up built (16/11/2026), not applied, not merged:** migration
-`20261116100000_gl_7_terms_acceptances` (`docs/sql/gl-7-terms-acceptances.sql`), tested on the local
+**GL-7 follow-up built (16/11/2026); applied 16/11/2026, not merged:** migration
+`20261116142056_gl_7_terms_acceptances` (`docs/sql/gl-7-terms-acceptances.sql`), tested on the local
 Postgres only. `public.terms_acceptances` (organisation, person, terms version, accepted_at, method,
 recorded_at; unique per organisation, person and version) is written only by the definer RPC
 `accept_terms(org, version, method)`: `organisation_setup` (the admin ticks "I accept the Terms and
@@ -331,6 +331,9 @@ Closure keeps the rows (they point at the "Former member" tombstone and hold no 
 the organisation purge deletes them with the organisation; the GL-11b export includes them (catalog).
 Tests: `supabase/tests/terms_acceptances.sql` (21), `account_closure.sql` (83), `cross_tenant.sql`
 (fixture row and three `accept_terms` cases), `read_only_mode.sql`, `services/terms.test.ts`.
+Applied to production 16/11/2026 (recorded `20261116142056`; `accept_terms` md5-identical to the
+local build; RLS on, no insert for `authenticated`, `accept_terms` closed to `anon`). Decided: no
+acceptance summary is kept when an organisation is purged.
 
 ### GL-8 Sector choice and financial-year defaults [DB]
 

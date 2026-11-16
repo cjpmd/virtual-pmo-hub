@@ -1,5 +1,5 @@
--- GL-7 follow-up: terms_acceptances. Proposal (not applied to production). Applied locally as
--- supabase/migrations/20261116100000_gl_7_terms_acceptances.sql; this file is the same SQL.
+-- GL-7 follow-up: terms_acceptances. Applied to production 16/11/2026 (version 20261116142056). Same SQL as
+-- supabase/migrations/20261116142056_gl_7_terms_acceptances.sql.
 -- No destructive statements.
 
 -- GL-7 follow-up: a record of who accepted which version of the Terms of service (and the DPA they
