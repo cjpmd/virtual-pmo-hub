@@ -292,6 +292,10 @@ begin
        join public.projects b on b.workspace_id = a.workspace_id and b.id <> a.id where a.organisation_id = %1$L limit 1$s$),
     ('saved_views', $s$insert into public.saved_views (organisation_id, board_key, owner_id, name, config)
        select %1$L, 'gl10', profile_id, 'GL10 view', '{}' from public.organisation_members where organisation_id = %1$L and role = 'admin' limit 1$s$),
+    -- GL-7: its version check refuses the filler's text; one acceptance by the organisation's admin.
+    ('terms_acceptances', $s$insert into public.terms_acceptances (organisation_id, profile_id, terms_version, method)
+       select %1$L, profile_id, '2026-11-10', 'organisation_setup' from public.organisation_members
+       where organisation_id = %1$L and role = 'admin' order by profile_id limit 1$s$),
     ('user_favourites', $s$insert into public.user_favourites (organisation_id, profile_id, project_id)
        select %1$L, m.profile_id, p.id from public.organisation_members m, public.projects p
        where m.organisation_id = %1$L and m.role = 'admin' and p.organisation_id = %1$L limit 1$s$),

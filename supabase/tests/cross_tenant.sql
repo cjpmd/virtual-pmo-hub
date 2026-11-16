@@ -415,6 +415,10 @@ insert into ct_cases (fn, call, expect, note) values
   ('request_organisation_deletion(uuid,text)', $c$select public.request_organisation_deletion('{a_org}', '{a_org_name}')$c$, 'empty', null),
   ('cancel_organisation_deletion(uuid)', $c$select public.cancel_organisation_deletion('{a_org}')$c$, 'empty', null),
   ('start_organisation_export(uuid)', $c$select public.start_organisation_export('{a_org}')$c$, 'empty', null),
+  -- GL-7: B's admin can't record an acceptance in A, by any method.
+  ('accept_terms(uuid,text,text)', $c$select public.accept_terms('{a_org}', '2026-11-10', 'sign_in_prompt')$c$, 'empty', null),
+  ('accept_terms(uuid,text,text)', $c$select public.accept_terms('{a_org}', '2026-11-10', 'organisation_setup')$c$, 'empty', null),
+  ('accept_terms(uuid,text,text)', $c$select public.accept_terms('{a_org}', '2026-11-10', 'signup_form')$c$, 'empty', null),
   -- GL-13.
   ('mark_notifications_read(uuid,uuid[])', $c$select public.mark_notifications_read('{a_org}')$c$, 'empty', null),
   ('mark_notifications_read(uuid,uuid[])', $c$select public.mark_notifications_read('{a_org}', array['{a_notification}'::uuid])$c$, 'empty', null),
