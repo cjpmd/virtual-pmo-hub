@@ -192,6 +192,8 @@ select pg_temp.ok('readers are owned by authenticated, and anon can''t run them'
   (select bool_and(p.proowner = 'authenticated'::regrole and not has_function_privilege('anon', p.oid, 'execute'))
    from pg_proc p where p.oid in ('private.rls_live_project_health(uuid)'::regprocedure, 'private.rls_live_programme_health(uuid)'::regprocedure,
      'private.rls_live_portfolio_health(uuid)'::regprocedure, 'private.rls_health_snapshot_rows(uuid,date)'::regprocedure)));
+select pg_temp.ok('authenticated has no CREATE on schema private (granted only while the owners change)',
+  not has_schema_privilege('authenticated', 'private', 'create'));
 select pg_temp.ok('authenticated can''t run the claim swap, the refresh or the reader choice',
   not has_function_privilege('authenticated', 'private.health_reader_claims(uuid)', 'execute')
   and not has_function_privilege('authenticated', 'private.refresh_health_current(uuid)', 'execute')

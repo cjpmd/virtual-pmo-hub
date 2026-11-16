@@ -217,7 +217,7 @@ organisation's refresh already takes 3.3 times as long.
 
 ### GL-17b built: option C (16/11/2026, local only, not applied)
 
-Migration `20261116120000_gl_17b_health_refresh_rls` (`docs/sql/gl-17b-health-refresh-rls.sql`).
+Migration `20261116142515_gl_17b_health_refresh_rls` (`docs/sql/gl-17b-health-refresh-rls.sql`).
 `SET ROLE` is refused inside SECURITY DEFINER functions (and the refresh is reached through them), so
 the live reads moved into reader functions owned by `authenticated` (no BYPASSRLS): the caller sets an
 organisation admin's claims for the reads only and restores them, then writes as the owner. Re-measured

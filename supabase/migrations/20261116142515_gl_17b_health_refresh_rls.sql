@@ -235,10 +235,15 @@ $$;
 
 -- Owned by authenticated: they run as that role, under RLS, with whatever claims the caller set.
 -- Execute stays with the owner (authenticated, of which postgres is a member); never anon.
+-- Changing a function's owner needs the new owner to have CREATE on its schema; on the hosted
+-- project postgres isn't a superuser, so authenticated gets CREATE on private only for these four
+-- statements, inside this migration's transaction, and loses it again before it commits.
+grant create on schema private to authenticated;
 alter function private.rls_live_project_health(uuid) owner to authenticated;
 alter function private.rls_live_programme_health(uuid) owner to authenticated;
 alter function private.rls_live_portfolio_health(uuid) owner to authenticated;
 alter function private.rls_health_snapshot_rows(uuid, date) owner to authenticated;
+revoke create on schema private from authenticated;
 revoke execute on function private.rls_live_project_health(uuid), private.rls_live_programme_health(uuid),
   private.rls_live_portfolio_health(uuid), private.rls_health_snapshot_rows(uuid, date) from public, anon;
 

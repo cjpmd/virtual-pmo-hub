@@ -852,13 +852,21 @@ Work package GL-17b. Build option C from GL-17 (docs/perf.md § Multi-tenant hea
 SQL first, then stop.
 ```
 
-**Built (16/11/2026), not applied, not merged:** migration `20261116120000_gl_17b_health_refresh_rls`
+**Built (16/11/2026); applied 16/11/2026, not merged:** migration `20261116142515_gl_17b_health_refresh_rls`
 (`docs/sql/gl-17b-health-refresh-rls.sql`). Readers owned by `authenticated` read each organisation's
 live health under RLS with one of its admins' claims (`SET ROLE` is refused inside SECURITY DEFINER
 functions); `refresh_health_current`, `health_current_mismatches` and `capture_health_snapshots` use
 them; an organisation with no admin is skipped and logged in `private.health_refresh_skips`. Parity 0
 differences for every tenant at 5 tenants and on production (read-only). Nightly refresh-and-check at
 5 tenants 39 s (was 711 s); one organisation's refresh flat at about 4 s. Figures in `docs/perf.md`.
+Applied to production 16/11/2026 (recorded `20261116142515`). The migration grants CREATE on
+`private` to `authenticated` only while it changes the readers' owner, then revokes it: on the hosted
+project `postgres` isn't a superuser, so the owner change needs it (proved on a non-superuser role
+locally first). Checks on production straight after: `health_current_mismatches` 0 for all 4
+organisations (University's 38 stored rows, written by the old owner code, match the RLS reads),
+`private.health_refresh_skips` empty, readers owned by `authenticated` and closed to `anon`,
+`authenticated` without CREATE on `private`, function definitions md5-identical to the local build,
+`vpmo-health-refresh-queue` succeeding.
 
 ### GL-18 Smaller main bundle
 

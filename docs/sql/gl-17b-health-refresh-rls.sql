@@ -1,6 +1,6 @@
 -- GL-17b: health refresh per organisation under RLS (option C, docs/perf.md § Multi-tenant health
--- refresh). Proposal; not applied to production. Tested on the local Postgres only (seeded data and
--- 1 / 2 / 5 perf tenants). Same text as supabase/migrations/20261116120000_gl_17b_health_refresh_rls.sql.
+-- refresh). Applied to production 16/11/2026 (version 20261116142515). Tested on the local Postgres only (seeded data and
+-- 1 / 2 / 5 perf tenants). Same text as supabase/migrations/20261116142515_gl_17b_health_refresh_rls.sql.
 -- No destructive statements (private.live_* stay: the parity test compares against them).
 --
 -- Production parity, read-only, 16/11/2026: for each of the 4 organisations, the owner's
@@ -250,10 +250,15 @@ $$;
 
 -- Owned by authenticated: they run as that role, under RLS, with whatever claims the caller set.
 -- Execute stays with the owner (authenticated, of which postgres is a member); never anon.
+-- Changing a function's owner needs the new owner to have CREATE on its schema; on the hosted
+-- project postgres isn't a superuser, so authenticated gets CREATE on private only for these four
+-- statements, inside this migration's transaction, and loses it again before it commits.
+grant create on schema private to authenticated;
 alter function private.rls_live_project_health(uuid) owner to authenticated;
 alter function private.rls_live_programme_health(uuid) owner to authenticated;
 alter function private.rls_live_portfolio_health(uuid) owner to authenticated;
 alter function private.rls_health_snapshot_rows(uuid, date) owner to authenticated;
+revoke create on schema private from authenticated;
 revoke execute on function private.rls_live_project_health(uuid), private.rls_live_programme_health(uuid),
   private.rls_live_portfolio_health(uuid), private.rls_health_snapshot_rows(uuid, date) from public, anon;
 
