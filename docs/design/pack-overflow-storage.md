@@ -1,6 +1,6 @@
 # GL-16 — Large report packs overflow to Storage
 
-Status: **approved, build deferred until a pack needs it** (decisions 12/11/2026, §4). Nothing
+Status: **approved (decisions 12/11/2026, §4); built 16/11/2026; applied and deployed 16/11/2026 (§6, §7).** Nothing
 built or applied; design and SQL sketch written 11/11/2026. Decision RB-29 refused packs over 2 MB of snapshot data; this replaces the refusal
 with an overflow to a private Storage bucket, keeping snapshots immutable and verifiable.
 
@@ -199,3 +199,74 @@ Questions as written before the decisions:
 ## 5. What this package delivered
 
 This document only. No migration, code or production change.
+
+## 6. Built (16/11/2026; applied and deployed 16/11/2026, not merged)
+
+Migration `20261116142802_gl_16_pack_overflow` (`docs/sql/gl-16-pack-overflow.sql`), tested on the
+local Postgres only. As designed in §3, with these details:
+
+- `private.insert_report_snapshot` makes the inline / overflow choice for every block row and
+  `__changes` (`__meta` always stays inline): over 256 KB of `data::text` → `data = 'null'`,
+  `overflowed`, `payload_sha256`, `payload_bytes`, and a `private.report_snapshot_staging` row
+  (which also keeps `report_id`). A block over 50 MB, or more than 50 MB of overflow in a pack, raises
+  `54000`; the 2 MB check now counts inline rows only. The publish event and result carry
+  `overflow_bytes`. Two checks keep the row honest: `overflowed = (payload_sha256 is not null)` and
+  an overflowed row's `data` is JSON null.
+- Service-role RPCs: `report_snapshot_staged(report | null)` (the payload as the exact hashed text,
+  the hex hash and the path; all reports: oldest 50), `complete_snapshot_overflow(id, path, sha256)`
+  (hash and path must match; records `report_snapshot_objects`, clears staging; once only),
+  `fail_snapshot_overflow(id, error)` (counts attempts) and `report_overflow_by_token(report, token,
+  ids)` (the print token check, then object paths or staged payloads for overflowed rows of that
+  report only).
+- Reads: `private.can_view_snapshot(id)` repeats `report_snapshots_select`; it is the RLS rule of
+  `report_snapshot_objects`, the bucket's select policy (`report_snapshots_objects_select`) and the
+  check in `report_snapshot_staged_payload(id)` (authenticated). `report_snapshot_by_token` also
+  returns each row's `id`, `overflowed` and `sha256`.
+- Edge functions: `_shared/snapshot-overflow.ts` (`moveStagedSnapshots`, unit-tested) refuses a
+  staged payload that no longer hashes to the published hash, uploads with `upsert: false`, accepts
+  an existing object only if identical, then completes; failures are counted. `report-publish` moves
+  the report's payloads right after `publish_report` and takes `{ mode: "drain" }` (service role);
+  `report-notify` (every 15 minutes, decision 4) drains anything left and emails `OPS_ALERT_EMAIL` at
+  the fifth failure. New `report-snapshot-payload` (`verify_jwt = false`) serves the print route:
+  60-second signed URLs or staged payloads. `export-organisation` zips the bucket's objects under
+  `storage/report-snapshots/<path>` (decision 3).
+- Client: `features/reports/engine/snapshot-overflow.ts` (`resolveOverflow`, unit-tested) loads each
+  overflowed payload (Storage download with the session, else the staged read; the print route uses
+  the edge function), checks its SHA-256 (Web Crypto) and parses it; a failure renders "This block
+  couldn't be loaded / verified." in place of the block. PPTX needs no change.
+- Tests: `supabase/tests/report_overflow.sql` (35 checks, using a throwaway test block that returns
+  a payload of a given size), `cross_tenant.sql` (fixture row, the new RPC, the bucket),
+  `organisation_purge.sql` (staging row), unit tests for both TypeScript modules.
+
+## 7. How report-snapshot-payload authenticates (verify_jwt = false)
+
+The function trusts no credential of the caller's and has no session. For every request:
+
+1. **Input:** `report_id` must be a UUID, `token` a string of at most 200 characters, and
+   `snapshot_ids` UUIDs (at most 500). Anything else gets 400; only POST is served (OPTIONS for CORS).
+2. **The token is checked in the database, not in the function.** It calls
+   `report_overflow_by_token(report_id, token, snapshot_ids)` with the service role. That SQL function
+   returns rows only when `sha256(token)` matches a row of `private.report_print_tokens` **for that
+   report** whose `expires_at` is in the future. The same rule as `report_snapshot_by_token`, which
+   the print route already uses for the rest of the pack.
+3. **Only that report's overflowed snapshots:** the rows are limited to `report_snapshots` with
+   `report_id = report_id`, `overflowed`, and an id in the list. A valid token for report X returns
+   nothing for snapshot ids of report Y, so a token from another organisation can't reach this one's.
+4. **Output:** for each row, a 60-second signed URL for that exact object path, or the staged payload
+   while it hasn't moved yet. A wrong, expired or missing token gets `{"payloads": []}` with 200, the
+   same as a request for blocks that don't exist, so it says nothing more.
+5. **Print tokens:** 24 random bytes (192 bits, hex), stored only as SHA-256, valid 10 minutes, issued
+   only for published reports and only by the service role (`issue_report_print_token`, which
+   `authenticated` and `anon` can't run). Today only report-publish's server-PDF path issues them,
+   and server PDF is off.
+6. **What it can reveal:** with a valid token, the overflowed blocks of the report that token was
+   issued for. That is the whole pack, partner-hidden blocks included, because the print route is the
+   internal rendering used for the server PDF, and `report_snapshot_by_token` already returns every
+   inline block to the same token holder.
+
+Proved in `supabase/tests/cross_tenant.sql` (service role standing in for the function): B's token
+on A's report, a wrong token, an empty token, no token, and B's own valid report and token asking
+for A's snapshot id all return nothing. A's own token returns A's block (control). Signed-in users
+and anon can't call the RPC directly. No rate limit: a 192-bit token valid for 10 minutes can't be
+guessed.
+

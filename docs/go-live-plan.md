@@ -843,6 +843,20 @@ the doc. **Approved 12/11/2026, build deferred until a pack needs it:** option C
 thresholds (256 KB per block, 2 MB inline, 50 MB per pack), overflowed payloads included in the
 GL-11b export zip, retries on `vpmo-report-notify`'s 15-minute schedule.
 
+**Built (16/11/2026); applied and deployed 16/11/2026, not merged:** migration `20261116142802_gl_16_pack_overflow`
+(`docs/sql/gl-16-pack-overflow.sql`), edge functions `report-publish`, `report-notify`,
+`export-organisation` (changed) and `report-snapshot-payload` (new); details in
+`docs/design/pack-overflow-storage.md` §6. Applied to production 16/11/2026 (recorded
+`20261116142802`; `publish_report` and `report_overflow_by_token` md5-identical to the local build;
+bucket private, JSON only, 50 MB; the service RPCs closed to `authenticated` and `anon`). Deployed:
+`report-snapshot-payload` version 1 (verify_jwt off), `report-publish` 6, `report-notify` 8,
+`export-organisation` 5 (all from the repo files). Smoke tests: `report-snapshot-payload` answers 400
+to a malformed body, `{"payloads": []}` to a wrong token and 405 to GET; the other three answer 401
+without a token, and with the anon key their own checks refuse (Sign in again / Service role only /
+Sign in first). `cross_tenant.sql` also covers the print-token path: B's token, a wrong, empty or
+missing token, and B's own report and token asking for A's snapshot all return nothing; signed-in
+users and anon can't call `report_overflow_by_token`.
+
 ### GL-17 Multi-tenant health refresh measurement
 
 After GL-10. Supabase branch, or the local Postgres until we're on Pro.

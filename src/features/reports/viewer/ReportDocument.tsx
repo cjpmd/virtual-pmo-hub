@@ -2,6 +2,7 @@
 // deep-dive blocks repeated per included project (spec §6.1). Drafts resolve live data per
 // block (report_block_data); published reports render only from snapshots (§4). Every block
 // sits in an error boundary, and unknown keys render a neutral placeholder (§6.1).
+import { SNAPSHOT_ERROR, isSnapshotError } from "@/features/reports/engine/snapshot-overflow";
 import { Component, useLayoutEffect, useRef, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, EyeOff } from "lucide-react";
@@ -143,6 +144,13 @@ function SnapshotBody({ instance, entityId, props }: BodyProps) {
   const data = props.snapshot!(instance.id, entityId);
   if (data === undefined)
     return <p className="text-sm text-muted-foreground">Not stored in this snapshot.</p>;
+  // GL-16: an overflowed block that couldn't be loaded from Storage or failed its hash check.
+  if (isSnapshotError(data))
+    return (
+      <p role="alert" className="text-sm text-muted-foreground">
+        {data[SNAPSHOT_ERROR]}
+      </p>
+    );
   return <Rendered instance={instance} entityId={entityId} props={props} data={data} />;
 }
 
