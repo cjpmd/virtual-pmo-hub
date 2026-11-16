@@ -17,9 +17,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      # bun.lock resolves from Lovable's internal registry, which runners can't reach; install
-      # from the public registry without writing a lockfile (as in the handover note).
-      - run: npm install --no-package-lock --no-audit --no-fund --registry https://registry.npmjs.org
+      # bun.lock resolves from Lovable's internal registry, which runners can't reach, so install
+      # from the public registry. package-lock.json resolves only from registry.npmjs.org, so
+      # `npm ci` installs exactly the locked versions: a half-published upstream release can't break
+      # the run (typescript-eslint 8.73.0 went out on 16/11/2026 without @typescript-eslint/types
+      # 8.73.0, and every unlocked install failed). If package-lock.json has fallen out of step with
+      # package.json (Lovable updates bun.lock, not package-lock.json), `npm ci` refuses, and the
+      # run falls back to the previous unlocked install.
+      - run: |
+          npm ci --no-audit --no-fund --registry https://registry.npmjs.org \
+            || npm install --no-package-lock --no-audit --no-fund --registry https://registry.npmjs.org
       - name: Lint files changed against the base branch
         env:
           LINT_BASE: origin/${{ github.base_ref || 'main' }}
