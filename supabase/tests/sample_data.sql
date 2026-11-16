@@ -155,6 +155,18 @@ select public.set_report_inclusion((select report from rb), (select sample2 from
 select pg_temp.ok('a pinned sample project is included with its reasons',
   exists (select 1 from public.report_inclusions where report_id = (select report from rb) and entity_id = (select sample2 from rb)
           and mode = 'pinned' and jsonb_array_length(reasons) = 1));
+-- GL-9 follow-up: publishing freezes is_sample on each deep-dive in the snapshot's meta.
+select public.publish_report((select report from rb));
+select pg_temp.as_owner();
+select pg_temp.ok('the published pack records the pinned sample project as sample',
+  (select bool_or((d ->> 'id')::uuid = (select sample2 from rb) and (d ->> 'is_sample')::boolean)
+   from public.report_snapshots s, jsonb_array_elements(s.data -> 'deep_dives') d
+   where s.report_id = (select report from rb) and s.block_instance_id = '__meta'));
+select pg_temp.ok('and the real project as not sample',
+  (select bool_or((d ->> 'id')::uuid = (select real from rb) and d ? 'is_sample' and not (d ->> 'is_sample')::boolean)
+   from public.report_snapshots s, jsonb_array_elements(s.data -> 'deep_dives') d
+   where s.report_id = (select report from rb) and s.block_instance_id = '__meta'));
+select pg_temp.as_user('e9000000-0000-4000-8000-000000000003');
 
 -- Remove: archives and closes, deletes nothing; a second call is a no-op; seeding again works.
 select pg_temp.as_owner();

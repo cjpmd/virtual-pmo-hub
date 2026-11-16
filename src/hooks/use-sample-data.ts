@@ -4,12 +4,13 @@ import { useOrgId } from "@/components/auth/organisation-provider";
 import { qk } from "@/services/query-keys";
 import { listSampleIds, removeSampleData, seedSampleData } from "@/services/sample-data";
 
-export function useSampleIds() {
+export function useSampleIds(enabled = true) {
   const orgId = useOrgId();
   return useQuery({
     queryKey: qk.sampleIds(orgId),
     queryFn: () => listSampleIds(orgId),
     staleTime: 5 * 60_000,
+    enabled,
   });
 }
 

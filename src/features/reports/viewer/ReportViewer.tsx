@@ -79,8 +79,10 @@ export function useReportView(reportId: string): {
   const metrics = useScopeMetrics(live);
   const inclusions = useInclusions(report.data && !published ? reportId : null);
   const snapshot = useReportSnapshot(published ? reportId : null);
-  // Snapshots don't store is_sample, so published packs take it from the live flag (GL-9).
-  const sampleIds = useSampleIds().data;
+  // Packs published since the GL-9 follow-up store is_sample on each deep-dive; older ones take
+  // it from the live flag, which is only loaded when some deep-dive lacks it.
+  const needsLiveSample = !!snapshot.data?.meta.deep_dives.some((d) => d.isSample === undefined);
+  const sampleIds = useSampleIds(needsLiveSample).data;
   const changes = useBlockData(
     live,
     CHANGES_BLOCK,
@@ -96,7 +98,7 @@ export function useReportView(reportId: string): {
     const scheme = toScheme(s.meta.scheme);
     const snapshotDeepDives: DeepDiveProject[] = s.meta.deep_dives.map((project) => ({
       ...project,
-      isSample: isSample(sampleIds, "project", project.id),
+      isSample: project.isSample ?? isSample(sampleIds, "project", project.id),
     }));
     return {
       error: null,
