@@ -15,6 +15,9 @@
 --      failure), called as B's admin with A's ids. It must fail or return nothing, leave A's
 --      data unchanged and give B no membership in A.
 --   4. Storage objects and report print tokens.
+--   5. Partner sharing: a share from A to B exposes to B's users only the shared published pack
+--      and its partner-visible snapshots (RB-15, RB-30), a project share gives no live data, and
+--      revoking the shares removes everything.
 -- Both organisations are made writable first (active subscription, trial end in the future) and
 -- checked with private.organisation_is_writable, so GL-4's read-only trigger can't produce a
 -- false pass; a refusal with hint org_read_only anywhere fails the run as a setup error.
@@ -717,6 +720,227 @@ do $$ declare v jsonb; tok text; begin
       coalesce(left(v::text, 100), 'null'), case when v is null then 'ok' else 'LEAK' end);
   end loop;
 end $$;
+
+-- ---------------------------------------------------------------------------------------------
+-- 5. Partner sharing (entity_shares): a share from A to B exposes exactly what RB-15 / RB-30 allow
+-- ---------------------------------------------------------------------------------------------
+-- RB-15: partners read published packs only (the report row and its snapshots), never drafts or
+-- live data. RB-30: snapshot rows hidden_from_partners and blocks in the share's hidden_block_keys
+-- are withheld, and partners get no metric snapshots. The fixture gives A a published report
+-- shared with B (three blocks: one visible, one partner-unsafe, one in hidden_block_keys), a
+-- published report not shared, and a draft report shared with B. Every RLS table and view is then
+-- counted as each of B's users: anything of A's other than the shared report, its visible
+-- snapshot and the share rows themselves is a LEAK. Revoking the shares must remove all of it.
+-- Rows are written as the owner with triggers off (session_replication_role), as published packs
+-- are only ever written by publish_report.
+create temp table ps_ids (k text primary key, id uuid);
+grant select on ps_ids to authenticated, anon;
+create function pg_temp.ps(p_k text) returns uuid language sql stable as $$ select id from ps_ids where k = p_k $$;
+
+select pg_temp.ct_as_postgres();
+select set_config('session_replication_role', 'replica', true);
+insert into ps_ids
+select 'project_' || n, id from (
+  select p.id, row_number() over (order by p.created_at, p.id) n from public.projects p
+  where p.organisation_id = pg_temp.ct_org('A') and p.workspace_id = (select ws from ct_orgs where label = 'A')
+    and p.archived_at is null) x where n <= 2;
+insert into ps_ids values ('pub', gen_random_uuid()), ('unshared', gen_random_uuid()), ('draft', gen_random_uuid());
+insert into public.reports (id, organisation_id, workspace_id, title, scope_type, scope_entity_id, as_at, status, published_at, created_by)
+select pg_temp.ps(k), pg_temp.ct_org('A'), (select ws from ct_orgs where label = 'A'), 'GL10 partner ' || k, 'project',
+       pg_temp.ps('project_1'), current_date, st::public.report_status, case when st = 'published' then now() end,
+       (select id from ct_users where label = 'a_admin')
+from (values ('pub', 'published'), ('unshared', 'published'), ('draft', 'draft')) v(k, st);
+insert into public.report_snapshots (organisation_id, workspace_id, report_id, block_instance_id, block_key, entity_id, data, hidden_from_partners)
+select pg_temp.ct_org('A'), (select ws from ct_orgs where label = 'A'), pg_temp.ps(r), b, k, pg_temp.ps('project_1'),
+       jsonb_build_object('gl10', b), h
+from unnest(array['pub', 'unshared', 'draft']) r,
+     (values ('b_visible', 'project_summary', false), ('b_unsafe', 'resource_summary', true), ('b_hidden_key', 'risks', false)) v(b, k, h);
+insert into ps_ids select 'snap_visible', id from public.report_snapshots where report_id = pg_temp.ps('pub') and block_instance_id = 'b_visible';
+insert into public.report_narratives (organisation_id, workspace_id, report_id, block_instance_id, body)
+select pg_temp.ct_org('A'), (select ws from ct_orgs where label = 'A'), pg_temp.ps('pub'), b, jsonb_build_object('text', 'GL10 narrative ' || b)
+from unnest(array['b_visible', 'b_unsafe', 'b_hidden_key']) b;
+insert into public.report_inclusions (organisation_id, workspace_id, report_id, entity_type, entity_id, mode)
+select pg_temp.ct_org('A'), (select ws from ct_orgs where label = 'A'), pg_temp.ps('pub'), 'project', pg_temp.ps(p), 'rule'
+from unnest(array['project_1', 'project_2']) p;
+insert into public.report_events (organisation_id, workspace_id, report_id, event, actor, payload)
+values (pg_temp.ct_org('A'), (select ws from ct_orgs where label = 'A'), pg_temp.ps('pub'), 'published',
+        (select id from ct_users where label = 'a_admin'), '{"gl10": true}');
+insert into public.report_notifications (organisation_id, workspace_id, report_id, kind, recipients)
+values (pg_temp.ct_org('A'), (select ws from ct_orgs where label = 'A'), pg_temp.ps('pub'), 'draft_ready', '["gl10-a-admin@example.invalid"]');
+insert into public.report_metric_snapshots (organisation_id, workspace_id, report_id, entity_type, entity_id, metrics)
+values (pg_temp.ct_org('A'), (select ws from ct_orgs where label = 'A'), pg_temp.ps('pub'), 'project', pg_temp.ps('project_1'), '{"gl10": 1}');
+insert into storage.objects (bucket_id, name) values ('report-pdfs', pg_temp.ct_org('A') || '/' || pg_temp.ps('pub') || '.pdf');
+insert into public.entity_shares (organisation_id, workspace_id, entity_type, entity_id, partner_organisation_id, hidden_block_keys)
+select pg_temp.ct_org('A'), (select ws from ct_orgs where label = 'A'), 'report', pg_temp.ps(k), pg_temp.ct_org('B'), array['risks']
+from unnest(array['pub', 'draft']) k;
+select set_config('session_replication_role', 'origin', true);
+do $$ begin
+  if (select count(*) from ps_ids where id is not null) < 6 then raise exception 'SETUP: partner fixture incomplete'; end if;
+end $$;
+
+-- What a partner may see of A: table -> exact ids (by the row's id column), or a count.
+create temp table ps_allowed (rel text primary key, ids uuid[]);
+insert into ps_allowed values
+  ('reports', array[pg_temp.ps('pub')]),
+  ('report_snapshots', array[pg_temp.ps('snap_visible')]),
+  ('entity_shares', (select array_agg(id) from public.entity_shares where partner_organisation_id = pg_temp.ct_org('B')
+                      and organisation_id = pg_temp.ct_org('A')));
+grant select on ps_allowed to authenticated, anon;
+
+-- Counts every RLS table and view as p_actor. p_shared: the shares are in place (else revoked).
+create function pg_temp.ps_table_checks(p_actor text, p_phase text) returns void language plpgsql as $$
+declare t record; n bigint; v_extra bigint; v_allowed uuid[]; v_has_id boolean; v_outcome text; v_verdict text;
+begin
+  for t in select * from ct_tables order by name loop
+    select ids into v_allowed from ps_allowed where rel = t.name;
+    if p_phase = 'revoked' then v_allowed := null; end if;
+    v_has_id := exists (select 1 from pg_attribute a where a.attrelid = t.rel and a.attname = 'id' and not a.attisdropped);
+    perform pg_temp.ct_as(p_actor);
+    begin
+      execute format('select count(*) from %s where organisation_id = %L', t.rel, pg_temp.ct_org('A')) into n;
+      if v_has_id and v_allowed is not null then
+        execute format('select count(*) from %s where organisation_id = %L and not (id = any (%L::uuid[]))', t.rel, pg_temp.ct_org('A'), v_allowed) into v_extra;
+      else
+        v_extra := n;
+      end if;
+      v_outcome := n::text || case when v_allowed is not null then ' (allowed ' || cardinality(v_allowed) || ')' else '' end;
+      v_verdict := case when v_extra = 0 then 'ok' else 'LEAK' end;
+      -- The allowed rows must actually be visible while shared (a control for the test itself).
+      if p_phase = 'shared' and v_allowed is not null and n <> cardinality(v_allowed) then v_verdict := 'SETUP'; end if;
+    exception when others then v_outcome := 'refused ' || sqlstate; v_verdict := case when v_allowed is null then 'ok' else 'SETUP' end;
+    end;
+    perform pg_temp.ct_as_postgres();
+    insert into ct_result values (p_actor, 'A (' || p_phase || ')', 'partner:' || t.name, 'select', v_outcome, v_verdict);
+  end loop;
+  -- The report PDF: made from every snapshot of the report (the print route has no partner
+  -- filter), so a partner reading it gets the hidden blocks too.
+  perform pg_temp.ct_as(p_actor);
+  select count(*) into n from storage.objects where bucket_id = 'report-pdfs' and name = pg_temp.ct_org('A') || '/' || pg_temp.ps('pub') || '.pdf';
+  perform pg_temp.ct_as_postgres();
+  insert into ct_result values (p_actor, 'A (' || p_phase || ')', 'partner:storage:report-pdfs', 'select', n::text,
+                                case when n = 0 then 'ok' else 'LEAK' end);
+  -- Functions: report_permissions on the shared pack, the shared draft and the unshared pack.
+  perform pg_temp.ct_as(p_actor);
+  insert into ct_result
+  select p_actor, 'A (' || p_phase || ')', 'partner:report_permissions(' || k || ')', 'call', perm::text,
+         case
+           when (perm ->> 'can_edit')::boolean or (perm ->> 'can_approve')::boolean or (perm ->> 'can_publish')::boolean
+             or (perm ->> 'can_withdraw')::boolean or (perm ->> 'can_save_template')::boolean then 'LEAK'
+           when (perm ->> 'can_view')::boolean is distinct from (p_phase = 'shared' and k = 'pub') then 'LEAK'
+           when p_phase = 'shared' and k = 'pub' and not (perm -> 'hidden_block_keys' ? 'risks') then 'REVIEW'
+           else 'ok' end
+  from (select k, public.report_permissions(pg_temp.ps(k)) perm from unnest(array['pub', 'draft', 'unshared']) k) x;
+  perform pg_temp.ct_as_postgres();
+end $$;
+
+-- Controls: A's admin sees all three blocks of the shared pack; B's admin sees the shared pack.
+do $$ declare n bigint; begin
+  perform pg_temp.ct_as('a_admin');
+  select count(*) into n from public.report_snapshots where report_id = pg_temp.ps('pub');
+  perform pg_temp.ct_as_postgres();
+  if n <> 3 then raise exception 'SETUP: A''s admin sees % of the shared pack''s 3 blocks', n; end if;
+end $$;
+select pg_temp.ps_table_checks(a, 'shared') from unnest(array['b_admin', 'b_contributor', 'b_viewer']) a;
+
+-- A project share: the partner may build a report over it in its own organisation (custom scope
+-- mixing one of its own projects with the shared one: create_report takes the smaller
+-- organisation id as the report's, so the probe runs from whichever organisation sorts first).
+-- RB-15 says partners never get live data, so the sharer's project appearing in the partner's
+-- inclusions or published snapshots, worked out by the definer functions, is a LEAK.
+create temp table ps_probe (sharer text, partner text);
+grant select on ps_probe to authenticated;
+insert into ps_probe
+select case when pg_temp.ct_org('A')::text > pg_temp.ct_org('B')::text then 'A' else 'B' end,
+       case when pg_temp.ct_org('A')::text > pg_temp.ct_org('B')::text then 'B' else 'A' end;
+select set_config('session_replication_role', 'replica', true);
+insert into ps_ids
+select 'probe_shared_project', (select p.id from public.projects p join ct_orgs o on o.id = p.organisation_id and p.workspace_id = o.ws
+                                where o.label = (select sharer from ps_probe) and p.archived_at is null order by p.created_at, p.id limit 1)
+union all
+select 'probe_own_project', (select p.id from public.projects p join ct_orgs o on o.id = p.organisation_id and p.workspace_id = o.ws
+                             where o.label = (select partner from ps_probe) and p.archived_at is null order by p.created_at, p.id limit 1);
+insert into public.entity_shares (organisation_id, workspace_id, entity_type, entity_id, partner_organisation_id)
+select p.organisation_id, p.workspace_id, 'project', p.id, pg_temp.ct_org((select partner from ps_probe))
+from public.projects p where p.id = pg_temp.ps('probe_shared_project');
+select set_config('session_replication_role', 'origin', true);
+
+do $$
+declare v_actor text := lower((select partner from ps_probe)) || '_admin'; v_report uuid; v_outcome text; v_verdict text; n bigint;
+  v_sharer uuid := pg_temp.ct_org((select sharer from ps_probe)); v_state text; v_msg text;
+begin
+  perform pg_temp.ct_as(v_actor);
+  begin
+    v_report := public.create_report(jsonb_build_object('scope_type', 'custom', 'title', 'GL10 partner probe', 'ad_hoc', true,
+      'blocks', jsonb_build_array(
+        jsonb_build_object('id', 'p1', 'blockKey', 'executive_summary', 'config', '{}'::jsonb, 'placement', 'report'),
+        jsonb_build_object('id', 'p2', 'blockKey', 'overall_status', 'config', '{}'::jsonb, 'placement', 'deep_dive'),
+        jsonb_build_object('id', 'p3', 'blockKey', 'health_by_dimension', 'config', '{}'::jsonb, 'placement', 'deep_dive')),
+      'scope_items', jsonb_build_array(jsonb_build_object('entity_type', 'project', 'entity_id', pg_temp.ps('probe_own_project')),
+                                       jsonb_build_object('entity_type', 'project', 'entity_id', pg_temp.ps('probe_shared_project')))));
+    insert into ct_result values (v_actor, (select sharer from ps_probe) || ' (project share)', 'partner:create_report(custom)', 'call',
+                                  'created (the scope may name a shared project)', 'ok');
+    -- Pin the shared project, so its live figures would be in the pack's deep-dive blocks.
+    begin
+      perform public.set_report_inclusion(v_report, pg_temp.ps('probe_shared_project'), 'pinned');
+      v_outcome := 'pinned';
+    exception when others then
+      get stacked diagnostics v_state = returned_sqlstate, v_msg = message_text;
+      v_outcome := 'refused ' || v_state || ' ' || v_msg;
+    end;
+    insert into ct_result values (v_actor, (select sharer from ps_probe) || ' (project share)', 'partner:set_report_inclusion', 'call', v_outcome, 'ok');
+    begin
+      perform public.publish_report(v_report);
+      perform pg_temp.ct_as_postgres();
+      -- Live data of the sharer's project: a deep-dive block worked out for it, or its name or code
+      -- anywhere in the partner's pack (the id alone is what the partner put in the scope).
+      select count(*), string_agg(distinct s.block_key, ', ') into n, v_msg from public.report_snapshots s, public.projects p
+       where s.report_id = v_report and p.id = pg_temp.ps('probe_shared_project')
+         and (s.entity_id = p.id or strpos(s.data::text, to_jsonb(p.name)::text) > 0 or strpos(s.data::text, to_jsonb(p.code)::text) > 0);
+      v_outcome := 'published; snapshots carrying the sharer''s live project data: ' || n || coalesce(' (' || v_msg || ')', '');
+      v_verdict := case when n = 0 then 'ok' else 'LEAK' end;
+    exception when others then
+      get stacked diagnostics v_state = returned_sqlstate, v_msg = message_text;
+      v_outcome := 'publish refused ' || v_state || ' ' || v_msg; v_verdict := 'ok';
+    end;
+    insert into ct_result values (v_actor, (select sharer from ps_probe) || ' (project share)', 'partner:publish_report(custom)', 'call', v_outcome, v_verdict);
+  exception when others then
+    get stacked diagnostics v_state = returned_sqlstate, v_msg = message_text;
+    insert into ct_result values (v_actor, (select sharer from ps_probe) || ' (project share)', 'partner:create_report(custom)', 'call',
+                                  'refused ' || v_state || ' ' || v_msg, 'ok');
+  end;
+  perform pg_temp.ct_as_postgres();
+  -- The same through a direct update: the partner's own report (its own project only), then
+  -- scope_items changed to add the shared project (authenticated may update that column).
+  perform pg_temp.ct_as(v_actor);
+  begin
+    v_report := public.create_report(jsonb_build_object('scope_type', 'custom', 'title', 'GL10 partner probe 2', 'ad_hoc', true,
+      'scope_items', jsonb_build_array(jsonb_build_object('entity_type', 'project', 'entity_id', pg_temp.ps('probe_own_project')))));
+    begin
+      update public.reports set scope_items = scope_items || jsonb_build_array(jsonb_build_object('entity_type', 'project',
+        'entity_id', pg_temp.ps('probe_shared_project'))) where id = v_report;
+      get diagnostics n = row_count;
+      v_outcome := 'updated ' || n; v_verdict := case when n = 0 then 'ok' else 'LEAK' end;
+    exception when others then
+      get stacked diagnostics v_state = returned_sqlstate, v_msg = message_text;
+      v_outcome := 'refused ' || v_state || ' ' || v_msg; v_verdict := 'ok';
+    end;
+  exception when others then
+    get stacked diagnostics v_state = returned_sqlstate, v_msg = message_text;
+    v_outcome := 'setup refused ' || v_state || ' ' || v_msg; v_verdict := 'SETUP';
+  end;
+  perform pg_temp.ct_as_postgres();
+  insert into ct_result values (v_actor, (select sharer from ps_probe) || ' (project share)', 'partner:update reports.scope_items', 'call', v_outcome, v_verdict);
+  -- The share alone gives no live rows of the sharer's project.
+  perform pg_temp.ct_as(v_actor);
+  select count(*) into n from public.projects where id = pg_temp.ps('probe_shared_project');
+  perform pg_temp.ct_as_postgres();
+  insert into ct_result values (v_actor, (select sharer from ps_probe) || ' (project share)', 'partner:projects', 'select', n::text,
+                                case when n = 0 then 'ok' else 'LEAK' end);
+end $$;
+
+-- Revoke: delete every share to the partners; nothing of A stays visible to B.
+delete from public.entity_shares where partner_organisation_id in (select id from ct_orgs);
+select pg_temp.ps_table_checks(a, 'revoked') from unnest(array['b_admin', 'b_contributor', 'b_viewer']) a;
 
 -- ---------------------------------------------------------------------------------------------
 -- Results

@@ -561,6 +561,39 @@ and only on the records that check covered. Every service-role-only RPC they cal
   from before `layout` was exported (GL-6); `send-billing-notice` carries `_shared/service-role.ts`
   with an older header comment (code identical). No redeploy needed for those.
 
+**GL-10 follow-up: partner sharing (16/11/2026), tests only, not merged: 16 findings, not fixed.**
+`cross_tenant.sql` section 5 shares a published pack of A with B (`entity_shares`, `hidden_block_keys
+= {risks}`; blocks: one visible, one partner-unsafe, one hidden by key), plus a shared draft and an
+unshared pack, then counts every RLS table and view as B's admin, contributor and viewer. Allowed:
+the shared report row, its one visible snapshot and the share rows. Then a project share (B builds
+a pack over it), then revoke. Results: `report_permissions` and the revoke are correct (nothing
+visible after revoke, drafts and unshared packs never visible, no metric snapshots). Findings (each
+for all three of B's users unless noted):
+- F1 `report_narratives`: every narrative of the shared pack, including those of partner-unsafe and
+  `hidden_block_keys` blocks (policy is `can_view_report` only; RB-30 filters only snapshots).
+- F2 `report_inclusions`: every included project of the pack, including projects not shared, with
+  their selection reasons and severity.
+- F3 `report_events`: the pack's event history (actors, payloads).
+- F4 `report_notifications`: the draft-ready notices, with recipient email addresses.
+- F5 Storage `report-pdfs`: the pack's PDF, which the print route renders from every snapshot
+  (`report_snapshot_by_token` has no partner filter), so it carries the hidden blocks.
+- F6 (B's admin, with a project share): `create_report` accepts a custom scope mixing the partner's
+  own project with the shared one (`can_view_entity` is true through the share), `set_report_inclusion`
+  pins it, and `publish_report` (SECURITY DEFINER) works out deep-dive blocks for it as the owner: the
+  partner's own published pack then holds the sharer's live health (`overall_status`,
+  `health_by_dimension`) and its name and code (`__meta`). RB-15 says partners never get live data.
+  (`create_report` takes the smaller organisation id as the report's, so the probe runs from
+  whichever fixture organisation sorts first; production had 0 `entity_shares` rows on 16/11/2026, read-only check.)
+**Fixes built (16/11/2026), not applied, for review:** migration `20261116160000_gl_10_partner_sharing_fixes`
+(`docs/sql/gl-10-partner-sharing-fixes.sql`). F1 to F4: the `report_narratives`, `report_inclusions`,
+`report_events` and `report_notifications` select policies add `not is_partner_viewer(report_id)` (the
+rule `report_metric_snapshots` already had); F5: `report_pdfs_select` the same; all five by
+`ALTER POLICY`. F6: a trigger on `reports` (`reports_06_scope_same_org`) refuses a scope entity or a
+custom scope item from another organisation, on insert and on any change of the scope columns, which
+covers `create_report`, a direct update of `scope_items` (allowed to report editors) and the scheduled
+packs. `cross_tenant.sql` passes again (0 leaks), with a new case for the direct-update route. New
+shares stay paused (`20261116143810`, applied) until this is applied and sharing is switched back on.
+
 ### GL-11 Account closure and organisation deletion [DB]
 
 Design first.
