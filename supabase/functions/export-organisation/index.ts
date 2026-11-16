@@ -8,7 +8,8 @@
 //      table with organisation_id, generated from the catalog, plus the organisation row and its
 //      members' profiles), then organisation_export_rows page by page into tables/<table>.json.
 //      Secrets (token_hash) are left out in SQL. Storage files are listed in manifest.json, not
-//      zipped (v1).
+//      zipped (v1); GL-16: overflowed report snapshot payloads (bucket report-snapshots) are also
+//      zipped, under storage/report-snapshots/<path>.
 //   3. Uploads exports/<org>/<timestamp>.zip (private bucket, no user policies) and returns a
 //      24-hour signed URL. This organisation's zips older than 7 days are removed as it goes.
 // Body { mode: "cleanup" } with a service-role token (daily vpmo-export-cleanup job through the
@@ -18,6 +19,7 @@ import { Zip, ZipDeflate, strToU8 } from "npm:fflate@0.8.2";
 import { UUID, adminClient, dbErrorResponse, json, serve, signedIn } from "../_shared/http.ts";
 import { isServiceRoleRequest } from "../_shared/service-role.ts";
 import { batches, walkObjects } from "../_shared/organisation-deletion.ts";
+import { SNAPSHOT_BUCKET } from "../_shared/snapshot-overflow.ts";
 import {
   EXPORT_BUCKET,
   PAGE_SIZE,
@@ -143,6 +145,15 @@ serve("export-organisation", async (req) => {
       organisationId,
     );
     for (const path of paths) storage.push({ bucket: bucket.id, path });
+    // GL-16 (decision 3): overflowed report snapshot payloads are records, not attachments, so
+    // they go into the zip as well as the manifest.
+    if (bucket.id === SNAPSHOT_BUCKET) {
+      for (const path of paths) {
+        const { data: blob, error } = await admin.storage.from(SNAPSHOT_BUCKET).download(path);
+        if (error || !blob) return json({ error: "Couldn't read a report snapshot file." }, 500);
+        addText(`storage/${SNAPSHOT_BUCKET}/${path}`, await blob.text());
+      }
+    }
   }
 
   const manifest = {

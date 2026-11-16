@@ -4,12 +4,17 @@
 // 20261104120000_rb6_report_notify_cron (URL and key from Vault; see the handover).
 // GL-15: also sends the daily approver reminders (pending_approval_reminders, queued by
 // private.queue_approval_reminders from the same job; migration 20261112120000_gl_15_approval_reminders).
+// GL-16: also retries moving overflowed report snapshot payloads to Storage (decision 4: this
+// job's 15-minute schedule), emailing OPS_ALERT_EMAIL when one has failed 5 times.
 // Secrets: RESEND_API_KEY, REPORTS_FROM (or RESEND_FROM), APP_URL; optional
-// REPORTS_TEST_RECIPIENTS (comma-separated allowlist: on a test branch, only these receive mail).
+// REPORTS_TEST_RECIPIENTS (comma-separated allowlist: on a test branch, only these receive mail),
+// OPS_ALERT_EMAIL.
 import { APP_URL, adminClient, json, serve } from "../_shared/http.ts";
 import { sendApprovalReminders, sendPendingNotices } from "../_shared/report-notify.ts";
 import { reportSender } from "../_shared/report-sender.ts";
 import { isServiceRoleRequest } from "../_shared/service-role.ts";
+import { sendEmail } from "../_shared/email.ts";
+import { moveStagedSnapshots, overflowDeps } from "../_shared/snapshot-overflow.ts";
 
 serve("report-notify", async (req) => {
   // verify_jwt is on: the gateway checked the signature; this checks it is the service role
@@ -22,5 +27,22 @@ serve("report-notify", async (req) => {
   const result = await sendPendingNotices(rpc, APP_URL, sender);
   // GL-15: approver reminders, queued by the same job (private.queue_approval_reminders).
   const approvalReminders = await sendApprovalReminders(rpc, APP_URL, sender);
-  return json({ ...result, approval_reminders: approvalReminders });
+  // GL-16: overflowed snapshot payloads still staged.
+  const overflow = await moveStagedSnapshots(overflowDeps(admin), null).catch((err) => ({
+    moved: 0,
+    failed: [{ snapshot_id: "*", error: String(err?.message ?? err), attempts: 0 }],
+    alert: [] as string[],
+  }));
+  const alertTo = Deno.env.get("OPS_ALERT_EMAIL");
+  for (const id of alertTo ? overflow.alert : []) {
+    const error = overflow.failed.find((f) => f.snapshot_id === id)?.error ?? "";
+    await sendEmail({
+      to: alertTo!,
+      subject: `Report snapshot overflow failing: ${id}`,
+      html: `<p>Moving report snapshot ${id} to Storage has failed 5 times.</p><p>${error.replace(/</g, "&lt;")}</p>`,
+      text: `Moving report snapshot ${id} to Storage has failed 5 times.\n\n${error}`,
+      idempotencyKey: `snapshot-overflow-alert/${id}`,
+    }).catch(() => undefined);
+  }
+  return json({ ...result, approval_reminders: approvalReminders, overflow });
 });

@@ -69,6 +69,9 @@ select b.bucket_id, b.name from ct_orgs o, lateral (values
 ) b(bucket_id, name)
 where b.name is not null
 on conflict do nothing;
+insert into private.report_snapshot_staging (snapshot_id, organisation_id, report_id, data)
+  select distinct on (s.organisation_id) s.id, s.organisation_id, s.report_id, '{}'::jsonb from public.report_snapshots s
+  join ct_orgs o on o.id = s.organisation_id order by s.organisation_id, s.created_at, s.id;  -- GL-16
 
 -- The fixture fills RLS tables; private tables with organisation_id get a row here.
 insert into private.health_check_log (run, organisation_id, mismatches) select 'gl11', id, 0 from ct_orgs;

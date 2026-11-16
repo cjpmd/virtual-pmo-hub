@@ -111,9 +111,8 @@ begin
     (v_b, pg_temp.c('b_admin2'), 'admin');
 
   select id into v_ws from public.workspaces where organisation_id = v_a limit 1;
-  -- Issued committee pack, published-style report snapshot, submitted business case, recorded decision.
-  insert into public.committee_packs (organisation_id, workspace_id, title, meeting_date, issued_at, issued_by)
-  values (v_a, v_ws, 'GL11 issued pack', current_date, now(), pg_temp.c('a_admin'));
+  -- Published-style report snapshot, submitted business case, recorded decision. (GL-14 Phase C:
+  -- the issued committee pack case went with the table.)
   insert into public.reports (organisation_id, workspace_id, title, scope_type, as_at)
   values (v_a, v_ws, 'GL11 report', 'custom', current_date) returning id into v_rep;
   insert into public.report_snapshots (organisation_id, workspace_id, report_id, block_instance_id, block_key, data)
@@ -129,12 +128,11 @@ begin
   insert into public.decision_options (organisation_id, workspace_id, decision_id, title)
   select organisation_id, workspace_id, id, 'GL11 option' from public.decisions where id = v_dec;
   update public.decisions set status = 'made', decision_date = current_date, rationale = 'GL11' where id = v_dec;
-  insert into ctx values ('pack', (select id from public.committee_packs where title = 'GL11 issued pack')),
-                         ('snapshot', (select id from public.report_snapshots where report_id = v_rep)),
+  insert into ctx values ('snapshot', (select id from public.report_snapshots where report_id = v_rep)),
                          ('bc_version', v_ver), ('decision', v_dec);
 end $$;
 select pg_temp.ok('setup: guarded rows exist in A',
-  (select count(*) from ctx where k in ('pack', 'snapshot', 'bc_version', 'decision') and v is not null) = 4);
+  (select count(*) from ctx where k in ('snapshot', 'bc_version', 'decision') and v is not null) = 3);
 
 -- =====================================================================================
 -- 1. A signed-in user can't create, fake or reach the purge bypass.
@@ -160,8 +158,6 @@ select pg_temp.ok('no markers left', not exists (select 1 from private.privilege
 
 -- Owner-level checks of the marker itself.
 select pg_temp.ok('no marker: in_purge false', not private.in_purge());
-select pg_temp.raises('no marker: an issued pack can''t be deleted, even by postgres',
-  $$delete from public.committee_packs where id = pg_temp.c('pack')$$, '42501');
 select pg_temp.raises('no marker: a snapshot can''t be deleted', $$delete from public.report_snapshots where id = pg_temp.c('snapshot')$$, '42501');
 insert into private.privileged_ops (txid, backend_pid, kind) values (txid_current() - 1, pg_backend_pid(), 'purge');
 select pg_temp.ok('a marker for another transaction doesn''t count', not private.in_purge());
@@ -171,8 +167,8 @@ select pg_temp.ok('a marker for another backend doesn''t count', not private.in_
 delete from private.privileged_ops;
 insert into private.privileged_ops (txid, backend_pid, kind) values (txid_current(), pg_backend_pid(), 'closure');
 select pg_temp.ok('a closure marker never satisfies in_purge', not private.in_purge() and private.in_closure());
-select pg_temp.raises('a closure marker doesn''t unlock an issued pack',
-  $$delete from public.committee_packs where id = pg_temp.c('pack')$$, '42501');
+select pg_temp.raises('a closure marker doesn''t unlock a published snapshot',
+  $$delete from public.report_snapshots where id = pg_temp.c('snapshot')$$, '42501');
 delete from private.privileged_ops;
 
 -- =====================================================================================
@@ -203,6 +199,15 @@ insert into ctx values ('leaver_res', (select id from public.resources
                                         where organisation_id = pg_temp.c('org_b') and profile_id = pg_temp.c('b_leaver')));
 -- Make B read-only: closure must still work there.
 update public.organisation_subscriptions set trial_ends_at = now() - interval '1 day' where organisation_id = pg_temp.c('org_b');
+-- GL-7: the leaver accepts the terms while B is read-only (the table has no read-only trigger);
+-- A's admin accepts at setup (removed with A by the purge below).
+select pg_temp.as_user(pg_temp.c('b_leaver'));
+select pg_temp.ok('terms accepted while read-only',
+  public.accept_terms(pg_temp.c('org_b'), '2026-11-10', 'sign_in_prompt') is not null);
+select pg_temp.as_user(pg_temp.c('a_admin'));
+select pg_temp.ok('A''s admin accepts at setup',
+  public.accept_terms(pg_temp.c('org_a'), '2026-11-10', 'organisation_setup') is not null);
+select pg_temp.as_owner();
 select pg_temp.ok('B is read-only for the test', not private.organisation_is_writable(pg_temp.c('org_b')));
 
 select pg_temp.as_user(pg_temp.c('b_admin2'), 601);
@@ -287,6 +292,19 @@ select pg_temp.ok('one closure audit row per organisation left',
 select pg_temp.ok('closure logged; auth deletion pending',
   exists (select 1 from private.account_closure_log where profile_id = pg_temp.c('b_leaver'))
   and pg_temp.c('b_leaver') in (select public.account_closures_pending()));
+select pg_temp.ok('GL-7: the terms acceptance stays, pointing at the tombstone (no name or email in it)',
+  exists (select 1 from public.terms_acceptances t join public.profiles p on p.id = t.profile_id
+          where t.organisation_id = pg_temp.c('org_b') and t.profile_id = pg_temp.c('b_leaver')
+            and t.terms_version = '2026-11-10' and p.display_name = 'Former member' and p.email = ''));
+select pg_temp.as_user(pg_temp.c('b_admin'));
+select pg_temp.ok('GL-7: B''s admin still sees the former member''s acceptance',
+  exists (select 1 from public.terms_acceptances where profile_id = pg_temp.c('b_leaver')));
+select pg_temp.as_owner();
+select pg_temp.raises('GL-7: an acceptance can''t be edited, even by the owner',
+  $$update public.terms_acceptances set terms_version = '2020-01-01' where profile_id = pg_temp.c('b_leaver')$$,
+  '42501', 'terms_acceptance_immutable');
+select pg_temp.raises('GL-7: or deleted outside a purge',
+  $$delete from public.terms_acceptances where profile_id = pg_temp.c('b_leaver')$$, '42501', 'terms_acceptance_immutable');
 select pg_temp.raises('a closed profile can''t rejoin',
   $$insert into public.organisation_members (organisation_id, profile_id, role) values (pg_temp.c('org_b'), pg_temp.c('b_leaver'), 'viewer')$$,
   '42501', 'account_closed');
@@ -372,10 +390,12 @@ select pg_temp.ok('nothing left anywhere for A', pg_temp.org_rows(pg_temp.c('org
   and not exists (select 1 from public.organisations where id = pg_temp.c('org_a')));
 select pg_temp.ok('B untouched by the purge', pg_temp.org_rows(pg_temp.c('org_b')) = (select n from counts where k = 'b_mid')
   and exists (select 1 from public.organisations where id = pg_temp.c('org_b')));
+select pg_temp.ok('GL-7: A''s terms acceptances purged with it',
+  not exists (select 1 from public.terms_acceptances where organisation_id = pg_temp.c('org_a')));
 select pg_temp.ok('members of A keep their accounts', exists (select 1 from public.profiles
   where id = pg_temp.c('a_member') and closed_at is null and last_organisation_id is null));
 select pg_temp.ok('purge logged with ids and counts only', exists (select 1 from private.organisation_purge_log
-  where purged_organisation_id = pg_temp.c('org_a') and row_counts ? 'public.committee_packs'));
+  where purged_organisation_id = pg_temp.c('org_a') and row_counts ? 'public.report_snapshots'));
 select pg_temp.ok('no markers left after the purge', not exists (select 1 from private.privileged_ops));
 select pg_temp.raises('purging B without a request is refused', $$select public.purge_organisation(pg_temp.c('org_b'), false)$$,
   '55000', 'purge_not_ready');

@@ -11051,6 +11051,55 @@ export type Database = {
           },
         ]
       }
+      report_snapshot_objects: {
+        Row: {
+          organisation_id: string
+          report_id: string
+          snapshot_id: string
+          storage_path: string
+          uploaded_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          organisation_id: string
+          report_id: string
+          snapshot_id: string
+          storage_path: string
+          uploaded_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          organisation_id?: string
+          report_id?: string
+          snapshot_id?: string
+          storage_path?: string
+          uploaded_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_snapshot_objects_report_id_organisation_id_fkey"
+            columns: ["report_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "report_snapshot_objects_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: true
+            referencedRelation: "report_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_snapshot_objects_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       report_snapshots: {
         Row: {
           block_instance_id: string
@@ -11062,6 +11111,9 @@ export type Database = {
           id: string
           metrics: Json | null
           organisation_id: string
+          overflowed: boolean
+          payload_bytes: number | null
+          payload_sha256: string | null
           report_id: string
           workspace_id: string | null
         }
@@ -11075,6 +11127,9 @@ export type Database = {
           id?: string
           metrics?: Json | null
           organisation_id: string
+          overflowed?: boolean
+          payload_bytes?: number | null
+          payload_sha256?: string | null
           report_id: string
           workspace_id?: string | null
         }
@@ -11088,6 +11143,9 @@ export type Database = {
           id?: string
           metrics?: Json | null
           organisation_id?: string
+          overflowed?: boolean
+          payload_bytes?: number | null
+          payload_sha256?: string | null
           report_id?: string
           workspace_id?: string | null
         }
@@ -13388,6 +13446,51 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "workspaces"
             referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      terms_acceptances: {
+        Row: {
+          accepted_at: string
+          id: string
+          method: string
+          organisation_id: string
+          profile_id: string
+          recorded_at: string
+          terms_version: string
+        }
+        Insert: {
+          accepted_at?: string
+          id?: string
+          method: string
+          organisation_id: string
+          profile_id: string
+          recorded_at?: string
+          terms_version: string
+        }
+        Update: {
+          accepted_at?: string
+          id?: string
+          method?: string
+          organisation_id?: string
+          profile_id?: string
+          recorded_at?: string
+          terms_version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "terms_acceptances_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "terms_acceptances_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -16610,6 +16713,14 @@ export type Database = {
     }
     Functions: {
       accept_invite: { Args: { p_token: string }; Returns: Json }
+      accept_terms: {
+        Args: {
+          p_method: string
+          p_organisation_id: string
+          p_terms_version: string
+        }
+        Returns: string
+      }
       account_closures_pending: { Args: never; Returns: string[] }
       acknowledge_ai_draft: {
         Args: { p_narrative_id: string }
@@ -16736,6 +16847,14 @@ export type Database = {
         }
         Returns: Json
       }
+      complete_snapshot_overflow: {
+        Args: {
+          p_sha256: string
+          p_snapshot_id: string
+          p_storage_path: string
+        }
+        Returns: undefined
+      }
       convert_request_to_project: {
         Args: { p_overrides?: Json; p_request_id: string }
         Returns: string
@@ -16860,6 +16979,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      fail_snapshot_overflow: {
+        Args: { p_error: string; p_snapshot_id: string }
+        Returns: number
       }
       find_joinable_organisations: {
         Args: never
@@ -17194,11 +17317,35 @@ export type Database = {
       }
       report_context: { Args: { p_input: Json }; Returns: Json }
       report_distribution: { Args: { p_report_id: string }; Returns: Json }
+      report_overflow_by_token: {
+        Args: { p_report_id: string; p_snapshot_ids: string[]; p_token: string }
+        Returns: {
+          payload: string
+          snapshot_id: string
+          storage_path: string
+        }[]
+      }
       report_permissions: { Args: { p_report_id: string }; Returns: Json }
       report_scope_metrics: { Args: { p_input: Json }; Returns: Json }
       report_snapshot_by_token: {
         Args: { p_report_id: string; p_token: string }
         Returns: Json
+      }
+      report_snapshot_staged: {
+        Args: { p_report_id?: string }
+        Returns: {
+          attempts: number
+          organisation_id: string
+          payload: string
+          report_id: string
+          sha256: string
+          snapshot_id: string
+          storage_path: string
+        }[]
+      }
+      report_snapshot_staged_payload: {
+        Args: { p_snapshot_id: string }
+        Returns: string
       }
       request_organisation_deletion: {
         Args: { p_confirm_name: string; p_organisation_id: string }

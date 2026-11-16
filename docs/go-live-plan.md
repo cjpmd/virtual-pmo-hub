@@ -314,6 +314,27 @@ sign-up form ("By creating an account you agree to…"). Email sign-up records `
 and `terms_accepted_at` in the auth user metadata (`lib/legal.ts` `TERMS_VERSION`); Microsoft
 sign-up records nothing yet. Tick GL-7 after the legal review.
 
+**GL-7 follow-up built (16/11/2026); applied 16/11/2026, not merged:** migration
+`20261116142056_gl_7_terms_acceptances` (`docs/sql/gl-7-terms-acceptances.sql`), tested on the local
+Postgres only. `public.terms_acceptances` (organisation, person, terms version, accepted_at, method,
+recorded_at; unique per organisation, person and version) is written only by the definer RPC
+`accept_terms(org, version, method)`: `organisation_setup` (the admin ticks "I accept the Terms and
+the DPA on behalf of …" on `/signup/setup`'s Lifecycle step, email and Microsoft sign-ups alike),
+`signup_form` (the email form's `terms_version` in the auth metadata, which must match; its
+`terms_accepted_at` becomes `accepted_at`) and `sign_in_prompt`. People read their own rows,
+organisation admins all of the organisation's; nobody edits or deletes them (a trigger refuses both
+except during a purge). No read-only trigger (exempt like `audit_log`). The app checks once per
+organisation after sign-in (`components/auth/terms-gate.tsx`): no record of the current
+`TERMS_VERSION` → recorded silently from the sign-up form when it matches, else a prompt before the
+app opens (fails open if the check can't be read). Changing `TERMS_VERSION` asks everyone again.
+Closure keeps the rows (they point at the "Former member" tombstone and hold no name or email);
+the organisation purge deletes them with the organisation; the GL-11b export includes them (catalog).
+Tests: `supabase/tests/terms_acceptances.sql` (21), `account_closure.sql` (83), `cross_tenant.sql`
+(fixture row and three `accept_terms` cases), `read_only_mode.sql`, `services/terms.test.ts`.
+Applied to production 16/11/2026 (recorded `20261116142056`; `accept_terms` md5-identical to the
+local build; RLS on, no insert for `authenticated`, `accept_terms` closed to `anon`). Decided: no
+acceptance summary is kept when an organisation is purged.
+
 ### GL-8 Sector choice and financial-year defaults [DB]
 
 ```
@@ -474,6 +495,14 @@ organisation, and partner access needs its own positive tests. Found, not change
 `create_organisation('Name', 'general')` with two positional arguments is ambiguous between the
 GL-8 signature and the old wrapper (the app passes named arguments); `reports_phase6.sql` fails
 locally because the shim has no `vpmo-report-notify` cron job.
+
+**GL-10 follow-up: new partner shares paused (16/11/2026, applied, not merged):** migration
+`20261116143810_gl_10_pause_entity_shares` (`docs/sql/gl-10-pause-entity-shares.sql`). A trigger refuses
+every new `entity_shares` row while `private.entity_sharing_settings.enabled` is false (shipped false),
+as the owner or the service role too; existing shares, and updating or revoking them, are unchanged.
+Production had 0 shares. Turn it back on in the SQL editor once the partner-sharing fixes are applied:
+`update private.entity_sharing_settings set enabled = true, changed_at = now();`. The seed and the
+GL-10 fixture switch it on inside their own transaction. Test: `supabase/tests/entity_shares_paused.sql`.
 
 **GL-10 follow-up: service-role code audit (done 10/11/2026).** Each function that uses the
 service role (or a shared secret) was read, with the SQL of every RPC it calls, to check it
@@ -790,6 +819,13 @@ collection page starts a collection-scoped report from the "Funding committee" t
 the collection's published reports, Settings › Templates has a "Board and committee packs" logo
 switch (`templates.reports.showLogo`, falling back to the old key), and the product and pricing
 copy say "board and committee packs". Phase C (deleting the draft-building code) stays optional.
+**Phase C built (16/11/2026); section A applied 16/11/2026, not merged:** migration
+`20261116142252_gl_14c_retire_committee_packs` (`docs/sql/gl-14c-retire-committee-packs.sql`; the table
+drop is its section D, by hand). Old pack code removed; chart markers read only report-builder packs.
+Details in `docs/design/retire-committee-packs.md` §9. Section A applied to production 16/11/2026
+(recorded `20261116142252`; both overview functions md5-identical to the local build; no function
+reads `committee_packs` any more; still 0 rows). Section D (the drop) is for Chris to run after the
+merge.
 
 ### GL-15 Report approver reminders
 
@@ -849,6 +885,20 @@ signed URLs from a token-checked edge function; PPTX needs no change. SQL sketch
 the doc. **Approved 12/11/2026, build deferred until a pack needs it:** option C, the proposed
 thresholds (256 KB per block, 2 MB inline, 50 MB per pack), overflowed payloads included in the
 GL-11b export zip, retries on `vpmo-report-notify`'s 15-minute schedule.
+
+**Built (16/11/2026); applied and deployed 16/11/2026, not merged:** migration `20261116142802_gl_16_pack_overflow`
+(`docs/sql/gl-16-pack-overflow.sql`), edge functions `report-publish`, `report-notify`,
+`export-organisation` (changed) and `report-snapshot-payload` (new); details in
+`docs/design/pack-overflow-storage.md` §6. Applied to production 16/11/2026 (recorded
+`20261116142802`; `publish_report` and `report_overflow_by_token` md5-identical to the local build;
+bucket private, JSON only, 50 MB; the service RPCs closed to `authenticated` and `anon`). Deployed:
+`report-snapshot-payload` version 1 (verify_jwt off), `report-publish` 6, `report-notify` 8,
+`export-organisation` 5 (all from the repo files). Smoke tests: `report-snapshot-payload` answers 400
+to a malformed body, `{"payloads": []}` to a wrong token and 405 to GET; the other three answer 401
+without a token, and with the anon key their own checks refuse (Sign in again / Service role only /
+Sign in first). `cross_tenant.sql` also covers the print-token path: B's token, a wrong, empty or
+missing token, and B's own report and token asking for A's snapshot all return nothing; signed-in
+users and anon can't call `report_overflow_by_token`.
 
 ### GL-17 Multi-tenant health refresh measurement
 

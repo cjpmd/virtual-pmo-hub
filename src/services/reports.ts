@@ -10,6 +10,7 @@ import type {
   Tolerances,
 } from "@/features/reports/engine/evaluateRules";
 import type { ForumType } from "@/features/reports/engine/defaults";
+import { resolveOverflow } from "@/features/reports/engine/snapshot-overflow";
 import { ServiceError, unwrap, unwrapMaybe } from "./service-error";
 import { deleteWhere, insertRow, insertRows, updateRow } from "./write";
 import { createBatcher } from "@/lib/batch";
@@ -949,11 +950,33 @@ export async function listSnapshots(reportId: string): Promise<SnapshotRow[]> {
   const rows = unwrap(
     await supabase
       .from("report_snapshots")
-      .select("block_instance_id, block_key, entity_id, data")
+      .select(
+        "id, block_instance_id, block_key, entity_id, data, overflowed, payload_sha256, report_snapshot_objects(storage_path)",
+      )
       .eq("report_id", reportId),
     "Loading the published pack",
   );
-  return rows.map((row) => ({
+  // GL-16: blocks over 256 KB are in Storage (downloaded with the user's session, through the
+  // bucket policy that mirrors the snapshot's own visibility) or, just after publishing, still
+  // staged (report_snapshot_staged_payload). Each payload's SHA-256 is checked.
+  const resolved = await resolveOverflow(
+    rows.map((row) => ({
+      ...row,
+      sha256: row.payload_sha256,
+      path: row.report_snapshot_objects?.storage_path ?? null,
+    })),
+    async (row) => {
+      if (row.path) {
+        const { data, error } = await supabase.storage.from("report-snapshots").download(row.path);
+        return error || !data ? null : await data.text();
+      }
+      const { data, error } = await supabase.rpc("report_snapshot_staged_payload", {
+        p_snapshot_id: row.id,
+      });
+      return error ? null : (data ?? null);
+    },
+  );
+  return resolved.map((row) => ({
     blockInstanceId: row.block_instance_id,
     blockKey: row.block_key,
     entityId: row.entity_id,
@@ -968,9 +991,49 @@ export async function snapshotByToken(reportId: string, token: string) {
     "Loading the pack",
   ) as {
     report: Record<string, unknown>;
-    snapshots: Array<{ block_instance_id: string; entity_id: string | null; data: unknown }>;
+    snapshots: Array<{
+      id?: string;
+      block_instance_id: string;
+      entity_id: string | null;
+      data: unknown;
+      overflowed?: boolean;
+      sha256?: string | null;
+    }>;
   } | null;
-  return data;
+  if (!data) return data;
+  // GL-16: overflowed blocks come from the report-snapshot-payload edge function (60-second
+  // signed URLs, or the staged payload), checked by token; each payload's SHA-256 is verified.
+  const overflowed = data.snapshots.filter((s) => s.overflowed && s.id);
+  let payloads = new Map<string, { url?: string | null; payload?: string | null }>();
+  if (overflowed.length) {
+    const { data: result } = await supabase.functions.invoke("report-snapshot-payload", {
+      body: { report_id: reportId, token, snapshot_ids: overflowed.map((s) => s.id) },
+    });
+    const list =
+      (
+        result as {
+          payloads?: Array<{ snapshot_id: string; url?: string | null; payload?: string | null }>;
+        } | null
+      )?.payloads ?? [];
+    payloads = new Map(list.map((p) => [p.snapshot_id, p]));
+  }
+  const snapshots = await resolveOverflow(
+    data.snapshots.map((s) => ({
+      ...s,
+      id: s.id ?? "",
+      overflowed: !!s.overflowed,
+      sha256: s.sha256 ?? null,
+    })),
+    async (row) => {
+      const found = payloads.get(row.id);
+      if (!found) return null;
+      if (typeof found.payload === "string") return found.payload;
+      if (!found.url) return null;
+      const response = await fetch(found.url);
+      return response.ok ? await response.text() : null;
+    },
+  );
+  return { ...data, snapshots };
 }
 
 // ------------------------------------------------------------------ meeting capture (§9.3)
