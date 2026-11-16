@@ -89,7 +89,13 @@ select pg_temp.ok('the meta row is inline', exists (select 1 from public.report_
 select pg_temp.raises('the overflow columns can''t be changed',
   $$update public.report_snapshots set overflowed = false, payload_sha256 = null where id = pg_temp.id('big')$$, '42501');
 
--- Share the pack with the partner organisation.
+-- Share the pack with the partner organisation (new shares are paused by the GL-10 follow-up;
+-- allowed here inside this rolled-back transaction).
+do $$ begin
+  if to_regclass('private.entity_sharing_settings') is not null then
+    execute 'update private.entity_sharing_settings set enabled = true';
+  end if;
+end $$;
 insert into public.entity_shares (organisation_id, workspace_id, entity_type, entity_id, partner_organisation_id)
 select organisation_id, workspace_id, 'report', id, pg_temp.id('partner_org') from public.reports where id = pg_temp.id('rep');
 
