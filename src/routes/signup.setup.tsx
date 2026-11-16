@@ -8,9 +8,11 @@ import { selfSignup } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { createOrganisation, listMemberships, setLastOrganisation } from "@/services/auth";
 import { qk } from "@/services/query-keys";
 import { seedSampleData } from "@/services/sample-data";
+import { acceptTerms } from "@/services/terms";
 import { errorMessage } from "@/services/service-error";
 import { cn } from "@/lib/utils";
 import { orgFromDomain } from "@/lib/org-name";
@@ -87,6 +89,9 @@ function Setup({ userId, email }: { userId: string; email: string }) {
   // GL-9: off by default. The organisation is created first; sample data is added after it.
   const [withSample, setWithSample] = useState(false);
   const [sampleResult, setSampleResult] = useState<"added" | string | null>(null);
+  // GL-7: the admin accepts the Terms and DPA for the organisation they create (email and
+  // Microsoft sign-ups alike), recorded in terms_acceptances.
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   // The financial year follows the sector (August, April, January); it can still be changed.
   const chooseSector = (value: Sector) => {
     setSector(value);
@@ -105,6 +110,8 @@ function Setup({ userId, email }: { userId: string; email: string }) {
       // Open the new organisation next time. Best effort: the organisation already exists, and
       // the app falls back to the user's first membership if this doesn't stick.
       await setLastOrganisation(userId, id).catch(() => undefined);
+      // Best effort too: if this fails, the sign-in check asks again before the app opens.
+      await acceptTerms(id, "organisation_setup").catch(() => undefined);
       if (withSample) {
         // A failure here doesn't undo the organisation: the admin can add it from Settings.
         try {
@@ -285,6 +292,35 @@ function Setup({ userId, email }: { userId: string; email: string }) {
                   aria-label="Start with sample data"
                 />
               </label>
+              <label className="flex items-start gap-3 text-sm">
+                <Checkbox
+                  className="mt-0.5"
+                  checked={acceptedTerms}
+                  onCheckedChange={(value) => setAcceptedTerms(value === true)}
+                  aria-label="Accept the terms for the organisation"
+                />
+                <span>
+                  I accept the{" "}
+                  <a
+                    href="/terms"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    Terms of service
+                  </a>{" "}
+                  and the{" "}
+                  <a
+                    href="/dpa"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    Data Processing Agreement
+                  </a>{" "}
+                  on behalf of {name.trim() || "the organisation"}.
+                </span>
+              </label>
               {create.isError && (
                 <p
                   role="alert"
@@ -345,7 +381,7 @@ function Setup({ userId, email }: { userId: string; email: string }) {
           )}
           {step === 3 && (
             <Button
-              disabled={create.isPending || !name.trim() || !sector}
+              disabled={create.isPending || !name.trim() || !sector || !acceptedTerms}
               onClick={() => create.mutate()}
             >
               {create.isPending && <LoaderCircle className="animate-spin" />}Create organisation

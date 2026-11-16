@@ -13391,6 +13391,51 @@ export type Database = {
           },
         ]
       }
+      terms_acceptances: {
+        Row: {
+          accepted_at: string
+          id: string
+          method: string
+          organisation_id: string
+          profile_id: string
+          recorded_at: string
+          terms_version: string
+        }
+        Insert: {
+          accepted_at?: string
+          id?: string
+          method: string
+          organisation_id: string
+          profile_id: string
+          recorded_at?: string
+          terms_version: string
+        }
+        Update: {
+          accepted_at?: string
+          id?: string
+          method?: string
+          organisation_id?: string
+          profile_id?: string
+          recorded_at?: string
+          terms_version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "terms_acceptances_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "terms_acceptances_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_favourites: {
         Row: {
           created_at: string
@@ -16610,6 +16655,14 @@ export type Database = {
     }
     Functions: {
       accept_invite: { Args: { p_token: string }; Returns: Json }
+      accept_terms: {
+        Args: {
+          p_method: string
+          p_organisation_id: string
+          p_terms_version: string
+        }
+        Returns: string
+      }
       account_closures_pending: { Args: never; Returns: string[] }
       acknowledge_ai_draft: {
         Args: { p_narrative_id: string }

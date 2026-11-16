@@ -203,6 +203,15 @@ insert into ctx values ('leaver_res', (select id from public.resources
                                         where organisation_id = pg_temp.c('org_b') and profile_id = pg_temp.c('b_leaver')));
 -- Make B read-only: closure must still work there.
 update public.organisation_subscriptions set trial_ends_at = now() - interval '1 day' where organisation_id = pg_temp.c('org_b');
+-- GL-7: the leaver accepts the terms while B is read-only (the table has no read-only trigger);
+-- A's admin accepts at setup (removed with A by the purge below).
+select pg_temp.as_user(pg_temp.c('b_leaver'));
+select pg_temp.ok('terms accepted while read-only',
+  public.accept_terms(pg_temp.c('org_b'), '2026-11-10', 'sign_in_prompt') is not null);
+select pg_temp.as_user(pg_temp.c('a_admin'));
+select pg_temp.ok('A''s admin accepts at setup',
+  public.accept_terms(pg_temp.c('org_a'), '2026-11-10', 'organisation_setup') is not null);
+select pg_temp.as_owner();
 select pg_temp.ok('B is read-only for the test', not private.organisation_is_writable(pg_temp.c('org_b')));
 
 select pg_temp.as_user(pg_temp.c('b_admin2'), 601);
@@ -287,6 +296,19 @@ select pg_temp.ok('one closure audit row per organisation left',
 select pg_temp.ok('closure logged; auth deletion pending',
   exists (select 1 from private.account_closure_log where profile_id = pg_temp.c('b_leaver'))
   and pg_temp.c('b_leaver') in (select public.account_closures_pending()));
+select pg_temp.ok('GL-7: the terms acceptance stays, pointing at the tombstone (no name or email in it)',
+  exists (select 1 from public.terms_acceptances t join public.profiles p on p.id = t.profile_id
+          where t.organisation_id = pg_temp.c('org_b') and t.profile_id = pg_temp.c('b_leaver')
+            and t.terms_version = '2026-11-10' and p.display_name = 'Former member' and p.email = ''));
+select pg_temp.as_user(pg_temp.c('b_admin'));
+select pg_temp.ok('GL-7: B''s admin still sees the former member''s acceptance',
+  exists (select 1 from public.terms_acceptances where profile_id = pg_temp.c('b_leaver')));
+select pg_temp.as_owner();
+select pg_temp.raises('GL-7: an acceptance can''t be edited, even by the owner',
+  $$update public.terms_acceptances set terms_version = '2020-01-01' where profile_id = pg_temp.c('b_leaver')$$,
+  '42501', 'terms_acceptance_immutable');
+select pg_temp.raises('GL-7: or deleted outside a purge',
+  $$delete from public.terms_acceptances where profile_id = pg_temp.c('b_leaver')$$, '42501', 'terms_acceptance_immutable');
 select pg_temp.raises('a closed profile can''t rejoin',
   $$insert into public.organisation_members (organisation_id, profile_id, role) values (pg_temp.c('org_b'), pg_temp.c('b_leaver'), 'viewer')$$,
   '42501', 'account_closed');
@@ -372,6 +394,8 @@ select pg_temp.ok('nothing left anywhere for A', pg_temp.org_rows(pg_temp.c('org
   and not exists (select 1 from public.organisations where id = pg_temp.c('org_a')));
 select pg_temp.ok('B untouched by the purge', pg_temp.org_rows(pg_temp.c('org_b')) = (select n from counts where k = 'b_mid')
   and exists (select 1 from public.organisations where id = pg_temp.c('org_b')));
+select pg_temp.ok('GL-7: A''s terms acceptances purged with it',
+  not exists (select 1 from public.terms_acceptances where organisation_id = pg_temp.c('org_a')));
 select pg_temp.ok('members of A keep their accounts', exists (select 1 from public.profiles
   where id = pg_temp.c('a_member') and closed_at is null and last_organisation_id is null));
 select pg_temp.ok('purge logged with ids and counts only', exists (select 1 from private.organisation_purge_log

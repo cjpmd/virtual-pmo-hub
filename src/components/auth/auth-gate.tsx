@@ -11,6 +11,7 @@ import { OrganisationProvider, useOrganisationState } from "./organisation-provi
 import { useSession } from "./session-provider";
 import { SettingsSync } from "./settings-sync";
 import { Splash } from "./splash";
+import { TermsGate } from "./terms-gate";
 import { isPublicPath } from "@/lib/public-paths";
 
 // GL-18: isPublicPath and Splash live in small modules so the root route and public pages can
@@ -71,7 +72,9 @@ function OrganisationGate({ children }: { children: ReactNode }) {
     );
   return (
     <OrganisationProvider value={state.value}>
-      <SettingsSync>{children}</SettingsSync>
+      <TermsGate>
+        <SettingsSync>{children}</SettingsSync>
+      </TermsGate>
     </OrganisationProvider>
   );
 }
