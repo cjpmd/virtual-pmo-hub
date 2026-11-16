@@ -292,6 +292,12 @@ begin
        join public.projects b on b.workspace_id = a.workspace_id and b.id <> a.id where a.organisation_id = %1$L limit 1$s$),
     ('saved_views', $s$insert into public.saved_views (organisation_id, board_key, owner_id, name, config)
        select %1$L, 'gl10', profile_id, 'GL10 view', '{}' from public.organisation_members where organisation_id = %1$L and role = 'admin' limit 1$s$),
+    -- GL-16: its path check needs the snapshot's own ids; one object row for one of the organisation's snapshots.
+    ('report_snapshot_objects', $s$insert into public.report_snapshot_objects (snapshot_id, organisation_id, workspace_id, report_id, storage_path)
+       select s.id, s.organisation_id, s.workspace_id, s.report_id, s.organisation_id || '/' || s.report_id || '/' || s.id || '.json'
+       from public.report_snapshots s where s.organisation_id = %1$L
+         and not exists (select 1 from public.report_snapshot_objects o where o.snapshot_id = s.id)
+       order by s.created_at, s.id limit 1$s$),
     ('user_favourites', $s$insert into public.user_favourites (organisation_id, profile_id, project_id)
        select %1$L, m.profile_id, p.id from public.organisation_members m, public.projects p
        where m.organisation_id = %1$L and m.role = 'admin' and p.organisation_id = %1$L limit 1$s$),

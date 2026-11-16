@@ -271,7 +271,8 @@ select o.label, b.bucket_id, b.name from ct_orgs o, lateral (values
   ('attachments', o.id || '/' || o.ws || '/gl10/attachment.pdf'),
   ('evidence',    o.id || '/' || o.ws || '/gl10/evidence.pdf'),
   ('documents',   (select d.storage_path from public.documents d where d.organisation_id = o.id order by d.created_at limit 1)),
-  ('report-pdfs', o.id || '/' || (select r.id from public.reports r where r.organisation_id = o.id order by r.created_at limit 1) || '.pdf')  -- as report-pdf stores it
+  ('report-pdfs', o.id || '/' || (select r.id from public.reports r where r.organisation_id = o.id order by r.created_at limit 1) || '.pdf'),  -- as report-pdf stores it
+  ('report-snapshots', (select x.storage_path from public.report_snapshot_objects x where x.organisation_id = o.id order by x.storage_path limit 1))  -- GL-16
 ) b(bucket_id, name);
 insert into storage.objects (bucket_id, name) select bucket_id, name from ct_objects;
 
@@ -415,6 +416,8 @@ insert into ct_cases (fn, call, expect, note) values
   ('request_organisation_deletion(uuid,text)', $c$select public.request_organisation_deletion('{a_org}', '{a_org_name}')$c$, 'empty', null),
   ('cancel_organisation_deletion(uuid)', $c$select public.cancel_organisation_deletion('{a_org}')$c$, 'empty', null),
   ('start_organisation_export(uuid)', $c$select public.start_organisation_export('{a_org}')$c$, 'empty', null),
+  -- GL-16: a staged payload of A's (none is staged in the fixture; the visibility check runs first).
+  ('report_snapshot_staged_payload(uuid)', $c$select public.report_snapshot_staged_payload((select id from public.report_snapshots where organisation_id = '{a_org}' limit 1))$c$, 'empty', null),
   -- GL-13.
   ('mark_notifications_read(uuid,uuid[])', $c$select public.mark_notifications_read('{a_org}')$c$, 'empty', null),
   ('mark_notifications_read(uuid,uuid[])', $c$select public.mark_notifications_read('{a_org}', array['{a_notification}'::uuid])$c$, 'empty', null),

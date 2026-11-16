@@ -1,6 +1,6 @@
 # GL-16 — Large report packs overflow to Storage
 
-Status: **approved, build deferred until a pack needs it** (decisions 12/11/2026, §4). Nothing
+Status: **approved (decisions 12/11/2026, §4); built 16/11/2026, not applied (§6).** Nothing
 built or applied; design and SQL sketch written 11/11/2026. Decision RB-29 refused packs over 2 MB of snapshot data; this replaces the refusal
 with an overflow to a private Storage bucket, keeping snapshots immutable and verifiable.
 
@@ -199,3 +199,42 @@ Questions as written before the decisions:
 ## 5. What this package delivered
 
 This document only. No migration, code or production change.
+
+## 6. Built (16/11/2026, not applied, not merged)
+
+Migration `20261116130000_gl_16_pack_overflow` (`docs/sql/gl-16-pack-overflow.sql`), tested on the
+local Postgres only. As designed in §3, with these details:
+
+- `private.insert_report_snapshot` makes the inline / overflow choice for every block row and
+  `__changes` (`__meta` always stays inline): over 256 KB of `data::text` → `data = 'null'`,
+  `overflowed`, `payload_sha256`, `payload_bytes`, and a `private.report_snapshot_staging` row
+  (which also keeps `report_id`). A block over 50 MB, or more than 50 MB of overflow in a pack, raises
+  `54000`; the 2 MB check now counts inline rows only. The publish event and result carry
+  `overflow_bytes`. Two checks keep the row honest: `overflowed = (payload_sha256 is not null)` and
+  an overflowed row's `data` is JSON null.
+- Service-role RPCs: `report_snapshot_staged(report | null)` (the payload as the exact hashed text,
+  the hex hash and the path; all reports: oldest 50), `complete_snapshot_overflow(id, path, sha256)`
+  (hash and path must match; records `report_snapshot_objects`, clears staging; once only),
+  `fail_snapshot_overflow(id, error)` (counts attempts) and `report_overflow_by_token(report, token,
+  ids)` (the print token check, then object paths or staged payloads for overflowed rows of that
+  report only).
+- Reads: `private.can_view_snapshot(id)` repeats `report_snapshots_select`; it is the RLS rule of
+  `report_snapshot_objects`, the bucket's select policy (`report_snapshots_objects_select`) and the
+  check in `report_snapshot_staged_payload(id)` (authenticated). `report_snapshot_by_token` also
+  returns each row's `id`, `overflowed` and `sha256`.
+- Edge functions: `_shared/snapshot-overflow.ts` (`moveStagedSnapshots`, unit-tested) refuses a
+  staged payload that no longer hashes to the published hash, uploads with `upsert: false`, accepts
+  an existing object only if identical, then completes; failures are counted. `report-publish` moves
+  the report's payloads right after `publish_report` and takes `{ mode: "drain" }` (service role);
+  `report-notify` (every 15 minutes, decision 4) drains anything left and emails `OPS_ALERT_EMAIL` at
+  the fifth failure. New `report-snapshot-payload` (`verify_jwt = false`) serves the print route:
+  60-second signed URLs or staged payloads. `export-organisation` zips the bucket's objects under
+  `storage/report-snapshots/<path>` (decision 3).
+- Client: `features/reports/engine/snapshot-overflow.ts` (`resolveOverflow`, unit-tested) loads each
+  overflowed payload (Storage download with the session, else the staged read; the print route uses
+  the edge function), checks its SHA-256 (Web Crypto) and parses it; a failure renders "This block
+  couldn't be loaded / verified." in place of the block. PPTX needs no change.
+- Tests: `supabase/tests/report_overflow.sql` (35 checks, using a throwaway test block that returns
+  a payload of a given size), `cross_tenant.sql` (fixture row, the new RPC, the bucket),
+  `organisation_purge.sql` (staging row), unit tests for both TypeScript modules.
+

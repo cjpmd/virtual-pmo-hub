@@ -4,6 +4,9 @@
 //   REPORT_SERVER_PDF=true and REPORT_PDF_URL (the Netlify report-pdf function) with
 //   REPORT_PDF_SECRET: asks it to render /report-print/<id> and store report-pdfs/<org>/<id>.pdf.
 //   Off by default: packs export to PDF through the browser's print.
+// GL-16: blocks over 256 KB are published as overflowed and staged; this moves the report's staged
+// payloads to the report-snapshots bucket right after publish_report (report-notify retries any
+// left every 15 minutes). { mode: "drain" } with the service role moves anything still staged.
 // Secrets: RESEND_API_KEY, REPORTS_FROM (or RESEND_FROM), APP_URL, optional REPORT_* above.
 import {
   APP_URL,
@@ -16,6 +19,8 @@ import {
 } from "../_shared/http.ts";
 import { distributeReport } from "../_shared/report-distribution.ts";
 import { reportSender } from "../_shared/report-sender.ts";
+import { isServiceRoleRequest } from "../_shared/service-role.ts";
+import { moveStagedSnapshots, overflowDeps } from "../_shared/snapshot-overflow.ts";
 
 async function serverPdf(admin: ReturnType<typeof adminClient>, reportId: string) {
   if (Deno.env.get("REPORT_SERVER_PDF") !== "true") return { skipped: "REPORT_SERVER_PDF is off" };
@@ -46,9 +51,14 @@ async function serverPdf(admin: ReturnType<typeof adminClient>, reportId: string
 }
 
 serve("report-publish", async (req) => {
+  const body = await req.json().catch(() => ({}));
+  if (body?.mode === "drain") {
+    if (!isServiceRoleRequest(req.headers.get("Authorization"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")))
+      return json({ error: "Service role only." }, 403);
+    return json({ overflow: await moveStagedSnapshots(overflowDeps(adminClient()), null) });
+  }
   const caller = await signedIn(req);
   if (!caller) return json({ error: "Sign in again." }, 401);
-  const body = await req.json().catch(() => ({}));
   const reportId =
     typeof body?.report_id === "string" && UUID.test(body.report_id) ? body.report_id : null;
   if (!reportId) return json({ error: "report_id is required" }, 400);
@@ -57,6 +67,13 @@ serve("report-publish", async (req) => {
   if (error) return dbErrorResponse(error, "The pack couldn't be published.");
 
   const admin = adminClient();
+  // GL-16: move this pack's overflowed blocks to Storage (best effort: readers fall back to the
+  // staged copy, and report-notify retries).
+  const overflow = await moveStagedSnapshots(overflowDeps(admin), reportId).catch((err) => ({
+    moved: 0,
+    failed: [{ snapshot_id: "*", error: String(err?.message ?? err), attempts: 0 }],
+    alert: [],
+  }));
   const pdf = await serverPdf(admin, reportId).catch((err) => ({ skipped: String(err) }));
   const distribution = await distributeReport(
     {
@@ -75,5 +92,5 @@ serve("report-publish", async (req) => {
     recipients: 0,
     without_account: [],
   }));
-  return json({ published: true, distribution, pdf });
+  return json({ published: true, distribution, pdf, overflow });
 });

@@ -815,6 +815,11 @@ the doc. **Approved 12/11/2026, build deferred until a pack needs it:** option C
 thresholds (256 KB per block, 2 MB inline, 50 MB per pack), overflowed payloads included in the
 GL-11b export zip, retries on `vpmo-report-notify`'s 15-minute schedule.
 
+**Built (16/11/2026), not applied, not merged:** migration `20261116130000_gl_16_pack_overflow`
+(`docs/sql/gl-16-pack-overflow.sql`), edge functions `report-publish`, `report-notify`,
+`export-organisation` (changed) and `report-snapshot-payload` (new); details in
+`docs/design/pack-overflow-storage.md` §6.
+
 ### GL-17 Multi-tenant health refresh measurement
 
 After GL-10. Supabase branch, or the local Postgres until we're on Pro.

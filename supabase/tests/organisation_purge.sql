@@ -72,6 +72,9 @@ on conflict do nothing;
 
 -- The fixture fills RLS tables; private tables with organisation_id get a row here.
 insert into private.health_check_log (run, organisation_id, mismatches) select 'gl11', id, 0 from ct_orgs;
+insert into private.report_snapshot_staging (snapshot_id, organisation_id, report_id, data)
+  select distinct on (s.organisation_id) s.id, s.organisation_id, s.report_id, '{}'::jsonb from public.report_snapshots s
+  join ct_orgs o on o.id = s.organisation_id order by s.organisation_id, s.created_at, s.id;  -- GL-16
 select pg_temp.pt_ok('every table with organisation_id (public and private) has rows for A and B', not exists (
   select 1 from (select rel from pt_tables offset 0) t cross join ct_orgs o where not pg_temp.ct_has_rows(o.id, t.rel::regclass)));
 
