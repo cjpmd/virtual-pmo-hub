@@ -214,3 +214,35 @@ Run each organisation's refresh under RLS as that organisation, instead of as th
 Timing: not urgent at production's size (44 projects in total), but do it before a second
 organisation with more than about 150 projects goes live: at 2 tenants of 500 projects one
 organisation's refresh already takes 3.3 times as long.
+
+### GL-17b built: option C (16/11/2026, local only, not applied)
+
+Migration `20261116120000_gl_17b_health_refresh_rls` (`docs/sql/gl-17b-health-refresh-rls.sql`).
+`SET ROLE` is refused inside SECURITY DEFINER functions (and the refresh is reached through them), so
+the live reads moved into reader functions owned by `authenticated` (no BYPASSRLS): the caller sets an
+organisation admin's claims for the reads only and restores them, then writes as the owner. Re-measured
+with `scripts/perf-multi-tenant/run.sh` (each tenant now has an admin, `member.sql`), same data and
+method as above:
+
+| Local, ms (median of 3; nightly and all-org capture best of 2) | 1 tenant | 2 tenants | 5 tenants | 5 tenants before |
+| --- | --- | --- | --- | --- |
+| `refresh_health_current(one org)` | 5,412 | 4,233 | 4,189 | 62,295 |
+| — RLS readers (project + programme + portfolio) | 3,605 | 4,014 | 3,871 | (owner: 70,293) |
+| `refresh_all_health_current()` | 3,973 | 7,834 | 18,596 | 332,732 |
+| Nightly `full_health_refresh_and_check` | 7,889 | 16,997 | 38,858 | 710,812 |
+| `capture_health_snapshots()` (all orgs) | 3,478 | — | 27,767 | 85,568 |
+| `capture_health_snapshots(one org)` | — | 4,749 | 13,187 | — |
+| Signed-in admin: `v_project_health` / `v_portfolio_health` | 546 / 1,566 | 483 / 1,469 | 500 / 1,717 | 671 / 1,782 |
+
+- One organisation's refresh is now flat (about 4 s locally at any tenant count); the nightly
+  refresh-and-check grows linearly (about 7.8 s per tenant) instead of with the square.
+- Parity: `supabase/tests/health_refresh_rls.sql` at 5 tenants found 0 differences for every
+  tenant between the RLS readers and the owner's reads (project, programme, portfolio and the snapshot
+  rows against the pre-GL-17b capture selects), and `check_health_current` reported 0 mismatches after
+  a full refresh. Production (read-only, 16/11/2026): the same reads as each organisation's admin hash
+  identically to the owner's for all 4 organisations.
+- Left as it was: `capture_pathway_snapshots` (called by the capture) still reads as the owner across
+  all tenants; it is most of a single-organisation capture at 5 tenants (13 s of which the health part
+  is about 4 s, so the status-report trigger's capture still grows). A follow-up could move it to the
+  same reader pattern.
+

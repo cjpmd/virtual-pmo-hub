@@ -852,6 +852,14 @@ Work package GL-17b. Build option C from GL-17 (docs/perf.md § Multi-tenant hea
 SQL first, then stop.
 ```
 
+**Built (16/11/2026), not applied, not merged:** migration `20261116120000_gl_17b_health_refresh_rls`
+(`docs/sql/gl-17b-health-refresh-rls.sql`). Readers owned by `authenticated` read each organisation's
+live health under RLS with one of its admins' claims (`SET ROLE` is refused inside SECURITY DEFINER
+functions); `refresh_health_current`, `health_current_mismatches` and `capture_health_snapshots` use
+them; an organisation with no admin is skipped and logged in `private.health_refresh_skips`. Parity 0
+differences for every tenant at 5 tenants and on production (read-only). Nightly refresh-and-check at
+5 tenants 39 s (was 711 s); one organisation's refresh flat at about 4 s. Figures in `docs/perf.md`.
+
 ### GL-18 Smaller main bundle
 
 No database change.
