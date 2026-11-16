@@ -90,6 +90,7 @@ import { Route as InsightsDashboardsRouteImport } from './routes/insights.dashbo
 import { Route as InsightsReportsRouteImport } from './routes/insights.reports'
 import { Route as LessonsIndexRouteImport } from './routes/lessons.index'
 import { Route as LessonsActionsRouteImport } from './routes/lessons.actions'
+import { Route as NotificationsUnsubscribeRouteImport } from './routes/notifications.unsubscribe'
 import { Route as PortfolioIndexRouteImport } from './routes/portfolio.index'
 import { Route as PortfolioCollectionsRouteImport } from './routes/portfolio.collections'
 import { Route as PortfolioProgrammesRouteImport } from './routes/portfolio.programmes'
@@ -534,6 +535,12 @@ const LessonsActionsRoute = LessonsActionsRouteImport.update({
   path: '/actions',
   getParentRoute: () => LessonsRoute,
 } as any)
+const NotificationsUnsubscribeRoute =
+  NotificationsUnsubscribeRouteImport.update({
+    id: '/notifications/unsubscribe',
+    path: '/notifications/unsubscribe',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const PortfolioIndexRoute = PortfolioIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -802,6 +809,7 @@ export interface FileRoutesByFullPath {
   '/insights/dashboards': typeof InsightsDashboardsRoute
   '/insights/reports': typeof InsightsReportsRoute
   '/lessons/actions': typeof LessonsActionsRoute
+  '/notifications/unsubscribe': typeof NotificationsUnsubscribeRoute
   '/portfolio/collections': typeof PortfolioCollectionsRouteWithChildren
   '/portfolio/programmes': typeof PortfolioProgrammesRouteWithChildren
   '/portfolio/projects': typeof PortfolioProjectsRouteWithChildren
@@ -905,6 +913,7 @@ export interface FileRoutesByTo {
   '/insights/dashboards': typeof InsightsDashboardsRoute
   '/insights/reports': typeof InsightsReportsRoute
   '/lessons/actions': typeof LessonsActionsRoute
+  '/notifications/unsubscribe': typeof NotificationsUnsubscribeRoute
   '/portfolio/requests': typeof PortfolioRequestsRoute
   '/portfolio/roadmap': typeof PortfolioRoadmapRoute
   '/programmes/$programmeId': typeof ProgrammesProgrammeIdRoute
@@ -1022,6 +1031,7 @@ export interface FileRoutesById {
   '/insights/dashboards': typeof InsightsDashboardsRoute
   '/insights/reports': typeof InsightsReportsRoute
   '/lessons/actions': typeof LessonsActionsRoute
+  '/notifications/unsubscribe': typeof NotificationsUnsubscribeRoute
   '/portfolio/collections': typeof PortfolioCollectionsRouteWithChildren
   '/portfolio/programmes': typeof PortfolioProgrammesRouteWithChildren
   '/portfolio/projects': typeof PortfolioProjectsRouteWithChildren
@@ -1143,6 +1153,7 @@ export interface FileRouteTypes {
     | '/insights/dashboards'
     | '/insights/reports'
     | '/lessons/actions'
+    | '/notifications/unsubscribe'
     | '/portfolio/collections'
     | '/portfolio/programmes'
     | '/portfolio/projects'
@@ -1246,6 +1257,7 @@ export interface FileRouteTypes {
     | '/insights/dashboards'
     | '/insights/reports'
     | '/lessons/actions'
+    | '/notifications/unsubscribe'
     | '/portfolio/requests'
     | '/portfolio/roadmap'
     | '/programmes/$programmeId'
@@ -1362,6 +1374,7 @@ export interface FileRouteTypes {
     | '/insights/dashboards'
     | '/insights/reports'
     | '/lessons/actions'
+    | '/notifications/unsubscribe'
     | '/portfolio/collections'
     | '/portfolio/programmes'
     | '/portfolio/projects'
@@ -1453,6 +1466,7 @@ export interface RootRouteChildren {
   AuthDemoRoute: typeof AuthDemoRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
+  NotificationsUnsubscribeRoute: typeof NotificationsUnsubscribeRoute
   ReportPrintReportIdRoute: typeof ReportPrintReportIdRoute
   SignupSetupRoute: typeof SignupSetupRoute
   SignupIndexRoute: typeof SignupIndexRoute
@@ -2026,6 +2040,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/lessons/actions'
       preLoaderRoute: typeof LessonsActionsRouteImport
       parentRoute: typeof LessonsRoute
+    }
+    '/notifications/unsubscribe': {
+      id: '/notifications/unsubscribe'
+      path: '/notifications/unsubscribe'
+      fullPath: '/notifications/unsubscribe'
+      preLoaderRoute: typeof NotificationsUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/portfolio/': {
       id: '/portfolio/'
@@ -2653,6 +2674,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthDemoRoute: AuthDemoRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,
+  NotificationsUnsubscribeRoute: NotificationsUnsubscribeRoute,
   ReportPrintReportIdRoute: ReportPrintReportIdRoute,
   SignupSetupRoute: SignupSetupRoute,
   SignupIndexRoute: SignupIndexRoute,

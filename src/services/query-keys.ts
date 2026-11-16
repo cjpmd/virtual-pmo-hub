@@ -134,6 +134,10 @@ export const qk = {
   },
   integrations: (orgId: string) => ["org", orgId, "integrations"] as const,
   favourites: (orgId: string) => ["org", orgId, "favourites"] as const,
+  /** GL-13: the signed-in user's notifications, and their personal notification settings. */
+  notifications: (orgId: string) => ["org", orgId, "notifications"] as const,
+  notificationPreferences: (userId: string) =>
+    ["user", userId, "notification-preferences"] as const,
   workspaceRoles: (orgId: string) => ["org", orgId, "workspace-roles"] as const,
   workspaces: {
     all: (orgId: string) => ["org", orgId, "workspaces"] as const,

@@ -388,6 +388,7 @@ union all select 'a_request', (select id::text from public.project_requests wher
 union all select 'a_status_report', (select id::text from public.status_reports where organisation_id = pg_temp.ct_org('A') limit 1)
 union all select 'a_phases', (select 'array[' || string_agg(quote_literal(id) || '::uuid', ', ' order by sort_order) || ']'
                               from public.lifecycle_phases where organisation_id = pg_temp.ct_org('A'))
+union all select 'a_notification', (select id::text from public.notifications where organisation_id = pg_temp.ct_org('A') limit 1)
 union all select 'month', quote_literal(date_trunc('month', current_date)::date);
 do $$ declare missing text; begin
   select string_agg(key, ', ') into missing from ct_ctx where value is null;
@@ -414,6 +415,12 @@ insert into ct_cases (fn, call, expect, note) values
   ('request_organisation_deletion(uuid,text)', $c$select public.request_organisation_deletion('{a_org}', '{a_org_name}')$c$, 'empty', null),
   ('cancel_organisation_deletion(uuid)', $c$select public.cancel_organisation_deletion('{a_org}')$c$, 'empty', null),
   ('start_organisation_export(uuid)', $c$select public.start_organisation_export('{a_org}')$c$, 'empty', null),
+  -- GL-13.
+  ('mark_notifications_read(uuid,uuid[])', $c$select public.mark_notifications_read('{a_org}')$c$, 'empty', null),
+  ('mark_notifications_read(uuid,uuid[])', $c$select public.mark_notifications_read('{a_org}', array['{a_notification}'::uuid])$c$, 'empty', null),
+  ('set_my_notification_preferences(jsonb)', $c$select public.set_my_notification_preferences('{"digest": "off"}')$c$, 'own',
+   'takes no ids: changes only the caller''s own preferences'),
+  ('unsubscribe_notification_emails(text)', $c$select public.unsubscribe_notification_emails('gl13-not-a-token')$c$, 'empty', null),
   ('close_my_account(text)', $c$select public.close_my_account('gl10-a-admin@example.invalid')$c$, 'empty',
    'takes no ids: closes only the caller''s own account, and only with the caller''s own email'),
   ('acknowledge_ai_draft(uuid)', $c$select public.acknowledge_ai_draft('{a_narrative}')$c$, 'empty', null),
@@ -513,7 +520,7 @@ do $$ declare missing text; stale text; anon_fns text; begin
   select string_agg(p.proname, ', ') into anon_fns from pg_proc p join pg_namespace n on n.oid = p.pronamespace
   where n.nspname = 'public' and p.prokind = 'f' and p.prorettype <> 'trigger'::regtype
     and has_function_privilege('anon', p.oid, 'execute')
-    and p.proname not in ('get_invite_preview', 'report_snapshot_by_token');
+    and p.proname not in ('get_invite_preview', 'report_snapshot_by_token', 'unsubscribe_notification_emails');
   if anon_fns is not null then raise exception 'COVERAGE: public functions anon can run, not reviewed: %', anon_fns; end if;
 end $$;
 

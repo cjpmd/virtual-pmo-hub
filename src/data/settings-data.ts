@@ -130,6 +130,7 @@ export const notificationEvents = [
   "Assumption invalidated",
   "Benefit behind profile",
   "Lessons review outstanding",
+  "Draft pack ready",
 ];
 
 /**

@@ -675,6 +675,39 @@ stays hidden until Planner sync. Move the read state out of localStorage into th
 SQL first, then stop. Tick 4.1 when done.
 ```
 
+**Built (12/11/2026); applied and deployed 15/11/2026, not merged:** migration `20261115152409_gl_13_notifications`
+(`docs/sql/gl-13-notifications.sql`), tested on the local Postgres only. `public.notifications` (one
+row per recipient, kind, entity and due date; RLS: own rows; no direct writes; no read-only trigger,
+like `user_favourites`, listed in AGENTS.md and `read_only_mode.sql`). Kinds: `task_overdue`,
+`decision_due` (pending, needed within 3 days or overdue), `measurement_overdue`,
+`dependency_off_track` (stored health red), `pack_drafted` (in-app only; report-notify emails it)
+from the daily `private.generate_notifications(org)`, which also marks rows resolved when they no
+longer apply and skips read-only organisations; `task_issued` and `decision_recorded` from triggers
+on `work_item_offers` and `decisions` (never failing the user's write). Organisation settings decide
+what is sent (`notifications.events`, `channels.email`, default digest); each person narrows it in
+`profiles.preferences -> 'notifications'` (digest immediate / daily / weekly / off, per-kind in-app and
+email) through `set_my_notification_preferences`. Email: `send-notification-email` (Resend through
+`_shared/email.ts`, not deployed) called by the job `vpmo-notifications` every 15 minutes (generates
+once a day from 07:00 London, "as they happen" each run, the digest once a day from 07:30) through the
+Vault secret `notification_email_url`; one-click unsubscribe (`/notifications/unsubscribe?token=`,
+sha256 tokens in a private table, 90 days). Closing an account removes the person's notifications
+and tokens. Front end: the bell and `/home/notifications` read the table (read state on the row; the
+old localStorage list is cleared), Settings › Notifications shows In-app, Email, the default digest
+and only the events that are raised (Teams stays hidden), Settings › Account › Your notifications.
+Tests: `supabase/tests/notifications.sql` (64 checks), `cross_tenant.sql` (cases for the new RPCs,
+`unsubscribe_notification_emails` on the anon list), `read_only_mode.sql`, `organisation_purge.sql`,
+`account_closure.sql`; unit tests for the email module, the feed and the settings helpers.
+**Before applying (15/11/2026):** read-only organisations keep getting in-app notifications but
+no email; empty digests can't be produced; addresses Resend last reported as bounced or suppressed
+are skipped (same rule as `send-billing-notice`, `private.email_bounced`), and every skipped row
+records why in `notifications.email_skip_reason`; emails carry `List-Unsubscribe` and
+`List-Unsubscribe-Post: List-Unsubscribe=One-Click`, and `/notifications/unsubscribe` takes the
+one-click POST through a TanStack Start server handler (the page itself now asks for a click, so
+link scanners can't unsubscribe anyone). Applied to production (recorded `20261115152409`; all 18
+functions md5-identical to the local build), types regenerated (match apart from existing line
+wrapping), `send-notification-email` deployed (version 1, verify_jwt on; 401 without a token, 403
+for the anon key). To finish: add the Vault secret `notification_email_url` (line in the SQL file).
+
 ### GL-14 One pack system: retire Committee packs
 
 Plan first.

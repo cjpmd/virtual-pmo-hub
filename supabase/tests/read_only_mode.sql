@@ -207,13 +207,13 @@ select pg_temp.ok('every organisation table has zz_org_read_only (missing: ' || 
   select string_agg(c.relname, ', ') from pg_class c
   join pg_attribute a on a.attrelid = c.oid and a.attname = 'organisation_id' and not a.attisdropped
   where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'p')
-    and c.relname not in ('organisation_subscriptions', 'audit_log', 'user_favourites', 'organisation_deletions')  -- GL-11
+    and c.relname not in ('organisation_subscriptions', 'audit_log', 'user_favourites', 'organisation_deletions', 'notifications')  -- GL-11, GL-13
     and not exists (select 1 from pg_trigger t where t.tgrelid = c.oid and t.tgname = 'zz_org_read_only')), 'none') || ')',
   not exists (
   select 1 from pg_class c
   join pg_attribute a on a.attrelid = c.oid and a.attname = 'organisation_id' and not a.attisdropped
   where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'p')
-    and c.relname not in ('organisation_subscriptions', 'audit_log', 'user_favourites', 'organisation_deletions')  -- GL-11
+    and c.relname not in ('organisation_subscriptions', 'audit_log', 'user_favourites', 'organisation_deletions', 'notifications')  -- GL-11, GL-13
     and not exists (select 1 from pg_trigger t where t.tgrelid = c.oid and t.tgname = 'zz_org_read_only')));
 select pg_temp.ok('organisations has zz_org_read_only',
   exists (select 1 from pg_trigger where tgrelid = 'public.organisations'::regclass and tgname = 'zz_org_read_only'));

@@ -533,6 +533,8 @@ Propose:
 Teams stays off until Phase 5. SQL first, then stop. Then switch the bell and the page to the
 table.
 ```
+**Built as GL-13 (12/11/2026), not applied:** see `docs/go-live-plan.md` § GL-13. Email goes through
+the Resend HTTP module (`_shared/email.ts`, D2 updated in 2.1), not SMTP. Tick 4.1 once applied.
 
 ### 4.2 AI highlight-report drafting
 Edge function. Possibly a small database change.
