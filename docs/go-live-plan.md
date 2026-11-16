@@ -82,6 +82,9 @@ select count(*) as rows, min(start_time) as oldest,
 from cron.job_run_details;
 ```
 
+**Done (verified 16/11/2026):** the run history stayed flat for the week: 68,330 rows, oldest
+09/11/2026, and the nightly prune (`vpmo-prune-cron-history`) succeeding.
+
 ### GL-3 Hide what isn't live, and remove client-specific copy
 
 No database change.
@@ -955,6 +958,6 @@ and delete the adapter layer. List every screen touched; e2e for that domain mus
 
 ## Progress
 
-- [x] GL-1 Migrations  - [ ] GL-2 Cron  - [x] GL-3 Hide dead ends  - [x] GL-4 Read-only  - [x] GL-5 Banners  - [x] GL-6 Billing emails  - [ ] GL-7 Legal pages
+- [x] GL-1 Migrations  - [x] GL-2 Cron  - [x] GL-3 Hide dead ends  - [x] GL-4 Read-only  - [x] GL-5 Banners  - [x] GL-6 Billing emails  - [ ] GL-7 Legal pages
 - [x] GL-8 Sector  - [x] GL-9 Sample data  - [x] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [x] GL-12 Bugs  - [ ] GL-13 Notifications  - [x] GL-14 Committee packs
 - [x] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [x] GL-17 Multi-tenant  - [ ] GL-17b Refresh under RLS  - [x] GL-18 Bundle  - [x] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters
