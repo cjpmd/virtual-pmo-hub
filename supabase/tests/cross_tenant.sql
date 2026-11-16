@@ -412,12 +412,12 @@ insert into ct_ctx values ('a_input', quote_literal(json_build_object(
 create temp table ct_cases (fn text not null, call text not null, expect text not null default 'empty' check (expect in ('empty', 'own', 'like_unknown')), note text);
 insert into ct_cases (fn, call, expect, note) values
   ('accept_invite(text)', $c$select public.accept_invite('gl10-not-a-token')$c$, 'empty', null),
+  -- GL-16: a staged payload of A's (none is staged in the fixture; the visibility check runs first).
+  ('report_snapshot_staged_payload(uuid)', $c$select public.report_snapshot_staged_payload((select id from public.report_snapshots where organisation_id = '{a_org}' limit 1))$c$, 'empty', null),
   -- GL-11. The name is A's real one (read as the owner) so only the admin check can refuse it.
   ('request_organisation_deletion(uuid,text)', $c$select public.request_organisation_deletion('{a_org}', '{a_org_name}')$c$, 'empty', null),
   ('cancel_organisation_deletion(uuid)', $c$select public.cancel_organisation_deletion('{a_org}')$c$, 'empty', null),
   ('start_organisation_export(uuid)', $c$select public.start_organisation_export('{a_org}')$c$, 'empty', null),
-  -- GL-16: a staged payload of A's (none is staged in the fixture; the visibility check runs first).
-  ('report_snapshot_staged_payload(uuid)', $c$select public.report_snapshot_staged_payload((select id from public.report_snapshots where organisation_id = '{a_org}' limit 1))$c$, 'empty', null),
   -- GL-13.
   ('mark_notifications_read(uuid,uuid[])', $c$select public.mark_notifications_read('{a_org}')$c$, 'empty', null),
   ('mark_notifications_read(uuid,uuid[])', $c$select public.mark_notifications_read('{a_org}', array['{a_notification}'::uuid])$c$, 'empty', null),
@@ -638,6 +638,70 @@ do $$ declare v jsonb; begin
 end $$;
 
 select pg_temp.ct_run_cases();
+
+-- GL-16: the print route's overflowed blocks (edge function report-snapshot-payload, verify_jwt off).
+-- The function holds no credential of the caller's: it passes the body's report id, token and
+-- snapshot ids to report_overflow_by_token as the service role, which returns rows only when the
+-- token's hash is a live print token for that report, and only that report's overflowed snapshots.
+-- Each organisation's token-bearing report gets one overflowed (staged) snapshot. Then, as the
+-- service role (what the function runs as): B's token, a wrong, empty or missing token, and B's own
+-- report and token asking for A's snapshot id must all return nothing. Signed-in users (B's admin)
+-- and anon can't call the RPC at all. Control: A's own token returns A's payload.
+do $$ declare o record; v_rep uuid; v_ws uuid; v_id uuid; begin
+  perform pg_temp.ct_as_postgres();
+  perform set_config('session_replication_role', 'replica', true);
+  for o in select * from ct_orgs loop
+    select t.report_id into v_rep from private.report_print_tokens t
+     where t.token_hash = extensions.digest('gl10-token-' || o.label, 'sha256');
+    select r.workspace_id into v_ws from public.reports r where r.id = v_rep;
+    insert into public.report_snapshots (organisation_id, workspace_id, report_id, block_instance_id, block_key, data,
+                                         overflowed, payload_sha256, payload_bytes)
+    values (o.id, v_ws, v_rep, 'gl16_ct', 'gl16_ct', 'null'::jsonb, true,
+            extensions.digest(jsonb_build_object('gl16', o.label)::text, 'sha256'), 16)
+    returning id into v_id;
+    insert into private.report_snapshot_staging (snapshot_id, organisation_id, report_id, data)
+    values (v_id, o.id, v_rep, jsonb_build_object('gl16', o.label));
+    insert into ct_ctx values ('gl16_snap_' || o.label, v_id::text), ('gl16_report_' || o.label, v_rep::text);
+  end loop;
+  perform set_config('session_replication_role', 'origin', true);
+end $$;
+create function pg_temp.ct_overflow(p_report text, p_token text, p_snap text) returns bigint language plpgsql as $$
+declare n bigint;
+  v_rep uuid := (select value from ct_ctx where key = p_report)::uuid;
+  v_snap uuid := (select value from ct_ctx where key = p_snap)::uuid;
+begin
+  perform set_config('request.jwt.claims', '{"role":"service_role"}', true), set_config('role', 'service_role', true);
+  select count(*) into n from public.report_overflow_by_token(v_rep, p_token, array[v_snap]);
+  perform pg_temp.ct_as_postgres();
+  return n;
+end $$;
+do $$ declare c record; n bigint; v_state text; begin
+  if pg_temp.ct_overflow('gl16_report_A', 'gl10-token-A', 'gl16_snap_A') <> 1 then
+    raise exception 'SETUP: A''s own print token does not return A''s overflowed block';
+  end if;
+  for c in select * from (values
+      ('B''s token on A''s report', 'gl16_report_A', 'gl10-token-B', 'gl16_snap_A'),
+      ('a wrong token', 'gl16_report_A', 'gl10-wrong', 'gl16_snap_A'),
+      ('an empty token', 'gl16_report_A', '', 'gl16_snap_A'),
+      ('no token', 'gl16_report_A', null, 'gl16_snap_A'),
+      ('B''s own report and token, A''s snapshot id', 'gl16_report_B', 'gl10-token-B', 'gl16_snap_A')) v(label, rep, tok, snap) loop
+    n := pg_temp.ct_overflow(c.rep, c.tok, c.snap);
+    insert into ct_result values ('service role for a caller', 'A', 'report_overflow_by_token', c.label, n::text,
+                                  case when n = 0 then 'ok' else 'LEAK' end);
+  end loop;
+  foreach v_state in array array['b_admin', 'anon'] loop
+    perform pg_temp.ct_as(v_state);
+    begin
+      select count(*) into n from public.report_overflow_by_token((select value from ct_ctx where key = 'gl16_report_A')::uuid,
+        'gl10-token-A', array[(select value from ct_ctx where key = 'gl16_snap_A')::uuid]);
+      perform pg_temp.ct_as_postgres();
+      insert into ct_result values (v_state, 'A', 'report_overflow_by_token', 'called directly', n::text, 'LEAK');
+    exception when insufficient_privilege then
+      perform pg_temp.ct_as_postgres();
+      insert into ct_result values (v_state, 'A', 'report_overflow_by_token', 'called directly', 'refused 42501', 'ok');
+    end;
+  end loop;
+end $$;
 
 -- anon with the print tokens: B's token, a wrong token and no token never open A's report.
 do $$ declare v jsonb; tok text; begin
