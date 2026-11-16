@@ -838,6 +838,27 @@ begin
                                   'refused ' || v_state || ' ' || v_msg, 'ok');
   end;
   perform pg_temp.ct_as_postgres();
+  -- The same through a direct update: the partner's own report (its own project only), then
+  -- scope_items changed to add the shared project (authenticated may update that column).
+  perform pg_temp.ct_as(v_actor);
+  begin
+    v_report := public.create_report(jsonb_build_object('scope_type', 'custom', 'title', 'GL10 partner probe 2', 'ad_hoc', true,
+      'scope_items', jsonb_build_array(jsonb_build_object('entity_type', 'project', 'entity_id', pg_temp.ps('probe_own_project')))));
+    begin
+      update public.reports set scope_items = scope_items || jsonb_build_array(jsonb_build_object('entity_type', 'project',
+        'entity_id', pg_temp.ps('probe_shared_project'))) where id = v_report;
+      get diagnostics n = row_count;
+      v_outcome := 'updated ' || n; v_verdict := case when n = 0 then 'ok' else 'LEAK' end;
+    exception when others then
+      get stacked diagnostics v_state = returned_sqlstate, v_msg = message_text;
+      v_outcome := 'refused ' || v_state || ' ' || v_msg; v_verdict := 'ok';
+    end;
+  exception when others then
+    get stacked diagnostics v_state = returned_sqlstate, v_msg = message_text;
+    v_outcome := 'setup refused ' || v_state || ' ' || v_msg; v_verdict := 'SETUP';
+  end;
+  perform pg_temp.ct_as_postgres();
+  insert into ct_result values (v_actor, (select sharer from ps_probe) || ' (project share)', 'partner:update reports.scope_items', 'call', v_outcome, v_verdict);
   -- The share alone gives no live rows of the sharer's project.
   perform pg_temp.ct_as(v_actor);
   select count(*) into n from public.projects where id = pg_temp.ps('probe_shared_project');
