@@ -475,6 +475,14 @@ organisation, and partner access needs its own positive tests. Found, not change
 GL-8 signature and the old wrapper (the app passes named arguments); `reports_phase6.sql` fails
 locally because the shim has no `vpmo-report-notify` cron job.
 
+**GL-10 follow-up: new partner shares paused (16/11/2026, applied, not merged):** migration
+`20261116143810_gl_10_pause_entity_shares` (`docs/sql/gl-10-pause-entity-shares.sql`). A trigger refuses
+every new `entity_shares` row while `private.entity_sharing_settings.enabled` is false (shipped false),
+as the owner or the service role too; existing shares, and updating or revoking them, are unchanged.
+Production had 0 shares. Turn it back on in the SQL editor once the partner-sharing fixes are applied:
+`update private.entity_sharing_settings set enabled = true, changed_at = now();`. The seed and the
+GL-10 fixture switch it on inside their own transaction. Test: `supabase/tests/entity_shares_paused.sql`.
+
 **GL-10 follow-up: service-role code audit (done 10/11/2026).** Each function that uses the
 service role (or a shared secret) was read, with the SQL of every RPC it calls, to check it
 confirms the caller's organisation membership (and role) before acting on an organisation's data,
@@ -531,14 +539,6 @@ and only on the records that check covered. Every service-role-only RPC they cal
   `requireWritable` (GL-4); `send-invite` and `notify-join-request` carry `_shared/email-templates.ts`
   from before `layout` was exported (GL-6); `send-billing-notice` carries `_shared/service-role.ts`
   with an older header comment (code identical). No redeploy needed for those.
-
-**GL-10 follow-up: new partner shares paused (16/11/2026, applied, not merged):** migration
-`20261116143810_gl_10_pause_entity_shares` (`docs/sql/gl-10-pause-entity-shares.sql`). A trigger refuses
-every new `entity_shares` row while `private.entity_sharing_settings.enabled` is false (shipped false),
-as the owner or the service role too; existing shares, and updating or revoking them, are unchanged.
-Production had 0 shares. Turn it back on in the SQL editor once the partner-sharing fixes are applied:
-`update private.entity_sharing_settings set enabled = true, changed_at = now();`. The seed and the
-GL-10 fixture switch it on inside their own transaction. Test: `supabase/tests/entity_shares_paused.sql`.
 
 ### GL-11 Account closure and organisation deletion [DB]
 
