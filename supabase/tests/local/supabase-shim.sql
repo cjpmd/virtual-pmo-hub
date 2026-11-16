@@ -40,9 +40,10 @@ create table if not exists auth.sessions (
   id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade,
   created_at timestamptz default now(), updated_at timestamptz default now()
 );
+-- As on the hosted project (checked 16/11/2026): an empty claim.sub falls through to the claims.
 create or replace function auth.uid() returns uuid language sql stable as $$
-  select nullif(coalesce(current_setting('request.jwt.claim.sub', true),
-    (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')), '')::uuid $$;
+  select coalesce(nullif(current_setting('request.jwt.claim.sub', true), ''),
+    (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub'))::uuid $$;
 create or replace function auth.role() returns text language sql stable as $$
   select coalesce(current_setting('request.jwt.claim.role', true),
     (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role')) $$;

@@ -2,7 +2,9 @@
 # GL-17: health refresh cost with 1, 2 and 5 copies of the 500-project perf organisation, on the
 # local Postgres only (supabase/tests/local/run.sh). Never point this at a hosted project.
 #   scripts/perf-multi-tenant/run.sh          migrate, then seed and measure 1, 2 and 5 tenants
-# Results go to $OUT (default /tmp/vpmo-gl17). A 5-tenant run takes about 25 minutes locally.
+# Results go to $OUT (default /tmp/vpmo-gl17). GL-17b: every tenant gets an admin (member.sql),
+# the 5-tenant run ends with the parity suite (supabase/tests/health_refresh_rls.sql), and the GL-17
+# option measurements run only with OPTIONS=1.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 HERE="$ROOT/scripts/perf-multi-tenant"
@@ -19,11 +21,15 @@ for n in 1 2 3 4 5; do
         -e "s/Perf Test University/Perf Test University T$n/g" "$ROOT/scripts/$f" > "$OUT/t$n/$f"
   done
 done
-seed() { psql -v ON_ERROR_STOP=1 -q -d vpmo -f "$OUT/t$1/seed-perf-org.sql" >/dev/null; psql -q -d vpmo -c analyze; }
-seed 1; psql -q -d vpmo -f "$HERE/member.sql"
+seed() { psql -v ON_ERROR_STOP=1 -q -d vpmo -f "$OUT/t$1/seed-perf-org.sql" >/dev/null; psql -q -d vpmo -f "$HERE/member.sql"; psql -q -d vpmo -c analyze; }
+seed 1
 psql -At -d vpmo -f "$HERE/measure.sql" | tee "$OUT/n1.txt"
 seed 2; psql -At -d vpmo -f "$HERE/measure.sql" | tee "$OUT/n2.txt"
 seed 3; seed 4; seed 5; psql -At -d vpmo -f "$HERE/measure.sql" | tee "$OUT/n5.txt"
+# GL-17b parity at 5 tenants: the RLS readers against the owner's reads, for every tenant.
+psql -At -v ON_ERROR_STOP=1 -d vpmo -f "$ROOT/supabase/tests/health_refresh_rls.sql" | tee "$OUT/parity5.txt"
+# The GL-17 option measurements (before GL-17b) only with OPTIONS=1.
+[ "${OPTIONS:-0}" = 1 ] || exit 0
 # Options at 5 tenants. options.sql needs inv.sql: the live_* functions as security invoker.
 for f in live_project_health live_programme_health live_portfolio_health; do
   psql -At -d vpmo -c "select pg_get_functiondef('private.$f'::regproc) || ';'"

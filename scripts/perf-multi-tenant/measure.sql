@@ -34,6 +34,12 @@ select id as t1 from public.organisations where slug = 'perf-test-university-t1'
 
 select pg_temp.t('warm-up refresh t1', format('select private.refresh_health_current(%L)', :'t1'), 1);
 select pg_temp.t('refresh_health_current(t1)', format('select private.refresh_health_current(%L)', :'t1'), 3);
+-- GL-17b: what the refresh reads now (the RLS readers, as t1's admin) ...
+select pg_temp.t('  rls_live_project_health(t1) as admin', format('select sum(length(t::text)) from private.rls_live_project_health(%L) t', :'t1'), 3, 'authenticated', 'b1700000-0000-4000-8000-000000000001');
+select pg_temp.t('  rls_live_programme_health(t1) as admin', format('select sum(length(t::text)) from private.rls_live_programme_health(%L) t', :'t1'), 3, 'authenticated', 'b1700000-0000-4000-8000-000000000001');
+select pg_temp.t('  rls_live_portfolio_health(t1) as admin', format('select sum(length(t::text)) from private.rls_live_portfolio_health(%L) t', :'t1'), 3, 'authenticated', 'b1700000-0000-4000-8000-000000000001');
+select pg_temp.t('capture_health_snapshots(t1)', format('select private.capture_health_snapshots(%L)', :'t1'), 3);
+-- ... and what it read before (the owner's functions, kept for the parity test).
 select pg_temp.t('  live_project_health(t1)', format('select sum(length(t::text)) from private.live_project_health(%L) t', :'t1'), 3);
 select pg_temp.t('  live_programme_health(t1)', format('select sum(length(t::text)) from private.live_programme_health(%L) t', :'t1'), 3);
 select pg_temp.t('  live_portfolio_health(t1)', format('select sum(length(t::text)) from private.live_portfolio_health(%L) t', :'t1'), 3);
