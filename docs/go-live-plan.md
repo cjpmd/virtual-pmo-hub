@@ -532,6 +532,14 @@ and only on the records that check covered. Every service-role-only RPC they cal
   from before `layout` was exported (GL-6); `send-billing-notice` carries `_shared/service-role.ts`
   with an older header comment (code identical). No redeploy needed for those.
 
+**GL-10 follow-up: new partner shares paused (16/11/2026, applied, not merged):** migration
+`20261116143810_gl_10_pause_entity_shares` (`docs/sql/gl-10-pause-entity-shares.sql`). A trigger refuses
+every new `entity_shares` row while `private.entity_sharing_settings.enabled` is false (shipped false),
+as the owner or the service role too; existing shares, and updating or revoking them, are unchanged.
+Production had 0 shares. Turn it back on in the SQL editor once the partner-sharing fixes are applied:
+`update private.entity_sharing_settings set enabled = true, changed_at = now();`. The seed and the
+GL-10 fixture switch it on inside their own transaction. Test: `supabase/tests/entity_shares_paused.sql`.
+
 ### GL-11 Account closure and organisation deletion [DB]
 
 Design first.
