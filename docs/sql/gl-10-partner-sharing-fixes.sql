@@ -1,9 +1,8 @@
--- GL-10 follow-up: fixes for the six partner-sharing findings. FOR REVIEW: not applied to production.
--- Same SQL as supabase/migrations/20261116160000_gl_10_partner_sharing_fixes.sql (production will
--- record its own version when applied; rename the file to match). Tested on the local Postgres:
--- cross_tenant.sql passes (0 leaks), and every other local suite passes, alone and combined with
--- the other open PRs (#116, #118, #119, #120, #121). No destructive statements.
--- After applying, turn partner sharing back on if wanted (it is paused by #121):
+-- GL-10 follow-up: fixes for the six partner-sharing findings. Applied to production 16/11/2026 by
+-- hand in the SQL editor; recorded in the migration history afterwards as version 20261116170932
+-- (supabase/migrations/20261116170932_gl_10_partner_sharing_fixes.sql, the same SQL). Checked: the
+-- function, all five policies and the trigger on production are identical to the local build.
+-- No destructive statements. Partner sharing stays paused (#121) until it is switched back on:
 --   update private.entity_sharing_settings set enabled = true, changed_at = now();
 
 -- GL-10 follow-up: fixes for the six partner-sharing findings (cross_tenant.sql section 5,

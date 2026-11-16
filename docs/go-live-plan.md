@@ -555,7 +555,7 @@ for all three of B's users unless noted):
   `health_by_dimension`) and its name and code (`__meta`). RB-15 says partners never get live data.
   (`create_report` takes the smaller organisation id as the report's, so the probe runs from
   whichever fixture organisation sorts first; production had 0 `entity_shares` rows on 16/11/2026, read-only check.)
-**Fixes built (16/11/2026), not applied, for review:** migration `20261116160000_gl_10_partner_sharing_fixes`
+**Fixes built and applied (16/11/2026), not merged:** migration `20261116170932_gl_10_partner_sharing_fixes`
 (`docs/sql/gl-10-partner-sharing-fixes.sql`). F1 to F4: the `report_narratives`, `report_inclusions`,
 `report_events` and `report_notifications` select policies add `not is_partner_viewer(report_id)` (the
 rule `report_metric_snapshots` already had); F5: `report_pdfs_select` the same; all five by
@@ -563,7 +563,9 @@ rule `report_metric_snapshots` already had); F5: `report_pdfs_select` the same; 
 custom scope item from another organisation, on insert and on any change of the scope columns, which
 covers `create_report`, a direct update of `scope_items` (allowed to report editors) and the scheduled
 packs. `cross_tenant.sql` passes again (0 leaks), with a new case for the direct-update route. New
-shares stay paused (`20261116143810`, applied) until this is applied and sharing is switched back on.
+shares stay paused (`20261116143810`, applied) until sharing is switched back on. Applied by hand in
+the SQL editor on 16/11/2026 and then recorded in the migration history as `20261116170932`; the
+function, the five policies and the trigger on production are identical to the local build.
 
 ### GL-11 Account closure and organisation deletion [DB]
 
