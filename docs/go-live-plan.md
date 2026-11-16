@@ -755,6 +755,10 @@ collection page starts a collection-scoped report from the "Funding committee" t
 the collection's published reports, Settings › Templates has a "Board and committee packs" logo
 switch (`templates.reports.showLogo`, falling back to the old key), and the product and pricing
 copy say "board and committee packs". Phase C (deleting the draft-building code) stays optional.
+**Phase C built (16/11/2026), not applied, not merged:** migration
+`20261116110000_gl_14c_retire_committee_packs` (`docs/sql/gl-14c-retire-committee-packs.sql`; the table
+drop is its section D, by hand). Old pack code removed; chart markers read only report-builder packs.
+Details in `docs/design/retire-committee-packs.md` §9.
 
 ### GL-15 Report approver reminders
 

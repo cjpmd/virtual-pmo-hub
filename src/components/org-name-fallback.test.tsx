@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // GL-3: an organisation that never saved its details (organisations.short_name and
-// support_contact null) shows its own name, never the shipped defaults, on the committee pack
-// cover and in Settings › Organisation.
+// support_contact null) shows its own name, never the shipped defaults, in Settings ›
+// Organisation. (The committee pack cover case went with the pack in GL-14 Phase C.)
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -20,12 +20,6 @@ vi.mock("@/components/auth/organisation-provider", async (importOriginal) => ({
   }),
   useOrgId: () => "org-1",
 }));
-vi.mock("@/hooks/use-committee-packs", () => ({
-  useCommitteePack: () => ({ data: undefined }),
-  useIssueCommitteePack: () => ({ mutate: vi.fn(), isPending: false }),
-}));
-
-const { CommitteePack } = await import("./committee-pack");
 const { OrganisationSettings } = await import("./settings/settings-sections");
 
 const wrap = (node: ReactNode) =>
@@ -44,25 +38,6 @@ afterEach(() => {
 });
 
 describe("organisation name fallback", () => {
-  it("the committee pack cover uses the organisation's name", () => {
-    neverSaved("Acme Health Trust");
-    wrap(
-      <CommitteePack
-        collection={{ id: "c1", name: "Capital Board" }}
-        projects={[]}
-        benefits="Loading"
-        decisions="Loading"
-        onClose={() => {}}
-      />,
-    );
-    const text = document.body.textContent ?? "";
-    expect(screen.getAllByText("Acme Health Trust").length).toBeGreaterThan(0);
-    expect(text).toContain("Acme Health Trust portfolio office");
-    expect(text).toContain("Acme Health Trust · Capital Board");
-    expect(text).toContain("AC");
-    expect(text).not.toMatch(/\bDTS\b|University Digital/);
-  });
-
   it("Settings › Organisation shows blank fields with the name as placeholder", () => {
     neverSaved("Acme Health Trust");
     wrap(<OrganisationSettings />);

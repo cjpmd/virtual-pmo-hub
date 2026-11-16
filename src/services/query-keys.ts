@@ -54,8 +54,6 @@ export const qk = {
     gateTicks: (orgId: string, projectId: string) =>
       ["org", orgId, "projects", projectId, "gate-ticks"] as const,
     collections: (orgId: string) => ["org", orgId, "projects", "collections"] as const,
-    pack: (orgId: string, projectIds: string[]) =>
-      ["org", orgId, "projects", "pack", [...projectIds].sort().join(",")] as const,
     assurance: (orgId: string) => ["org", orgId, "projects", "assurance"] as const,
     projectAssurance: (orgId: string, projectId: string) =>
       ["org", orgId, "projects", "assurance", projectId] as const,
@@ -88,7 +86,6 @@ export const qk = {
   governance: (orgId: string) => ["org", orgId, "governance"] as const,
   /** Forums, members and meetings. Under governance, so decision writes refresh their counts. */
   forums: (orgId: string) => ["org", orgId, "governance", "forums"] as const,
-  committeePacks: (orgId: string) => ["org", orgId, "committee-packs"] as const,
   /** Report builder (reports, templates, block data, selection, narratives). */
   reports: {
     all: (orgId: string) => ["org", orgId, "reports"] as const,

@@ -1,12 +1,9 @@
-// Collections (governance groups, priority sets, funding streams) and the project facts a
-// committee pack shows. Collections embed their project links (one FK); the collection type
-// is an organisation list read alongside. Pack facts come from the same sources as every other
-// screen: health from v_project_health (via listProjects), milestones from v_milestones, open
-// risks, and each project's latest submitted status report.
+// Collections (governance groups, priority sets, funding streams). Collections embed their
+// project links (one FK); the collection type is an organisation list read alongside. Their
+// packs come from the report builder (collection scope, GL-14).
 import type { Health } from "@/data/types";
 import { supabase } from "@/integrations/supabase/client";
 import { listProjects, type ProjectSummary } from "./hierarchy";
-import { listMilestones, type MilestoneItem } from "./project-records";
 import { unwrap } from "./service-error";
 
 export type CollectionType = "Governance" | "Priority set" | "Funding stream";
@@ -67,64 +64,4 @@ export function collectionMetrics(projects: ProjectSummary[]) {
     forecast: projects.reduce((sum, project) => sum + project.forecast, 0),
     rag: { green: count("On Track"), amber: count("At Risk"), red: count("Off Track") },
   };
-}
-
-export interface PackProject extends ProjectSummary {
-  milestones: MilestoneItem[];
-  /** Open risks, highest score first. */
-  risks: { id: string; title: string; description: string; score: number }[];
-  report: { accomplished: string; planned: string; comments: string; date: string } | null;
-}
-
-/** Everything a committee pack shows for the given projects. */
-export async function loadPackProjects(
-  orgId: string,
-  projectIds: string[],
-): Promise<PackProject[]> {
-  if (!projectIds.length) return [];
-  const [projects, milestones, risks, reports] = await Promise.all([
-    listProjects(orgId),
-    listMilestones(projectIds),
-    supabase
-      .from("risks")
-      .select("id, project_id, title, description, score, probability, impact")
-      .in("project_id", projectIds)
-      .eq("status", "open"),
-    supabase
-      .from("status_reports")
-      .select("project_id, reporting_date, accomplished, planned, comments, created_at")
-      .in("project_id", projectIds)
-      .eq("status", "submitted")
-      .order("reporting_date", { ascending: false })
-      .order("created_at", { ascending: false }),
-  ]);
-  const riskRows = unwrap(risks, "Loading risks");
-  const latest = new Map<string, PackProject["report"]>();
-  for (const row of unwrap(reports, "Loading status reports"))
-    if (!latest.has(row.project_id))
-      latest.set(row.project_id, {
-        accomplished: row.accomplished ?? "",
-        planned: row.planned ?? "",
-        comments: row.comments ?? "",
-        date: row.reporting_date,
-      });
-  const wanted = new Set(projectIds);
-  return projects
-    .filter((project) => wanted.has(project.id))
-    .map((project) => ({
-      ...project,
-      milestones: milestones
-        .filter((item) => item.projectId === project.id)
-        .sort((a, b) => a.forecastDate.localeCompare(b.forecastDate)),
-      risks: riskRows
-        .filter((row) => row.project_id === project.id)
-        .map((row) => ({
-          id: row.id,
-          title: row.title,
-          description: row.description ?? "",
-          score: row.score ?? row.probability * row.impact,
-        }))
-        .sort((a, b) => b.score - a.score),
-      report: latest.get(project.id) ?? null,
-    }));
 }

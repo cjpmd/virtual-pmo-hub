@@ -111,9 +111,8 @@ begin
     (v_b, pg_temp.c('b_admin2'), 'admin');
 
   select id into v_ws from public.workspaces where organisation_id = v_a limit 1;
-  -- Issued committee pack, published-style report snapshot, submitted business case, recorded decision.
-  insert into public.committee_packs (organisation_id, workspace_id, title, meeting_date, issued_at, issued_by)
-  values (v_a, v_ws, 'GL11 issued pack', current_date, now(), pg_temp.c('a_admin'));
+  -- Published-style report snapshot, submitted business case, recorded decision. (GL-14 Phase C:
+  -- the issued committee pack case went with the table.)
   insert into public.reports (organisation_id, workspace_id, title, scope_type, as_at)
   values (v_a, v_ws, 'GL11 report', 'custom', current_date) returning id into v_rep;
   insert into public.report_snapshots (organisation_id, workspace_id, report_id, block_instance_id, block_key, data)
@@ -129,12 +128,11 @@ begin
   insert into public.decision_options (organisation_id, workspace_id, decision_id, title)
   select organisation_id, workspace_id, id, 'GL11 option' from public.decisions where id = v_dec;
   update public.decisions set status = 'made', decision_date = current_date, rationale = 'GL11' where id = v_dec;
-  insert into ctx values ('pack', (select id from public.committee_packs where title = 'GL11 issued pack')),
-                         ('snapshot', (select id from public.report_snapshots where report_id = v_rep)),
+  insert into ctx values ('snapshot', (select id from public.report_snapshots where report_id = v_rep)),
                          ('bc_version', v_ver), ('decision', v_dec);
 end $$;
 select pg_temp.ok('setup: guarded rows exist in A',
-  (select count(*) from ctx where k in ('pack', 'snapshot', 'bc_version', 'decision') and v is not null) = 4);
+  (select count(*) from ctx where k in ('snapshot', 'bc_version', 'decision') and v is not null) = 3);
 
 -- =====================================================================================
 -- 1. A signed-in user can't create, fake or reach the purge bypass.
@@ -160,8 +158,6 @@ select pg_temp.ok('no markers left', not exists (select 1 from private.privilege
 
 -- Owner-level checks of the marker itself.
 select pg_temp.ok('no marker: in_purge false', not private.in_purge());
-select pg_temp.raises('no marker: an issued pack can''t be deleted, even by postgres',
-  $$delete from public.committee_packs where id = pg_temp.c('pack')$$, '42501');
 select pg_temp.raises('no marker: a snapshot can''t be deleted', $$delete from public.report_snapshots where id = pg_temp.c('snapshot')$$, '42501');
 insert into private.privileged_ops (txid, backend_pid, kind) values (txid_current() - 1, pg_backend_pid(), 'purge');
 select pg_temp.ok('a marker for another transaction doesn''t count', not private.in_purge());
@@ -171,8 +167,8 @@ select pg_temp.ok('a marker for another backend doesn''t count', not private.in_
 delete from private.privileged_ops;
 insert into private.privileged_ops (txid, backend_pid, kind) values (txid_current(), pg_backend_pid(), 'closure');
 select pg_temp.ok('a closure marker never satisfies in_purge', not private.in_purge() and private.in_closure());
-select pg_temp.raises('a closure marker doesn''t unlock an issued pack',
-  $$delete from public.committee_packs where id = pg_temp.c('pack')$$, '42501');
+select pg_temp.raises('a closure marker doesn''t unlock a published snapshot',
+  $$delete from public.report_snapshots where id = pg_temp.c('snapshot')$$, '42501');
 delete from private.privileged_ops;
 
 -- =====================================================================================
@@ -375,7 +371,7 @@ select pg_temp.ok('B untouched by the purge', pg_temp.org_rows(pg_temp.c('org_b'
 select pg_temp.ok('members of A keep their accounts', exists (select 1 from public.profiles
   where id = pg_temp.c('a_member') and closed_at is null and last_organisation_id is null));
 select pg_temp.ok('purge logged with ids and counts only', exists (select 1 from private.organisation_purge_log
-  where purged_organisation_id = pg_temp.c('org_a') and row_counts ? 'public.committee_packs'));
+  where purged_organisation_id = pg_temp.c('org_a') and row_counts ? 'public.report_snapshots'));
 select pg_temp.ok('no markers left after the purge', not exists (select 1 from private.privileged_ops));
 select pg_temp.raises('purging B without a request is refused', $$select public.purge_organisation(pg_temp.c('org_b'), false)$$,
   '55000', 'purge_not_ready');

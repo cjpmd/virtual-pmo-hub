@@ -214,3 +214,24 @@ Front end only; no schema change, no settings rewrite.
 - **Tests:** `collection-reports.test.ts`, `report-branding.test.ts`; `e2e/committee-packs.e2e.ts`
   now checks the redirect (with and without a collection), navigation, Settings › Templates and the
   collection page's new action (not run: e2e stays off production).
+
+## 9. Phase C built (16/11/2026, not applied, not merged)
+
+- **Deleted:** `components/committee-pack.tsx`, `components/committee-pack-list.tsx`,
+  `services/committee-packs.ts` (and its test), `hooks/use-committee-packs.ts`, the pack's print CSS
+  (`.pack-print-root` in `styles.css`), the pack-only `loadPackProjects` / `usePackProjects` and the
+  `committeePacks` / `projects.pack` query keys. `org-name-fallback.test.tsx` keeps its Settings case.
+- **Kept:** the `/governance/committee-packs` redirect and `e2e/committee-packs.e2e.ts` (it checks the
+  redirect and navigation); `templates.committeePack` in the settings type and defaults, so stored
+  settings still load and `reportShowLogo` can fall back to the old logo switch.
+- **Markers:** the progress chart's committee markers come only from published report-builder packs
+  (committee and portfolio board forums, and collection packs; the meeting's date, else as-at):
+  `services/progress-chart.ts` (`committeeDatesFromReports`, unit-tested) and, in migration
+  `20261116110000_gl_14c_retire_committee_packs`, `get_portfolio_overview` (drops its
+  `committee_packs` branch) and `get_project_overview` (the same rule as the portfolio, for the
+  project's workspace or organisation-wide packs).
+- **Table:** production had 0 rows on 16/11/2026 (read-only check). The drop (table and its two
+  trigger functions) is section D of `docs/sql/gl-14c-retire-committee-packs.sql`, to run by hand.
+  `supabase/tests/committee_markers.sql` (7 checks) passes before and after the drop, as does every
+  other local suite; `account_closure.sql` no longer uses the table.
+

@@ -299,10 +299,12 @@ export async function loadProgressInputs(
       .from("outcomes")
       .select("programme_id, target_date, status")
       .eq("organisation_id", orgId),
+    // GL-14 Phase C: committee markers come from published report-builder packs only.
     supabase
-      .from("committee_packs")
-      .select("meeting_date, title")
+      .from("reports")
+      .select("title, as_at, scope_type, forum:forums(forum_type), meeting:meetings(meeting_date)")
       .eq("organisation_id", orgId)
+      .eq("status", "published")
       .range(0, 499),
   ]);
   return {
@@ -350,11 +352,34 @@ export async function loadProgressInputs(
         done: row.status === "achieved",
       })),
     ],
-    committees: unwrap(packs, "Loading committee dates").map((row) => ({
-      date: row.meeting_date,
-      title: row.title ?? "Committee",
-    })),
+    committees: committeeDatesFromReports(unwrap(packs, "Loading committee dates")),
   };
+}
+
+/** A published report as read for the committee markers. */
+export interface PublishedPackRow {
+  title: string;
+  as_at: string;
+  scope_type: string;
+  forum: { forum_type: string | null } | null;
+  meeting: { meeting_date: string } | null;
+}
+
+/**
+ * Committee markers from published report-builder packs, as get_portfolio_overview works them
+ * out: committee and portfolio board packs, and collection packs, dated by the meeting, else the
+ * pack's as-at date.
+ */
+export function committeeDatesFromReports(rows: PublishedPackRow[]) {
+  return rows
+    .filter(
+      (row) =>
+        row.scope_type === "collection" ||
+        row.forum?.forum_type === "committee" ||
+        row.forum?.forum_type === "portfolio_board",
+    )
+    .map((row) => ({ date: row.meeting?.meeting_date ?? row.as_at, title: row.title }))
+    .sort((a, b) => a.date.localeCompare(b.date));
 }
 
 // ---- Pure building ------------------------------------------------------------------
