@@ -215,7 +215,7 @@ Front end only; no schema change, no settings rewrite.
   now checks the redirect (with and without a collection), navigation, Settings › Templates and the
   collection page's new action (not run: e2e stays off production).
 
-## 9. Phase C built (16/11/2026, not applied, not merged)
+## 9. Phase C built (16/11/2026; section A applied 16/11/2026, not merged)
 
 - **Deleted:** `components/committee-pack.tsx`, `components/committee-pack-list.tsx`,
   `services/committee-packs.ts` (and its test), `hooks/use-committee-packs.ts`, the pack's print CSS
@@ -227,7 +227,7 @@ Front end only; no schema change, no settings rewrite.
 - **Markers:** the progress chart's committee markers come only from published report-builder packs
   (committee and portfolio board forums, and collection packs; the meeting's date, else as-at):
   `services/progress-chart.ts` (`committeeDatesFromReports`, unit-tested) and, in migration
-  `20261116110000_gl_14c_retire_committee_packs`, `get_portfolio_overview` (drops its
+  `20261116142252_gl_14c_retire_committee_packs`, `get_portfolio_overview` (drops its
   `committee_packs` branch) and `get_project_overview` (the same rule as the portfolio, for the
   project's workspace or organisation-wide packs).
 - **Table:** production had 0 rows on 16/11/2026 (read-only check). The drop (table and its two

@@ -1,8 +1,8 @@
 -- GL-14 Phase C: retire Committee packs (docs/design/retire-committee-packs.md).
--- Not applied to production. Tested on the local Postgres only.
+-- Section A applied to production 16/11/2026 (version 20261116142252). Section D not run.
 --
 -- Section A (non-destructive, the migration
--- supabase/migrations/20261116110000_gl_14c_retire_committee_packs.sql): get_portfolio_overview and
+-- supabase/migrations/20261116142252_gl_14c_retire_committee_packs.sql): get_portfolio_overview and
 -- get_project_overview stop reading public.committee_packs; their committee markers come only from
 -- published report-builder packs (committee / portfolio board forums, and collection packs).
 -- Apply this first, with the front end that stops reading the table (services/progress-chart.ts).
