@@ -1,6 +1,6 @@
 -- GL-16: large report packs overflow to Storage (approved design, docs/design/pack-overflow-storage.md,
--- option C, decisions 12/11/2026). Proposal: docs/sql/gl-16-pack-overflow.sql. Tested on the local
--- Postgres only. No destructive statements: one bucket, three columns, two tables, new functions;
+-- option C, decisions 12/11/2026). Applied to production 16/11/2026 (version 20261116142802). Tested
+-- on the local Postgres first. No destructive statements: one bucket, three columns, two tables, new functions;
 -- publish_report and report_snapshot_by_token replaced (create or replace keeps their grants).
 --
 -- * A block whose JSON is over 256 KB is published with data = JSON null, overflowed = true, its
