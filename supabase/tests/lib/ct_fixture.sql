@@ -154,6 +154,14 @@ begin
     else null end;
 end $$;
 
+-- New partner shares are paused (GL-10 follow-up, private.entity_sharing_settings); the fixture
+-- allows them inside its own transaction, which is rolled back.
+do $$ begin
+  if to_regclass('private.entity_sharing_settings') is not null then
+    execute 'update private.entity_sharing_settings set enabled = true';
+  end if;
+end $$;
+
 -- Returns null on success, else the error.
 create function pg_temp.ct_fill_one(p_org uuid, p_rel regclass, p_attempt int) returns text
 language plpgsql as $$

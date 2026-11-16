@@ -243,8 +243,15 @@ begin
     (org, ws, 'd0000000-0000-4000-8000-000000000701', pid[6], 'Supplier B (recommended)', array['Native PAS integration'], array['Higher licence cost'], 2);
 
   -- Partner share: the partner organisation reads the Digital Care programme's published packs.
+  -- New shares are paused (GL-10 follow-up); the seed allows its one share and pauses again.
+  if to_regclass('private.entity_sharing_settings') is not null then
+    execute 'update private.entity_sharing_settings set enabled = true';
+  end if;
   insert into public.entity_shares (organisation_id, workspace_id, entity_type, entity_id, partner_organisation_id, hidden_block_keys)
   values (org, ws, 'programme', pg_digital, partner, '{budget_movers}');
+  if to_regclass('private.entity_sharing_settings') is not null then
+    execute 'update private.entity_sharing_settings set enabled = false';
+  end if;
 
   -- Phase 2 fixtures --------------------------------------------------------------------
   -- RD07: the planning issue is escalated to the portfolio board.
