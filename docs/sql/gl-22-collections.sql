@@ -1,4 +1,6 @@
--- GL-22 Collection management. Proposal: docs/sql/gl-22-collections.sql. NOT APPLIED: for review.
+-- GL-22 Collection management. Applied to production 17/11/2026 as version 20261117154953
+-- (supabase/migrations/20261117154953_gl_22_collections.sql, the same SQL); the three functions are
+-- md5-identical to the local build.
 -- Additive only: two columns, one index, two check constraints, three functions and three
 -- triggers. No drop, delete or truncate.
 --

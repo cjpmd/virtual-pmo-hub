@@ -2787,6 +2787,8 @@ export type Database = {
       }
       collections: {
         Row: {
+          archived_at: string | null
+          archived_by: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -2799,6 +2801,8 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -2811,6 +2815,8 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          archived_at?: string | null
+          archived_by?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -2823,6 +2829,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "collections_archived_by_fkey"
+            columns: ["archived_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "collections_created_by_fkey"
             columns: ["created_by"]
