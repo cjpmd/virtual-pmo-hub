@@ -5,15 +5,14 @@ import { toast } from "sonner";
 import type { BoardRow } from "@/components/board-workspace";
 import { QueryState } from "@/components/query-state";
 import { RaidWorkspace } from "@/components/raid-workspace";
-import type { Issue, Risk } from "@/data/types";
 import { useBoardRecordSync } from "@/hooks/use-board-record-sync";
 import { usePeople, useProjectPermissions, useRaid } from "@/hooks/use-hierarchy";
 import { useOrgWritable } from "@/hooks/use-org-access";
 import { useRaidMutations } from "@/hooks/use-project-records";
-import { fromIsoDate, toIsoDate } from "@/lib/format";
+import { toIsoDate } from "@/lib/format";
 import type { Person } from "@/services/hierarchy";
 import type { OpenClosedLabel, ResponseLabel, SeverityLabel } from "@/services/labels";
-import type { IssueInput, IssueItem, RiskInput, RiskItem } from "@/services/project-records";
+import type { IssueInput, RiskInput } from "@/services/project-records";
 
 const RESPONSES: ResponseLabel[] = ["Avoid", "Reduce", "Transfer", "Accept"];
 const SEVERITIES: SeverityLabel[] = ["Low", "Medium", "High"];
@@ -91,31 +90,6 @@ export function issueInputFromBoard(
   return Object.keys(input).length ? input : undefined;
 }
 
-const nameFor = (people: Map<string, string>, id: string | null) =>
-  (id && people.get(id)) || "Unassigned";
-
-// RaidWorkspace renders the prototype Risk/Issue shapes; these adapt the database records.
-export const toRisk = (item: RiskItem, people: Map<string, string>): Risk => ({
-  id: item.id,
-  title: item.title,
-  description: item.description ?? "",
-  owner: nameFor(people, item.ownerId),
-  probability: item.probability as Risk["probability"],
-  impact: item.impact as Risk["impact"],
-  score: item.score,
-  response: item.response,
-  status: item.status,
-  reviewDate: fromIsoDate(item.reviewDate),
-});
-export const toIssue = (item: IssueItem, people: Map<string, string>): Issue => ({
-  id: item.id,
-  title: item.title,
-  owner: nameFor(people, item.ownerId),
-  severity: item.severity,
-  status: item.status,
-  dueDate: fromIsoDate(item.dueDate),
-});
-
 export function ProjectRaid({ projectId }: { projectId: string }) {
   const raid = useRaid(projectId);
   const people = usePeople();
@@ -165,8 +139,9 @@ export function ProjectRaid({ projectId }: { projectId: string }) {
           <RaidWorkspace
             // The registers copy their columns on mount; remount once permissions are known.
             key={String(permissions.canEdit)}
-            risks={data.risks.map((item) => toRisk(item, names))}
-            issues={data.issues.map((item) => toIssue(item, names))}
+            risks={data.risks}
+            issues={data.issues}
+            names={names}
             editable={permissions.canEdit}
             canDelete={permissions.canDelete}
             onRiskChange={onRiskChange}

@@ -3,9 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { X, Trash2 } from "lucide-react";
-import type { Dependency, DependencyType } from "@/data/types";
+import type { DependencyType, DependencyValidation } from "@/data/types";
 import { buildDependencyGraph, nodeForEnd, type GraphNode } from "@/services/dependency-graph";
-import type { DependenciesData, EndInput, ResolvedDependency } from "@/services/dependencies";
+import type {
+  DependenciesData,
+  DependencyCriticality,
+  EndInput,
+  ResolvedDependency,
+} from "@/services/dependencies";
 import { useDependencyMutations } from "@/hooks/use-dependencies";
 import { useMyResourceId } from "@/hooks/use-hierarchy";
 import { useCan } from "@/hooks/use-permissions";
@@ -88,10 +93,10 @@ export function DependencyEditor({
   const [receivingOwner, setReceivingOwner] = useState(item?.receiver.owner ?? "");
   const [type, setType] = useState<DependencyType>(item?.type ?? "Sequencing");
   const [requiredBy, setRequiredBy] = useState(item?.requiredBy ?? "");
-  const [criticality, setCriticality] = useState<Dependency["criticality"]>(
+  const [criticality, setCriticality] = useState<DependencyCriticality>(
     item?.criticality ?? "Medium",
   );
-  const [validation, setValidation] = useState<Dependency["validation"]>(
+  const [validation, setValidation] = useState<DependencyValidation>(
     item?.validation ?? "Proposed",
   );
   const external = (id: string): GraphNode | undefined =>
@@ -268,9 +273,7 @@ export function DependencyEditor({
               Criticality
               <select
                 value={criticality}
-                onChange={(event) =>
-                  setCriticality(event.target.value as Dependency["criticality"])
-                }
+                onChange={(event) => setCriticality(event.target.value as DependencyCriticality)}
                 className="w-full rounded-md border bg-background p-2 text-sm"
               >
                 {["Low", "Medium", "High"].map((value) => (
@@ -292,7 +295,7 @@ export function DependencyEditor({
               Validation
               <select
                 value={validation}
-                onChange={(event) => setValidation(event.target.value as Dependency["validation"])}
+                onChange={(event) => setValidation(event.target.value as DependencyValidation)}
                 className="w-full rounded-md border bg-background p-2 text-sm"
               >
                 {["Inferred", "Proposed", "Confirmed", "Closed", "Broken"].map((value) => (

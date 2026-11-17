@@ -10,9 +10,8 @@ import { RaidWorkspace } from "@/components/raid-workspace";
 import { KpiCard, PageHeader } from "@/components/pmo-ui";
 import { useSampleAdornment } from "@/components/sample-badge";
 import { Button } from "@/components/ui/button";
-import { issueColumns, issuesToRows } from "@/lib/board-data";
+import { issueColumns, issuesToRows, ownerNameFrom } from "@/lib/board-data";
 import { getAssumptionMetrics, getDecisionMetrics } from "@/services/decisions";
-import { toIssue, toRisk } from "@/components/project-raid";
 import { usePeople, useOrgRaid } from "@/hooks/use-hierarchy";
 import { useGovernance } from "@/hooks/use-governance";
 import { useSettings } from "@/services/settings";
@@ -63,25 +62,9 @@ function Page() {
     () => new Map((people.data ?? []).map((person) => [person.id, person.name])),
     [people.data],
   );
-  const risks = useMemo(
-    () =>
-      (raid.data?.risks ?? []).map((item) => ({
-        ...toRisk(item, names),
-        projectCode: item.projectCode,
-        projectName: item.projectName,
-        programmeName: item.programmeName,
-      })),
-    [raid.data, names],
-  );
-  const issues = useMemo(
-    () =>
-      (raid.data?.issues ?? []).map((item) => ({
-        ...toIssue(item, names),
-        projectName: item.projectName,
-        programmeName: item.programmeName,
-      })),
-    [raid.data, names],
-  );
+  const ownerName = ownerNameFrom(names);
+  const risks = raid.data?.risks ?? [];
+  const issues = raid.data?.issues ?? [];
   const assumptions = governance.data?.assumptions ?? [];
   const decisions = governance.data?.decisions ?? [];
   const assumptionMetrics = getAssumptionMetrics(assumptions);
@@ -179,7 +162,7 @@ function Page() {
             Edit a risk or issue on its project's RAID tab, where changes are checked against your
             project permissions.
           </p>
-          <RaidWorkspace risks={risks} issues={[]} editable={false} />
+          <RaidWorkspace risks={risks} issues={[]} names={names} editable={false} />
           <section>
             <h2 className="font-display text-lg font-semibold">Risks above appetite</h2>
             <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -205,7 +188,7 @@ function Page() {
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {risk.projectName} · {risk.owner}
+                      {risk.projectName} · {ownerName(risk.ownerId)}
                     </p>
                   </Link>
                 ))}
@@ -222,7 +205,7 @@ function Page() {
             title="Issue register"
             boardKey="issue-register"
             itemLabel="issue"
-            rows={issuesToRows(issues).map((row, index) => ({
+            rows={issuesToRows(issues, ownerName).map((row, index) => ({
               ...row,
               project: issues[index]?.projectName ?? "",
               group: issues[index]?.programmeName ?? "Unassigned",

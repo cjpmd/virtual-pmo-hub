@@ -1,12 +1,18 @@
 import { useState } from "react";
 import { AlertTriangle, CircleDot } from "lucide-react";
-import type { Issue, Risk } from "@/data/types";
 import {
   BoardWorkspace,
   type BoardColumn,
   type BoardRecordChange,
 } from "@/components/board-workspace";
-import { issueColumns, issuesToRows, riskColumns, risksToRows } from "@/lib/board-data";
+import {
+  issueColumns,
+  issuesToRows,
+  ownerNameFrom,
+  riskColumns,
+  risksToRows,
+} from "@/lib/board-data";
+import type { IssueItem, RiskItem } from "@/services/project-records";
 import { useSampleAdornment } from "@/components/sample-badge";
 import { useSettings } from "@/services/settings";
 import { cn } from "@/lib/utils";
@@ -15,19 +21,23 @@ import { cn } from "@/lib/utils";
 export function RaidWorkspace({
   risks,
   issues,
+  names,
   onRiskChange,
   onIssueChange,
   editable = true,
   canDelete = true,
 }: {
-  risks: Risk[];
-  issues: Issue[];
+  risks: RiskItem[];
+  issues: IssueItem[];
+  /** Resource id → name, for the Owner column. */
+  names: ReadonlyMap<string, string>;
   canDelete?: boolean;
   onRiskChange?: (change: BoardRecordChange) => void;
   onIssueChange?: (change: BoardRecordChange) => void;
   editable?: boolean;
 }) {
   const settings = useSettings();
+  const ownerName = ownerNameFrom(names);
   const size = settings.risk.matrixSize;
   const riskChip = useSampleAdornment("risk");
   const issueChip = useSampleAdornment("issue");
@@ -135,7 +145,7 @@ export function RaidWorkspace({
               .map((r) => r.id)
               .slice(0, 3)
               .join()}`}
-            rows={risksToRows(visible)}
+            rows={risksToRows(visible, ownerName)}
             columns={editable ? riskColumns : readOnly(riskColumns)}
             groupOptions={["group", "formula", "response"]}
             titleAdornment={riskChip}
@@ -160,7 +170,7 @@ export function RaidWorkspace({
                 .slice(0, 3)
                 .join() || risks[0]?.id
             }`}
-            rows={issuesToRows(issues)}
+            rows={issuesToRows(issues, ownerName)}
             columns={editable ? issueColumns : readOnly(issueColumns)}
             groupOptions={["group", "priority"]}
             titleAdornment={issueChip}

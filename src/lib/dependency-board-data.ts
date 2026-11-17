@@ -1,7 +1,11 @@
 import type { BoardColumn, BoardRow, SavedView } from "@/components/board-workspace";
-import type { Dependency, DependencyType } from "@/data/types";
+import type { DependencyType, DependencyValidation } from "@/data/types";
 import { fromIsoDate, toIsoDate } from "@/lib/format";
-import type { DependencyInput, ResolvedDependency } from "@/services/dependencies";
+import type {
+  DependencyCriticality,
+  DependencyInput,
+  ResolvedDependency,
+} from "@/services/dependencies";
 
 export const dependencyColumns: BoardColumn[] = [
   { key: "reference", label: "Reference", type: "text", width: 110 },
@@ -150,12 +154,12 @@ export function dependencyInputFromBoard(patch: Partial<BoardRow>): DependencyIn
     input.requiredBy = date;
   }
   if (patch.priority !== undefined) {
-    const value = patch.priority as Dependency["criticality"];
+    const value = patch.priority as DependencyCriticality;
     if (!["Low", "Medium", "High"].includes(value)) return undefined;
     input.criticality = value;
   }
   if (patch["validation"] !== undefined) {
-    const value = patch["validation"] as Dependency["validation"];
+    const value = patch["validation"] as DependencyValidation;
     if (!["Inferred", "Proposed", "Confirmed", "Closed", "Broken"].includes(value))
       return undefined;
     input.validation = value;

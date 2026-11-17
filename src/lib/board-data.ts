@@ -1,6 +1,7 @@
 import type { BoardColumn, BoardRow } from "@/components/board-workspace";
-import type { Issue, Risk, Task } from "@/data/types";
-import { toIsoDate } from "@/lib/format";
+import type { Task } from "@/data/types";
+import { fromIsoDate, toIsoDate } from "@/lib/format";
+import type { IssueItem, RiskItem } from "@/services/project-records";
 import { daysFromToday } from "@/lib/today";
 import { getLifecyclePhases } from "@/services/gates";
 /** Project board columns; phase options are the organisation's lifecycle, read when called. */
@@ -127,17 +128,26 @@ export const riskColumns: BoardColumn[] = [
   { key: "finish", label: "Review", type: "date", editable: true },
   { key: "formula", label: "Band", type: "formula" },
 ];
-export const risksToRows = (risks: Risk[]): BoardRow[] =>
+/** An owner's name from the people map, or "Unassigned" (GL-21a: replaces the prototype adapters). */
+export const ownerNameFrom =
+  (names: ReadonlyMap<string, string>) =>
+  (id: string | null): string =>
+    (id && names.get(id)) || "Unassigned";
+/** Risk register rows, built from the database records (services/project-records.ts). */
+export const risksToRows = (
+  risks: readonly RiskItem[],
+  ownerName: (id: string | null) => string,
+): BoardRow[] =>
   risks.map((risk) => ({
     id: risk.id,
     title: risk.title,
     status: risk.status,
-    people: [risk.owner],
+    people: [ownerName(risk.ownerId)],
     probability: risk.probability,
     impact: risk.impact,
     number: risk.score,
     response: risk.response,
-    finish: risk.reviewDate,
+    finish: fromIsoDate(risk.reviewDate),
     formula: risk.score >= 15 ? "Critical" : risk.score >= 8 ? "Elevated" : "Low",
     group: risk.status,
   }));
@@ -154,13 +164,17 @@ export const issueColumns: BoardColumn[] = [
   },
   { key: "finish", label: "Due", type: "date", editable: true },
 ];
-export const issuesToRows = (issues: Issue[]): BoardRow[] =>
+/** Issue register rows, built from the database records (services/project-records.ts). */
+export const issuesToRows = (
+  issues: readonly IssueItem[],
+  ownerName: (id: string | null) => string,
+): BoardRow[] =>
   issues.map((issue) => ({
     id: issue.id,
     title: issue.title,
     status: issue.status,
-    people: [issue.owner],
+    people: [ownerName(issue.ownerId)],
     priority: issue.severity,
-    finish: issue.dueDate,
+    finish: fromIsoDate(issue.dueDate),
     group: issue.status,
   }));
