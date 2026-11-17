@@ -2,20 +2,11 @@
 // bookings (resource_assignments) and project team roles (project_team_members).
 //
 // One load per organisation. Resources embed their skills and leave (single FKs); bookings,
-// team members and projects are read in parallel. The view models keep the prototype's
-// shapes (DD/MM/YYYY dates on the planning grid), and every calculation below is pure, so
+// team members and projects are read in parallel. The view models below are built from the
+// database records (DD/MM/YYYY dates on the planning grid), and every calculation below is pure, so
 // the allocation grid, dashboard, scenarios and project team all count the same way.
 import { programmeRefs } from "./hierarchy";
 import type { Database } from "@/integrations/supabase/types";
-import type {
-  BookingType,
-  GenericResource,
-  LeaveEntry,
-  Person,
-  ResourceAssignment,
-  ResourceSkill,
-  TeamMember,
-} from "@/data/types";
 import { supabase } from "@/integrations/supabase/client";
 import { fromIsoDate, toIsoDate } from "@/lib/format";
 import { today, todayIso } from "@/lib/today";
@@ -24,26 +15,81 @@ import { insertRow, updateRow } from "./write";
 
 type Enums = Database["public"]["Enums"];
 
+export type BookingType = "Soft" | "Hard";
+export type ProjectRoleLabel =
+  "Project Manager" | "Project Officer" | "Programme Manager" | "Team Member" | "Sponsor";
+export type LeaveType = "Annual leave" | "Training" | "Other";
+export interface ResourceSkill {
+  name: string;
+  level: 1 | 2 | 3;
+}
+export interface LeaveEntry {
+  id: string;
+  start: string;
+  end: string;
+  type: LeaveType;
+}
+
 const bookingLabel: Record<Enums["booking_type"], BookingType> = { soft: "Soft", hard: "Hard" };
 const bookingValue: Record<BookingType, Enums["booking_type"]> = { Soft: "soft", Hard: "hard" };
-const roleLabel: Record<Enums["project_role"], TeamMember["role"]> = {
+const roleLabel: Record<Enums["project_role"], ProjectRoleLabel> = {
   project_manager: "Project Manager",
   project_officer: "Project Officer",
   programme_manager: "Programme Manager",
   team_member: "Team Member",
   sponsor: "Sponsor",
 };
-const leaveLabel: Record<Enums["leave_type"], LeaveEntry["type"]> = {
+const leaveLabel: Record<Enums["leave_type"], LeaveType> = {
   annual_leave: "Annual leave",
   training: "Training",
   other: "Other",
 };
 
 /** Teams are an organisation list (lookup), not a fixed set. */
-export type PersonView = Omit<Person, "team"> & { team: string; email: string | null };
-export type GenericView = Omit<GenericResource, "team"> & { team: string };
-export type AssignmentView = ResourceAssignment & { updatedAt: string };
-export interface TeamMemberView extends TeamMember {
+export interface PersonView {
+  id: string;
+  name: string;
+  jobTitle: string;
+  initials: string;
+  team: string;
+  lineManager: string;
+  contractedHoursPerWeek: number;
+  fte: number;
+  bauPercentage: number;
+  skills: ResourceSkill[];
+  leave: LeaveEntry[];
+  email: string | null;
+}
+/** A placeholder (generic) resource: a role to staff. */
+export interface GenericView {
+  id: string;
+  name: string;
+  role: string;
+  team: string;
+  skills: ResourceSkill[];
+  needsStaffing: boolean;
+}
+/** A capacity booking (resource_assignments). */
+export interface AssignmentView {
+  id: string;
+  resourceType: "Person" | "Generic";
+  resourceId: string;
+  projectId: string;
+  taskId?: string;
+  role: string;
+  start: string;
+  end: string;
+  hoursPerWeek: number;
+  bookingType: BookingType;
+  updatedAt: string;
+}
+/** A project team role (project_team_members). */
+export interface TeamMemberView {
+  personId: string;
+  role: ProjectRoleLabel;
+  start: string;
+  finish: string;
+  allocatedEffortHours: number;
   id: string;
   projectId: string;
 }
