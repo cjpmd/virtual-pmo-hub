@@ -7,7 +7,6 @@ import {
   List,
   Plus,
   Search,
-  Settings2,
   Sparkles,
   Star,
   Trash2,
