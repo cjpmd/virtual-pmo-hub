@@ -1,7 +1,7 @@
 // Benefits, read from and written to Supabase.
 //
-// One load returns everything the benefits screens use, in the shapes the components already
-// know (Benefit, BenefitMeasure, MeasurementRecord, …) with ISO dates and database ids:
+// One load returns everything the benefits screens use, as view models built from the database
+// records (BenefitView, MeasureView, MeasurementView, …) with ISO dates and database ids:
 //   - benefits embed their measures (with targets and measurements), project links, objective
 //     links, reviews and handover. These are one-to-many with a single FK each, so PostgREST
 //     embedding is unambiguous. People (owner, SRO, submitter, …) all point at resources through
@@ -9,13 +9,13 @@
 //   - realisation, variance, overdue measurement and health come from v_benefit_realisation;
 //     per-period fractions from v_benefit_period_values. Nothing here recomputes them.
 import type {
-  Benefit,
-  BenefitHandover,
-  BenefitMeasure,
-  BenefitReview,
+  BenefitCategory,
+  BenefitClassification,
+  BenefitConfidence,
+  BenefitStatus,
+  BenefitType,
   Capability,
   Health,
-  MeasurementRecord,
   Outcome,
   StrategicObjective,
 } from "@/data/types";
@@ -31,7 +31,11 @@ type Enums = Database["public"]["Enums"];
 const invert = <K extends string, V extends string>(map: Record<K, V>) =>
   Object.fromEntries(Object.entries(map).map(([key, value]) => [value, key])) as Record<V, K>;
 
-export const benefitStatusLabel: Record<Enums["benefit_status"], Benefit["status"]> = {
+export type MeasureFrequency = "Monthly" | "Quarterly" | "Annually";
+export type MeasurementStatus = "Submitted" | "Validated" | "Queried";
+export type BenefitReviewType = "Scheduled review" | "Post-implementation review";
+
+export const benefitStatusLabel: Record<Enums["benefit_status"], BenefitStatus> = {
   identified: "Identified",
   validated: "Validated",
   planned: "Planned",
@@ -42,33 +46,31 @@ export const benefitStatusLabel: Record<Enums["benefit_status"], Benefit["status
   closed: "Closed",
 };
 export const benefitStatusValue = invert(benefitStatusLabel);
-export const classificationLabel: Record<
-  Enums["benefit_classification"],
-  Benefit["classification"]
-> = {
+export const classificationLabel: Record<Enums["benefit_classification"], BenefitClassification> = {
   cash_releasing: "Cash-releasing",
   non_cash_releasing: "Non-cash-releasing",
   qualitative: "Qualitative",
   societal: "Societal",
 };
 export const classificationValue = invert(classificationLabel);
-export const confidenceLabel: Record<Enums["confidence"], Benefit["confidence"]> = {
+export const confidenceLabel: Record<Enums["confidence"], BenefitConfidence> = {
   high: "High",
   medium: "Medium",
   low: "Low",
 };
 export const confidenceValue = invert(confidenceLabel);
-export const frequencyLabel: Record<Enums["measure_frequency"], BenefitMeasure["frequency"]> = {
+export const frequencyLabel: Record<Enums["measure_frequency"], MeasureFrequency> = {
   monthly: "Monthly",
   quarterly: "Quarterly",
   annually: "Annually",
 };
 export const frequencyValue = invert(frequencyLabel);
-export const measurementStatusLabel: Record<
-  Enums["measurement_status"],
-  MeasurementRecord["status"]
-> = { submitted: "Submitted", validated: "Validated", queried: "Queried" };
-const reviewTypeLabel: Record<Enums["benefit_review_type"], BenefitReview["type"]> = {
+export const measurementStatusLabel: Record<Enums["measurement_status"], MeasurementStatus> = {
+  submitted: "Submitted",
+  validated: "Validated",
+  queried: "Queried",
+};
+const reviewTypeLabel: Record<Enums["benefit_review_type"], BenefitReviewType> = {
   scheduled: "Scheduled review",
   post_implementation: "Post-implementation review",
 };
@@ -104,16 +106,78 @@ export interface PeriodValue {
   actualFraction: number | undefined;
 }
 
-export interface MeasurementView extends MeasurementRecord {
+/** A submitted measurement (benefit_measurements). */
+export interface MeasurementView {
+  id: string;
+  period: string;
+  actualValue: number;
+  evidence: string;
+  notes: string;
+  submittedBy: string;
+  submittedDate?: string;
+  validatedBy?: string;
+  validatedDate?: string;
+  queryNote?: string;
+  status: MeasurementStatus;
   periodId: string;
   updatedAt: string;
 }
-export interface MeasureView extends BenefitMeasure {
+/** A benefit measure (benefit_measures) with its targets and measurements. */
+export interface MeasureView {
+  id: string;
+  name: string;
+  unit: string;
+  measurementMethod: string;
+  dataSource: string;
+  frequency: MeasureFrequency;
+  dataProvider: string;
+  baselineValue: number;
+  baselineDate: string;
+  targetProfile: Array<{ period: string; value: number }>;
+  nextDue: string;
   records: MeasurementView[];
 }
+export interface BenefitReviewView {
+  id: string;
+  date: string;
+  type: BenefitReviewType;
+  findings: string;
+  lessonsLearned: string;
+  reviewer: string;
+}
+export interface BenefitHandoverView {
+  bauOwner: string;
+  bauService: string;
+  frequency: MeasureFrequency;
+  nextReviewDate: string;
+  postImplementationReviewDate: string;
+  confirmedBy: string;
+  confirmedDate: string;
+}
 
-/** A benefit as the screens use it: the prototype shape plus database facts and view results. */
-export interface BenefitView extends Benefit {
+/** A benefit as the screens use it: the database record, resolved names and view results. */
+export interface BenefitView {
+  id: string;
+  reference: string;
+  title: string;
+  description: string;
+  type: BenefitType;
+  classification: BenefitClassification;
+  category: BenefitCategory;
+  beneficiaries: string[];
+  owner: string;
+  sro: string;
+  strategicObjectiveIds: string[];
+  enablingProjects: Array<{ projectId: string; attribution: number }>;
+  status: BenefitStatus;
+  confidence: BenefitConfidence;
+  eligibilityConfirmed: boolean;
+  eligibilityConfirmedBy?: string;
+  eligibilityConfirmedDate?: string;
+  plannedTotalValue: number;
+  dependencies: string[];
+  reviews: BenefitReviewView[];
+  handover?: BenefitHandoverView;
   measures: MeasureView[];
   workspaceId: string;
   portfolioId: string;
@@ -304,7 +368,7 @@ export async function loadBenefits(orgId: string): Promise<BenefitsData> {
       description: row.description ?? "",
       type: row.type === "disbenefit" ? "Disbenefit" : "Benefit",
       classification: classificationLabel[row.classification],
-      category: (categoryLabel.get(row.category_id ?? "") ?? "Efficiency") as Benefit["category"],
+      category: (categoryLabel.get(row.category_id ?? "") ?? "Efficiency") as BenefitCategory,
       beneficiaries: row.beneficiaries ?? [],
       owner: nameOf(row.owner_id),
       sro: nameOf(row.sro_id),
@@ -368,7 +432,7 @@ export async function loadBenefits(orgId: string): Promise<BenefitsData> {
             .sort((a, b) => (a.submittedDate ?? "").localeCompare(b.submittedDate ?? "")),
         })),
       reviews: (row.benefit_reviews ?? [])
-        .map((review): BenefitReview => ({
+        .map((review): BenefitReviewView => ({
           id: review.id,
           date: review.review_date,
           type: reviewTypeLabel[review.type],
@@ -386,7 +450,7 @@ export async function loadBenefits(orgId: string): Promise<BenefitsData> {
           postImplementationReviewDate: handoverRow.post_implementation_review_date ?? "",
           confirmedBy: nameOf(handoverRow.confirmed_by_id),
           confirmedDate: handoverRow.confirmed_date ?? "",
-        } satisfies BenefitHandover,
+        } satisfies BenefitHandoverView,
       }),
       workspaceId: row.workspace_id,
       portfolioId: row.portfolio_id,
@@ -563,7 +627,7 @@ export interface HandoverInput {
   benefitId: string;
   bauOwnerId: string | null;
   bauService: string;
-  frequency: BenefitMeasure["frequency"];
+  frequency: MeasureFrequency;
   nextReviewDate: string | null;
   postImplementationReviewDate: string | null;
   confirmedById: string | null;
@@ -596,10 +660,10 @@ export async function saveHandover(input: HandoverInput) {
 
 export interface BenefitInput {
   title?: string;
-  type?: Benefit["type"];
-  status?: Benefit["status"];
-  confidence?: Benefit["confidence"];
-  classification?: Benefit["classification"];
+  type?: BenefitType;
+  status?: BenefitStatus;
+  confidence?: BenefitConfidence;
+  classification?: BenefitClassification;
   ownerId?: string | null;
   plannedTotalValue?: number;
 }
@@ -630,7 +694,7 @@ export async function createBenefit(input: {
   ownerId?: string | null;
   projectIds?: string[];
   categoryId: string;
-  classification: Benefit["classification"];
+  classification: BenefitClassification;
 }) {
   if (!input.title.trim()) throw new ServiceError("invalid", "Give the benefit a title.");
   const written = await insertRow(
