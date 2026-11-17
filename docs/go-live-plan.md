@@ -1016,6 +1016,18 @@ only; no behaviour or styling change.
   d: components/task-workspace.tsx (~1,600 lines)
 ```
 
+**Done (17/11/2026), merged:** no database change. Each big component keeps its main component
+and its old exports; the rest moved verbatim, and pure helpers have unit tests.
+- **GL-20a** (#124): `board-workspace.tsx` 2,018 → 649 lines; types, helpers, cells, the four views,
+  item panels, the view and column menus and the automations panel are in `components/board/`.
+- **GL-20b** (#125): `settings-sections.tsx` is now a re-export of 13 section files in
+  `components/settings/`; the pure logic is in `settings-logic.ts`.
+- **GL-20c** (#126): `delivery-workspace.tsx` 1,735 → 31 lines; the dormant sprint UI is in
+  `components/sprint-delivery/` for Phase 3, so recharts and the sprints store are no longer
+  loaded with the project page.
+- **GL-20d** (#127): `task-workspace.tsx` 1,615 → 571 lines; helpers, row parts, grid and timeline
+  views and the task panel are in `components/tasks/`.
+
 ### GL-21 Remove the prototype-shape adapters (one domain per session)
 
 No database change expected. No behaviour change.
@@ -1031,6 +1043,15 @@ and delete the adapter layer. List every screen touched; e2e for that domain mus
   c: Resources (services/resources.ts)
 ```
 
+**Done (17/11/2026), merged:** no database change. Nothing in `src` uses the prototype record
+interfaces any more; they stay in `data/types.ts` for `scripts/fixtures`. Display labels and
+DD/MM/YYYY dates are unchanged.
+- **GL-21a** (#128): `toRisk` / `toIssue` deleted; `risksToRows` / `issuesToRows` build the rows from
+  `RiskItem` / `IssueItem`; the decision, assumption and dependency view models declare their own fields.
+- **GL-21b** (#129): `BenefitView`, `MeasureView` and `MeasurementView` declare their own fields (type-only).
+- **GL-21c** (#130): `PersonView`, `GenericView`, `AssignmentView` and `TeamMemberView` declare their
+  own fields (type-only).
+
 ---
 
 ## Not for Claude Code (me)
@@ -1045,4 +1066,4 @@ and delete the adapter layer. List every screen touched; e2e for that domain mus
 
 - [x] GL-1 Migrations  - [x] GL-2 Cron  - [x] GL-3 Hide dead ends  - [x] GL-4 Read-only  - [x] GL-5 Banners  - [x] GL-6 Billing emails  - [ ] GL-7 Legal pages
 - [x] GL-8 Sector  - [x] GL-9 Sample data  - [x] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [x] GL-12 Bugs  - [ ] GL-13 Notifications  - [x] GL-14 Committee packs
-- [x] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [x] GL-17 Multi-tenant  - [ ] GL-17b Refresh under RLS  - [x] GL-18 Bundle  - [x] GL-19 Clean-up 0.2  - [ ] GL-20a–d Components  - [ ] GL-21a–c Adapters
+- [x] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [x] GL-17 Multi-tenant  - [ ] GL-17b Refresh under RLS  - [x] GL-18 Bundle  - [x] GL-19 Clean-up 0.2  - [x] GL-20a–d Components  - [x] GL-21a–c Adapters
