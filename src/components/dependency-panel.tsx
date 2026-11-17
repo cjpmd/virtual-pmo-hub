@@ -11,14 +11,14 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HealthPill } from "@/components/health-pill";
-import type { Dependency } from "@/data/types";
+import type { DependencyType } from "@/data/types";
 import type { ResolvedDependency } from "@/services/dependencies";
 import { useDependencyMutations } from "@/hooks/use-dependencies";
 import { useOrgRaid, usePeople } from "@/hooks/use-hierarchy";
 import { useCan } from "@/hooks/use-permissions";
 import { cn } from "@/lib/utils";
 
-export const typeLegend: Array<{ type: Dependency["type"]; line: string; note: string }> = [
+export const typeLegend: Array<{ type: DependencyType; line: string; note: string }> = [
   { type: "Sequencing", line: "solid", note: "One side must finish before the other can start" },
   { type: "Alignment", line: "dashed", note: "Both sides must stay consistent with each other" },
   { type: "Information", line: "dotted", note: "One side needs data or insight from the other" },

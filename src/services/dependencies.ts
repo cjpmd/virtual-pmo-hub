@@ -7,10 +7,10 @@
 // because a dependency points at each of those twice (giver and receiver), which would make
 // embedding ambiguous.
 import type {
-  Dependency,
   DependencyBoundary,
   DependencyEnd,
   DependencyType,
+  DependencyValidation,
   Health,
 } from "@/data/types";
 import type { Database } from "@/integrations/supabase/types";
@@ -33,7 +33,7 @@ export const dependencyTypeLabel: Record<Enums["dependency_type"], DependencyTyp
   external: "External",
 };
 const dependencyTypeValue = invert(dependencyTypeLabel);
-export const validationLabel: Record<Enums["dependency_validation"], Dependency["validation"]> = {
+export const validationLabel: Record<Enums["dependency_validation"], DependencyValidation> = {
   inferred: "Inferred",
   proposed: "Proposed",
   confirmed: "Confirmed",
@@ -41,7 +41,7 @@ export const validationLabel: Record<Enums["dependency_validation"], Dependency[
   broken: "Broken",
 };
 const validationValue = invert(validationLabel);
-const criticalityLabel: Record<Enums["criticality"], Dependency["criticality"]> = {
+const criticalityLabel: Record<Enums["criticality"], DependencyCriticality> = {
   high: "High",
   medium: "Medium",
   low: "Low",
@@ -69,7 +69,7 @@ export const dependencyTypes: DependencyType[] = [
   "Resource",
   "External",
 ];
-export const dependencyValidations: Dependency["validation"][] = [
+export const dependencyValidations: DependencyValidation[] = [
   "Inferred",
   "Proposed",
   "Confirmed",
@@ -95,7 +95,24 @@ export interface EndMilestone {
   actualDate: string | null;
 }
 
-export interface ResolvedDependency extends Omit<Dependency, "giver" | "receiver"> {
+export type DependencyCriticality = "High" | "Medium" | "Low";
+
+/** A dependency as the screens use it, built from the database records in loadDependencies. */
+export interface ResolvedDependency {
+  id: string;
+  reference: string;
+  type: DependencyType;
+  description: string;
+  requiredBy: string;
+  criticality: DependencyCriticality;
+  validation: DependencyValidation;
+  giverAccepted: boolean;
+  receiverAccepted: boolean;
+  riskIds: string[];
+  issueIds: string[];
+  healthOverride?: Health;
+  raisedDate: string;
+  raisedBy: string;
   giver: ResolvedEnd;
   receiver: ResolvedEnd;
   workspaceId: string;
@@ -331,7 +348,7 @@ export const getEndProgrammeId = (end: ResolvedEnd) => end.programmeId;
 
 /** Why the dependency has its health, in words. The health itself comes from the view. */
 function healthReason(input: {
-  validation: Dependency["validation"];
+  validation: DependencyValidation;
   type: DependencyType;
   giverMilestone: EndMilestone | undefined;
   slip: number | null;
@@ -443,8 +460,8 @@ export interface DependencyInput {
   type?: DependencyType;
   description?: string;
   requiredBy?: string;
-  criticality?: Dependency["criticality"];
-  validation?: Dependency["validation"];
+  criticality?: DependencyCriticality;
+  validation?: DependencyValidation;
   giverAccepted?: boolean;
   receiverAccepted?: boolean;
   healthOverride?: Health | null;

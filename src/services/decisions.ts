@@ -6,11 +6,11 @@
 // FK explicitly; the rest are single-FK one-to-many embeds. People resolve through one parallel
 // resources query, forums through the forums table and change types through lookup_values.
 import type {
-  Assumption,
   AssumptionStatus,
   ChangeRequest,
-  Decision,
   DecisionAction,
+  DecisionImpact,
+  DecisionOption,
   DecisionStatus,
 } from "@/data/types";
 import type { Database, Json } from "@/integrations/supabase/types";
@@ -57,10 +57,28 @@ export interface ScopeRef {
   workspaceId: string;
 }
 
-export interface ResolvedDecision extends Omit<
-  Decision,
-  "forum" | "projectId" | "programmeId" | "actions"
-> {
+/** A decision as the screens use it, built from the database records in loadGovernance. */
+export interface ResolvedDecision {
+  id: string;
+  reference: string;
+  title: string;
+  context: string;
+  options: DecisionOption[];
+  chosenOptionId?: string;
+  rationale?: string;
+  decisionMaker: string;
+  neededBy: string;
+  decisionDate?: string;
+  status: DecisionStatus;
+  impact: DecisionImpact;
+  riskIds: string[];
+  issueIds: string[];
+  changeIds: string[];
+  dependencyIds: string[];
+  benefitIds: string[];
+  evidenceLink?: string;
+  supersedesId?: string;
+  supersededById?: string;
   actions: Array<DecisionAction & { ownerId: string | null; updatedAt: string }>;
   forum: string;
   forumId: string | null;
@@ -108,7 +126,17 @@ export interface ResolvedDecision extends Omit<
   updatedAt: string;
 }
 
-export interface ResolvedAssumption extends Omit<Assumption, "projectId" | "programmeId"> {
+/** An assumption as the screens use it, built from the database records in loadGovernance. */
+export interface ResolvedAssumption {
+  id: string;
+  reference: string;
+  assumption: string;
+  owner: string;
+  rationale: string;
+  validationDate: string;
+  status: AssumptionStatus;
+  raisedIssueId?: string;
+  notes?: string;
   projectId?: string;
   programmeId?: string;
   scope: ScopeRef;
