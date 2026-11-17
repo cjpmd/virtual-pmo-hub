@@ -22,6 +22,8 @@ import { benefitsForProject } from "@/services/benefits-value";
 import { collectionMetrics, type CollectionView as Collection } from "@/services/collections";
 import type { ProjectSummary as Project } from "@/services/hierarchy";
 import { Breadcrumbs } from "@/components/section-nav";
+import { CollectionActions } from "@/components/collections/collection-actions";
+import { useCollectionAccess } from "@/components/collections/collection-access";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/portfolio/collections/$collectionId")({
@@ -62,16 +64,28 @@ function CollectionPage() {
             projects={(all.data ?? []).filter((project) =>
               collection.projectIds.includes(project.id),
             )}
+            allProjects={all.data ?? []}
           />
         );
       }}
     </QueryState>
   );
 }
-function CollectionBody({ collection, projects }: { collection: Collection; projects: Project[] }) {
+function CollectionBody({
+  collection,
+  projects,
+  allProjects,
+}: {
+  collection: Collection;
+  projects: Project[];
+  allProjects: Project[];
+}) {
   const metrics = collectionMetrics(projects);
   const writable = useOrgWritable();
-  const canGenerate = collection.type === "Governance";
+  const { canManage } = useCollectionAccess();
+  const published = collectionReports(useReports().data ?? [], collection.id).length;
+  const archived = !!collection.archivedAt;
+  const canGenerate = collection.type === "Governance" && !archived;
   return (
     <div className="space-y-6">
       <Breadcrumbs
@@ -82,32 +96,52 @@ function CollectionBody({ collection, projects }: { collection: Collection; proj
         ]}
       />
       <PageHeader
-        eyebrow={collection.type}
+        eyebrow={archived ? `${collection.typeLabel} · Archived` : collection.typeLabel}
         title={collection.name}
         description="A cross-portfolio view used to focus governance discussion, decisions and delivery assurance."
         actions={
-          canGenerate ? (
-            <ReadOnlyTip readOnly={!writable}>
-              {writable ? (
-                <Button asChild>
-                  <Link
-                    to="/governance/reports"
-                    search={{ create: true, collection: collection.id }}
-                  >
+          <div className="flex flex-wrap items-center gap-2">
+            {canManage(collection.workspaceId) && (
+              <CollectionActions
+                collection={collection}
+                projects={allProjects}
+                publishedReports={published}
+                writable={writable}
+              />
+            )}
+            {canGenerate ? (
+              <ReadOnlyTip readOnly={!writable}>
+                {writable ? (
+                  <Button asChild>
+                    <Link
+                      to="/governance/reports"
+                      search={{ create: true, collection: collection.id }}
+                    >
+                      <Presentation className="size-4" />
+                      New report for this collection
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button disabled>
                     <Presentation className="size-4" />
                     New report for this collection
-                  </Link>
-                </Button>
-              ) : (
-                <Button disabled>
-                  <Presentation className="size-4" />
-                  New report for this collection
-                </Button>
-              )}
-            </ReadOnlyTip>
-          ) : undefined
+                  </Button>
+                )}
+              </ReadOnlyTip>
+            ) : null}
+          </div>
         }
       />
+      {archived && (
+        <p
+          role="status"
+          className="rounded-lg border border-border bg-muted px-4 py-3 text-sm"
+          data-testid="collection-archived"
+        >
+          This collection is archived: it can&apos;t be changed, and its reports stay readable.
+          {canManage(collection.workspaceId) && " Restore it from the ⋯ menu to change it."}
+        </p>
+      )}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label="Projects" value={String(metrics.projectCount)} />
         <Metric label="Collection budget" value={money(metrics.budget)} />
