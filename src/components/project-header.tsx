@@ -12,6 +12,7 @@ import { ProjectEditAction, ProjectMoreMenu, StateBadge } from "@/components/ent
 import { FavouriteButton } from "@/components/favourite-button";
 import { ArchivedWorkspaceBadge } from "@/components/workspace-badge";
 import { SampleBadge } from "@/components/sample-badge";
+import { ProjectCollections } from "@/components/collections/project-collections";
 import { openIssueTask } from "@/components/issue-task-sheet";
 import { HealthMark } from "@/components/overview/project-watchlist";
 import { Button } from "@/components/ui/button";
@@ -147,6 +148,7 @@ export function ProjectHeader({
               </Link>
             )}
           </div>
+          <ProjectCollections project={project} />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <ProjectEditAction project={project} className={bandButton} />

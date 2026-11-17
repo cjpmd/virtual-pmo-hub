@@ -1068,6 +1068,40 @@ DD/MM/YYYY dates are unchanged.
 - **GL-21c** (#130): `PersonView`, `GenericView`, `AssignmentView` and `TeamMemberView` declare their
   own fields (type-only).
 
+### GL-22 Collection management [DB]
+
+```
+New package GL-22: collection management. Collections (services/collections.ts,
+routes/portfolio.collections*) can only be viewed; there's no way to create, edit or delete one,
+add existing projects, or set pot and award amounts. Build: New collection (name, type,
+workspace, pot for funding streams); on the collection page Edit, Add projects (searchable picker
+of the workspace's projects), Remove project and an editable award per project for funding
+streams; the project's collections on the project page; delete, or archive when the collection
+has published reports. PMO and admin only; respect read-only mode and sample data.
+```
+
+**Built (17/11/2026); applied 17/11/2026, not merged:** migration `20261117154953_gl_22_collections`
+(`docs/sql/gl-22-collections.sql`). `collections.archived_at` / `archived_by` (set by trigger). An
+archived collection is read-only until restored: renaming it, or adding, removing or changing its
+projects, is refused (hint `collection_archived`). Deleting a collection that any report (any
+status) or forum is scoped to is refused (hint `collection_in_use`; SECURITY DEFINER, so it counts
+reports the person can't see; the purge steps aside); links cascade from a deleted collection or
+project. Pot and award amounts can't be negative and a name can't be blank. Decided: delete is
+refused for drafts and forums too, since `scope_entity_id` has no foreign key; a forum scoped to an
+archived collection with `auto_create_packs` keeps drafting packs (follow-up, not changed here).
+Front end: Portfolio › Collections has New collection (PMO / admin in an active workspace; asks for
+the workspace when there is more than one) and Show archived; the collection page has Manage
+projects (search the workspace's non-archived projects, with state and the Sample chip; remove;
+awards for funding streams, saved on blur), Edit (name, type, pot), and ⋯ Archive / Restore /
+Delete (typed name; with published reports, or when the database says it's in use, it offers
+Archive instead); archived collections show a banner and no "New report". The project header lists
+the project's collections, with a Manage popover for PMO / admin in its workspace. Everything is
+disabled with the read-only tooltip when the organisation is read-only. Types are the
+organisation's list (Settings › Lists); only "Funding stream" has a pot and awards.
+`collection_projects` is keyed by (collection, project) in `write.ts`. Tests:
+`supabase/tests/collections.sql` (35 checks, local), `services/collections.test.ts`, e2e
+`e2e/collections.e2e.ts` (not run: e2e stays off production).
+
 ---
 
 ## Not for Claude Code (me)
@@ -1083,3 +1117,4 @@ DD/MM/YYYY dates are unchanged.
 - [x] GL-1 Migrations  - [x] GL-2 Cron  - [x] GL-3 Hide dead ends  - [x] GL-4 Read-only  - [x] GL-5 Banners  - [x] GL-6 Billing emails  - [ ] GL-7 Legal pages
 - [x] GL-8 Sector  - [x] GL-9 Sample data  - [x] GL-10 Cross-tenant  - [ ] GL-11 Closure  - [x] GL-12 Bugs  - [ ] GL-13 Notifications  - [x] GL-14 Committee packs
 - [x] GL-15 Reminders  - [ ] GL-16 Pack overflow  - [x] GL-17 Multi-tenant  - [ ] GL-17b Refresh under RLS  - [x] GL-18 Bundle  - [x] GL-19 Clean-up 0.2  - [x] GL-20a–d Components  - [x] GL-21a–c Adapters
+- [ ] GL-22 Collections
