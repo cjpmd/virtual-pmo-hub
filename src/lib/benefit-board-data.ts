@@ -1,12 +1,12 @@
 // Benefits register board: rows from services/benefits.ts and the column → field mapping the
 // board uses to write edits by record id.
 import type { BoardColumn, BoardRow, SavedView } from "@/components/board-workspace";
-import type { Benefit } from "@/data/types";
+import type { BenefitClassification, BenefitStatus } from "@/data/types";
 import { fromIsoDate } from "@/lib/format";
 import type { BenefitInput, BenefitsData, BenefitView } from "@/services/benefits";
 import type { Person } from "@/services/hierarchy";
 
-const statuses: Benefit["status"][] = [
+const statuses: BenefitStatus[] = [
   "Identified",
   "Validated",
   "Planned",
@@ -112,8 +112,8 @@ export function benefitInputFromBoard(
     input.title = patch.title;
   }
   if (patch["type"] === "Benefit" || patch["type"] === "Disbenefit") input.type = patch["type"];
-  if (typeof patch.status === "string" && statuses.includes(patch.status as Benefit["status"]))
-    input.status = patch.status as Benefit["status"];
+  if (typeof patch.status === "string" && statuses.includes(patch.status as BenefitStatus))
+    input.status = patch.status as BenefitStatus;
   if (
     patch["confidence"] === "High" ||
     patch["confidence"] === "Medium" ||
@@ -126,7 +126,7 @@ export function benefitInputFromBoard(
       patch["classification"],
     )
   )
-    input.classification = patch["classification"] as Benefit["classification"];
+    input.classification = patch["classification"] as BenefitClassification;
   if (Array.isArray(patch.people)) {
     const name = patch.people[0];
     if (!name) input.ownerId = null;

@@ -3,9 +3,8 @@ import { useState } from "react";
 import { ArrowLeft, ArrowRight, CheckCircle2, PackageCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { BenefitMeasure } from "@/data/types";
 import { getHandoverCandidates } from "@/services/benefits-value";
-import type { BenefitsData } from "@/services/benefits";
+import type { BenefitsData, MeasureFrequency } from "@/services/benefits";
 import { QueryState } from "@/components/query-state";
 import { useBenefitMutations, useBenefits } from "@/hooks/use-benefits";
 import { useMyResourceId } from "@/hooks/use-hierarchy";
@@ -15,12 +14,12 @@ import { cn } from "@/lib/utils";
 interface HandoverEntry {
   bauOwner: string;
   bauService: string;
-  frequency: BenefitMeasure["frequency"];
+  frequency: MeasureFrequency;
   nextReviewDate: string;
   postImplementationReviewDate: string;
   confirmed: boolean;
 }
-const frequencies: BenefitMeasure["frequency"][] = ["Monthly", "Quarterly", "Annually"];
+const frequencies: MeasureFrequency[] = ["Monthly", "Quarterly", "Annually"];
 
 interface WizardProps {
   project: { id: string; name: string };
@@ -179,7 +178,7 @@ function Wizard({ project, close, onComplete, data }: WizardProps & { data: Bene
                   <select
                     value={entry.frequency}
                     onChange={(event) =>
-                      update({ frequency: event.target.value as BenefitMeasure["frequency"] })
+                      update({ frequency: event.target.value as MeasureFrequency })
                     }
                     className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
                   >
