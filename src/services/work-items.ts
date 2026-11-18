@@ -17,6 +17,7 @@ import { fromIsoDate, toIsoDate } from "@/lib/format";
 import { daysFromToday, todayIso } from "@/lib/today";
 import { listPeople, type Person, programmeRefs } from "./hierarchy";
 import { milestoneStatusLabel, priorityLabel, priorityValue } from "./labels";
+import { plannerSync } from "@/lib/features";
 import { unwrap } from "./service-error";
 import { deleteWhere, insertRow, insertRows, updateRow, deleteRows } from "./write";
 
@@ -29,6 +30,20 @@ export const taskSourceLabel: Record<Enums["task_source"], TaskSource> = {
 };
 export const toTaskSource = (value: string | null | undefined): TaskSource =>
   taskSourceLabel[value as Enums["task_source"]] ?? "Native";
+
+/**
+ * GL-3 follow-up: while Planner sync is off (VITE_PLANNER_SYNC), a project whose task source is
+ * Planner is treated as native everywhere it shows: no "sync not connected" text, no Open in
+ * Planner link, no Premium field locks. The stored task_source is left as it is.
+ */
+export const effectiveTaskSource = (source: TaskSource, planner = plannerSync): TaskSource =>
+  planner ? source : "Native";
+
+/** The same for the stored value (projects.task_source), e.g. for the Tasks chip. */
+export const effectiveTaskSourceValue = (
+  value: string | null | undefined,
+  planner = plannerSync,
+): string => (!planner && value?.startsWith("planner_") ? "native" : (value ?? "native"));
 
 export interface TaskView extends Task {
   ref: string;

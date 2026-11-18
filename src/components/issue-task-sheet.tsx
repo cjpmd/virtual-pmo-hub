@@ -17,7 +17,7 @@ import type { Priority } from "@/data/types";
 import { useIssuedTaskMutations, useIssuedTasks } from "@/hooks/use-issued-tasks";
 import { useMyResourceId } from "@/hooks/use-hierarchy";
 import { addDaysIso } from "@/lib/today";
-import { taskSourceLabel } from "@/services/work-items";
+import { effectiveTaskSource, taskSourceLabel } from "@/services/work-items";
 
 export const issueTaskEvent = "virtual-pmo-open-issue-task";
 
@@ -93,7 +93,9 @@ function IssueForm({
     if (!projectId && projects[0]) setProjectId(projects[0].id);
   }, [projectId, projects, setProjectId]);
   const selectedProject = projects.find((project) => project.id === projectId);
-  const source = selectedProject ? taskSourceLabel[selectedProject.taskSource] : "Native";
+  const source = selectedProject
+    ? effectiveTaskSource(taskSourceLabel[selectedProject.taskSource])
+    : "Native";
   const pastedNames = useMemo(
     () =>
       pasted

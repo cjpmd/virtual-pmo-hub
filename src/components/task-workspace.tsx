@@ -9,6 +9,7 @@ import { useOrgWritable } from "@/hooks/use-org-access";
 import { ReadOnlyTip, READ_ONLY_TIP } from "@/components/org-access-banner";
 import { invalidateRollups } from "@/hooks/use-project-records";
 import { useProjectTasks } from "@/hooks/use-work-items";
+import { effectiveTaskSource } from "@/services/work-items";
 import { qk } from "@/services/query-keys";
 import {
   saveTaskChanges,
@@ -40,7 +41,13 @@ export function TaskWorkspace({
   const query = useProjectTasks(projectId);
   return (
     <QueryState query={query}>
-      {(data) => <TaskEditor data={data} projectId={projectId} taskSource={taskSource} />}
+      {(data) => (
+        <TaskEditor
+          data={data}
+          projectId={projectId}
+          taskSource={effectiveTaskSource(taskSource)}
+        />
+      )}
     </QueryState>
   );
 }

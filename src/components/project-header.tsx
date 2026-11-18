@@ -11,6 +11,7 @@ import { JustificationForm } from "@/components/divergence-note";
 import { ProjectEditAction, ProjectMoreMenu, StateBadge } from "@/components/entity-management";
 import { FavouriteButton } from "@/components/favourite-button";
 import { ArchivedWorkspaceBadge } from "@/components/workspace-badge";
+import { effectiveTaskSourceValue } from "@/services/work-items";
 import { SampleBadge } from "@/components/sample-badge";
 import { ProjectCollections } from "@/components/collections/project-collections";
 import { openIssueTask } from "@/components/issue-task-sheet";
@@ -135,7 +136,9 @@ export function ProjectHeader({
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             <Chip label="Tier">{project.tier}</Chip>
             <Chip label="Priority">{project.priority}</Chip>
-            <Chip label="Tasks">{TASK_SOURCE[project.taskSource] ?? project.taskSource}</Chip>
+            <Chip label="Tasks">
+              {TASK_SOURCE[effectiveTaskSourceValue(project.taskSource)] ?? project.taskSource}
+            </Chip>
             {project.convertedFromRequestRef && (
               <Link
                 to="/portfolio/requests"
