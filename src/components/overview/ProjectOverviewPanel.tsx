@@ -12,6 +12,7 @@ import { usePhases } from "@/hooks/use-hierarchy";
 import { useFormat } from "@/lib/format";
 import type { Phase } from "@/services/hierarchy";
 import { TASK_SOURCE } from "@/lib/project-tabs";
+import { effectiveTaskSourceValue } from "@/services/work-items";
 import { cn } from "@/lib/utils";
 import { divergenceText } from "@/services/assurance";
 import type { Health } from "@/data/types";
@@ -181,7 +182,11 @@ function SummaryCard({
       <div className="flex flex-wrap gap-1.5">
         <Chip label="Tier">{project.tier}</Chip>
         <Chip label="Priority">{project.priority}</Chip>
-        {taskSource ? <Chip label="Tasks">{TASK_SOURCE[taskSource] ?? taskSource}</Chip> : null}
+        {taskSource ? (
+          <Chip label="Tasks">
+            {TASK_SOURCE[effectiveTaskSourceValue(taskSource)] ?? taskSource}
+          </Chip>
+        ) : null}
       </div>
       <Lifecycle size="compact" phases={phases} phaseId={project.phaseId} />
       <dl className="grid grid-cols-2 gap-x-4 gap-y-3 @[280px]/summary:grid-cols-3">

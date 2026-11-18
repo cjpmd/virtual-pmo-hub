@@ -22,6 +22,7 @@ import { addDaysIso } from "@/lib/today";
 import { getTierDefinitions } from "@/services/gates";
 import { RelevantLessons } from "@/components/relevant-lessons";
 import { cn } from "@/lib/utils";
+import { plannerSync } from "@/lib/features";
 
 interface NewProjectSheetProps {
   open: boolean;
@@ -55,8 +56,10 @@ export function NewProjectSheet({ open, onOpenChange, onCreated }: NewProjectShe
     [collectionIds, setCollectionIds] = useState<string[]>([]),
     [error, setError] = useState("");
   const programmeId = programmeChoice ?? programmes[0]?.id ?? "";
+  // Planner is offered only with Planner sync on (GL-3); otherwise new projects are native.
+  const mode = plannerSync ? sourceMode : "native";
   const taskSource: TaskSource =
-    sourceMode === "native"
+    mode === "native"
       ? "Native"
       : plannerTier === "Premium"
         ? "Planner (Premium)"
@@ -89,7 +92,7 @@ export function NewProjectSheet({ open, onOpenChange, onCreated }: NewProjectShe
         budget: Number(budget) || 0,
         businessCase,
         taskSource:
-          sourceMode === "native"
+          mode === "native"
             ? "native"
             : plannerTier === "Premium"
               ? "planner_premium"
@@ -262,18 +265,25 @@ export function NewProjectSheet({ open, onOpenChange, onCreated }: NewProjectShe
           {step === 3 && (
             <div className="space-y-4">
               <Choice
-                active={sourceMode === "native"}
+                active={mode === "native"}
                 title="Native tasks"
                 description="Manage tasks directly in ORMO PMO."
                 onClick={() => setSourceMode("native")}
               />
-              <Choice
-                active={sourceMode === "planner"}
-                title="Microsoft Planner"
-                description="Tasks will live in a Planner plan once Microsoft 365 is connected. Until then the project uses native tasks."
-                onClick={() => setSourceMode("planner")}
-              />
-              {sourceMode === "planner" && (
+              {plannerSync ? (
+                <Choice
+                  active={sourceMode === "planner"}
+                  title="Microsoft Planner"
+                  description="Tasks will live in a Planner plan once Microsoft 365 is connected. Until then the project uses native tasks."
+                  onClick={() => setSourceMode("planner")}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground" data-testid="planner-coming-later">
+                  Microsoft Planner sync is coming later. New projects manage their tasks in ORMO
+                  PMO.
+                </p>
+              )}
+              {mode === "planner" && (
                 <div className="ml-8 flex gap-2">
                   <Button
                     type="button"

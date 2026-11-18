@@ -119,6 +119,17 @@ is coming later) and `VITE_SPRINT_DELIVERY` (off: no project Delivery tab, `?tab
 Overview). The setup wizard's Microsoft 365 card is gone; Settings › Notifications shows In-app
 only. e2e: `e2e/hidden-features.e2e.ts`.
 
+**GL-3 follow-up (18/11/2026), not merged:** no database change. With `VITE_PLANNER_SYNC` off, the
+New project sheet's Task source step offers only Native tasks ("Microsoft Planner sync is coming
+later"), so new projects are always `native`. Projects already stored as `planner_basic` /
+`planner_premium` (13 on production on 18/11/2026, all in ORMO, none archived: 7 Basic, 6 Premium)
+keep their stored value but read as native through `effectiveTaskSource` /
+`effectiveTaskSourceValue` (`services/work-items.ts`): Plan › Tasks shows no "Planner sync not
+connected yet", no Open in Planner link and no Premium locks; the project header and overview
+panel Tasks chip say "Managed in ORMO PMO"; the Issue task sheet shows no Planner message. Turning
+the flag on restores the stored source everywhere. Tests: `services/work-items.test.ts`, e2e
+`e2e/hidden-features.e2e.ts` (not run: e2e stays off production).
+
 ### GL-4 Read-only when a trial or subscription lapses [DB]
 
 ```
