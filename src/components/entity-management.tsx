@@ -33,7 +33,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { Priority } from "@/data/types";
+import type { Priority, ProjectTier } from "@/data/types";
 import { useCurrentPortfolio } from "@/hooks/use-current-portfolio";
 import { useBenefits } from "@/hooks/use-benefits";
 import { useEntityMutations } from "@/hooks/use-entities";
@@ -41,6 +41,10 @@ import { usePeople, usePhases, usePortfolioNames, useProgrammesLight } from "@/h
 import { useOrgWritable } from "@/hooks/use-org-access";
 import { useCan, useWorkspaceRoles } from "@/hooks/use-permissions";
 import { ReadOnlyTip } from "@/components/org-access-banner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { TIER_LOCKED_TIP, tierOptions, tierReasonError } from "@/lib/project-tier";
+import { getTierDefinitions } from "@/services/gates";
+import { useSettings } from "@/services/settings";
 import { useWorkspaces } from "@/hooks/use-workspaces";
 import { ArchivedWorkspaceBadge } from "@/components/workspace-badge";
 import { SampleBadge } from "@/components/sample-badge";
@@ -730,22 +734,33 @@ export function ProjectEditDialog({
   const mutations = useEntityMutations();
   const programmes = useProgrammesLight().data ?? [];
   const phases = usePhases().data ?? [];
-  const [d, set] = useDraft(open, () => ({
+  // Re-read on settings changes so the organisation's tier labels show (Settings › Lifecycle).
+  useSettings();
+  const tiers = tierOptions(getTierDefinitions());
+  // Changing the tier needs PMO or admin in the project's workspace; the database enforces it.
+  const canChangeTier = useCan("pmo", project.workspaceId);
+  const fromProject = () => ({
     name: project.name,
     programmeId: project.programmeId,
     phaseId: project.phaseId,
     state: project.state,
     priority: project.priority,
-    tier: project.tier,
     managerId: project.managerId,
     projectOfficerId: project.projectOfficerId,
     sponsorId: project.sponsorId,
     startDate: project.startDate,
     finishDate: project.finishDate,
     businessCase: project.businessCase ?? "",
+  });
+  const [d, set] = useDraft(open, () => ({
+    ...fromProject(),
+    tier: project.tier as ProjectTier,
+    tierReason: "",
   }));
   const [error, setError] = useState("");
-  const submit = () => {
+  const tierChanged = d.tier !== project.tier;
+  const saving = mutations.updateProject.isPending || mutations.changeProjectTier.isPending;
+  const submit = async () => {
     if (!d.name.trim()) {
       setError("A name is required.");
       return;
@@ -754,11 +769,49 @@ export function ProjectEditDialog({
       setError("Finish date must be after the start date.");
       return;
     }
-    mutations.updateProject.mutate(
-      { id: project.id, input: d, lastSeen: project.updatedAt },
-      { onSuccess: () => onOpenChange(false), onError: (e) => setError(e.message) },
-    );
+    const reasonError = tierChanged ? tierReasonError(d.tierReason) : null;
+    if (reasonError) {
+      setError(reasonError);
+      return;
+    }
+    const { tier, tierReason, ...input } = d;
+    const otherChanged = JSON.stringify(input) !== JSON.stringify(fromProject());
+    setError("");
+    try {
+      // The other fields first through the shared write helper; then the tier, whose RPC picks
+      // up the updated_at that write returned.
+      if (otherChanged || !tierChanged)
+        await mutations.updateProject.mutateAsync({
+          id: project.id,
+          input,
+          lastSeen: project.updatedAt,
+        });
+      if (tierChanged)
+        await mutations.changeProjectTier.mutateAsync({
+          id: project.id,
+          tier,
+          reason: tierReason,
+          lastSeen: project.updatedAt,
+        });
+      onOpenChange(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
   };
+  const tierSelect = (
+    <select
+      className={selectClass}
+      value={d.tier}
+      disabled={!canChangeTier}
+      onChange={(e) => set({ tier: e.target.value as ProjectTier })}
+    >
+      {tiers.map((item) => (
+        <option key={item.value} value={item.value}>
+          {item.label}
+        </option>
+      ))}
+    </select>
+  );
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
@@ -834,16 +887,37 @@ export function ProjectEditDialog({
             <PersonSelect value={d.sponsorId} onChange={(sponsorId) => set({ sponsorId })} />
           </Field>
           <Field label="Tier">
-            <select
-              className={selectClass}
-              value={d.tier}
-              onChange={(e) => set({ tier: e.target.value as typeof d.tier })}
-            >
-              {["Small", "Medium", "Large"].map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
+            {canChangeTier ? (
+              tierSelect
+            ) : (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span tabIndex={0} className="block" data-tier-locked="">
+                      {tierSelect}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">{TIER_LOCKED_TIP}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            {tiers.find((item) => item.value === d.tier)?.guideline && (
+              <span className="block text-xs text-muted-foreground">
+                {tiers.find((item) => item.value === d.tier)?.guideline}
+              </span>
+            )}
           </Field>
+          {tierChanged && (
+            <Field label="Reason for the tier change" required wide>
+              <Textarea
+                rows={2}
+                maxLength={500}
+                placeholder="Recorded in the project's history and the audit log"
+                value={d.tierReason}
+                onChange={(e) => set({ tierReason: e.target.value })}
+              />
+            </Field>
+          )}
           <Field label="Start date">
             <Input
               type="date"
@@ -878,7 +952,7 @@ export function ProjectEditDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button disabled={mutations.updateProject.isPending} onClick={submit}>
+          <Button disabled={saving} onClick={() => void submit()}>
             <Check />
             Save changes
           </Button>

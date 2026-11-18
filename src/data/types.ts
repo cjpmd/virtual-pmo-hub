@@ -24,6 +24,8 @@ export interface LifecyclePhase {
 }
 export interface TierDefinition {
   tier: ProjectTier;
+  /** The organisation's name for the tier (Settings › Lifecycle); blank shows `tier`. */
+  label?: string;
   description: string;
   guideline: string;
 }

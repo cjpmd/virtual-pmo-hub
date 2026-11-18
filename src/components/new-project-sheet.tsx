@@ -20,6 +20,7 @@ import { useEntityMutations } from "@/hooks/use-entities";
 import { usePeople, usePhases, useProgrammesLight } from "@/hooks/use-hierarchy";
 import { addDaysIso } from "@/lib/today";
 import { getTierDefinitions } from "@/services/gates";
+import { tierDisplayName } from "@/lib/project-tier";
 import { RelevantLessons } from "@/components/relevant-lessons";
 import { cn } from "@/lib/utils";
 import { plannerSync } from "@/lib/features";
@@ -200,7 +201,7 @@ export function NewProjectSheet({ open, onOpenChange, onCreated }: NewProjectShe
                         tier === item.tier ? "border-primary bg-primary/5" : "hover:bg-accent/30",
                       )}
                     >
-                      <strong className="text-sm">{item.tier}</strong>
+                      <strong className="text-sm">{tierDisplayName(item.tier, tiers)}</strong>
                       <span className="mt-1 block text-[11px] text-muted-foreground">
                         {item.guideline}
                       </span>
@@ -345,7 +346,7 @@ export function NewProjectSheet({ open, onOpenChange, onCreated }: NewProjectShe
                   "Project manager",
                   people.find((item) => item.id === managerId)?.name ?? "Unassigned",
                 ],
-                ["Tier", tier],
+                ["Tier", tierDisplayName(tier, tiers)],
                 ["Sponsor", people.find((item) => item.id === sponsorId)?.name ?? "Unassigned"],
                 ["Dates", `${formatDate(start)} – ${formatDate(finish)}`],
                 ["Budget", formatCurrency(Number(budget || 0))],

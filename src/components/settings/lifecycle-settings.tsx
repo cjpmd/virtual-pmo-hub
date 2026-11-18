@@ -259,7 +259,7 @@ export function LifecycleSettings() {
 
       <SettingsCard
         title="Project tiers"
-        description="Tier decides which gate criteria and documents apply. Edit the guideline and description for each tier; tier names are fixed because existing projects reference them."
+        description="Tier decides which gate criteria and documents apply. Give each tier your organisation's label, guideline and description; the label is what people see when they pick a tier, and the stored tier underneath stays the same because existing projects reference it."
         actions={
           <Button
             size="sm"
@@ -281,7 +281,21 @@ export function LifecycleSettings() {
         <div className="grid gap-4 md:grid-cols-3">
           {tiers.map((tier) => (
             <div key={tier.tier} className="space-y-3 rounded-md border p-4">
-              <strong className="text-sm">{tier.tier}</strong>
+              <strong className="text-sm">{tier.label?.trim() || tier.tier}</strong>
+              <Field label="Label">
+                <Input
+                  value={tier.label ?? ""}
+                  placeholder={tier.tier}
+                  aria-label={`Label for the ${tier.tier} tier`}
+                  onChange={(event) =>
+                    saveTiers(
+                      tiers.map((item) =>
+                        item.tier === tier.tier ? { ...item, label: event.target.value } : item,
+                      ),
+                    )
+                  }
+                />
+              </Field>
               <Field label="Guideline">
                 <Input
                   value={tier.guideline}
