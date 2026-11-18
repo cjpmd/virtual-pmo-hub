@@ -12,6 +12,7 @@ import {
   SitePage,
 } from "@/components/marketing/site-chrome";
 import { SiteHeroEyebrow } from "@/components/marketing/site-page-parts";
+import { seatPrice, trialDays } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 
 const iconProps = {
@@ -126,6 +127,63 @@ const steps = [
   },
 ];
 
+// Where ORMO sits against the two kinds of tool a PMO usually weighs it against. Categories
+// only, no named competitors. Typical prices checked 18/11/2026: task and board tools about
+// $5–$12 per user per month (Trello, ClickUp, monday Standard, Asana Starter); portfolio
+// suites about £23 (Microsoft Planner and Project Plan 3, UK) to $25–$55 (Wrike Business,
+// Planner and Project Plan 5) per user per month. Re-check before changing the price rows.
+const comparisonColumns = ["Task and board tools", "ORMO PMO", "Enterprise PPM suites"] as const;
+
+const comparison: { label: string; values: [string, string, string] }[] = [
+  {
+    label: "Built for",
+    values: ["Teams tracking tasks", "PMOs governing portfolios", "Large PMOs with consultants"],
+  },
+  {
+    label: "Programmes and portfolios",
+    values: ["Add-ons or workarounds", "Built in", "Built in"],
+  },
+  {
+    label: "Project health",
+    values: ["Declared by the project manager", "Calculated from the evidence", "Usually declared"],
+  },
+  {
+    label: "Benefits realisation",
+    values: ["Not covered", "Register, pathway and tracking", "Often an extra module"],
+  },
+  {
+    label: "RAIDD, decisions and board packs",
+    values: ["Basic or none", "Included", "Included"],
+  },
+  {
+    label: "Set-up",
+    values: ["Minutes", "An afternoon", "Months"],
+  },
+  {
+    label: "Typical price",
+    values: [
+      "£7–£15 per user, guests often charged",
+      `£${seatPrice.month} per editor, viewers free`,
+      "£20–£45+ per user, plus implementation",
+    ],
+  },
+];
+
+const pricingPoints = [
+  {
+    title: "Pay only for editors",
+    body: "Sponsors, boards and stakeholders get free read-only access, so most organisations pay for a fraction of the people who use ORMO.",
+  },
+  {
+    title: "Everything included",
+    body: "One plan with every feature. No premium tier for benefits, reporting or governance.",
+  },
+  {
+    title: "No implementation project",
+    body: "Import from a spreadsheet or start with sample data, and run your first board pack in week one.",
+  },
+];
+
 const h2 =
   "m-0 font-site-display text-[clamp(30px,3.2vw,40px)] leading-[1.1] font-extrabold tracking-[-0.02em] text-balance";
 
@@ -148,6 +206,10 @@ export function PublicHome() {
                 delivery data and every status report checked against the evidence.
               </p>
               <SiteCtas />
+              <p className="m-0 mt-4 text-[14px] font-medium text-site-on-ink-muted">
+                £{seatPrice.month} per user per month · Viewers free · {trialDays}-day trial, no
+                card needed
+              </p>
             </div>
           </div>
           <div className="mt-12 rounded-t-2xl border border-b-0 border-white/22 bg-white/12 px-2.5 pt-2.5 shadow-[0_-20px_80px_-20px_rgba(3,12,40,0.6)] sm:mt-[72px]">
@@ -235,6 +297,8 @@ export function PublicHome() {
         </ol>
       </section>
 
+      <WhyOrmo />
+
       <section id="teams" className="scroll-mt-4 bg-site-ink text-white">
         <div className="mx-auto grid max-w-[1240px] grid-cols-[repeat(auto-fit,minmax(min(100%,360px),1fr))] gap-6 px-4 py-[88px] sm:px-8 sm:py-[104px]">
           <h2 className={cn(h2, "col-span-full mb-6")}>
@@ -258,6 +322,27 @@ export function PublicHome() {
             Portfolio and programme hierarchies, role-based access and a full audit trail behind
             every status, ready for the board.
           </TeamCard>
+          <div id="pricing" className="col-span-full mt-10 scroll-mt-4">
+            <div className="mb-8 flex flex-wrap items-end justify-between gap-6">
+              <h2 className={cn(h2, "max-w-[640px]")}>Priced for the people who do the work.</h2>
+              <Link
+                to="/pricing"
+                className="inline-flex font-semibold text-site-on-ink-sky no-underline hover:text-white"
+              >
+                See pricing →
+              </Link>
+            </div>
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] gap-6">
+              {pricingPoints.map((point) => (
+                <div key={point.title} className="border-t border-site-ink-line pt-6">
+                  <h3 className="m-0 mb-2.5 text-[20px] font-bold">{point.title}</h3>
+                  <p className="m-0 text-[15px] leading-[1.65] text-site-on-ink-faint">
+                    {point.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -270,6 +355,80 @@ export function PublicHome() {
 
       <SiteFooter />
     </SitePage>
+  );
+}
+
+/** Where ORMO sits between task tools and enterprise suites. */
+function WhyOrmo() {
+  return (
+    <section
+      id="why"
+      aria-labelledby="why-heading"
+      className="mx-auto w-full max-w-[1240px] scroll-mt-4 px-4 pb-24 sm:px-8"
+    >
+      <SiteEyebrow className="mb-3.5">Why ORMO</SiteEyebrow>
+      <div className="mb-12 grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] items-end gap-12">
+        <h2 id="why-heading" className={h2}>
+          The PMO layer your task tool is missing, without the enterprise price.
+        </h2>
+        <p className="m-0 text-[17px] leading-[1.65] text-pretty text-site-text-muted">
+          Task tools track work. Enterprise project-management suites cost a fortune and take months
+          to set up. ORMO sits in between: everything a PMO needs to govern a portfolio, ready in an
+          afternoon.
+        </p>
+      </div>
+      <div className="overflow-x-auto rounded-[18px] border border-site-line bg-site-surface">
+        <table className="w-full min-w-[720px] border-collapse text-left text-[15px]">
+          <caption className="sr-only">
+            ORMO PMO compared with task and board tools and enterprise PPM suites
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col" className="p-5">
+                <span className="sr-only">Feature</span>
+              </th>
+              {comparisonColumns.map((column, index) => (
+                <th
+                  key={column}
+                  scope="col"
+                  className={cn(
+                    "p-5 align-bottom text-[14px] font-bold",
+                    index === 1 ? "bg-site-navy text-white" : "text-site-text-soft",
+                  )}
+                >
+                  {column}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {comparison.map((row) => (
+              <tr key={row.label} className="border-t border-site-line">
+                <th scope="row" className="p-5 align-top font-semibold">
+                  {row.label}
+                </th>
+                {row.values.map((value, index) => (
+                  <td
+                    key={comparisonColumns[index]}
+                    className={cn(
+                      "p-5 align-top leading-[1.5]",
+                      index === 1
+                        ? "bg-site-navy/[0.06] font-semibold text-site-text"
+                        : "text-site-text-muted",
+                    )}
+                  >
+                    {value}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="m-0 mt-4 text-[13px] text-site-text-muted">
+        Typical list prices per user per month, excluding VAT, for each kind of tool.
+      </p>
+    </section>
   );
 }
 

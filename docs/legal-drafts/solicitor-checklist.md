@@ -31,8 +31,8 @@ the change is material, bump `TERMS_VERSION` and `LEGAL_LAST_UPDATED`.
   7 days on the main pricing page; Pro is 7 days). The Privacy notice says "up to 7 days".
 - Resend sending region eu-west-1 (Ireland), from the Resend domain settings.
 - The Stripe account's head office is in GB, so the contracting entity is Stripe Payments UK Ltd.
-- Lovable's hosting docs say published pages are served from locations around the world; its
-  region setting covers only Lovable's own backend, which this app doesn't use.
+- The web host is Netlify (from 18/11/2026, replacing Lovable). Pages are served from Netlify's
+  worldwide edge network; Netlify's DPA covers UK transfers with the UK IDTA.
 
 ## Terms of service (`/terms`)
 
@@ -78,7 +78,7 @@ the change is material, bump `TERMS_VERSION` and `LEGAL_LAST_UPDATED`.
 | # | Subprocessor | Point to confirm |
 |---|---|---|
 | S1 | Supabase Inc. | Support access from the US is covered by the UK Addendum in Supabase's DPA. |
-| S2 | Lovable | The transfer safeguard for worldwide page serving, and whether Lovable's DPA has been accepted. |
+| S2 | Netlify, Inc. | The transfer safeguard for worldwide page serving (the IDTA in Netlify's DPA), and whether Netlify's DPA has been accepted for our account. |
 | S3 | Resend | The UK Addendum or the UK Extension to the Data Privacy Framework, per Resend's current terms. |
 | S4 | Stripe Payments UK Ltd | The IDTA or Addendum for processing in the US. |
 | S5 | Microsoft (Entra ID) | Whether Entra ID is our subprocessor or the customer's own identity provider (when they sign in with their organisation's Microsoft account), and the safeguard. It stays listed until this is decided. |
