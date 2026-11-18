@@ -15,7 +15,7 @@ import {
 import { useCollectionMutations, useCollectionTypes } from "@/hooks/use-collections";
 import { currencySymbol } from "@/lib/format";
 import {
-  isFundingLabel,
+  isFundingType,
   parseAmount,
   validateCollectionDraft,
   type CollectionDraft,
@@ -65,12 +65,13 @@ export function CollectionFormDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // Keep a type that has since been deactivated in Settings selectable for an existing collection.
+  // Keep a type that has since been hidden in Settings selectable for an existing collection.
+  const active = types.filter((type) => type.isActive);
   const options =
-    collection && !types.some((type) => type.id === collection.typeId)
-      ? [{ id: collection.typeId, label: collection.typeLabel }, ...types]
-      : types;
-  const funding = isFundingLabel(options.find((type) => type.id === draft.typeId)?.label);
+    collection && !active.some((type) => type.id === collection.typeId)
+      ? [{ id: collection.typeId, label: collection.typeLabel, value: collection.type }, ...active]
+      : active;
+  const funding = isFundingType(options.find((type) => type.id === draft.typeId));
   const pending = mutations.create.isPending || mutations.update.isPending;
 
   const submit = () => {

@@ -18,7 +18,7 @@ import { SampleBadge } from "@/components/sample-badge";
 import { useCollectionMutations } from "@/hooks/use-collections";
 import { currencySymbol } from "@/lib/format";
 import {
-  isFundingLabel,
+  FUNDING_TYPE,
   parseAmount,
   pickerCandidates,
   type CollectionView,
@@ -51,7 +51,7 @@ export function CollectionProjectsDialog({
     setFailure(null);
   }, [open]);
 
-  const funding = isFundingLabel(collection.typeLabel);
+  const funding = collection.type === FUNDING_TYPE;
   const candidates = pickerCandidates(projects, collection, search);
   const members = projects
     .filter((project) => collection.projectIds.includes(project.id))

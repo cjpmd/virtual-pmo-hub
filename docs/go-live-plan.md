@@ -1097,7 +1097,12 @@ Delete (typed name; with published reports, or when the database says it's in us
 Archive instead); archived collections show a banner and no "New report". The project header lists
 the project's collections, with a Manage popover for PMO / admin in its workspace. Everything is
 disabled with the read-only tooltip when the organisation is read-only. Types are the
-organisation's list (Settings › Lists); only "Funding stream" has a pot and awards.
+organisation's list (Settings › Lists); "Collection types" on Portfolio › Collections (organisation
+PMO / admin, as `lookup_values` RLS allows) adds types and renames them (label only; duplicates,
+hidden ones included, refused). A type's behaviour follows its stored value, not its label, so only
+the built-in Funding stream has a pot and awards, and keeps them when renamed; new types behave like
+Governance (a "has a pot" flag for any type would need a column). Hiding and reordering stay in
+Settings › Lists, where a rename still makes a new type.
 `collection_projects` is keyed by (collection, project) in `write.ts`. Tests:
 `supabase/tests/collections.sql` (35 checks, local), `services/collections.test.ts`, e2e
 `e2e/collections.e2e.ts` (not run: e2e stays off production).

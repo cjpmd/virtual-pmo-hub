@@ -9,6 +9,7 @@
 import type { Health } from "@/data/types";
 import { supabase } from "@/integrations/supabase/client";
 import { listProjects, type ProjectSummary } from "./hierarchy";
+import { listValueKey } from "./org-settings";
 import { ServiceError, unwrap } from "./service-error";
 import type { NewRow } from "./db";
 import { deleteRow, insertRow, insertRows, updateRow, type Written } from "./write";
@@ -22,7 +23,10 @@ export interface CollectionView {
   id: string;
   workspaceId: string;
   name: string;
-  /** Icon and behaviour; an organisation's own type labels read as Governance. */
+  /**
+   * Icon and behaviour, from the type's stored value (not its label), so renaming a type keeps
+   * it; an organisation's own types read as Governance.
+   */
   type: CollectionType;
   typeId: string;
   /** The organisation's label for the type, as shown in Settings › Lists. */
@@ -38,21 +42,33 @@ export interface CollectionView {
 export interface CollectionTypeOption {
   id: string;
   label: string;
+  /** Stable key (lookup_values.value); the built-in types keep theirs when renamed. */
+  value: string;
+  isActive: boolean;
+  sortOrder: number;
+  updatedAt: string;
 }
 
-const asType = (label: string | undefined): CollectionType =>
-  label === "Priority set" || label === "Funding stream" ? label : "Governance";
+/** A type's behaviour from its stored value: only the built-in values have one. */
+export const asType = (value: string | undefined): CollectionType =>
+  value === "Priority set" || value === "Funding stream" ? value : "Governance";
 
-/** Active collection types in the organisation's order (Settings › Lists). */
+/** Every collection type, hidden ones included, in the organisation's order (Settings › Lists). */
 export async function listCollectionTypes(orgId: string): Promise<CollectionTypeOption[]> {
   const result = await supabase
     .from("lookup_values")
-    .select("id, label")
+    .select("id, label, value, is_active, sort_order, updated_at")
     .eq("organisation_id", orgId)
     .eq("list_key", "collection_type")
-    .eq("is_active", true)
     .order("sort_order");
-  return unwrap(result, "Loading collection types");
+  return unwrap(result, "Loading collection types").map((row) => ({
+    id: row.id,
+    label: row.label,
+    value: row.value,
+    isActive: row.is_active,
+    sortOrder: row.sort_order,
+    updatedAt: row.updated_at,
+  }));
 }
 
 export async function listCollections(orgId: string): Promise<CollectionView[]> {
@@ -66,18 +82,18 @@ export async function listCollections(orgId: string): Promise<CollectionView[]> 
       .order("name"),
     supabase
       .from("lookup_values")
-      .select("id, label")
+      .select("id, label, value")
       .eq("organisation_id", orgId)
       .eq("list_key", "collection_type"),
   ]);
-  const label = new Map(
-    unwrap(types, "Loading collection types").map((row) => [row.id, row.label]),
-  );
+  const typeRows = unwrap(types, "Loading collection types");
+  const label = new Map(typeRows.map((row) => [row.id, row.label]));
+  const value = new Map(typeRows.map((row) => [row.id, row.value]));
   return unwrap(collections, "Loading collections").map((row) => ({
     id: row.id,
     workspaceId: row.workspace_id,
     name: row.name,
-    type: asType(label.get(row.type_id)),
+    type: asType(value.get(row.type_id)),
     typeId: row.type_id,
     typeLabel: label.get(row.type_id) ?? "Collection",
     archivedAt: row.archived_at,
@@ -107,8 +123,40 @@ export function collectionMetrics(projects: ProjectSummary[]) {
 // GL-22 helpers (pure, unit-tested in collections.test.ts)
 // ---------------------------------------------------------------------------------------------
 
-/** Does this type carry a pot and awards? */
-export const isFundingLabel = (label: string | null | undefined) => label === FUNDING_TYPE;
+/** Does this type carry a pot and awards? Decided by the stored value, so a rename keeps it. */
+export const isFundingType = (type: Pick<CollectionTypeOption, "value"> | null | undefined) =>
+  asType(type?.value) === FUNDING_TYPE;
+
+/** Why a type name can't be used ("" when it can): blank, too long, or already a type's name. */
+export function typeNameError(
+  label: string,
+  types: readonly Pick<CollectionTypeOption, "id" | "label" | "isActive">[],
+  exceptId?: string,
+): string {
+  const name = label.trim();
+  if (!name) return "Give the type a name.";
+  if (name.length > 80) return "Keep the name under 80 characters.";
+  const taken = types.find(
+    (type) => type.id !== exceptId && type.label.trim().toLowerCase() === name.toLowerCase(),
+  );
+  if (!taken) return "";
+  return taken.isActive
+    ? "There's already a type with that name."
+    : "A hidden type has that name: show it again in Settings › Lists.";
+}
+
+/**
+ * The stored value for a new type: the same key Settings › Lists makes from a label, with a
+ * number added when a type (hidden ones included) already has it.
+ */
+export function newTypeValue(label: string, types: readonly Pick<CollectionTypeOption, "value">[]) {
+  const base = listValueKey(label);
+  const taken = new Set(types.map((type) => type.value));
+  if (!taken.has(base)) return base;
+  let n = 2;
+  while (taken.has(`${base}_${n}`)) n += 1;
+  return `${base}_${n}`;
+}
 
 /**
  * An amount typed by a person: blank → null; "£1,250,000", "1250000.50" → the number;
@@ -276,5 +324,34 @@ export function setCollectionAward(
     { collection_id: collectionId, project_id: projectId },
     { award_amount: amount },
     { context: "Saving the award" },
+  );
+}
+
+/** Add a collection type at the end of the organisation's list (organisation PMO / admin, RLS). */
+export function addCollectionType(
+  orgId: string,
+  label: string,
+  types: readonly Pick<CollectionTypeOption, "value" | "sortOrder">[],
+): Promise<Written> {
+  const row = {
+    organisation_id: orgId,
+    list_key: "collection_type",
+    value: newTypeValue(label, types),
+    label: label.trim(),
+    sort_order: types.reduce((max, type) => Math.max(max, type.sortOrder), 0) + 1,
+  } as unknown as NewRow<"lookup_values">;
+  return insertRow("lookup_values", row, "Adding the collection type");
+}
+
+/** Rename a type: only the label changes, so its collections and behaviour stay the same. */
+export function renameCollectionType(
+  type: Pick<CollectionTypeOption, "id" | "updatedAt">,
+  label: string,
+): Promise<Written> {
+  return updateRow(
+    "lookup_values",
+    type.id,
+    { label: label.trim() },
+    { context: "Renaming the collection type", lastSeen: type.updatedAt },
   );
 }

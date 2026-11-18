@@ -4,7 +4,10 @@ import { ServiceError } from "./service-error";
 import {
   collectionsForProject,
   confirmsName,
-  isFundingLabel,
+  asType,
+  isFundingType,
+  newTypeValue,
+  typeNameError,
   isInUse,
   parseAmount,
   pickerCandidates,
@@ -130,9 +133,35 @@ describe("delete or archive", () => {
     expect(isInUse(new ServiceError("forbidden", "No"))).toBe(false);
     expect(isInUse(new Error("collection_in_use"))).toBe(false);
   });
-  it("treats only the Funding stream type as funding", () => {
-    expect(isFundingLabel("Funding stream")).toBe(true);
-    expect(isFundingLabel("Governance")).toBe(false);
-    expect(isFundingLabel(undefined)).toBe(false);
+});
+
+describe("collection types", () => {
+  const types = [
+    { id: "g", label: "Governance", value: "Governance", isActive: true },
+    { id: "f", label: "Grants", value: "Funding stream", isActive: true },
+    { id: "old", label: "Old board", value: "old_board", isActive: false },
+  ];
+  it("decides behaviour by the stored value, so a renamed Funding stream keeps its pot", () => {
+    expect(isFundingType(types[1])).toBe(true);
+    expect(isFundingType({ value: "grants" })).toBe(false);
+    expect(isFundingType(undefined)).toBe(false);
+    expect(asType("Priority set")).toBe("Priority set");
+    expect(asType("my_own_type")).toBe("Governance");
+  });
+  it("refuses blank, long and duplicate names, ignoring case and outer spaces", () => {
+    expect(typeNameError("  ", types)).toMatch(/name/);
+    expect(typeNameError("x".repeat(81), types)).toMatch(/80/);
+    expect(typeNameError(" governance ", types)).toMatch(/already/);
+    expect(typeNameError("old BOARD", types)).toMatch(/hidden/);
+    expect(typeNameError("Steering groups", types)).toBe("");
+  });
+  it("allows a type to keep its own name when renamed", () => {
+    expect(typeNameError("Grants", types, "f")).toBe("");
+    expect(typeNameError("Governance", types, "f")).toMatch(/already/);
+  });
+  it("makes a new value like Settings › Lists, numbered when taken", () => {
+    expect(newTypeValue("Steering groups", types)).toBe("steering_groups");
+    expect(newTypeValue("Old board!", types)).toBe("old_board_2");
+    expect(newTypeValue("Old board", [...types, { value: "old_board_2" }])).toBe("old_board_3");
   });
 });
