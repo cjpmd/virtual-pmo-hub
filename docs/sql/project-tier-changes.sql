@@ -1,4 +1,5 @@
--- Project tier changes: PMO / admin only, with a reason (proposal, 18/11/2026). NOT APPLIED.
+-- Project tier changes: PMO / admin only, with a reason. Approved and applied 18/11/2026 (migration
+-- 20261118143602_project_tier_changes; production recorded that version). Tests: supabase/tests/project_tier.sql.
 --
 -- Today a project's tier is a plain column that anyone with manager in the workspace can change
 -- through the shared write helper (projects_update policy). After this migration:
