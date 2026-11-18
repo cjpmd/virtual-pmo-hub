@@ -572,7 +572,8 @@ async function saveOptimismBias(
   data.rawSettings = document;
 }
 
-const slug = (label: string) =>
+/** The stored value Settings › Lists makes from a label (lookup_values.value). */
+export const listValueKey = (label: string) =>
   label
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
@@ -603,8 +604,8 @@ async function saveList(orgId: string, listKey: string, lookups: LookupValue[], 
       continue;
     }
     const taken = new Set(rows.map((row) => row.value));
-    let value = slug(label);
-    for (let suffix = 2; taken.has(value); suffix += 1) value = `${slug(label)}_${suffix}`;
+    let value = listValueKey(label);
+    for (let suffix = 2; taken.has(value); suffix += 1) value = `${listValueKey(label)}_${suffix}`;
     await insertRow(
       "lookup_values",
       // Org-level table: no parent row for the tenant trigger to copy from, so send the org.

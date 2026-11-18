@@ -1,7 +1,8 @@
 // GL-22 collection management: create a funding collection, edit its pot, add and remove
 // projects, set an award, link from the project page, archive / restore, and delete with a typed
-// confirmation. The "archive instead" offer is driven by replacing the reports list with one
-// published pack for the new collection (no real report is created).
+// confirmation, and add / rename a collection type. The "archive instead" offer is driven by
+// replacing the reports list with one published pack for the new collection (no real report is
+// created).
 //
 // Writes run at desktop width only and need the test user to be PMO or admin in a workspace
 // (otherwise the spec skips). Every collection it creates is named "E2E …"; afterAll deletes any
@@ -12,6 +13,7 @@ import type { Page } from "@playwright/test";
 import { rest } from "./rest";
 
 const PREFIX = "E2E collection";
+const TYPE_PREFIX = "E2E type";
 
 async function cleanUp() {
   const left = await rest<Array<{ id: string; archived_at: string | null }>>(
@@ -21,6 +23,11 @@ async function cleanUp() {
     // An archived collection must be restored before its links can change; delete works either way.
     await rest(`collections?id=eq.${row.id}`, { method: "DELETE" });
   }
+  // Types this spec added (no collection uses them once the collections are gone).
+  await rest(
+    `lookup_values?list_key=eq.collection_type&label=like.${encodeURIComponent(TYPE_PREFIX)}*`,
+    { method: "DELETE" },
+  );
 }
 
 /** Opens Collections and creates a funding collection; returns its id (from the URL). */
@@ -186,5 +193,41 @@ test.describe("Collection management", () => {
     await expect(page.getByText("Collection restored")).toBeVisible();
     await expect(page.getByTestId("collection-archived")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Edit" })).toBeVisible();
+  });
+
+  test("an organisation PMO adds and renames a collection type", async ({ page }) => {
+    await page.goto("/portfolio/collections");
+    await settle(page);
+    const open = page.getByRole("button", { name: "Collection types" });
+    test.skip((await open.count()) === 0, "The test user isn't organisation PMO or admin");
+    await open.click();
+    const dialog = page.getByRole("dialog", { name: "Collection types" });
+    const list = dialog.getByTestId("collection-types");
+    const name = `${TYPE_PREFIX} ${Date.now()}`;
+
+    // A duplicate name is refused; a new one is added at the end.
+    await dialog.getByLabel("New type").fill(" governance ");
+    await dialog.getByRole("button", { name: "Add type" }).click();
+    await expect(dialog.getByRole("alert")).toContainText("already");
+    await dialog.getByLabel("New type").fill(name);
+    await dialog.getByRole("button", { name: "Add type" }).click();
+    await expect(list.getByText(name, { exact: true })).toBeVisible();
+
+    // Rename it; the New collection form offers the new name.
+    await list.getByRole("button", { name: `Rename ${name}` }).click();
+    await list.getByLabel(`New name for ${name}`).fill(`${name} renamed`);
+    await list.getByRole("button", { name: "Save name" }).click();
+    await expect(list.getByText(`${name} renamed`, { exact: true })).toBeVisible();
+    await dialog.getByRole("button", { name: "Done" }).click();
+
+    const create = page.getByRole("button", { name: "New collection" });
+    if (await create.count()) {
+      await create.click();
+      const form = page.getByRole("dialog", { name: "New collection" });
+      await expect(
+        form.getByLabel("Type").locator("option", { hasText: `${name} renamed` }),
+      ).toHaveCount(1);
+      await form.getByRole("button", { name: "Cancel" }).click();
+    }
   });
 });

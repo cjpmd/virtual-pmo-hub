@@ -2,13 +2,14 @@ import { AutoBreadcrumbs } from "@/components/section-nav";
 import { formatCompactCurrency } from "@/lib/format";
 import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowRight, Landmark, Layers3, Plus, WalletCards } from "lucide-react";
+import { ArrowRight, Landmark, Layers3, Plus, Tags, WalletCards } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { ReadOnlyTip } from "@/components/org-access-banner";
 import { useCollectionAccess } from "@/components/collections/collection-access";
 import { CollectionFormDialog } from "@/components/collections/collection-form-dialog";
+import { CollectionTypesDialog } from "@/components/collections/collection-types-dialog";
 import { PageHeader } from "@/components/pmo-ui";
 import { QueryState } from "@/components/query-state";
 import { useCollections } from "@/hooks/use-collections";
@@ -36,7 +37,8 @@ const money = formatCompactCurrency;
 function CollectionsPage() {
   const query = useCollections(),
     projects = useProjects();
-  const { pmoWorkspaces, writable } = useCollectionAccess();
+  const { pmoWorkspaces, writable, canManageTypes } = useCollectionAccess();
+  const [managingTypes, setManagingTypes] = useState(false);
   const navigate = useNavigate();
   const [creating, setCreating] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
@@ -48,15 +50,36 @@ function CollectionsPage() {
         title="Collections"
         description="Cross-cutting views for governance, strategic priorities and funding streams."
         actions={
-          pmoWorkspaces.length > 0 ? (
-            <ReadOnlyTip readOnly={!writable}>
-              <Button disabled={!writable} onClick={() => setCreating(true)}>
-                <Plus className="size-4" />
-                New collection
-              </Button>
-            </ReadOnlyTip>
+          canManageTypes || pmoWorkspaces.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {canManageTypes && (
+                <ReadOnlyTip readOnly={!writable}>
+                  <Button
+                    variant="outline"
+                    disabled={!writable}
+                    onClick={() => setManagingTypes(true)}
+                  >
+                    <Tags className="size-4" />
+                    Collection types
+                  </Button>
+                </ReadOnlyTip>
+              )}
+              {pmoWorkspaces.length > 0 && (
+                <ReadOnlyTip readOnly={!writable}>
+                  <Button disabled={!writable} onClick={() => setCreating(true)}>
+                    <Plus className="size-4" />
+                    New collection
+                  </Button>
+                </ReadOnlyTip>
+              )}
+            </div>
           ) : undefined
         }
+      />
+      <CollectionTypesDialog
+        open={managingTypes}
+        onOpenChange={setManagingTypes}
+        collections={query.data ?? []}
       />
       {archivedCount > 0 && (
         <label className="flex w-fit items-center gap-2 text-sm text-muted-foreground">
