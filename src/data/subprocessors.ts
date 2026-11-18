@@ -5,8 +5,9 @@
 // - Stripe: the account's head office is in GB, so the contracting entity is Stripe Payments
 //   UK Ltd; Stripe processes card data in the United States as well.
 // - Anthropic: the report-ai-summary edge function calls the Anthropic API.
-// - Lovable: its hosting docs say published pages are served from locations around the world
-//   (its region setting covers only Lovable's own backend, which we don't use).
+// - Netlify (web host from 18/11/2026, replacing Lovable): pages are served from Netlify's
+//   worldwide edge network; Netlify's DPA covers UK transfers with the UK International Data
+//   Transfer Addendum (IDTA).
 // Not listed: Cloudflare Turnstile, which isn't switched on (components/auth/captcha.tsx).
 // Add it here, with its region, when CAPTCHA goes live.
 // [[solicitor to confirm …]] markers are hidden on the pages (LegalText) and listed in
@@ -31,11 +32,11 @@ export const subprocessors: Subprocessor[] = [
       "Data is stored in London. Supabase Inc. is based in the United States and its staff may access data to provide support; that access is covered by the UK International Data Transfer Addendum to the EU Standard Contractual Clauses in Supabase's data processing agreement. [[solicitor to confirm]]",
   },
   {
-    name: "Lovable",
+    name: "Netlify, Inc.",
     purpose: "Hosting and serving the web application",
-    region: "Global (pages served from Lovable's worldwide hosting network)",
+    region: "Global (pages served from Netlify's worldwide edge network)",
     transfers:
-      "The web application is served from locations worldwide, under Lovable's data processing agreement. Customer data is not stored by the web host; it stays in our database in London. [[solicitor to confirm: Lovable transfer safeguard]]",
+      "The web application is served from locations worldwide, under Netlify's data processing agreement, which covers transfers from the UK with the UK International Data Transfer Addendum. Customer data is not stored by the web host; it stays in our database in London. [[solicitor to confirm: Netlify transfer safeguard]]",
   },
   {
     name: "Resend",

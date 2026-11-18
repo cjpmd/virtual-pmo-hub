@@ -1,5 +1,5 @@
-# Only used if the app moves to Netlify: the report-pdf function (report builder server PDF,
-# off unless REPORT_SERVER_PDF=true). Its dependencies are in netlify/functions/package.json and
+# The app is hosted on Netlify. This also builds the report-pdf function (report builder server
+# PDF, off unless REPORT_SERVER_PDF=true). Its dependencies are in netlify/functions/package.json and
 # are installed for the function only; the app's own install and build don't include them.
 [build]
   # Install the functions' dependencies before Netlify bundles them.
