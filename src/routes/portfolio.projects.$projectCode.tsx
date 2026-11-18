@@ -30,7 +30,9 @@ import { ProjectOverviewBand } from "@/components/overview/project-overview-band
 import { ProjectOverviewWork } from "@/components/overview/project-overview-work";
 import { useGateChecklist } from "@/hooks/use-gate-checklist";
 import { useGateTicks, useProjectGates, useToggleGateTick } from "@/hooks/use-gate-ticks";
-import { phaseByName } from "@/services/gates";
+import { getTierDefinitions, phaseByName } from "@/services/gates";
+import { useProjectTierHistory } from "@/hooks/use-entities";
+import { tierChangeActivity } from "@/lib/project-tier";
 import { toast } from "sonner";
 import { StatusWorkspace } from "@/components/status-workspace";
 import { TaskWorkspace } from "@/components/task-workspace";
@@ -215,6 +217,7 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
     [lessonsData.data, project.id],
   );
   const statusReports = useStatusReports(project.id);
+  const tierHistory = useProjectTierHistory(project.id).data ?? [];
   const reports = statusReports.data ?? [];
   const currentPhaseId = phases.data?.[project.phaseIndex]?.id;
   const phaseReviewHeld =
@@ -293,6 +296,10 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
         detail: `${item.type} · ${(item.ownerId && names.get(item.ownerId)) || "Unassigned"}`,
         decision: undefined,
       })),
+    ...tierHistory.map((change) => ({
+      ...tierChangeActivity(change, getTierDefinitions()),
+      decision: undefined,
+    })),
   ]
     .map((entry) => ({
       ...entry,

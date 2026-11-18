@@ -16757,6 +16757,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      change_project_tier: {
+        Args: {
+          p_last_seen?: string
+          p_project: string
+          p_reason: string
+          p_tier: Database["public"]["Enums"]["project_tier"]
+        }
+        Returns: string
+      }
       claim_join_request_notification: {
         Args: { p_request_id: string; p_requester: string }
         Returns: Json
@@ -17068,6 +17077,16 @@ export type Database = {
           can_delete_records: boolean
           can_edit: boolean
           can_manage_project: boolean
+        }[]
+      }
+      project_tier_history: {
+        Args: { p_project: string }
+        Returns: {
+          changed_at: string
+          changed_by: string
+          from_tier: Database["public"]["Enums"]["project_tier"]
+          reason: string
+          to_tier: Database["public"]["Enums"]["project_tier"]
         }[]
       }
       publish_report: { Args: { p_report_id: string }; Returns: Json }

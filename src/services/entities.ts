@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { NewRow } from "./db";
 import { unwrap } from "./service-error";
 import { priorityValue, projectStateValue, type ProjectStateLabel } from "./labels";
-import { insertRow, insertRows, updateRow } from "./write";
+import { insertRow, insertRows, rememberOwnWrite, updateRow, versionToSend } from "./write";
 
 type Enums = Database["public"]["Enums"];
 type Tier = "Small" | "Medium" | "Large";
@@ -140,13 +140,68 @@ export interface ProjectInput {
   phaseId: string | null;
   state: ProjectStateLabel;
   priority: Priority;
-  tier: Tier;
   managerId: string | null;
   projectOfficerId: string | null;
   sponsorId: string | null;
   startDate: string | null;
   finishDate: string | null;
   businessCase: string;
+}
+
+/**
+ * Change a project's tier (PMO and admins only; the database refuses a plain update of `tier`).
+ * The reason is stored in the audit log. Returns the project's new updated_at.
+ */
+export async function changeProjectTier(
+  id: string,
+  tier: Tier,
+  reason: string,
+  lastSeen: string | null,
+) {
+  const updatedAt = unwrap(
+    await supabase.rpc("change_project_tier", {
+      p_project: id,
+      p_tier: tierValue[tier],
+      p_reason: reason.trim(),
+      ...(lastSeen ? { p_last_seen: versionToSend("projects", id, lastSeen) ?? lastSeen } : {}),
+    }),
+    "Changing the tier",
+  );
+  rememberOwnWrite("projects", id, updatedAt);
+  return updatedAt;
+}
+
+export interface TierChange {
+  changedAt: string;
+  from: Tier;
+  to: Tier;
+  reason: string | null;
+  changedBy: string | null;
+}
+
+type TierHistoryRow = Database["public"]["Functions"]["project_tier_history"]["Returns"][number];
+const tierName: Record<Enums["project_tier"], Tier> = {
+  small: "Small",
+  medium: "Medium",
+  large: "Large",
+};
+
+/** A history row as the screens use it. */
+export const toTierChange = (row: TierHistoryRow): TierChange => ({
+  changedAt: row.changed_at,
+  from: tierName[row.from_tier],
+  to: tierName[row.to_tier],
+  reason: row.reason?.trim() || null,
+  changedBy: row.changed_by || null,
+});
+
+/** The project's tier changes, newest first, with reasons (from the audit log). */
+export async function getProjectTierHistory(projectId: string): Promise<TierChange[]> {
+  const rows = unwrap(
+    await supabase.rpc("project_tier_history", { p_project: projectId }),
+    "Loading the tier history",
+  );
+  return (rows ?? []).map(toTierChange);
 }
 
 /**
@@ -164,7 +219,6 @@ export async function updateProject(id: string, input: ProjectInput, lastSeen: s
       state: projectStateValue[input.state],
       ...(input.state !== "Closed" && { closed_reason: null }),
       priority: priorityValue[input.priority],
-      tier: tierValue[input.tier],
       manager_id: input.managerId,
       project_officer_id: input.projectOfficerId,
       sponsor_id: input.sponsorId,

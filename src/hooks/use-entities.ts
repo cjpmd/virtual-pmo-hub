@@ -1,12 +1,14 @@
 // Create, edit, close/reopen and archive portfolios, programmes and projects.
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOrgId } from "@/components/auth/organisation-provider";
 import {
   archiveEntity,
+  changeProjectTier,
   closeEntity,
   createPortfolio,
   createProgramme,
   createProject,
+  getProjectTierHistory,
   reopenEntity,
   updatePortfolio,
   updateProgramme,
@@ -17,6 +19,8 @@ import {
   type ProjectInput,
 } from "@/services/entities";
 import { importProjects } from "@/services/data-transfer";
+import type { ProjectTier } from "@/data/types";
+import { qk } from "@/services/query-keys";
 import { invalidateRollups } from "./use-project-records";
 
 // Lists refresh in the background after each write; a second action straight after a save
@@ -69,5 +73,20 @@ export function useEntityMutations() {
         updateProject(v.id, v.input, v.lastSeen),
       onSettled,
     }),
+    changeProjectTier: useMutation({
+      mutationFn: (v: { id: string; tier: ProjectTier; reason: string; lastSeen: string | null }) =>
+        changeProjectTier(v.id, v.tier, v.reason, v.lastSeen),
+      onSettled,
+    }),
   };
+}
+
+/** A project's tier changes with their reasons, newest first (any project member). */
+export function useProjectTierHistory(projectId: string | undefined) {
+  const orgId = useOrgId();
+  return useQuery({
+    queryKey: qk.projects.tierHistory(orgId, projectId ?? ""),
+    queryFn: () => getProjectTierHistory(projectId ?? ""),
+    enabled: Boolean(projectId),
+  });
 }

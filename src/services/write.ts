@@ -151,6 +151,15 @@ const toWritten = (name: TableName, row: unknown): Written => {
 /** updated_at returned by this session's own writes, by "table:id". */
 const ownWrites = new Map<string, string>();
 
+/**
+ * Remember the updated_at an RPC returned for a row it changed (e.g. change_project_tier), so
+ * the next updateRow on that row sends it rather than the screen's older copy.
+ */
+export function rememberOwnWrite(name: TableName, id: string, updatedAt: string | null) {
+  if (id && updatedAt) ownWrites.set(`${name}:${id}`, updatedAt);
+  if (HEALTH_TABLES.has(name)) markHealthPending(updatedAt);
+}
+
 /** The updated_at to send: the caller's copy, or our own later write to the same row. */
 export const versionToSend = (name: TableName, key: RowKey, lastSeen: string | null | undefined) =>
   lastSeen ? latest(lastSeen, ownWrites.get(`${name}:${keyText(name, key)}`)) : lastSeen;

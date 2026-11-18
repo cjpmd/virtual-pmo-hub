@@ -53,6 +53,8 @@ export const qk = {
       ["org", orgId, "projects", projectId, "status-reports"] as const,
     gateTicks: (orgId: string, projectId: string) =>
       ["org", orgId, "projects", projectId, "gate-ticks"] as const,
+    tierHistory: (orgId: string, projectId: string) =>
+      ["org", orgId, "projects", projectId, "tier-history"] as const,
     collections: (orgId: string) => ["org", orgId, "projects", "collections"] as const,
     assurance: (orgId: string) => ["org", orgId, "projects", "assurance"] as const,
     projectAssurance: (orgId: string, projectId: string) =>
