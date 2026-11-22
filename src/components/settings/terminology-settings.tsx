@@ -1,5 +1,7 @@
 import { Input } from "@/components/ui/input";
 import type { TermKey } from "@/data/settings-types";
+import { MODULE_TERM_KEYS, moduleTermLabels, neutralModuleTerms } from "@/data/sector-packs";
+import { anyModuleEnabled } from "@/lib/modules";
 import { updateSettings, useSettings } from "@/services/settings";
 import { Field, SettingsCard } from "@/components/settings/settings-shell";
 
@@ -62,6 +64,29 @@ export function TerminologySettings() {
             </div>
           </div>
         ))}
+        {/* NHS-0: wording for module concepts, once a module is on. Blank uses the neutral word. */}
+        {anyModuleEnabled(settings) && (
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Modules
+            </p>
+            <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {MODULE_TERM_KEYS.map((key) => (
+                <Field key={key} label={moduleTermLabels[key]}>
+                  <Input
+                    value={(terms as Record<string, string>)[key] ?? ""}
+                    placeholder={neutralModuleTerms[key]}
+                    onChange={(event) =>
+                      updateSettings({
+                        terminology: { terms: { ...terms, [key]: event.target.value } },
+                      })
+                    }
+                  />
+                </Field>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </SettingsCard>
   );

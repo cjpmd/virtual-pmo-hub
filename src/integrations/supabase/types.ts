@@ -298,6 +298,7 @@ export type Database = {
           decided_at: string | null
           decision: string | null
           gate_id: string
+          governance_role: string | null
           id: string
           organisation_id: string
           required_role: string
@@ -312,6 +313,7 @@ export type Database = {
           decided_at?: string | null
           decision?: string | null
           gate_id: string
+          governance_role?: string | null
           id?: string
           organisation_id: string
           required_role: string
@@ -326,6 +328,7 @@ export type Database = {
           decided_at?: string | null
           decision?: string | null
           gate_id?: string
+          governance_role?: string | null
           id?: string
           organisation_id?: string
           required_role?: string
@@ -6329,6 +6332,61 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "lifecycle_phases"
             referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      governance_role_holders: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_deputy: boolean
+          organisation_id: string
+          profile_id: string
+          role_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_deputy?: boolean
+          organisation_id: string
+          profile_id: string
+          role_key: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_deputy?: boolean
+          organisation_id?: string
+          profile_id?: string
+          role_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "governance_role_holders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "governance_role_holders_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "governance_role_holders_organisation_id_profile_id_fkey"
+            columns: ["organisation_id", "profile_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_members"
+            referencedColumns: ["organisation_id", "profile_id"]
           },
         ]
       }
@@ -16707,6 +16765,10 @@ export type Database = {
         }
       }
       ai_drafts_today: { Args: { p_report_id: string }; Returns: number }
+      apply_sector_pack: {
+        Args: { p_modules?: string[]; p_org: string; p_pack: string }
+        Returns: Json
+      }
       approve_report: {
         Args: { p_report_id: string }
         Returns: {
@@ -16854,6 +16916,7 @@ export type Database = {
           decided_at: string | null
           decision: string | null
           gate_id: string
+          governance_role: string | null
           id: string
           organisation_id: string
           required_role: string
@@ -17051,6 +17114,10 @@ export type Database = {
       pending_billing_notices: { Args: never; Returns: Json }
       pending_notification_emails: { Args: { p_mode: string }; Returns: Json }
       pending_report_notifications: { Args: never; Returns: Json }
+      preview_sector_pack: {
+        Args: { p_modules?: string[]; p_org: string; p_pack: string }
+        Returns: Json
+      }
       project_metrics: {
         Args: {
           p_as_at: string
@@ -17474,6 +17541,10 @@ export type Database = {
       }
       set_my_notification_preferences: {
         Args: { p_preferences: Json }
+        Returns: Json
+      }
+      set_organisation_module: {
+        Args: { p_enabled: boolean; p_key: string; p_org: string }
         Returns: Json
       }
       set_report_inclusion: {

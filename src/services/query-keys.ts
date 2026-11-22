@@ -124,6 +124,8 @@ export const qk = {
   financialPeriods: (orgId: string) => ["org", orgId, "projects", "financial-periods"] as const,
   lookups: (orgId: string, listKey: string) => ["org", orgId, "lookups", listKey] as const,
   settings: (orgId: string) => ["org", orgId, "settings"] as const,
+  /** NHS-0: governance roles list and holders; under settings so a settings reload refreshes them. */
+  governanceRoles: (orgId: string) => ["org", orgId, "settings", "governance-roles"] as const,
   /** GL-5: whether the organisation is writable, and the subscription row for its banner. */
   access: {
     all: (orgId: string) => ["org", orgId, "access"] as const,

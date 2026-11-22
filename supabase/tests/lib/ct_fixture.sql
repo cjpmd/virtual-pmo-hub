@@ -304,6 +304,14 @@ begin
     ('terms_acceptances', $s$insert into public.terms_acceptances (organisation_id, profile_id, terms_version, method)
        select %1$L, profile_id, '2026-11-10', 'organisation_setup' from public.organisation_members
        where organisation_id = %1$L and role = 'admin' order by profile_id limit 1$s$),
+    -- NHS-0: the role must be on the organisation's governance_role list.
+    ('governance_role_holders', $s$with r as (
+         insert into public.lookup_values (organisation_id, list_key, value, label)
+         values (%1$L, 'governance_role', 'gl10_role', 'GL10 role')
+         on conflict (organisation_id, list_key, value) do update set label = excluded.label returning value)
+       insert into public.governance_role_holders (organisation_id, role_key, profile_id)
+       select %1$L, r.value, m.profile_id from public.organisation_members m, r
+       where m.organisation_id = %1$L and m.role = 'admin' order by m.profile_id limit 1$s$),
     ('user_favourites', $s$insert into public.user_favourites (organisation_id, profile_id, project_id)
        select %1$L, m.profile_id, p.id from public.organisation_members m, public.projects p
        where m.organisation_id = %1$L and m.role = 'admin' and p.organisation_id = %1$L limit 1$s$),

@@ -29,7 +29,7 @@ Lock: none
 
 | Package | Status | Branch | PR | Notes |
 |---|---|---|---|---|
-| NHS-0 | not started | | | |
+| NHS-0 | done (draft PR, awaiting review) | nhs/0 | [#140](https://github.com/cjpmd/virtual-pmo-hub/pull/140) | Migration `20261122150000_nhs_0_modules` (not applied). Settings › Modules, NHS sign-up choice, governance roles. Nav/report-block hiding helpers exist but nothing is wired yet: NHS-1 wires them with its first module-owned item. |
 | NHS-1 | not started | | | |
 | NHS-2 | not started | | | |
 | NHS-3 | not started | | | |
@@ -41,8 +41,25 @@ Lock: none
 
 ## Decisions for Chris
 
-(none yet)
+- **NHS-0 / D1: NHS is a pack, not a fourth sector.** `settings.pack = 'nhs'` sits beside the GL-8 `sector = 'public_sector'` (April financial year). Adding `nhs` to the sector would mean dropping and re-adding `organisations_settings_sector_check` (destructive) and another `create_organisation` signature. Code checks modules, never the pack.
+- **NHS-0 / D2:** `governance_role_holders` is organisation-scoped (no `workspace_id`) and was added to the AGENTS.md exception list, pending your approval.
+- **NHS-0 / D3:** holders are organisation members (profiles), not resources.
+- **NHS-0 / D4:** deciding a governance-role step needs workspace contributor or above and the role (or deputy). A free viewer can't approve. Say if NHS approvers should be able to approve as free viewers.
+- **NHS-0 / D5:** direct client writes to approval decision fields are refused for every step. The UI already uses `decide_approval_step`.
+- **NHS-0 / D6 (for NHS-3):** contributors can still delete or edit undecided approval steps. Module-created gates (QIA sign-off) need locking so a required step can't be removed.
+- **NHS-0 / D7:** module switches can be turned on before their screens exist. Settings › Modules says each arrives in its package.
 
 ## Run entries
 
 (newest last)
+
+- **22/11/2026 14:55–15:20 UTC, NHS-0:** audited (in PR #140) and built the whole package.
+  - Migration and `supabase/tests/nhs_modules.sql` (55 checks).
+  - `cross_tenant.sql` cases plus a fixture row for the new table and RPCs.
+  - Registry, settings, Settings › Modules, NHS sign-up option, terminology and lists.
+  - Unit tests.
+  - Local DB suites pass, except `reports_phase6.sql`, which fails as on main (shim has no cron job).
+  - tsc (app and scripts), vitest (676), lint (0 errors) and vite build all pass.
+  - e2e and Supabase advisors not run.
+  - Types: the new objects were spliced in from the local generator, because a full local regeneration re-adds the hand-dropped `committee_packs`.
+  - Next: NHS-1 (from `nhs/0`).
