@@ -23,14 +23,14 @@ Each run reads this file on the newest package branch, does the next piece of wo
 
 - Lock: set `Lock:` below to the run's start time (UTC) and push before starting work; clear it when done. A run that finds a lock newer than 3 hours exits without changes.
 
-Lock: 2026-11-22 20:58 UTC
+Lock: none
 
 ## Status
 
 | Package | Status | Branch | PR | Notes |
 |---|---|---|---|---|
 | NHS-0 | done (draft PR, awaiting review) | nhs/0 | [#140](https://github.com/cjpmd/virtual-pmo-hub/pull/140) | Migration `20261122150000_nhs_0_modules` (not applied). Settings › Modules, NHS sign-up choice, governance roles. Nav/report-block hiding helpers exist but nothing is wired yet: NHS-1 wires them with its first module-owned item. |
-| NHS-1 | in progress (parts 1 and 2 of 3 done) | nhs/1 | [#142](https://github.com/cjpmd/virtual-pmo-hub/pull/142) | Migrations `20261122170000_nhs_1_board_assurance` and `20261122190000_nhs_1b_assurance_blocks` (not applied): BAF register; BAF report blocks; five committee templates. One-click pack reuses the forum "Create pack" button. Part 3: re-scoring tool and register default matrix (D1), programme assurance ratings, assurance-by-programme block. |
+| NHS-1 | in progress (parts 1–3 of 4 done) | nhs/1 | [#142](https://github.com/cjpmd/virtual-pmo-hub/pull/142) | Migrations `20261122170000_nhs_1_board_assurance`, `20261122190000_nhs_1b_assurance_blocks` and `20261122210000_nhs_1c_programme_assurance` (not applied): BAF register; BAF report blocks; five committee templates; programme assurance ratings and the "Assurance by programme" block. One-click pack reuses the forum "Create pack" button. Part 4: risk re-scoring tool and register default matrix (D1). |
 | NHS-2 | not started | | | |
 | NHS-3 | not started | | | |
 | NHS-4 | not started | | | |
@@ -57,6 +57,9 @@ Lock: 2026-11-22 20:58 UTC
 - **NHS-1 / D6:** the committee templates use the `nhs_assurance` rating scheme but set no risk matrix, so project risks in a pack keep the register's matrix (RB-13a). The BAF blocks use the BAF matrix (`settings.assurance.matrixKey`).
 - **NHS-1 / D7:** the BAF blocks are partner-unsafe (added to `private.partner_unsafe_blocks`). `baf_summary` and `baf_above_appetite` show the whole organisation's BAF whatever the report's scope; `baf_linkage` shows only linked risks in scope unless its "in scope only" option is off.
 - **NHS-1 / D8:** no separate pack engine. A forum's "Create pack for <meeting>" already makes a pack from the forum's default template, and Export to PDF prints it. Set the forum's default template to a committee template in its Report settings.
+- **NHS-1 / D9:** programme assurance ratings are a history (`programme_assurance_ratings`, workspace-scoped): the newest by date is current. Workspace PMO and admins record them while the module is on (not programme managers: the rating is the board's judgement); a rating can't be edited, only removed as a mistake. Say if programme managers or forum chairs should rate too.
+- **NHS-1 / D10:** `assurance_by_programme` is partner-unsafe and was added to the Trust Board (after the rating distribution) and Executive Management / PMO Board (after the status grid) system templates, by updating those two system rows; reports already made keep their blocks.
+- **NHS-1 / D11:** the risk re-scoring tool and scoring the project/programme register from `risk_matrices` (D1) moved to a part 4: it touches the RAID screens, health thresholds and the RB-13a guard, so it gets its own run.
 - **NHS-1 / note:** `nhs/0` and `nhs/1` (part 1) were merged to `main` before their migrations were applied to production. Nothing breaks while modules are off, but apply `20261122150000`, `20261122170000` and `20261122190000` before switching a module on.
 
 ## Run entries
@@ -86,3 +89,9 @@ Lock: 2026-11-22 20:58 UTC
   - Block renderers, module ownership of the blocks, block library and template lists filtered by module, unit tests.
   - tsc (app and scripts), vitest (693), lint (0 errors), vite build pass. e2e and advisors not run. Types unchanged (no new public objects).
   - Next: NHS-1 part 3 on `nhs/1`.
+- **22/11/2026 20:58–21:15 UTC, NHS-1 part 3:** continued on `nhs/1` (PR #142 updated).
+  - Migration `20261122210000_nhs_1c_programme_assurance` (rating history table, `v_programme_assurance`, `assurance_by_programme` block, partner-unsafe list, two templates) and `supabase/tests/programme_assurance.sql` (34 checks); `ct_fixture.sql` gets a hand row for the new table.
+  - Local DB suites pass: cross_tenant, purge, read-only (46), export (29), closure (82), sample data (27), nhs_modules (55), board_assurance (40), assurance_blocks (25), reports 1–5. `reports_phase6` fails as on main.
+  - Assurance rating card on the programme Status tab (module on only), block renderer, unit tests. Types spliced from the local generator (table and view only).
+  - tsc (app and scripts), vitest (700), lint (0 errors), vite build pass. e2e and advisors not run.
+  - Next: NHS-1 part 4 (re-scoring tool, register matrix) on `nhs/1`.
