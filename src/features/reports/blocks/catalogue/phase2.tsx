@@ -938,7 +938,7 @@ export const _decisions_taken = registerBlock({
 });
 
 // ---------------------------------------------------------------- risk_heatmap
-interface HeatData {
+export interface HeatData {
   matrix: {
     name: string;
     bands: RiskBand[];
@@ -955,7 +955,13 @@ interface HeatData {
   }>;
   total: number;
 }
-function Heatmap({ data }: { data: HeatData; config: Record<string, never>; ctx: RenderContext }) {
+export function Heatmap({
+  data,
+}: {
+  data: HeatData;
+  config: Record<string, never>;
+  ctx: RenderContext;
+}) {
   const label = (list: Array<{ value: number; label: string }> | null, v: number) =>
     list?.find((x) => x.value === v)?.label ?? String(v);
   return (

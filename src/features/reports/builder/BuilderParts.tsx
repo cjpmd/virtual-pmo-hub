@@ -26,6 +26,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { isReportBlockEnabled } from "@/lib/modules";
+import { useSettings } from "@/services/settings";
 import { ALL_BLOCKS } from "../blocks/catalogue";
 import {
   CATEGORY_LABEL,
@@ -102,11 +104,14 @@ export function BlockLibrary({
   onAdd: (definition: AnyBlockDefinition) => void;
 }) {
   const [query, setQuery] = useState("");
+  const settings = useSettings();
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase();
     const byCategory = new Map<BlockCategory, AnyBlockDefinition[]>();
     for (const definition of listBlocks()) {
       if (!supports(definition, scope)) continue;
+      // Blocks owned by a module that is off (lib/modules.ts reportBlocks) aren't offered.
+      if (!isReportBlockEnabled(definition.key, settings)) continue;
       if (q && !`${definition.name} ${definition.description}`.toLowerCase().includes(q)) continue;
       byCategory.set(definition.category, [
         ...(byCategory.get(definition.category) ?? []),
@@ -118,7 +123,7 @@ export function BlockLibrary({
     );
     // ALL_BLOCKS.length in the deps keeps the catalogue import live (sideEffects: false).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, scope, ALL_BLOCKS.length]);
+  }, [query, scope, settings, ALL_BLOCKS.length]);
   return (
     <div className="space-y-3">
       <Input
