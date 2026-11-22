@@ -13101,6 +13101,307 @@ export type Database = {
           },
         ]
       }
+      strategic_risk_actions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          due_date: string | null
+          id: string
+          notes: string | null
+          organisation_id: string
+          owner_id: string | null
+          status: string
+          strategic_risk_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          organisation_id: string
+          owner_id?: string | null
+          status?: string
+          strategic_risk_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          organisation_id?: string
+          owner_id?: string | null
+          status?: string
+          strategic_risk_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategic_risk_actions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_risk_actions_owner_id_organisation_id_fkey"
+            columns: ["owner_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "strategic_risk_actions_strategic_risk_id_organisation_id_fkey"
+            columns: ["strategic_risk_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_risks"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "strategic_risk_actions_strategic_risk_id_organisation_id_fkey"
+            columns: ["strategic_risk_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_strategic_risks"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      strategic_risk_scores: {
+        Row: {
+          consequence: number
+          id: string
+          likelihood: number
+          organisation_id: string
+          recorded_at: string
+          recorded_by: string | null
+          risk_matrix_id: string | null
+          score: number | null
+          strategic_risk_id: string
+        }
+        Insert: {
+          consequence: number
+          id?: string
+          likelihood: number
+          organisation_id: string
+          recorded_at?: string
+          recorded_by?: string | null
+          risk_matrix_id?: string | null
+          score?: number | null
+          strategic_risk_id: string
+        }
+        Update: {
+          consequence?: number
+          id?: string
+          likelihood?: number
+          organisation_id?: string
+          recorded_at?: string
+          recorded_by?: string | null
+          risk_matrix_id?: string | null
+          score?: number | null
+          strategic_risk_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategic_risk_scores_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_risk_scores_risk_matrix_id_fkey"
+            columns: ["risk_matrix_id"]
+            isOneToOne: false
+            referencedRelation: "risk_matrices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_risk_scores_strategic_risk_id_organisation_id_fkey"
+            columns: ["strategic_risk_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_risks"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "strategic_risk_scores_strategic_risk_id_organisation_id_fkey"
+            columns: ["strategic_risk_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_strategic_risks"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      strategic_risks: {
+        Row: {
+          appetite_score: number | null
+          assurance_first_line: string | null
+          assurance_rating: string | null
+          assurance_second_line: string | null
+          assurance_third_line: string | null
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          current_consequence: number
+          current_likelihood: number
+          description: string | null
+          executive_lead_id: string | null
+          gaps_in_assurance: string | null
+          gaps_in_control: string | null
+          id: string
+          initial_consequence: number | null
+          initial_likelihood: number | null
+          is_sample: boolean
+          key_controls: string | null
+          lead_forum_id: string | null
+          organisation_id: string
+          rating_scheme_id: string | null
+          ref: string
+          review_date: string | null
+          risk_appetite: string | null
+          risk_matrix_id: string | null
+          status: string
+          strategic_objective_id: string | null
+          target_consequence: number | null
+          target_likelihood: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          appetite_score?: number | null
+          assurance_first_line?: string | null
+          assurance_rating?: string | null
+          assurance_second_line?: string | null
+          assurance_third_line?: string | null
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_consequence: number
+          current_likelihood: number
+          description?: string | null
+          executive_lead_id?: string | null
+          gaps_in_assurance?: string | null
+          gaps_in_control?: string | null
+          id?: string
+          initial_consequence?: number | null
+          initial_likelihood?: number | null
+          is_sample?: boolean
+          key_controls?: string | null
+          lead_forum_id?: string | null
+          organisation_id: string
+          rating_scheme_id?: string | null
+          ref: string
+          review_date?: string | null
+          risk_appetite?: string | null
+          risk_matrix_id?: string | null
+          status?: string
+          strategic_objective_id?: string | null
+          target_consequence?: number | null
+          target_likelihood?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          appetite_score?: number | null
+          assurance_first_line?: string | null
+          assurance_rating?: string | null
+          assurance_second_line?: string | null
+          assurance_third_line?: string | null
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_consequence?: number
+          current_likelihood?: number
+          description?: string | null
+          executive_lead_id?: string | null
+          gaps_in_assurance?: string | null
+          gaps_in_control?: string | null
+          id?: string
+          initial_consequence?: number | null
+          initial_likelihood?: number | null
+          is_sample?: boolean
+          key_controls?: string | null
+          lead_forum_id?: string | null
+          organisation_id?: string
+          rating_scheme_id?: string | null
+          ref?: string
+          review_date?: string | null
+          risk_appetite?: string | null
+          risk_matrix_id?: string | null
+          status?: string
+          strategic_objective_id?: string | null
+          target_consequence?: number | null
+          target_likelihood?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategic_risks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_risks_executive_lead_id_organisation_id_fkey"
+            columns: ["executive_lead_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "strategic_risks_lead_forum_id_organisation_id_fkey"
+            columns: ["lead_forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "strategic_risks_lead_forum_id_organisation_id_fkey"
+            columns: ["lead_forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "strategic_risks_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_risks_rating_scheme_id_fkey"
+            columns: ["rating_scheme_id"]
+            isOneToOne: false
+            referencedRelation: "rating_schemes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_risks_risk_matrix_id_fkey"
+            columns: ["risk_matrix_id"]
+            isOneToOne: false
+            referencedRelation: "risk_matrices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_risks_strategic_objective_id_fkey"
+            columns: ["strategic_objective_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_objectives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stripe_webhook_events: {
         Row: {
           error: string | null
@@ -16557,6 +16858,108 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "workspaces"
             referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      v_strategic_risks: {
+        Row: {
+          above_appetite: boolean | null
+          appetite_score: number | null
+          assurance_colour: string | null
+          assurance_first_line: string | null
+          assurance_label: string | null
+          assurance_rank: number | null
+          assurance_rating: string | null
+          assurance_second_line: string | null
+          assurance_third_line: string | null
+          closed_at: string | null
+          created_at: string | null
+          current_band: Json | null
+          current_consequence: number | null
+          current_likelihood: number | null
+          current_score: number | null
+          description: string | null
+          executive_lead_id: string | null
+          gaps_in_assurance: string | null
+          gaps_in_control: string | null
+          id: string | null
+          initial_consequence: number | null
+          initial_likelihood: number | null
+          initial_score: number | null
+          is_sample: boolean | null
+          key_controls: string | null
+          lead_forum_id: string | null
+          linked_risk_count: number | null
+          open_action_count: number | null
+          organisation_id: string | null
+          overdue_action_count: number | null
+          previous_score: number | null
+          rating_scheme_id: string | null
+          ref: string | null
+          review_date: string | null
+          review_overdue: boolean | null
+          risk_appetite: string | null
+          risk_matrix_id: string | null
+          risk_matrix_key: string | null
+          risk_matrix_name: string | null
+          status: string | null
+          strategic_objective_id: string | null
+          target_consequence: number | null
+          target_likelihood: number | null
+          target_score: number | null
+          title: string | null
+          trend: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategic_risks_executive_lead_id_organisation_id_fkey"
+            columns: ["executive_lead_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "strategic_risks_lead_forum_id_organisation_id_fkey"
+            columns: ["lead_forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "strategic_risks_lead_forum_id_organisation_id_fkey"
+            columns: ["lead_forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "strategic_risks_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_risks_rating_scheme_id_fkey"
+            columns: ["rating_scheme_id"]
+            isOneToOne: false
+            referencedRelation: "rating_schemes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_risks_risk_matrix_id_fkey"
+            columns: ["risk_matrix_id"]
+            isOneToOne: false
+            referencedRelation: "risk_matrices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_risks_strategic_objective_id_fkey"
+            columns: ["strategic_objective_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_objectives"
+            referencedColumns: ["id"]
           },
         ]
       }

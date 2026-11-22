@@ -1,5 +1,5 @@
 import { useSettings } from "@/services/settings";
-import { anyModuleEnabled } from "@/lib/modules";
+import { anyModuleEnabled, isModuleEnabled } from "@/lib/modules";
 import { ListEditor, SettingsCard } from "@/components/settings/settings-shell";
 import { patch } from "./settings-helpers";
 
@@ -54,6 +54,14 @@ export function ListsSettings() {
             label="Governance roles"
             values={lists.governanceRoles}
             onChange={(values) => patch("lists", { governanceRoles: values })}
+          />
+        )}
+        {/* NHS-1: strategic risk appetite levels (Board assurance). */}
+        {(isModuleEnabled("assurance", settings) || lists.riskAppetite.length > 0) && (
+          <ListEditor
+            label="Risk appetite levels"
+            values={lists.riskAppetite}
+            onChange={(values) => patch("lists", { riskAppetite: values })}
           />
         )}
       </div>

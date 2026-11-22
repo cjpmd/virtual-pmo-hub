@@ -55,7 +55,7 @@ export const MODULES: ModuleDefinition[] = [
     ],
     recommends: [],
     builtIn: "NHS-1",
-    navPaths: [],
+    navPaths: ["/governance/assurance"],
     reportBlocks: [],
   },
   {

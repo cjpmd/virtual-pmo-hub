@@ -72,6 +72,7 @@ import { Route as DeliveryTasksRouteImport } from './routes/delivery.tasks'
 import { Route as DependenciesIndexRouteImport } from './routes/dependencies.index'
 import { Route as DependenciesMapRouteImport } from './routes/dependencies.map'
 import { Route as GovernanceIndexRouteImport } from './routes/governance.index'
+import { Route as GovernanceAssuranceRouteImport } from './routes/governance.assurance'
 import { Route as GovernanceChangesRouteImport } from './routes/governance.changes'
 import { Route as GovernanceCommitteePacksRouteImport } from './routes/governance.committee-packs'
 import { Route as GovernanceForumRouteImport } from './routes/governance.forum'
@@ -443,6 +444,11 @@ const GovernanceIndexRoute = GovernanceIndexRouteImport.update({
   path: '/',
   getParentRoute: () => GovernanceRoute,
 } as any)
+const GovernanceAssuranceRoute = GovernanceAssuranceRouteImport.update({
+  id: '/assurance',
+  path: '/assurance',
+  getParentRoute: () => GovernanceRoute,
+} as any)
 const GovernanceChangesRoute = GovernanceChangesRouteImport.update({
   id: '/changes',
   path: '/changes',
@@ -794,6 +800,7 @@ export interface FileRoutesByFullPath {
   '/delivery/milestones': typeof DeliveryMilestonesRoute
   '/delivery/tasks': typeof DeliveryTasksRoute
   '/dependencies/map': typeof DependenciesMapRoute
+  '/governance/assurance': typeof GovernanceAssuranceRoute
   '/governance/changes': typeof GovernanceChangesRoute
   '/governance/committee-packs': typeof GovernanceCommitteePacksRoute
   '/governance/forum': typeof GovernanceForumRoute
@@ -899,6 +906,7 @@ export interface FileRoutesByTo {
   '/delivery/milestones': typeof DeliveryMilestonesRoute
   '/delivery/tasks': typeof DeliveryTasksRoute
   '/dependencies/map': typeof DependenciesMapRoute
+  '/governance/assurance': typeof GovernanceAssuranceRoute
   '/governance/changes': typeof GovernanceChangesRoute
   '/governance/committee-packs': typeof GovernanceCommitteePacksRoute
   '/governance/forum': typeof GovernanceForumRoute
@@ -1016,6 +1024,7 @@ export interface FileRoutesById {
   '/delivery/milestones': typeof DeliveryMilestonesRoute
   '/delivery/tasks': typeof DeliveryTasksRoute
   '/dependencies/map': typeof DependenciesMapRoute
+  '/governance/assurance': typeof GovernanceAssuranceRoute
   '/governance/changes': typeof GovernanceChangesRoute
   '/governance/committee-packs': typeof GovernanceCommitteePacksRoute
   '/governance/forum': typeof GovernanceForumRoute
@@ -1138,6 +1147,7 @@ export interface FileRouteTypes {
     | '/delivery/milestones'
     | '/delivery/tasks'
     | '/dependencies/map'
+    | '/governance/assurance'
     | '/governance/changes'
     | '/governance/committee-packs'
     | '/governance/forum'
@@ -1243,6 +1253,7 @@ export interface FileRouteTypes {
     | '/delivery/milestones'
     | '/delivery/tasks'
     | '/dependencies/map'
+    | '/governance/assurance'
     | '/governance/changes'
     | '/governance/committee-packs'
     | '/governance/forum'
@@ -1359,6 +1370,7 @@ export interface FileRouteTypes {
     | '/delivery/milestones'
     | '/delivery/tasks'
     | '/dependencies/map'
+    | '/governance/assurance'
     | '/governance/changes'
     | '/governance/committee-packs'
     | '/governance/forum'
@@ -1915,6 +1927,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GovernanceIndexRouteImport
       parentRoute: typeof GovernanceRoute
     }
+    '/governance/assurance': {
+      id: '/governance/assurance'
+      path: '/assurance'
+      fullPath: '/governance/assurance'
+      preLoaderRoute: typeof GovernanceAssuranceRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
     '/governance/changes': {
       id: '/governance/changes'
       path: '/changes'
@@ -2429,6 +2448,7 @@ const GovernanceReportsRouteWithChildren =
   GovernanceReportsRoute._addFileChildren(GovernanceReportsRouteChildren)
 
 interface GovernanceRouteChildren {
+  GovernanceAssuranceRoute: typeof GovernanceAssuranceRoute
   GovernanceChangesRoute: typeof GovernanceChangesRoute
   GovernanceCommitteePacksRoute: typeof GovernanceCommitteePacksRoute
   GovernanceForumRoute: typeof GovernanceForumRoute
@@ -2440,6 +2460,7 @@ interface GovernanceRouteChildren {
 }
 
 const GovernanceRouteChildren: GovernanceRouteChildren = {
+  GovernanceAssuranceRoute: GovernanceAssuranceRoute,
   GovernanceChangesRoute: GovernanceChangesRoute,
   GovernanceCommitteePacksRoute: GovernanceCommitteePacksRoute,
   GovernanceForumRoute: GovernanceForumRoute,

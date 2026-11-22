@@ -21,6 +21,7 @@ import {
   ScrollText,
   Settings,
   ShieldAlert,
+  ShieldCheck,
   Target,
   Workflow,
   UsersRound,
@@ -137,6 +138,8 @@ export const sections: Section[] = [
     pages: [
       { to: "/governance/raidd", label: "RAIDD", icon: ShieldAlert },
       { to: "/governance/forum", label: "Boards", icon: Landmark },
+      // NHS-1: shown only while the assurance module is on (lib/modules.ts navPaths).
+      { to: "/governance/assurance", label: "Board assurance", icon: ShieldCheck },
       { to: "/governance/reports", label: "Reports", icon: FileBarChart },
       { to: "/governance/changes", label: "Changes", icon: GitFork },
       { to: "/governance/lessons", label: "Lessons", icon: BookOpenCheck, termKey: "lesson" },

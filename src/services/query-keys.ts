@@ -126,6 +126,14 @@ export const qk = {
   settings: (orgId: string) => ["org", orgId, "settings"] as const,
   /** NHS-0: governance roles list and holders; under settings so a settings reload refreshes them. */
   governanceRoles: (orgId: string) => ["org", orgId, "settings", "governance-roles"] as const,
+  /** NHS-1: board assurance (strategic risk register and its children). */
+  strategicRisks: {
+    all: (orgId: string) => ["org", orgId, "strategic-risks"] as const,
+    list: (orgId: string) => ["org", orgId, "strategic-risks", "list"] as const,
+    options: (orgId: string) => ["org", orgId, "strategic-risks", "options"] as const,
+    detail: (orgId: string, id: string) => ["org", orgId, "strategic-risks", "detail", id] as const,
+    linkable: (orgId: string) => ["org", orgId, "strategic-risks", "linkable"] as const,
+  },
   /** GL-5: whether the organisation is writable, and the subscription row for its banner. */
   access: {
     all: (orgId: string) => ["org", orgId, "access"] as const,
