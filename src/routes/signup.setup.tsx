@@ -19,6 +19,7 @@ import { orgFromDomain } from "@/lib/org-name";
 import { JoinableOrganisations } from "@/components/auth/joinable-organisations";
 import { defaultLifecyclePhases } from "@/data/lifecycle";
 import { financialYearStartFor, sectors, type Sector } from "@/data/sectors";
+import { applySectorPack } from "@/services/modules";
 
 export const Route = createFileRoute("/signup/setup")({
   // Creating an organisation can be switched off with VITE_SELF_SIGNUP=false (lib/features.ts).
@@ -85,6 +86,9 @@ function Setup({ userId, email }: { userId: string; email: string }) {
   const [region, setRegion] = useState<"uk" | "eu">("uk");
   const [currency, setCurrency] = useState<"GBP" | "EUR">("GBP");
   const [sector, setSector] = useState<Sector | null>(null);
+  // NHS-0: "NHS" is the public-sector defaults plus the NHS pack, applied after creation.
+  const [nhsPack, setNhsPack] = useState(false);
+  const [packResult, setPackResult] = useState<string | null>(null);
   const [fyStart, setFyStart] = useState(8);
   // GL-9: off by default. The organisation is created first; sample data is added after it.
   const [withSample, setWithSample] = useState(false);
@@ -93,8 +97,9 @@ function Setup({ userId, email }: { userId: string; email: string }) {
   // Microsoft sign-ups alike), recorded in terms_acceptances.
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   // The financial year follows the sector (August, April, January); it can still be changed.
-  const chooseSector = (value: Sector) => {
+  const chooseSector = (value: Sector, nhs = false) => {
     setSector(value);
+    setNhsPack(nhs);
     setFyStart(financialYearStartFor(value));
   };
   const create = useMutation({
@@ -112,6 +117,12 @@ function Setup({ userId, email }: { userId: string; email: string }) {
       await setLastOrganisation(userId, id).catch(() => undefined);
       // Best effort too: if this fails, the sign-in check asks again before the app opens.
       await acceptTerms(id, "organisation_setup").catch(() => undefined);
+      if (nhsPack) {
+        // A failure here doesn't undo the organisation: the admin can apply it in Settings › Modules.
+        await applySectorPack(id, "nhs").catch((error: unknown) =>
+          setPackResult(errorMessage(error)),
+        );
+      }
       if (withSample) {
         // A failure here doesn't undo the organisation: the admin can add it from Settings.
         try {
@@ -206,23 +217,39 @@ function Setup({ userId, email }: { userId: string; email: string }) {
                 Sets the starting lists, benefit categories, forums and financial year. You can edit
                 all of them later in Settings.
               </p>
-              <div role="radiogroup" aria-label="Sector" className="grid gap-3 sm:grid-cols-3">
+              <div role="radiogroup" aria-label="Sector" className="grid gap-3 sm:grid-cols-2">
                 {sectors.map((item) => (
                   <button
                     key={item.value}
                     type="button"
                     role="radio"
-                    aria-checked={sector === item.value}
+                    aria-checked={sector === item.value && !nhsPack}
                     onClick={() => chooseSector(item.value)}
                     className={cn(
                       "rounded-lg border p-4 text-left hover:bg-muted/50",
-                      sector === item.value && "border-primary bg-primary/10",
+                      sector === item.value && !nhsPack && "border-primary bg-primary/10",
                     )}
                   >
                     <p className="font-semibold">{item.label}</p>
                     <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
                   </button>
                 ))}
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={nhsPack}
+                  onClick={() => chooseSector("public_sector", true)}
+                  className={cn(
+                    "rounded-lg border p-4 text-left hover:bg-muted/50",
+                    nhsPack && "border-primary bg-primary/10",
+                  )}
+                >
+                  <p className="font-semibold">NHS</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Trusts, ICBs and ICSs: NHS wording (CIP, QIA / EqIA, BAF), governance roles and
+                    financial year from April. Modules can be switched off later.
+                  </p>
+                </button>
               </div>
             </>
           )}
@@ -346,6 +373,15 @@ function Setup({ userId, email }: { userId: string; email: string }) {
                 >
                   The sample data couldn't be added ({sampleResult}). An admin can add it later in
                   Settings › Data.
+                </p>
+              )}
+              {packResult && (
+                <p
+                  role="alert"
+                  className="rounded-md border border-health-warn/40 bg-health-warn/10 p-3 text-sm"
+                >
+                  The NHS pack couldn't be applied ({packResult}). An admin can apply it in Settings
+                  › Modules.
                 </p>
               )}
               <div className="grid gap-3">

@@ -425,6 +425,11 @@ insert into ct_cases (fn, call, expect, note) values
   ('accept_terms(uuid,text,text)', $c$select public.accept_terms('{a_org}', '2026-11-10', 'sign_in_prompt')$c$, 'empty', null),
   ('accept_terms(uuid,text,text)', $c$select public.accept_terms('{a_org}', '2026-11-10', 'organisation_setup')$c$, 'empty', null),
   ('accept_terms(uuid,text,text)', $c$select public.accept_terms('{a_org}', '2026-11-10', 'signup_form')$c$, 'empty', null),
+  -- NHS-0: B's admin can't preview or apply a pack, or switch a module, in A.
+  ('preview_sector_pack(uuid,text,text[])', $c$select public.preview_sector_pack('{a_org}', 'nhs')$c$, 'empty', null),
+  ('apply_sector_pack(uuid,text,text[])', $c$select public.apply_sector_pack('{a_org}', 'nhs')$c$, 'empty', null),
+  ('apply_sector_pack(uuid,text,text[])', $c$select public.apply_sector_pack('{a_org}', 'general', array['efficiency'])$c$, 'empty', null),
+  ('set_organisation_module(uuid,text,boolean)', $c$select public.set_organisation_module('{a_org}', 'efficiency', true)$c$, 'empty', null),
   -- GL-13.
   ('mark_notifications_read(uuid,uuid[])', $c$select public.mark_notifications_read('{a_org}')$c$, 'empty', null),
   ('mark_notifications_read(uuid,uuid[])', $c$select public.mark_notifications_read('{a_org}', array['{a_notification}'::uuid])$c$, 'empty', null),

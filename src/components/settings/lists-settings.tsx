@@ -1,4 +1,5 @@
 import { useSettings } from "@/services/settings";
+import { anyModuleEnabled } from "@/lib/modules";
 import { ListEditor, SettingsCard } from "@/components/settings/settings-shell";
 import { patch } from "./settings-helpers";
 
@@ -47,6 +48,14 @@ export function ListsSettings() {
           values={lists.fundingSources}
           onChange={(values) => patch("lists", { fundingSources: values })}
         />
+        {/* NHS-0: shown once a module is on (or the organisation already has roles). */}
+        {(anyModuleEnabled(settings) || lists.governanceRoles.length > 0) && (
+          <ListEditor
+            label="Governance roles"
+            values={lists.governanceRoles}
+            onChange={(values) => patch("lists", { governanceRoles: values })}
+          />
+        )}
       </div>
     </SettingsCard>
   );

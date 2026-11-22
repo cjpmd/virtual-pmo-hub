@@ -10,6 +10,7 @@ import {
 import { AccountSettings } from "@/components/settings/account-settings";
 import { FinanceSettings } from "@/components/settings/finance-settings";
 import { MembersSettings } from "@/components/settings/members-settings";
+import { ModulesSettings } from "@/components/settings/modules-settings";
 import { SubscriptionSettings } from "@/components/settings/subscription-settings";
 import { WorkspaceSettings } from "@/components/settings/workspace-settings";
 import {
@@ -54,6 +55,7 @@ const panels: Record<string, () => JSX.Element> = {
   account: AccountSettings,
   organisation: OrganisationSettings,
   workspaces: WorkspaceSettings,
+  modules: ModulesSettings,
   regional: RegionalSettings,
   "working-time": WorkingTimeSettings,
   terminology: TerminologySettings,
