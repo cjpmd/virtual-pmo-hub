@@ -56,7 +56,7 @@ export const MODULES: ModuleDefinition[] = [
     recommends: [],
     builtIn: "NHS-1",
     navPaths: ["/governance/assurance"],
-    reportBlocks: ["baf_summary", "baf_above_appetite", "baf_linkage"],
+    reportBlocks: ["baf_summary", "baf_above_appetite", "baf_linkage", "assurance_by_programme"],
   },
   {
     key: "benefit_categories_nhs",

@@ -9353,6 +9353,108 @@ export type Database = {
           },
         ]
       }
+      programme_assurance_ratings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          forum_id: string | null
+          id: string
+          is_sample: boolean
+          organisation_id: string
+          programme_id: string
+          rated_on: string
+          rating: string
+          rating_scheme_id: string | null
+          rationale: string | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          forum_id?: string | null
+          id?: string
+          is_sample?: boolean
+          organisation_id: string
+          programme_id: string
+          rated_on?: string
+          rating: string
+          rating_scheme_id?: string | null
+          rationale?: string | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          forum_id?: string | null
+          id?: string
+          is_sample?: boolean
+          organisation_id?: string
+          programme_id?: string
+          rated_on?: string
+          rating?: string
+          rating_scheme_id?: string | null
+          rationale?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programme_assurance_ratings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_assurance_ratings_forum_id_organisation_id_fkey"
+            columns: ["forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "programme_assurance_ratings_forum_id_organisation_id_fkey"
+            columns: ["forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "programme_assurance_ratings_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "programmes"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_assurance_ratings_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_financials"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_assurance_ratings_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_health"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_assurance_ratings_rating_scheme_id_fkey"
+            columns: ["rating_scheme_id"]
+            isOneToOne: false
+            referencedRelation: "rating_schemes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_assurance_ratings_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       programme_health_current: {
         Row: {
           benefit: Database["public"]["Enums"]["health"] | null
@@ -16092,6 +16194,89 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "portfolios_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      v_programme_assurance: {
+        Row: {
+          colour: string | null
+          created_by: string | null
+          direction: string | null
+          forum_id: string | null
+          forum_name: string | null
+          is_sample: boolean | null
+          label: string | null
+          organisation_id: string | null
+          previous_label: string | null
+          previous_rated_on: string | null
+          previous_rating: string | null
+          programme_id: string | null
+          rank: number | null
+          rated_by_name: string | null
+          rated_on: string | null
+          rating: string | null
+          rating_count: number | null
+          rating_id: string | null
+          rating_scheme_id: string | null
+          rationale: string | null
+          workspace_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programme_assurance_ratings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_assurance_ratings_forum_id_organisation_id_fkey"
+            columns: ["forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "programme_assurance_ratings_forum_id_organisation_id_fkey"
+            columns: ["forum_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "v_forums"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "programme_assurance_ratings_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "programmes"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_assurance_ratings_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_financials"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_assurance_ratings_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_health"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_assurance_ratings_rating_scheme_id_fkey"
+            columns: ["rating_scheme_id"]
+            isOneToOne: false
+            referencedRelation: "rating_schemes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_assurance_ratings_workspace_id_organisation_id_fkey"
             columns: ["workspace_id", "organisation_id"]
             isOneToOne: false
             referencedRelation: "workspaces"

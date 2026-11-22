@@ -42,7 +42,12 @@ import { _changes_since_last, _raid_movement } from "./phase3";
 import { _lessons_learned, _linked_records } from "./phase4";
 import { _project_overview } from "./project-overview";
 import { _programme_coverage, _benefits_value } from "./funding";
-import { _baf_summary, _baf_above_appetite, _baf_linkage } from "./assurance";
+import {
+  _baf_summary,
+  _baf_above_appetite,
+  _baf_linkage,
+  _assurance_by_programme,
+} from "./assurance";
 
 /** Every registered block definition. Importing this ensures all blocks are in the registry. */
 export const ALL_BLOCKS = [
@@ -88,4 +93,5 @@ export const ALL_BLOCKS = [
   _baf_summary,
   _baf_above_appetite,
   _baf_linkage,
-]; // 42 total
+  _assurance_by_programme,
+]; // 43 total

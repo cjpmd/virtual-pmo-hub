@@ -134,6 +134,9 @@ export const qk = {
     detail: (orgId: string, id: string) => ["org", orgId, "strategic-risks", "detail", id] as const,
     linkable: (orgId: string) => ["org", orgId, "strategic-risks", "linkable"] as const,
   },
+  /** NHS-1 part 3: a programme's assurance ratings (history and the latest). */
+  programmeAssurance: (orgId: string, programmeId: string) =>
+    ["org", orgId, "programme-assurance", programmeId] as const,
   /** GL-5: whether the organisation is writable, and the subscription row for its banner. */
   access: {
     all: (orgId: string) => ["org", orgId, "access"] as const,

@@ -496,3 +496,161 @@ export const _baf_linkage = registerBlock({
   partnerSafe: false,
   phase: 4,
 });
+
+// ---------------------------------------------------------------- assurance_by_programme
+// NHS-1 part 3 (migration 20261122210000_nhs_1c_programme_assurance): each programme in scope
+// with the assurance rating in force on the as-at date (private.rb_assurance_by_programme).
+export type RatingDirection = "new" | "better" | "worse" | "same";
+export const DIRECTION_TEXT: Record<RatingDirection, string> = {
+  new: "First rating",
+  better: "↑ Improved",
+  worse: "↓ Worse",
+  same: "→ No change",
+};
+export const directionText = (direction: string | null | undefined) =>
+  direction ? (DIRECTION_TEXT[direction as RatingDirection] ?? "—") : "—";
+
+export interface ProgrammeAssuranceRow {
+  id: string;
+  name: string;
+  portfolio: string | null;
+  rating: string | null;
+  label: string | null;
+  colour: string | null;
+  rank: number | null;
+  rated_on: string | null;
+  forum: string | null;
+  previous: string | null;
+  direction: RatingDirection | null;
+  rationale: string | null;
+  is_sample: boolean;
+}
+export interface ProgrammeAssuranceData {
+  scheme: { name: string | null; levels: Array<{ key: string; label: string; colour?: string }> };
+  total: number;
+  rated: number;
+  worse: number;
+  counts: Record<string, number>;
+  rows: ProgrammeAssuranceRow[];
+}
+const byProgrammeSchema = z.object({
+  show_rationale: z.boolean().default(true),
+  include_unrated: z.boolean().default(true),
+});
+function AssuranceByProgramme({
+  data,
+}: {
+  data: ProgrammeAssuranceData;
+  config: z.infer<typeof byProgrammeSchema>;
+  ctx: RenderContext;
+}) {
+  const f = useReportFormat();
+  if (!data.total) return <Empty>No programmes in this report's scope.</Empty>;
+  const levels = data.scheme.levels.filter((level) => (data.counts[level.key] ?? 0) > 0);
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Stat label="Programmes" value={data.total} />
+        <Stat
+          label="Rated"
+          value={data.rated}
+          tone={data.rated === data.total ? "good" : "warn"}
+          note={data.total > data.rated ? `${data.total - data.rated} not rated` : undefined}
+        />
+        <Stat label="Worse than last time" value={data.worse} tone={data.worse ? "bad" : "good"} />
+        {levels.length > 0 && (
+          <Stat
+            label="By level"
+            value={
+              <ul className="space-y-0.5 text-xs font-normal">
+                {levels.map((level) => (
+                  <li key={level.key}>
+                    <Assurance
+                      label={`${level.label}: ${data.counts[level.key]}`}
+                      colour={level.colour ?? null}
+                    />
+                  </li>
+                ))}
+              </ul>
+            }
+          />
+        )}
+      </div>
+      <Table
+        rows={data.rows}
+        rowKey={(r) => r.id}
+        caption={`Assurance by programme${data.scheme.name ? ` (${data.scheme.name})` : ""}`}
+        empty="No programme has been rated."
+        cols={[
+          {
+            key: "p",
+            header: "Programme",
+            cell: (r) => (
+              <span>
+                {r.name}
+                {r.is_sample && (
+                  <span className="ml-1 text-xs text-muted-foreground">(Sample)</span>
+                )}
+                {r.portfolio && (
+                  <span className="block text-xs text-muted-foreground">{r.portfolio}</span>
+                )}
+              </span>
+            ),
+          },
+          {
+            key: "a",
+            header: "Assurance",
+            cell: (r) => <Assurance label={r.label} colour={r.colour} />,
+          },
+          {
+            key: "d",
+            header: "Since last rating",
+            cell: (r) => (
+              <span className={r.direction === "worse" ? "text-health-bad-foreground" : ""}>
+                {directionText(r.direction)}
+                {r.previous && r.direction !== "new" && (
+                  <span className="block text-xs text-muted-foreground">was {r.previous}</span>
+                )}
+              </span>
+            ),
+          },
+          {
+            key: "o",
+            header: "Rated",
+            cell: (r) =>
+              r.rated_on ? (
+                <span>
+                  {f.date(r.rated_on)}
+                  {r.forum && (
+                    <span className="block text-xs text-muted-foreground">{r.forum}</span>
+                  )}
+                </span>
+              ) : (
+                "—"
+              ),
+          },
+          {
+            key: "r",
+            header: "Rationale",
+            cell: (r) => r.rationale ?? "",
+          },
+        ]}
+      />
+    </div>
+  );
+}
+export const _assurance_by_programme = registerBlock({
+  key: "assurance_by_programme",
+  version: 1,
+  name: "Assurance by programme",
+  category: "assurance",
+  description:
+    "Each programme in scope with the assurance rating in force on the report's date, the one before it and the rationale.",
+  supportedScopes: SCOPES,
+  perEntity: false,
+  configSchema: byProgrammeSchema,
+  defaultConfig: { show_rationale: true, include_unrated: true },
+  Renderer: AssuranceByProgramme,
+  partnerSafe: false,
+  phase: 4,
+});

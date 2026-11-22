@@ -345,7 +345,7 @@
    "overdue_actions": 1
   },
   "matrix": {
-   "name": "NHS 5\u00d75",
+   "name": "NHS 5×5",
    "bands": [
     {
      "key": "low",
@@ -448,5 +448,70 @@
   "count": 1,
   "total_open": 3,
   "no_appetite": 1
+ },
+ "assurance_by_programme": {
+  "rows": [
+   {
+    "id": "prog-1",
+    "name": "Digital public services",
+    "rank": 3,
+    "forum": null,
+    "label": "Limited assurance",
+    "colour": "#c2410c",
+    "rating": "limited",
+    "previous": "Reasonable assurance",
+    "rated_on": "2026-11-22",
+    "direction": "worse",
+    "is_sample": true,
+    "portfolio": "Sample portfolio",
+    "rationale": "Two milestones missed; recovery plan not agreed"
+   }
+  ],
+  "rated": 1,
+  "total": 1,
+  "worse": 1,
+  "counts": {
+   "limited": 1
+  },
+  "scheme": {
+   "name": "NHS assurance levels",
+   "levels": [
+    {
+     "key": "substantial",
+     "rag": "green",
+     "rank": 1,
+     "label": "Substantial assurance",
+     "colour": "#2e7d52"
+    },
+    {
+     "key": "reasonable",
+     "rag": "amber",
+     "rank": 2,
+     "label": "Reasonable assurance",
+     "colour": "#ca8a04"
+    },
+    {
+     "key": "limited",
+     "rag": "red",
+     "rank": 3,
+     "label": "Limited assurance",
+     "colour": "#c2410c"
+    },
+    {
+     "key": "no_assurance",
+     "rag": null,
+     "rank": 4,
+     "label": "No assurance",
+     "colour": "#7f1d1d"
+    },
+    {
+     "key": "not_reported",
+     "rag": "not_set",
+     "rank": 5,
+     "label": "Not reported",
+     "colour": "#6b7280"
+    }
+   ]
+  }
  }
 }

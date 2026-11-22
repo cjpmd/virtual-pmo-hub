@@ -481,6 +481,14 @@ describe("Phase 3 and 4 blocks", () => {
     },
     baf_above_appetite: { total_open: 0, count: 0, no_appetite: 0, rows: [] },
     baf_linkage: { in_scope_only: true, linked_total: 0, groups: [], unlinked: [] },
+    assurance_by_programme: {
+      scheme: { name: "NHS assurance levels", levels: [] },
+      total: 0,
+      rated: 0,
+      worse: 0,
+      counts: {},
+      rows: [],
+    },
   };
   for (const [key, data] of Object.entries(EMPTY34)) {
     it(`${key} renders empty data`, () => {
@@ -497,10 +505,10 @@ describe("Phase 3 and 4 blocks", () => {
 });
 
 describe("ALL_BLOCKS registry (tree-shaking guard)", () => {
-  it("ALL_BLOCKS contains exactly 42 definitions", () => {
+  it("ALL_BLOCKS contains exactly 43 definitions", () => {
     // This test fails if a new block is added without updating catalogue/index.ts,
     // or if the explicit import chain is broken and blocks get tree-shaken.
-    expect(ALL_BLOCKS).toHaveLength(42);
+    expect(ALL_BLOCKS).toHaveLength(43);
   });
   it("ALL_BLOCKS matches what the registry contains", () => {
     const registryKeys = listBlocks()
