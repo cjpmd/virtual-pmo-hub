@@ -23,14 +23,14 @@ Each run reads this file on the newest package branch, does the next piece of wo
 
 - Lock: set `Lock:` below to the run's start time (UTC) and push before starting work; clear it when done. A run that finds a lock newer than 3 hours exits without changes.
 
-Lock: 2026-11-22T15:54Z (NHS-1 run)
+Lock: none
 
 ## Status
 
 | Package | Status | Branch | PR | Notes |
 |---|---|---|---|---|
 | NHS-0 | done (draft PR, awaiting review) | nhs/0 | [#140](https://github.com/cjpmd/virtual-pmo-hub/pull/140) | Migration `20261122150000_nhs_0_modules` (not applied). Settings › Modules, NHS sign-up choice, governance roles. Nav/report-block hiding helpers exist but nothing is wired yet: NHS-1 wires them with its first module-owned item. |
-| NHS-1 | not started | | | |
+| NHS-1 | in progress (part 1 of 2 done) | nhs/1 | [#142](https://github.com/cjpmd/virtual-pmo-hub/pull/142) | Migration `20261122170000_nhs_1_board_assurance` (not applied): strategic risk register (BAF), score history, actions, BAF links; Governance › Board assurance. Part 2: re-scoring tool, NHS report blocks, committee templates, one-click pack, programme assurance ratings. |
 | NHS-2 | not started | | | |
 | NHS-3 | not started | | | |
 | NHS-4 | not started | | | |
@@ -49,6 +49,11 @@ Lock: 2026-11-22T15:54Z (NHS-1 run)
 - **NHS-0 / D6 (for NHS-3):** contributors can still delete or edit undecided approval steps. Module-created gates (QIA sign-off) need locking so a required step can't be removed.
 - **NHS-0 / D7:** module switches can be turned on before their screens exist. Settings › Modules says each arrives in its package.
 
+- **NHS-1 / D1:** the NHS 5×5 is the matrix for strategic risks (`settings.assurance.matrixKey`, set by the NHS pack), not yet for project and programme risks. The RB-13a guard refuses an organisation default matrix until the register scores from `risk_matrices`; part 2 proposes that change together with the re-scoring tool.
+- **NHS-1 / D2:** `strategic_risks`, `strategic_risk_actions` and `strategic_risk_scores` are organisation-scoped (no `workspace_id`), added to the AGENTS.md exception list pending your approval.
+- **NHS-1 / D3:** strategic risks are closed, never deleted; PMO and admins can delete actions.
+- **NHS-1 / D4:** with the module off, BAF data stays readable; writes and new links are refused.
+
 ## Run entries
 
 (newest last)
@@ -63,3 +68,10 @@ Lock: 2026-11-22T15:54Z (NHS-1 run)
   - e2e and Supabase advisors not run.
   - Types: the new objects were spliced in from the local generator, because a full local regeneration re-adds the hand-dropped `committee_packs`.
   - Next: NHS-1 (from `nhs/0`).
+- **22/11/2026 15:54–16:15 UTC, NHS-1 part 1:** audit in PR #142.
+  - Migration (BAF tables, view, links trigger, assurance seeding) and `supabase/tests/board_assurance.sql` (40 checks); `nhs_modules.sql` adjusted for the new seeds.
+  - Local DB suites pass (cross_tenant, purge, read-only, export, closure, reports 1–5); `reports_phase6` fails as on main.
+  - Board assurance page, nav hiding wired (section tabs, flyout, command palette), Risk appetite list, unit tests.
+  - tsc (app and scripts), vitest (683), lint (0 errors), vite build pass. e2e and advisors not run.
+  - Note: `nhs/0` was merged to `main` (#141) before this run.
+  - Next: NHS-1 part 2 on `nhs/1`.
