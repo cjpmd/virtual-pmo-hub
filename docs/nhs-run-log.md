@@ -30,7 +30,7 @@ Lock: none
 | Package | Status | Branch | PR | Notes |
 |---|---|---|---|---|
 | NHS-0 | done (draft PR, awaiting review) | nhs/0 | [#140](https://github.com/cjpmd/virtual-pmo-hub/pull/140) | Migration `20261122150000_nhs_0_modules` (not applied). Settings › Modules, NHS sign-up choice, governance roles. Nav/report-block hiding helpers exist but nothing is wired yet: NHS-1 wires them with its first module-owned item. |
-| NHS-1 | in progress (part 1 of 2 done) | nhs/1 | [#142](https://github.com/cjpmd/virtual-pmo-hub/pull/142) | Migration `20261122170000_nhs_1_board_assurance` (not applied): strategic risk register (BAF), score history, actions, BAF links; Governance › Board assurance. Part 2: re-scoring tool, NHS report blocks, committee templates, one-click pack, programme assurance ratings. |
+| NHS-1 | in progress (parts 1 and 2 of 3 done) | nhs/1 | [#142](https://github.com/cjpmd/virtual-pmo-hub/pull/142) | Migrations `20261122170000_nhs_1_board_assurance` and `20261122190000_nhs_1b_assurance_blocks` (not applied): BAF register; BAF report blocks; five committee templates. One-click pack reuses the forum "Create pack" button. Part 3: re-scoring tool and register default matrix (D1), programme assurance ratings, assurance-by-programme block. |
 | NHS-2 | not started | | | |
 | NHS-3 | not started | | | |
 | NHS-4 | not started | | | |
@@ -53,6 +53,11 @@ Lock: none
 - **NHS-1 / D2:** `strategic_risks`, `strategic_risk_actions` and `strategic_risk_scores` are organisation-scoped (no `workspace_id`), added to the AGENTS.md exception list pending your approval.
 - **NHS-1 / D3:** strategic risks are closed, never deleted; PMO and admins can delete actions.
 - **NHS-1 / D4:** with the module off, BAF data stays readable; writes and new links are refused.
+- **NHS-1 / D5:** the committee templates are global system rows (like "Funding committee") with the NHS names from the plan. The app hides any template containing a block whose module is off, so they only appear with board assurance on. A non-NHS organisation that switches board assurance on sees the NHS names; it can duplicate and rename them.
+- **NHS-1 / D6:** the committee templates use the `nhs_assurance` rating scheme but set no risk matrix, so project risks in a pack keep the register's matrix (RB-13a). The BAF blocks use the BAF matrix (`settings.assurance.matrixKey`).
+- **NHS-1 / D7:** the BAF blocks are partner-unsafe (added to `private.partner_unsafe_blocks`). `baf_summary` and `baf_above_appetite` show the whole organisation's BAF whatever the report's scope; `baf_linkage` shows only linked risks in scope unless its "in scope only" option is off.
+- **NHS-1 / D8:** no separate pack engine. A forum's "Create pack for <meeting>" already makes a pack from the forum's default template, and Export to PDF prints it. Set the forum's default template to a committee template in its Report settings.
+- **NHS-1 / note:** `nhs/0` and `nhs/1` (part 1) were merged to `main` before their migrations were applied to production. Nothing breaks while modules are off, but apply `20261122150000`, `20261122170000` and `20261122190000` before switching a module on.
 
 ## Run entries
 
@@ -75,3 +80,9 @@ Lock: none
   - tsc (app and scripts), vitest (683), lint (0 errors), vite build pass. e2e and advisors not run.
   - Note: `nhs/0` was merged to `main` (#141) before this run.
   - Next: NHS-1 part 2 on `nhs/1`.
+- **22/11/2026 18:53–19:15 UTC, NHS-1 part 2:** continued on `nhs/1` (PR #142 updated).
+  - Migration `20261122190000_nhs_1b_assurance_blocks` (BAF blocks, partner-unsafe list, five committee templates) and `supabase/tests/assurance_blocks.sql` (25 checks, including a published Trust Board pack).
+  - Local DB suites pass: cross_tenant, purge, read-only (46), export, closure, sample data, nhs_modules (55), board_assurance (40), reports 1–5. `reports_phase6` fails as on main.
+  - Block renderers, module ownership of the blocks, block library and template lists filtered by module, unit tests.
+  - tsc (app and scripts), vitest (693), lint (0 errors), vite build pass. e2e and advisors not run. Types unchanged (no new public objects).
+  - Next: NHS-1 part 3 on `nhs/1`.

@@ -1,8 +1,11 @@
 // Hooks over src/services/reports.ts (report builder).
+import { useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOrgId } from "@/components/auth/organisation-provider";
 import type { BlockInstance } from "@/features/reports/blocks/types";
 import { qk } from "@/services/query-keys";
+import { useSettings } from "@/services/settings";
+import { templateModulesOn } from "@/lib/modules";
 import {
   copyTemplate,
   createReport,
@@ -147,9 +150,20 @@ export function useReportEvents(reportId: string | null | undefined) {
   });
 }
 
+/** Templates whose blocks all belong to modules that are on (NHS-1: committee templates need
+ *  board assurance). Switching a module off hides its templates; switching it on restores them. */
 export function useTemplates() {
   const orgId = useOrgId();
-  return useQuery({ queryKey: qk.reports.templates(orgId), queryFn: () => listTemplates(orgId) });
+  const settings = useSettings();
+  const select = useCallback(
+    (rows: TemplateRecord[]) => rows.filter((t) => templateModulesOn(t.blocks, settings)),
+    [settings],
+  );
+  return useQuery({
+    queryKey: qk.reports.templates(orgId),
+    queryFn: () => listTemplates(orgId),
+    select,
+  });
 }
 
 export function useTemplate(id: string | null | undefined) {

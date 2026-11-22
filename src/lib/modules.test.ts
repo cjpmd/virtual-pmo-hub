@@ -11,6 +11,7 @@ import {
   moduleName,
   moduleTerm,
   modulesSatisfied,
+  templateModulesOn,
   toModuleMap,
 } from "./modules";
 
@@ -72,6 +73,19 @@ describe("isModuleEnabled", () => {
 
   it("leaves report blocks no module owns visible", () => {
     expect(isReportBlockEnabled("health_summary", defaultSettings)).toBe(true);
+  });
+
+  it("hides board assurance blocks, and templates using them, while the module is off", () => {
+    const on = withModules({ assurance: true });
+    for (const key of ["baf_summary", "baf_above_appetite", "baf_linkage"]) {
+      expect(isReportBlockEnabled(key, defaultSettings)).toBe(false);
+      expect(isReportBlockEnabled(key, on)).toBe(true);
+    }
+    const board = [{ blockKey: "report_cover" }, { blockKey: "baf_summary" }];
+    expect(templateModulesOn(board, defaultSettings)).toBe(false);
+    expect(templateModulesOn(board, on)).toBe(true);
+    expect(templateModulesOn([{ blockKey: "report_cover" }], defaultSettings)).toBe(true);
+    expect(templateModulesOn([], defaultSettings)).toBe(true);
   });
 });
 
