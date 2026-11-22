@@ -16,6 +16,7 @@ import {
   Languages,
   LayoutList,
   Plug,
+  Puzzle,
   ShieldAlert,
   UserPlus,
   UserRound,
@@ -50,6 +51,12 @@ export const settingsSections: SettingsSectionDefinition[] = [
     label: "Workspaces",
     icon: Boxes,
     blurb: "Workspaces, their members and workspace roles.",
+  },
+  {
+    id: "modules",
+    label: "Modules",
+    icon: Puzzle,
+    blurb: "Switch modules on or off, apply a sector pack and assign governance roles.",
   },
   {
     id: "regional",

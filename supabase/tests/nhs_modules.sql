@@ -93,10 +93,11 @@ insert into public.organisation_members (organisation_id, profile_id, role) valu
 insert into public.workspace_members (workspace_id, organisation_id, profile_id, role) values
   (pg_temp.c('ws'), pg_temp.c('org'), pg_temp.c('contrib'), 'contributor')
 on conflict do nothing;
--- The admin had already renamed the organisation unit; a pack must keep it.
+-- The admin had already renamed the organisation unit (a pack must keep it) and left one term blank
+-- (a pack fills it).
 update public.organisations set settings = jsonb_set(settings, '{terminology}',
   coalesce(settings -> 'terminology', '{}') || jsonb_build_object('terms',
-    coalesce(settings -> 'terminology' -> 'terms', '{}') || '{"orgUnit": "Department"}'))
+    coalesce(settings -> 'terminology' -> 'terms', '{}') || '{"orgUnit": "Department", "efficiency.scheme": " "}'))
 where id = pg_temp.c('org');
 insert into snap values ('records', pg_temp.records());
 
@@ -166,6 +167,7 @@ select pg_temp.ok('NHS roles added beside the general ones', pg_temp.roles() = 1
 select pg_temp.ok('an edited role label is kept', exists (select 1 from public.lookup_values where organisation_id = pg_temp.c('org')
   and list_key = 'governance_role' and value = 'head_of_pmo' and label = 'Our PMO lead'));
 select pg_temp.ok('customised term kept', pg_temp.settings() -> 'terminology' -> 'terms' ->> 'orgUnit' = 'Department');
+select pg_temp.ok('a blank term is filled', pg_temp.settings() -> 'terminology' -> 'terms' ->> 'efficiency.scheme' = 'CIP scheme');
 select pg_temp.ok('missing terms filled', pg_temp.settings() -> 'terminology' -> 'terms' ->> 'impactAssessment.name' = 'QIA / EqIA');
 select pg_temp.ok('existing records, lists and financial year unchanged', pg_temp.records() = (select v from snap where k = 'records'));
 select pg_temp.ok('pack audited', pg_temp.events() = 2);

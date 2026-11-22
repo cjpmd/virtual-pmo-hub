@@ -26,6 +26,8 @@ import type { Database, Json } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { defaultRoles } from "@/data/settings-data";
 import { toSector } from "@/data/sectors";
+import { toSectorPack } from "@/data/sector-packs";
+import { toModuleMap } from "@/lib/modules";
 import { fromIsoDate, toIsoDate } from "@/lib/format";
 import { tierLabel } from "./labels";
 import { fromStorageUpload, unwrap, unwrapMaybe } from "./service-error";
@@ -69,6 +71,7 @@ export const LIST_KEYS = {
   changeTypes: "change_type",
   costCategories: "cost_category",
   fundingSources: "funding_source",
+  governanceRoles: "governance_role",
 } as const;
 type ListName = keyof typeof LIST_KEYS;
 
@@ -224,6 +227,12 @@ export async function loadOrgSettings(orgId: string, userId: string): Promise<Or
     ...lists,
     issueSeverities: ["Low", "Medium", "High"],
     dependencyTypes: ["Sequencing", "Alignment", "Information", "Resource", "External"],
+  };
+  // NHS-0: written only through set_organisation_module / apply_sector_pack (services/modules.ts),
+  // so saveJsonb leaves these keys as stored.
+  settings.modules = {
+    enabled: toModuleMap(stored["modules"]),
+    pack: toSectorPack(stored["pack"]),
   };
 
   const benefits = isObject(stored["benefits"]) ? stored["benefits"] : {};

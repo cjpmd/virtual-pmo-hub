@@ -15,8 +15,8 @@
 --   year, neutral public-sector lists) with pack nhs. See "Decisions for Chris" in
 --   docs/nhs-run-log.md for why NHS isn't a fourth sector value.
 -- - Terminology for module concepts lives in the existing settings.terminology.terms map under
---   dotted keys (efficiency.scheme, impactAssessment.name, orgUnit …). Applying a pack only adds
---   keys the organisation doesn't have; it never overwrites one.
+--   dotted keys (efficiency.scheme, impactAssessment.name, orgUnit …). Applying a pack only fills
+--   keys the organisation hasn't set (missing or blank); it never overwrites one.
 -- - private.seed_module_defaults(org, module, pack, apply) is the idempotent per-module seeder
 --   later packages extend. NHS-0 seeds the 'core' defaults: the governance roles list.
 -- - Governance roles: lookup_values list 'governance_role' (editable like any list) and
@@ -243,7 +243,7 @@ begin
 
   v_terms := coalesce(v_settings -> 'terminology' -> 'terms', '{}'::jsonb);
   for k in select jsonb_object_keys(v_pack_terms) loop
-    if v_terms ? k then v_kept := v_kept || k;
+    if coalesce(btrim(v_terms ->> k), '') <> '' then v_kept := v_kept || k;
     else v_add_terms := v_add_terms || jsonb_build_object(k, v_pack_terms -> k); end if;
   end loop;
 

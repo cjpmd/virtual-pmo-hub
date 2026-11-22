@@ -1,4 +1,6 @@
 import type { Sector } from "./sectors";
+import type { SectorPack } from "./sector-packs";
+import type { ModuleKey } from "@/lib/modules";
 import type {
   BenefitCategory,
   BenefitClassification,
@@ -156,6 +158,8 @@ export interface ListSettings {
   changeTypes: string[];
   costCategories: string[];
   fundingSources: string[];
+  /** NHS-0: lookup list governance_role (who can sign off module approval steps). */
+  governanceRoles: string[];
 }
 
 // ---- 9. Users, roles & permissions ----
@@ -246,6 +250,14 @@ export interface SubscriptionSettings {
   hasBillingAccount: boolean;
 }
 
+// ---- Modules and sector packs (NHS-0) ----
+export interface ModuleSettings {
+  /** organisations.settings.modules: unknown keys ignored, missing = off (lib/modules.ts). */
+  enabled: Partial<Record<ModuleKey, boolean>>;
+  /** organisations.settings.pack. */
+  pack: SectorPack;
+}
+
 export interface AppSettings {
   organisation: OrganisationSettings;
   regional: RegionalSettings;
@@ -262,5 +274,7 @@ export interface AppSettings {
   data: DataSettings;
   subscription: SubscriptionSettings;
   lifecycle: { phases: LifecyclePhase[]; tiers: TierDefinition[] };
+  /** Changed only through set_organisation_module / apply_sector_pack (services/modules.ts). */
+  modules: ModuleSettings;
   currentUserId: string;
 }

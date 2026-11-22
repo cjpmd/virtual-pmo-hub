@@ -416,6 +416,7 @@ export const defaultSettings: AppSettings = {
     changeTypes: ["Scope", "Schedule", "Cost"],
     costCategories: ["Staff", "Contractors", "Licences", "Hardware", "Other"],
     fundingSources: [],
+    governanceRoles: [],
   },
   // Filled from organisation_members when the organisation loads.
   users: [],
@@ -535,5 +536,6 @@ export const defaultSettings: AppSettings = {
     hasBillingAccount: false,
   },
   lifecycle: { phases: defaultLifecyclePhases, tiers: defaultTierDefinitions },
+  modules: { enabled: {}, pack: "general" },
   currentUserId: "",
 };
