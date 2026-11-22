@@ -417,6 +417,7 @@ export const defaultSettings: AppSettings = {
     costCategories: ["Staff", "Contractors", "Licences", "Hardware", "Other"],
     fundingSources: [],
     governanceRoles: [],
+    riskAppetite: [],
   },
   // Filled from organisation_members when the organisation loads.
   users: [],

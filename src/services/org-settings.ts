@@ -72,6 +72,7 @@ export const LIST_KEYS = {
   costCategories: "cost_category",
   fundingSources: "funding_source",
   governanceRoles: "governance_role",
+  riskAppetite: "risk_appetite",
 } as const;
 type ListName = keyof typeof LIST_KEYS;
 

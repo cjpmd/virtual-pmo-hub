@@ -160,6 +160,8 @@ export interface ListSettings {
   fundingSources: string[];
   /** NHS-0: lookup list governance_role (who can sign off module approval steps). */
   governanceRoles: string[];
+  /** NHS-1: lookup list risk_appetite (strategic risk appetite levels). */
+  riskAppetite: string[];
 }
 
 // ---- 9. Users, roles & permissions ----

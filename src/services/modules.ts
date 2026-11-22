@@ -48,7 +48,8 @@ export function parsePackPlan(value: unknown): PackPlan {
     seeded: (Array.isArray(row["seeded"]) ? row["seeded"] : []).map((item) => {
       const seed = asObject(item);
       return {
-        list: String(seed["list"] ?? ""),
+        // A list value ({list, value, label}) or a setting ({setting, value, label}, NHS-1).
+        list: String(seed["list"] ?? seed["setting"] ?? ""),
         value: String(seed["value"] ?? ""),
         label: String(seed["label"] ?? ""),
       };

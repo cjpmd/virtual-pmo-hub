@@ -78,7 +78,7 @@ create function pg_temp.records() returns text language sql stable security defi
     (select string_agg(to_jsonb(b)::text, ',' order by b.id) from public.benefits b where b.organisation_id = pg_temp.c('org')),
     (select string_agg(to_jsonb(f)::text, ',' order by f.id) from public.financial_values f where f.organisation_id = pg_temp.c('org')),
     (select string_agg(l.list_key || ':' || l.value || ':' || l.label, ',' order by l.list_key, l.value)
-       from public.lookup_values l where l.organisation_id = pg_temp.c('org') and l.list_key <> 'governance_role'),
+       from public.lookup_values l where l.organisation_id = pg_temp.c('org') and l.list_key not in ('governance_role', 'risk_appetite')),
     (select settings -> 'regional' from public.organisations where id = pg_temp.c('org')))) $$;
 
 -- An existing public-sector organisation with sample data (projects, risks, benefits).
@@ -153,7 +153,8 @@ select pg_temp.ok('preview keeps a customised term',
   and not ((select v::jsonb from snap where k = 'preview') -> 'terms_added' ? 'orgUnit')
   and (select v::jsonb from snap where k = 'preview') -> 'terms_added' ->> 'efficiency.scheme' = 'CIP scheme');
 select pg_temp.ok('preview lists the seven NHS roles still missing',
-  jsonb_array_length((select v::jsonb from snap where k = 'preview') -> 'seeded') = 7);
+  jsonb_array_length(jsonb_path_query_array((select v::jsonb from snap where k = 'preview') -> 'seeded',
+    '$[*] ? (@.list == "governance_role")')) = 7);
 select pg_temp.ok('preview reports the financial year and the April suggestion',
   ((select v::jsonb from snap where k = 'preview') ->> 'financial_year_start_month')::int = 4
   and ((select v::jsonb from snap where k = 'preview') ->> 'suggested_financial_year_start_month')::int = 4);

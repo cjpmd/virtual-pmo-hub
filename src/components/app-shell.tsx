@@ -54,6 +54,7 @@ import { signOut } from "@/services/auth";
 import { errorMessage } from "@/services/service-error";
 import { toast } from "sonner";
 import { allPages, findSection, sections, settingsSection } from "@/lib/navigation";
+import { isPathEnabled } from "@/lib/modules";
 import { cn } from "@/lib/utils";
 import { useJoinRequests } from "@/hooks/use-members";
 import { openIssueTask } from "@/components/issue-task-sheet";
@@ -239,7 +240,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (!text) return [];
     return [
       ...allPages
-        .filter((page) => page.label.toLowerCase().includes(text))
+        .filter(
+          (page) => page.label.toLowerCase().includes(text) && isPathEnabled(page.to, settings),
+        )
         .map((page) => ({
           id: page.to,
           label: page.label,
@@ -395,17 +398,19 @@ export function AppShell({ children }: { children: ReactNode }) {
                           <p className="px-2 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-wide text-pmo-muted">
                             {section.label}
                           </p>
-                          {section.pages.map((page) => (
-                            <Link
-                              key={page.to}
-                              to={page.to}
-                              onClick={() => setFlyout(null)}
-                              className="flex h-9 items-center gap-2.5 rounded px-2 text-sm text-pmo-muted hover:bg-pmo-panel-2 hover:text-pmo-text"
-                            >
-                              <page.icon className="size-4" />
-                              {page.label}
-                            </Link>
-                          ))}
+                          {section.pages
+                            .filter((page) => isPathEnabled(page.to, settings))
+                            .map((page) => (
+                              <Link
+                                key={page.to}
+                                to={page.to}
+                                onClick={() => setFlyout(null)}
+                                className="flex h-9 items-center gap-2.5 rounded px-2 text-sm text-pmo-muted hover:bg-pmo-panel-2 hover:text-pmo-text"
+                              >
+                                <page.icon className="size-4" />
+                                {page.label}
+                              </Link>
+                            ))}
                         </div>
                       )}
                     </div>
