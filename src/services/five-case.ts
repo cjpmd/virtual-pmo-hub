@@ -57,7 +57,13 @@ export type TemplateSetKey = keyof typeof TEMPLATE_SETS | (string & {});
 export const templateSetLabel = (key: string) =>
   (TEMPLATE_SETS as Record<string, string>)[key] ?? key;
 
-export const CASE_GROUPS = ["strategic", "economic", "commercial", "financial", "management"] as const;
+export const CASE_GROUPS = [
+  "strategic",
+  "economic",
+  "commercial",
+  "financial",
+  "management",
+] as const;
 export type CaseGroup = (typeof CASE_GROUPS)[number];
 export const caseGroupLabel: Record<CaseGroup, string> = {
   strategic: "Strategic case",

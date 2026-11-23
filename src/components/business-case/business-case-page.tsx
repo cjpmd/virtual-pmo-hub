@@ -2,7 +2,9 @@
 // version, Markdown sections with guidance (read-only once submitted), options with the
 // preferred radio, the benefits that will go to the register, and the documents panel.
 // Approve / reject and the hand-off actions arrive in F5.
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+// NHS-5 (module five_case): template set and stage on creation, SOC → OBC → FBC, sections grouped
+// by case, objectives, long and short lists, the appraisal aid and the approval route.
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   CheckCircle2,
   Circle,
@@ -16,6 +18,12 @@ import {
 } from "lucide-react";
 import { useUser } from "@/components/auth/session-provider";
 import { DocumentsPanel } from "@/components/business-case/documents-panel";
+import {
+  AppraisalAidPanel,
+  ApprovalRoutePanel,
+  ObjectivesPanel,
+  StagePill,
+} from "@/components/business-case/five-case-panels";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -38,6 +46,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useBenefitCategories, useBusinessCase, useCaseAction } from "@/hooks/use-business-case";
 import { useFormat } from "@/lib/format";
+import { useModule } from "@/lib/modules";
 import { Markdown } from "@/lib/markdown";
 import { cn } from "@/lib/utils";
 import {
@@ -64,6 +73,15 @@ import {
   type CaseVersion,
   type OptionInput,
 } from "@/services/business-cases";
+import {
+  TEMPLATE_SETS,
+  allowedNextStages,
+  caseGroupLabel,
+  stageLabel,
+  stageShort,
+  startStage,
+  type CaseStage,
+} from "@/services/five-case";
 
 const statusStyle: Record<BusinessCaseStatus, { icon: ReactNode; className: string }> = {
   draft: { icon: <Circle className="size-3" />, className: "border-pmo-line text-pmo-muted" },
@@ -138,10 +156,19 @@ export function BusinessCasePage({
   const user = useUser();
   const query = useBusinessCase(owner);
   const [versionId, setVersionId] = useState<string>("");
+  const fiveCase = useModule("five_case");
+  const [templateSet, setTemplateSet] = useState<string>("five_case");
+  const [firstStage, setFirstStage] = useState<CaseStage>("single");
   const create = useCaseAction(
     owner,
-    () => createBusinessCase(owner, defaultTitle),
+    () =>
+      createBusinessCase(owner, defaultTitle, fiveCase ? { templateSet, stage: firstStage } : {}),
     "Business case started",
+  );
+  const nextStage = useCaseAction(
+    owner,
+    (args: { caseId: string; stage: CaseStage }) => startStage(args.caseId, args.stage),
+    "New stage started",
   );
   const start = useCaseAction(owner, (id: string) => startVersion(id), "New draft version started");
   const submit = useCaseAction(owner, (id: string) => submitVersion(id), "Business case submitted");
@@ -166,6 +193,40 @@ export function BusinessCasePage({
           Starting one creates version 1 with the organisation's Five Case Model sections
           {"requestId" in owner ? " and this request's draft benefits" : ""}.
         </p>
+        {canEdit && fiveCase && (
+          <div className="mx-auto mt-4 flex max-w-md flex-wrap justify-center gap-3 text-left">
+            <label className="grid gap-1 text-[11px] text-pmo-muted">
+              Template
+              <Select value={templateSet} onValueChange={setTemplateSet}>
+                <SelectTrigger className="h-8 w-[180px]" aria-label="Template">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(TEMPLATE_SETS).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
+            <label className="grid gap-1 text-[11px] text-pmo-muted">
+              First stage
+              <Select value={firstStage} onValueChange={(v) => setFirstStage(v as CaseStage)}>
+                <SelectTrigger className="h-8 w-[200px]" aria-label="First stage">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(["single", "soc", "obc", "fbc"] as CaseStage[]).map((stage) => (
+                    <SelectItem key={stage} value={stage}>
+                      {stageLabel[stage]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
+          </div>
+        )}
         {canEdit && (
           <Button
             className="mt-4"
@@ -186,6 +247,19 @@ export function BusinessCasePage({
   const awaiting = versions.some((v) => v.status === "submitted");
   const preferred = version.options.find((o) => o.isPreferred);
   const benefitTotal = version.benefits.reduce((sum, b) => sum + b.annualValue * b.yearsCounted, 0);
+  // NHS-5: Five Case Model features show while the module is on, or when the case already uses them.
+  const staged = versions.some((v) => v.stage !== "single");
+  const showFiveCase = fiveCase || staged || version.objectives.length > 0;
+  const approvedStages = versions
+    .filter((v) => v.status === "approved" || v.status === "superseded")
+    .map((v) => v.stage);
+  // After an approved stage, offer the next one (the database enforces the same rule).
+  const nextStages = approvedStages.some((stage) => stage !== "single")
+    ? allowedNextStages(approvedStages).filter(
+        (stage) => stage !== "single" && !approvedStages.includes(stage),
+      )
+    : [];
+  const grouped = version.sections.some((section) => section.caseGroup);
 
   return (
     <div className="space-y-5">
@@ -198,12 +272,14 @@ export function BusinessCasePage({
             <SelectContent>
               {versions.map((v) => (
                 <SelectItem key={v.id} value={v.id}>
-                  v{v.version} · {businessCaseStatusLabel[v.status]} ·{" "}
-                  {format.date(v.submittedAt ?? v.createdAt)}
+                  v{v.version}
+                  {v.stage !== "single" ? ` · ${stageShort[v.stage]}` : ""} ·{" "}
+                  {businessCaseStatusLabel[v.status]} · {format.date(v.submittedAt ?? v.createdAt)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+          {showFiveCase && <StagePill stage={version.stage} />}
           <StatusPill status={version.status} />
           <span className="text-[11px] text-pmo-muted">
             {version.submittedAt
@@ -236,6 +312,19 @@ export function BusinessCasePage({
                 Start a new version
               </Button>
             )}
+            {fiveCase &&
+              !hasDraft &&
+              nextStages.map((stage) => (
+                <Button
+                  key={stage}
+                  size="sm"
+                  disabled={nextStage.isPending || awaiting}
+                  onClick={() => nextStage.mutate({ caseId: businessCase.id, stage })}
+                >
+                  <FilePlus2 />
+                  Start the {stageShort[stage]}
+                </Button>
+              ))}
           </div>
         )}
       </section>
@@ -288,13 +377,37 @@ export function BusinessCasePage({
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0 space-y-5">
-          {version.sections.map((section) => (
-            <SectionCard key={section.id} owner={owner} section={section} editable={editable} />
+          {version.sections.map((section, index) => (
+            <Fragment key={section.id}>
+              {grouped &&
+                section.caseGroup &&
+                section.caseGroup !== version.sections[index - 1]?.caseGroup && (
+                  <h2 className="pt-2 text-xs font-semibold uppercase tracking-[0.06em] text-pmo-muted">
+                    {caseGroupLabel[section.caseGroup]}
+                  </h2>
+                )}
+              <SectionCard owner={owner} section={section} editable={editable} />
+              {showFiveCase && section.key === "fc_case_for_change" && (
+                <ObjectivesPanel owner={owner} version={version} editable={editable && fiveCase} />
+              )}
+            </Fragment>
           ))}
-          <OptionsTable owner={owner} version={version} editable={editable} />
+          {showFiveCase && !version.sections.some((s) => s.key === "fc_case_for_change") && (
+            <ObjectivesPanel owner={owner} version={version} editable={editable && fiveCase} />
+          )}
+          <OptionsTable
+            owner={owner}
+            version={version}
+            editable={editable}
+            fiveCase={showFiveCase}
+          />
+          {showFiveCase && (
+            <AppraisalAidPanel owner={owner} version={version} editable={editable && fiveCase} />
+          )}
           <BenefitsTable owner={owner} version={version} editable={editable} />
         </div>
         <div className="space-y-5">
+          <ApprovalRoutePanel owner={owner} version={version} />
           <DocumentsPanel
             owner={owner}
             businessCaseId={businessCase.id}
@@ -313,7 +426,14 @@ export function BusinessCasePage({
                       v.id === version.id && "bg-pmo-panel-2/60",
                     )}
                   >
-                    <span className="pmo-num text-sm text-pmo-text">v{v.version}</span>
+                    <span className="pmo-num text-sm text-pmo-text">
+                      v{v.version}
+                      {v.stage !== "single" && (
+                        <span className="ml-1 text-[11px] text-pmo-muted">
+                          {stageShort[v.stage]}
+                        </span>
+                      )}
+                    </span>
                     <span className="flex-1 text-[11px] text-pmo-muted">
                       {format.date(v.submittedAt ?? v.createdAt)}
                       {v.submittedBy ? ` · ${v.submittedBy}` : ""}
@@ -411,10 +531,12 @@ function OptionsTable({
   owner,
   version,
   editable,
+  fiveCase = false,
 }: {
   owner: CaseOwner;
   version: CaseVersion;
   editable: boolean;
+  fiveCase?: boolean;
 }) {
   const format = useFormat();
   const [editing, setEditing] = useState<CaseOption | "new" | null>(null);
@@ -430,7 +552,11 @@ function OptionsTable({
   return (
     <Panel
       title="Options"
-      subtitle="Exactly one preferred option, with whole-life and delivery costs, is needed to submit"
+      subtitle={
+        fiveCase
+          ? "Long list and short list. Exactly one short-listed preferred option, with whole-life and delivery costs, is needed to submit"
+          : "Exactly one preferred option, with whole-life and delivery costs, is needed to submit"
+      }
       actions={
         editable && (
           <Button size="sm" variant="outline" onClick={() => setEditing("new")}>
@@ -461,7 +587,7 @@ function OptionsTable({
                     type="radio"
                     name={`preferred-${version.id}`}
                     checked={option.isPreferred}
-                    disabled={!editable || prefer.isPending}
+                    disabled={!editable || prefer.isPending || option.listStage === "long"}
                     onChange={() => prefer.mutate(option)}
                     aria-label={`Prefer ${option.name}`}
                     className="accent-[var(--color-pmo-accent)]"
@@ -471,9 +597,19 @@ function OptionsTable({
                   )}
                 </td>
                 <td className="px-2 py-2.5">
-                  <p className="font-medium text-pmo-text">{option.name}</p>
+                  <p className="font-medium text-pmo-text">
+                    {option.name}
+                    {fiveCase && (
+                      <span className="ml-1.5 rounded-full border border-pmo-line px-1.5 py-px text-[10px] font-normal text-pmo-muted">
+                        {option.listStage === "long" ? "Long list" : "Short list"}
+                      </span>
+                    )}
+                  </p>
                   {option.description && (
                     <p className="text-xs text-pmo-muted">{option.description}</p>
+                  )}
+                  {fiveCase && option.shortlistNote && (
+                    <p className="text-xs italic text-pmo-muted">{option.shortlistNote}</p>
                   )}
                 </td>
                 <td className="pmo-num px-2 py-2.5 text-right">
@@ -524,7 +660,9 @@ function OptionsTable({
         <OptionDialog
           initial={
             editing === "new"
-              ? emptyOption
+              ? fiveCase
+                ? { ...emptyOption, listStage: "short", shortlistNote: "", optimismBiasPct: null }
+                : emptyOption
               : {
                   name: editing.name,
                   description: editing.description ?? "",
@@ -532,8 +670,14 @@ function OptionsTable({
                   deliveryCost: editing.deliveryCost,
                   benefitsSummary: editing.benefitsSummary ?? "",
                   riskSummary: editing.riskSummary ?? "",
+                  ...(fiveCase && {
+                    listStage: editing.listStage,
+                    shortlistNote: editing.shortlistNote ?? "",
+                    optimismBiasPct: editing.optimismBiasPct,
+                  }),
                 }
           }
+          fiveCase={fiveCase}
           isNew={editing === "new"}
           onClose={() => setEditing(null)}
           onSave={(input) => save.mutate(input, { onSuccess: () => setEditing(null) })}
@@ -547,12 +691,14 @@ function OptionsTable({
 function OptionDialog({
   initial,
   isNew,
+  fiveCase = false,
   onClose,
   onSave,
   saving,
 }: {
   initial: OptionInput;
   isNew: boolean;
+  fiveCase?: boolean;
   onClose: () => void;
   onSave: (input: OptionInput) => void;
   saving: boolean;
@@ -560,6 +706,7 @@ function OptionDialog({
   const [form, setForm] = useState(initial);
   const [whole, setWhole] = useState(initial.wholeLifeCost?.toString() ?? "");
   const [delivery, setDelivery] = useState(initial.deliveryCost?.toString() ?? "");
+  const [bias, setBias] = useState(initial.optimismBiasPct?.toString() ?? "");
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
@@ -610,6 +757,44 @@ function OptionDialog({
               onChange={(e) => setForm({ ...form, riskSummary: e.target.value })}
             />
           </Field>
+          {fiveCase && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="List">
+                  <Select
+                    value={form.listStage ?? "short"}
+                    onValueChange={(value) =>
+                      setForm({ ...form, listStage: value as "long" | "short" })
+                    }
+                  >
+                    <SelectTrigger aria-label="List">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="short">Short list</SelectItem>
+                      <SelectItem value="long">Long list (discounted)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Optimism bias (%)">
+                  <Input
+                    inputMode="decimal"
+                    className="pmo-num text-right"
+                    value={bias}
+                    placeholder="—"
+                    onChange={(e) => setBias(e.target.value)}
+                  />
+                </Field>
+              </div>
+              <Field label="Why it was short-listed or discounted">
+                <Textarea
+                  rows={2}
+                  value={form.shortlistNote ?? ""}
+                  onChange={(e) => setForm({ ...form, shortlistNote: e.target.value })}
+                />
+              </Field>
+            </>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
@@ -622,6 +807,7 @@ function OptionDialog({
                 ...form,
                 wholeLifeCost: moneyInput(whole),
                 deliveryCost: moneyInput(delivery),
+                ...(fiveCase && { optimismBiasPct: moneyInput(bias) }),
               })
             }
           >

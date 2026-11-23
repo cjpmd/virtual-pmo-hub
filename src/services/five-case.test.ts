@@ -46,13 +46,18 @@ describe("appraiseOption", () => {
   });
 
   it("ignores years outside the appraisal period", () => {
-    const r = appraiseOption([year(0, 10), year(5, 1000)], { discountRatePct: 0, appraisalYears: 3 });
+    const r = appraiseOption([year(0, 10), year(5, 1000)], {
+      discountRatePct: 0,
+      appraisalYears: 3,
+    });
     expect(r.pvCost).toBe(10);
     expect(r.years).toBe(3);
   });
 
   it("has no ratio without costs", () => {
-    expect(appraiseOption([year(1, 0, 0, 10)], { discountRatePct: 3.5, appraisalYears: 5 }).bcr).toBeNull();
+    expect(
+      appraiseOption([year(1, 0, 0, 10)], { discountRatePct: 3.5, appraisalYears: 5 }).bcr,
+    ).toBeNull();
   });
 });
 
