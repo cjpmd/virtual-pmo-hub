@@ -512,6 +512,9 @@ insert into ct_cases (fn, call, expect, note) values
   ('set_report_inclusion(uuid,uuid,text)', $c$select public.set_report_inclusion('{a_report}', '{a_project}', 'pinned')$c$, 'empty', null),
   ('start_business_case_version(uuid)', $c$select public.start_business_case_version('{a_business_case}')$c$, 'empty', null),
   ('submit_business_case(uuid)', $c$select public.submit_business_case('{a_bc_version}')$c$, 'empty', null),
+  -- NHS-5: B's admin can't start a stage of A's case or set A's approval routes.
+  ('start_business_case_stage(uuid,text)', $c$select public.start_business_case_stage('{a_business_case}', 'obc')$c$, 'empty', null),
+  ('set_business_case_approval_routes(uuid,jsonb)', $c$select public.set_business_case_approval_routes('{a_org}', '{}')$c$, 'empty', null),
   ('submit_report(uuid)', $c$select public.submit_report('{a_report}')$c$, 'empty', null),
   ('submit_status_report(uuid,jsonb,uuid[],uuid,timestamp with time zone)', $c$select public.submit_status_report('{a_project}', '{"summary":"GL10"}', null, null, null)$c$, 'empty', null),
   ('supersede_decision(uuid,date,timestamp with time zone)', $c$select public.supersede_decision('{a_decision}', current_date + 30, null)$c$, 'empty', null),
