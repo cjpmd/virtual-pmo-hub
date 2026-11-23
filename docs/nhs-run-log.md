@@ -23,7 +23,7 @@ Each run reads this file on the newest package branch, does the next piece of wo
 
 - Lock: set `Lock:` below to the run's start time (UTC) and push before starting work; clear it when done. A run that finds a lock newer than 3 hours exits without changes.
 
-Lock: 2026-11-23T22:13Z
+Lock: none
 
 ## Status
 
@@ -33,7 +33,7 @@ Lock: 2026-11-23T22:13Z
 | NHS-1 | done (draft PR, awaiting review) | nhs/1 | [#142](https://github.com/cjpmd/virtual-pmo-hub/pull/142) | Migrations `20261122170000_nhs_1_board_assurance`, `20261122190000_nhs_1b_assurance_blocks`, `20261122210000_nhs_1c_programme_assurance` and `20261123090000_nhs_1d_register_matrix` (not applied): BAF register; BAF report blocks; five committee templates; programme assurance ratings and the "Assurance by programme" block; register matrix and risk re-scoring tool. One-click pack reuses the forum "Create pack" button. |
 | NHS-2 | done (draft PR, awaiting review) | nhs/2 | [#146](https://github.com/cjpmd/virtual-pmo-hub/pull/146) | Migration `20261123100000_nhs_2_benefit_categories` (not applied): NHS categories, measure units and default classifications seeded by the module; notional value per unit; cash / non-cash split on every benefit total; `benefits_by_category` block. |
 | NHS-3 | done (draft PR, awaiting review) | nhs/3 | [#148](https://github.com/cjpmd/virtual-pmo-hub/pull/148) | Migrations `20261123140000_nhs_3_impact_assessments` and `20261123160000_nhs_3b_assessment_notifications_blocks` (not applied; run section 0 of `docs/sql/nhs-3b-assessment-notifications-blocks.sql` by hand before the second, then redeploy `send-notification-email`). Assessments, sign-off, delivery gate, screens, approver notifications, three report blocks. |
-| NHS-4 | in progress (part 4 of ~5) | nhs/4 | [#149](https://github.com/cjpmd/virtual-pmo-hub/pull/149) | Migrations `20261123190000_nhs_4_efficiency`, `20261123200000_nhs_4b_efficiency_summary` and `20261123220000_nhs_4c_efficiency_blocks` (not applied): schemes, monthly values, targets, stage rules, finance validation, scheme impact assessments, year summary, four report blocks and two templates. Screens: Portfolio › Efficiency (pipeline, list, dashboard, targets) and the scheme page. Next: CSV / XLSX import of schemes and monthly values. |
+| NHS-4 | done (draft PR, awaiting review) | nhs/4 | [#149](https://github.com/cjpmd/virtual-pmo-hub/pull/149) | Migrations `20261123190000_nhs_4_efficiency`, `20261123200000_nhs_4b_efficiency_summary` and `20261123220000_nhs_4c_efficiency_blocks` (not applied): schemes, monthly values, targets, stage rules, finance validation, scheme impact assessments, year summary, four report blocks and two templates. Screens: Portfolio › Efficiency (pipeline, list, dashboard, targets, CSV / XLSX import) and the scheme page; linked schemes on the benefit page. |
 | NHS-5 | lane B (see docs/nhs-run-log-b.md) | nhs-b/5 | | |
 | NHS-6 | not started | | | |
 | NHS-7 | lane B (see docs/nhs-run-log-b.md) | nhs-b/7 | | |
@@ -102,6 +102,10 @@ Lock: 2026-11-23T22:13Z
 - **NHS-4 / D11:** a scheme's organisational unit is stored as the list label (as the part 2 targets are), its category as the `efficiency_category` lookup value (shown by label). Renaming a unit in Settings › Lists leaves existing schemes and targets on the old label.
 - **NHS-4 / D12:** stage moves on the board are back / forward buttons and a "Move to" menu (no drag and drop), shown to workspace managers and above; before each move the app asks `efficiency_stage_check` and says what's missing instead of failing. The board shows rejected and delivered schemes (rejected totals marked "not counted"); the list hides them unless "Show delivered and rejected" is ticked.
 - **NHS-1 / note:** `nhs/0` and `nhs/1` (part 1) were merged to `main` before their migrations were applied to production. Nothing breaks while modules are off, but apply `20261122150000`, `20261122170000` and `20261122190000` before switching a module on.
+- **NHS-4 / D15 (import, part 5):** no database change. The import (Portfolio › Efficiency › Import, workspace managers and above) takes CSV or .xlsx (first worksheet; read in the browser with JSZip, now a direct dependency). New schemes only, into one workspace chosen in the panel; existing schemes are never changed and a Ref matching one is refused. Unknown units and categories are errors (add them in Settings › Lists first); unknown or ambiguous people are left blank with a warning.
+- **NHS-4 / D16:** imported schemes start no later than Plan in progress (a later stage comes in there with a warning), because Fully developed needs planned values and In delivery needs finance validation and an approved assessment, which a file can't give. Move them on from the board after importing their values. Say if you'd prefer an import RPC that adds values and stages in one go.
+- **NHS-4 / D17:** monthly values import adds values only: a month and kind that already has a value is refused for that row (change it on the phasing grid, which keeps the optimistic-concurrency check). Rows are long (scheme, kind, month, recurrent, non-recurrent or amount) or wide (a column per month, "Apr-26" or "Plan Apr-26", or bare "Apr" with the financial year chosen). A single amount goes to recurrent unless the scheme is non-recurrent (choosable). Schemes are found by ref, else by exact title. Imported actuals arrive unvalidated.
+- **NHS-4 / D18 (plan item 10, double counting):** a scheme's savings count once, in the efficiency programme. A benefit linked to schemes shows them (this year's planned, forecast and actual) on its page, but they are never added to the benefit's measured realisation or to any benefit total; no screen or block adds efficiency and benefit figures together.
 
 ## Run entries
 
@@ -190,3 +194,8 @@ Lock: 2026-11-23T22:13Z
   - Block renderers `catalogue/efficiency.tsx` (module-owned in `lib/modules.ts`) with a fixture captured locally and `efficiency.test.tsx`; Dashboard tab (`components/efficiency/efficiency-dashboard.tsx`: tiles with gap to target, cumulative chart, by unit and category, pipeline by stage, schemes off track); `cumulativePoints` / `recurrentShare` with tests; `getSchemesAtRisk`. Types unchanged (no new public objects).
   - tsc (app and scripts), vitest (804), lint (0 errors), vite build pass. e2e and advisors not run.
   - Next: NHS-4 part 5 (CSV / XLSX import of schemes and monthly values, then polish) on `nhs/4`.
+- **23/11/2026 22:13–22:40 UTC, NHS-4 part 5 (package done):** continued on `nhs/4` (PR #149 updated). No database change.
+  - CSV / XLSX import (`services/efficiency-import.ts`, `lib/xlsx-read.ts`, `components/efficiency/efficiency-import.tsx`, Import button on Portfolio › Efficiency): new schemes, and monthly values in long or wide layout; one insert per import (all or none). `jszip` added as a direct dependency (it was already installed through pptxgenjs), loaded on demand.
+  - Linked schemes on the benefit page (`components/efficiency/benefit-schemes.tsx`), with the no-double-counting rule (D18).
+  - Unit tests: `efficiency-import.test.ts` (26), `xlsx-read.test.ts` (6). tsc (app and scripts), vitest (836), lint (0 errors), vite build pass. DB suites not re-run (no SQL change since part 4). e2e and advisors not run. Tracker updated.
+  - Next: NHS-6 on `nhs/6` (from `nhs/4`); NHS-5 and NHS-7 are lane B's.
