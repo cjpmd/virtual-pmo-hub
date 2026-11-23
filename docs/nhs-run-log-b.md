@@ -11,7 +11,7 @@ Lane B builds **NHS-5 (Five Case Model business cases)** and **NHS-7 (cross-orga
 - Migration file names use the real current UTC timestamp, as usual.
 - Lock: set `Lock:` below to the run's start time (UTC) and push before starting work; clear it when done. A run that finds a lock newer than 90 minutes exits without changes.
 
-Lock: none
+Lock: 2026-11-23 09:16 UTC
 
 ## Status
 
