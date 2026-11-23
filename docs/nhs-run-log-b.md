@@ -11,23 +11,41 @@ Lane B builds **NHS-5 (Five Case Model business cases)** and **NHS-7 (cross-orga
 - Migration file names use the real current UTC timestamp, as usual.
 - Lock: set `Lock:` below to the run's start time (UTC) and push before starting work; clear it when done. A run that finds a lock newer than 90 minutes exits without changes.
 
-Lock: 2026-11-23 08:27 UTC
+Lock: none
 
 ## Status
 
 | Package | Status | Branch | PR | Notes |
 |---|---|---|---|---|
-| NHS-5 | not started | | | |
+| NHS-5 | in progress (part 1 of 2 done) | nhs-b/5 | [#145](https://github.com/cjpmd/virtual-pmo-hub/pull/145) | Migration `20261123084500_nhs_5_five_case` (not applied). Schema, stages, objectives, appraisal years, approval routes and gates, services, business case page. Next: approval-route editor in Settings, Word/PDF export, business case → budget baseline. |
 | NHS-7 | not started | | | |
 
 ## Functions replaced in lane B
 
-(none yet)
+- `public.start_business_case_version(uuid)` (NHS-5, `20261123084500_nhs_5_five_case`): previous body (F4) plus the template set, stage, appraisal settings, option list fields, objectives and option years. Business cases only; lane A shouldn't need it.
+- Not replaced, on purpose: `private.seed_module_defaults` (the five-case set and routes are seeded by a new trigger, `organisations_15_seed_five_case`, when `modules.five_case` turns on), `public.decide_approval_step` and `public.submit_business_case` (new triggers on `business_case_versions` and `approval_gates` do the work).
+- Shared front-end file touched: `src/features/reports/project/ApprovalGatesPanel.tsx` (business case gates read-only; one label). Two small hunks.
 
 ## Decisions for Chris
 
-(none yet)
+- **NHS-5 / B1: approval routes live in `organisations.settings.fiveCase.approvalRoutes`**, not a new table: `{stage: [{name, governanceRole, minValue}]}`, written only through `set_business_case_approval_routes` (admins, validated). Each step must name a governance role, because a step without one could be decided by any workspace contributor.
+- **NHS-5 / B2: default routes are placeholders to validate.** NHS: SOC = Director of Finance + Executive Management Team; OBC/FBC = Director of Finance + Trust Board, plus ICB at £15m whole-life cost and (FBC) NHS England at £50m; single-stage = Director of Finance + Trust Board at £1m. Board-level steps are "recorded by Head of PMO". General: Executive sponsor (SOC), Finance lead + Investment board (OBC/FBC), Executive sponsor + Finance lead (single). The thresholds in particular need checking against current NHS delegated limits.
+- **NHS-5 / B3: no `decisions` row is written** when a business case gate is decided (F1 §2.3 planned one through `decide_business_case`, which was never built). The step decisions, the version's `decided_at` / `recorded_by` and the audit log are the record. Say if you want a decision row too.
+- **NHS-5 / B4: approving a stage supersedes only earlier approved versions of the same stage.** An approved SOC stays approved when the OBC is approved.
+- **NHS-5 / B5: stage rules.** Once a stage is approved the case can't go back, can move at most one stage beyond the highest approved stage, and can't switch between single-stage and staged. Before any approval any stage can be chosen (so small schemes can start at OBC).
+- **NHS-5 / B6: the appraisal (PV, NPV, NPSV, BCR) is worked out on screen** (`services/five-case.ts`, unit-tested) from the stored per-year figures: one discount rate (default 3.5 %) for all years, optimism bias on costs. It is labelled as an aid, not health or RAG, so the "no calculation in the browser" rule doesn't apply. The Green Book's lower long-term rate after year 30 isn't modelled.
+- **NHS-5 / B7: template set names come from the app** (Standard, Five Case Model), not a lookup list; adding a lookup list changed the NHS-0 test's "existing lists unchanged" fingerprint.
+- **NHS-5 / B8: with the module switched off**, existing staged cases can still be revised (the stage carries forward), but objectives and appraisal years aren't copied into the new version (they stay on the earlier one) and can't be edited.
 
 ## Run entries
 
 (newest last)
+
+- **23/11/2026 08:27–09:00 UTC, NHS-5 part 1:** the 22/11 21:00 lock was stale (no work had been pushed), so this run took over.
+  - Audit in the PR. F5 (`decide_business_case`, business case baselines) was never built, so approval now runs through `approval_gates` and governance roles.
+  - Migration `20261123084500_nhs_5_five_case` (`docs/sql/nhs-5-five-case.sql`), `supabase/tests/nhs_five_case.sql` (57 checks), `cross_tenant.sql` cases.
+  - Local DB: `nhs_five_case`, `nhs_modules`, `cross_tenant`, `organisation_purge`, `read_only_mode`, `organisation_export`, `account_closure`, `sample_data`, `tenant_guard`, `financials` and `project_writes` pass. `rls_matrix` ("no subscription record") and `convert_request_to_project` ("more than one row") fail the same way without this migration.
+  - Types: the new objects spliced in from a before/after local generation (full regeneration re-adds `committee_packs`).
+  - Front end: `services/five-case.ts` (+ tests), business case page panels.
+  - tsc (app and scripts), vitest (688), lint (0 errors) and vite build pass. e2e, Supabase advisors and a signed-in browser check not run.
+  - Next run (NHS-5 part 2): approval-route editor in Settings › Modules, Word/PDF export in Five Case structure, business case → budget baseline (financial case).
