@@ -95,7 +95,7 @@ begin
     insert into public.budget_baselines (project_id, total, source, business_case_version_id) values (proj, 1, 'business_case', gen_random_uuid());
   exception when raise_exception then procedure_ok := true;
   end;
-  if procedure_ok then results := array_append(results, 'business case baseline not available yet: ok'); else failures := failures + 1; results := array_append(results, 'business case baseline: FAIL'); end if;
+  if procedure_ok then results := array_append(results, 'business case baseline from an unknown version rejected: ok'); else failures := failures + 1; results := array_append(results, 'business case baseline: FAIL'); end if;
   -- Change request: approved, and the total must be previous + cost impact.
   reset role;
   insert into public.change_requests (project_id, title, cost_impact, status, type_id)

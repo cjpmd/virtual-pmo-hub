@@ -8,6 +8,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useOrganisation } from "@/components/auth/organisation-provider";
 import { ReadOnlyTip } from "@/components/org-access-banner";
+import { FiveCaseRoutesCard } from "@/components/settings/five-case-routes-settings";
 import { SettingsCard, useCanEditSettings } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,11 +45,13 @@ import { errorMessage } from "@/services/service-error";
 import { useSettings } from "@/services/settings";
 
 export function ModulesSettings() {
+  const settings = useSettings();
   return (
     <div className="space-y-6">
       <PackCard />
       <ModulesCard />
       <GovernanceRolesCard />
+      {settings.modules.enabled.five_case === true && <FiveCaseRoutesCard />}
     </div>
   );
 }

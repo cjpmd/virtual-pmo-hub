@@ -768,3 +768,119 @@ html[data-pptx-export] [data-testid="project-overview-panel"] > div {
     -webkit-print-color-adjust: exact;
   }
 }
+
+/* NHS-5 business case export (components/business-case/case-export.tsx): the document renders into
+   .case-print-root only while printing; A4 portrait through a named page, like the legal pages. */
+.case-print-root {
+  display: none;
+}
+
+@page business-case {
+  size: A4 portrait;
+  margin: 18mm 16mm 16mm;
+}
+
+@media print {
+  body:has(> .case-print-root) > :not(.case-print-root) {
+    display: none !important;
+  }
+  :root:has(> body > .case-print-root),
+  body:has(> .case-print-root) {
+    page: business-case;
+    background: white;
+  }
+  .case-print-root {
+    page: business-case;
+    display: block;
+    color: #000;
+    font-size: 10pt;
+    line-height: 1.45;
+  }
+  .case-print-root .case-print-cover {
+    border-bottom: 1px solid #999;
+    margin-bottom: 8mm;
+    padding-bottom: 4mm;
+  }
+  .case-print-root h1 {
+    font-size: 20pt;
+    font-weight: 600;
+    margin: 0 0 2mm;
+  }
+  .case-print-root .case-print-subtitle {
+    font-size: 12pt;
+    color: #333;
+    margin: 0 0 4mm;
+  }
+  .case-print-root dl {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1mm 8mm;
+    margin: 0;
+  }
+  .case-print-root dl > div {
+    display: flex;
+    gap: 2mm;
+  }
+  .case-print-root dt {
+    font-weight: 600;
+  }
+  .case-print-root dd {
+    margin: 0;
+  }
+  .case-print-root h2 {
+    font-size: 15pt;
+    font-weight: 600;
+    margin: 8mm 0 3mm;
+    break-after: avoid;
+  }
+  .case-print-root h2:not(:first-of-type) {
+    break-before: page;
+  }
+  .case-print-root h3 {
+    font-size: 12pt;
+    font-weight: 600;
+    margin: 5mm 0 2mm;
+    break-after: avoid;
+  }
+  .case-print-root h4 {
+    font-size: 10.5pt;
+    font-weight: 600;
+    margin: 4mm 0 1.5mm;
+    break-after: avoid;
+  }
+  .case-print-root .case-print-text,
+  .case-print-root .case-print-text * {
+    color: #000;
+    font-size: 10pt;
+  }
+  .case-print-root .case-print-note {
+    font-style: italic;
+    color: #444;
+    margin: 1mm 0 2mm;
+  }
+  .case-print-root table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2mm 0 4mm;
+    font-size: 9pt;
+  }
+  .case-print-root th,
+  .case-print-root td {
+    border: 1px solid #bbb;
+    padding: 1.2mm 1.8mm;
+    text-align: left;
+    vertical-align: top;
+  }
+  .case-print-root th {
+    background: #e7ecf2;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .case-print-root .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .case-print-root tr {
+    break-inside: avoid;
+  }
+}

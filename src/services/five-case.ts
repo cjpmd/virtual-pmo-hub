@@ -13,7 +13,7 @@
 // The appraisal figures (present values, NPV, NPSV, benefit-cost ratio) are an aid worked out
 // from what the user typed, not a substitute for finance review; they are not health or RAG.
 import { supabase } from "@/integrations/supabase/client";
-import { ServiceError, unwrap } from "./service-error";
+import { ServiceError, unwrap, unwrapMaybe } from "./service-error";
 import { deleteRows, insertRow, updateRow } from "./write";
 
 export const CASE_STAGES = ["single", "soc", "obc", "fbc"] as const;
@@ -211,6 +211,81 @@ export function readApprovalRoutes(value: unknown): ApprovalRoutes {
 /** The steps that apply to a version of this value, as the database chooses them on submit. */
 export const routeStepsFor = (routes: ApprovalRoutes, stage: CaseStage, value: number | null) =>
   (routes[stage] ?? []).filter((s) => s.minValue === null || (value ?? 0) >= s.minValue);
+
+/** The organisation's stored routes (settings.fiveCase.approvalRoutes); empty when none. */
+export async function getApprovalRoutes(orgId: string): Promise<ApprovalRoutes> {
+  const data = unwrapMaybe(
+    await supabase.from("organisations").select("settings").eq("id", orgId).maybeSingle(),
+    "Loading the approval routes",
+  );
+  const settings = (data?.settings ?? {}) as Record<string, unknown>;
+  const fiveCase = settings["fiveCase"];
+  return readApprovalRoutes(
+    fiveCase && typeof fiveCase === "object" && !Array.isArray(fiveCase)
+      ? (fiveCase as Record<string, unknown>)["approvalRoutes"]
+      : undefined,
+  );
+}
+
+/** Problems that would make set_business_case_approval_routes refuse the routes, per stage. */
+export function routeProblems(routes: ApprovalRoutes, roleKeys: string[]): string[] {
+  const problems: string[] = [];
+  for (const stage of CASE_STAGES) {
+    const steps = routes[stage] ?? [];
+    if (steps.length > 10) problems.push(`${stageShort[stage]}: at most 10 steps.`);
+    steps.forEach((step, index) => {
+      const label = `${stageShort[stage]} step ${index + 1}`;
+      if (!step.name.trim()) problems.push(`${label} needs a name.`);
+      else if (step.name.trim().length > 120)
+        problems.push(`${label}: name is over 120 characters.`);
+      if (!roleKeys.includes(step.governanceRole))
+        problems.push(`${label} needs a governance role.`);
+      if (step.minValue !== null && (!Number.isFinite(step.minValue) || step.minValue < 0))
+        problems.push(`${label}: the threshold must be a number of 0 or more.`);
+    });
+  }
+  return problems;
+}
+
+/** Settings › Modules route editor: the editing copy, thresholds kept as typed text until saved. */
+export type RouteDraftStep = { name: string; governanceRole: string; minValue: string };
+export type RouteDraft = Record<CaseStage, RouteDraftStep[]>;
+
+export function toDraft(routes: ApprovalRoutes): RouteDraft {
+  const draft = {} as RouteDraft;
+  for (const stage of CASE_STAGES) {
+    draft[stage] = (routes[stage] ?? []).map((step) => ({
+      name: step.name,
+      governanceRole: step.governanceRole,
+      minValue: step.minValue === null ? "" : String(step.minValue),
+    }));
+  }
+  return draft;
+}
+
+/** Converts the editing copy back; a threshold that isn't a number becomes NaN (reported). */
+export function fromDraft(draft: RouteDraft): ApprovalRoutes {
+  const routes: ApprovalRoutes = {};
+  for (const stage of CASE_STAGES) {
+    routes[stage] = draft[stage].map((step): RouteStep => ({
+      name: step.name.trim(),
+      governanceRole: step.governanceRole,
+      minValue: step.minValue.trim() === "" ? null : Number(step.minValue.replace(/[£,\s]/g, "")),
+    }));
+  }
+  return routes;
+}
+
+/** Whether a version can set a baseline at all (before permissions and earlier use). */
+export const canBaselineFrom = (version: { status: string; stage: CaseStage }) =>
+  version.status === "approved" && version.stage !== "soc";
+
+/** Parses an amount typed as "1,250,000" or "1250000.50"; null when it isn't one. */
+export function parseBaselineAmount(text: string): number | null {
+  const cleaned = text.replace(/[£,\s]/g, "");
+  if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return null;
+  return Number(cleaned);
+}
 
 export async function saveApprovalRoutes(orgId: string, routes: ApprovalRoutes) {
   return unwrap(

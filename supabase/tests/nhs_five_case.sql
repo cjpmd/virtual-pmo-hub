@@ -314,5 +314,60 @@ select pg_temp.ok('NHS default routes name NHS roles and the ICB threshold',
   private.five_case_default_routes('nhs') -> 'obc' -> 2 ->> 'governanceRole' = 'head_of_pmo'
   and (private.five_case_default_routes('nhs') -> 'obc' -> 2 ->> 'minValue')::numeric = 15000000);
 
+-- 11. Financial case: an approved business case version sets the project's budget baseline
+--     (20261123091727_nhs_5_five_case_baseline).
+select pg_temp.as_user(pg_temp.c('admin'));
+select public.set_organisation_module(pg_temp.c('org'), 'five_case', true);
+select public.set_business_case_approval_routes(pg_temp.c('org'),
+  '{"single": [{"name": "Finance lead", "governanceRole": "finance_lead"}]}');
+with x as (insert into public.business_cases (workspace_id, organisation_id, project_id, title)
+  values (pg_temp.c('ws'), pg_temp.c('org'), pg_temp.c('p3'), 'Single-stage case') returning id)
+insert into ctx select 'c3', id from x;
+insert into ctx select 'c3v1', public.start_business_case_version(pg_temp.c('c3'));
+update public.business_case_versions set funding_requested = 250000 where id = pg_temp.c('c3v1');
+insert into public.business_case_options (version_id, name, whole_life_cost, delivery_cost, is_preferred)
+  values (pg_temp.c('c3v1'), 'Do it', 300000, 250000, true);
+select pg_temp.complete(pg_temp.c('c3v1'));
+select pg_temp.raises('baseline: a draft case can''t set it',
+  $$insert into public.budget_baselines (project_id, total, source, business_case_version_id)
+    values (pg_temp.c('p3'), 250000, 'business_case', pg_temp.c('c3v1'))$$, 'P0001');
+select public.submit_business_case(pg_temp.c('c3v1'));
+select pg_temp.as_user(pg_temp.c('contrib'));
+select public.decide_approval_step(pg_temp.step(pg_temp.c('c3v1'), 1), 'approved');
+select pg_temp.ok('single-stage case approved', pg_temp.vstatus(pg_temp.c('c3v1')) = 'approved');
+select pg_temp.raises('baseline: a contributor can''t set it',
+  $$insert into public.budget_baselines (project_id, total, source, business_case_version_id)
+    values (pg_temp.c('p3'), 250000, 'business_case', pg_temp.c('c3v1'))$$, '42501');
+select pg_temp.as_user(pg_temp.c('admin'));
+select pg_temp.raises('baseline: another project''s case refused',
+  $$insert into public.budget_baselines (project_id, total, source, business_case_version_id)
+    values (pg_temp.c('p2'), 250000, 'business_case', pg_temp.c('c3v1'))$$, 'P0001');
+select pg_temp.raises('baseline: an SOC is indicative',
+  $$insert into public.budget_baselines (project_id, total, source, business_case_version_id)
+    values (pg_temp.c('p2'), 1, 'business_case', pg_temp.c('c2v1'))$$, 'P0001');
+select pg_temp.raises('baseline: a superseded version refused',
+  $$insert into public.budget_baselines (project_id, total, source, business_case_version_id)
+    values (pg_temp.c('p2'), 1, 'business_case', pg_temp.c('c2v3'))$$, 'P0001');
+select pg_temp.raises('baseline: a total other than the delivery cost needs a reason',
+  $$insert into public.budget_baselines (project_id, total, source, business_case_version_id)
+    values (pg_temp.c('p3'), 300000, 'business_case', pg_temp.c('c3v1'))$$, 'P0001');
+select pg_temp.raises('baseline: initial refused once the project has an approved case',
+  $$insert into public.budget_baselines (project_id, total, source) values (pg_temp.c('p3'), 1, 'initial')$$, 'P0001');
+insert into public.budget_baselines (project_id, total, source, business_case_version_id)
+  values (pg_temp.c('p3'), 250000, 'business_case', pg_temp.c('c3v1'));
+select pg_temp.ok('baseline set from the approved case',
+  (select version = 1 and total = 250000 and approved_by = pg_temp.c('admin') and workspace_id = pg_temp.c('ws')
+   from public.budget_baselines where business_case_version_id = pg_temp.c('c3v1')));
+select pg_temp.raises('baseline: each version once',
+  $$insert into public.budget_baselines (project_id, total, source, business_case_version_id)
+    values (pg_temp.c('p3'), 250000, 'business_case', pg_temp.c('c3v1'))$$, 'P0001');
+select pg_temp.raises('baseline: a version id that doesn''t exist',
+  $$insert into public.budget_baselines (project_id, total, source, business_case_version_id)
+    values (pg_temp.c('p3'), 1, 'business_case', gen_random_uuid())$$, 'P0001');
+insert into public.budget_baselines (project_id, total, source, business_case_version_id, reason)
+  values (pg_temp.c('p2'), 420000, 'business_case', pg_temp.c('c2v4'), 'Construction inflation since approval');
+select pg_temp.ok('baseline: the PMO can set a different total with a reason',
+  (select total = 420000 from public.budget_baselines where business_case_version_id = pg_temp.c('c2v4')));
+
 select 'nhs_five_case: ' || n || ' checks passed' from passed;
 rollback;

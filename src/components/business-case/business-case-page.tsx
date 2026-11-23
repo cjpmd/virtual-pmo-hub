@@ -3,7 +3,8 @@
 // preferred radio, the benefits that will go to the register, and the documents panel.
 // Approve / reject and the hand-off actions arrive in F5.
 // NHS-5 (module five_case): template set and stage on creation, SOC → OBC → FBC, sections grouped
-// by case, objectives, long and short lists, the appraisal aid and the approval route.
+// by case, objectives, long and short lists, the appraisal aid and the approval route; Export to
+// Word or PDF, and an approved case sets the project's budget baseline.
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   CheckCircle2,
@@ -17,6 +18,8 @@ import {
   XCircle,
 } from "lucide-react";
 import { useUser } from "@/components/auth/session-provider";
+import { CaseBaselinePanel } from "@/components/business-case/case-baseline-panel";
+import { CaseExportMenu } from "@/components/business-case/case-export";
 import { DocumentsPanel } from "@/components/business-case/documents-panel";
 import {
   AppraisalAidPanel,
@@ -288,45 +291,48 @@ export function BusinessCasePage({
             {version.decidedAt ? ` · decided ${format.date(version.decidedAt)}` : ""}
           </span>
         </div>
-        {canEdit && (
-          <div className="flex gap-2">
-            {version.status === "draft" && (
-              <Button
-                size="sm"
-                disabled={submit.isPending}
-                onClick={() => submit.mutate(version.id)}
-              >
-                <Send />
-                Submit
-              </Button>
-            )}
-            {!hasDraft && (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={start.isPending || awaiting}
-                title={awaiting ? "A version is awaiting a decision" : undefined}
-                onClick={() => start.mutate(businessCase.id)}
-              >
-                <FilePlus2 />
-                Start a new version
-              </Button>
-            )}
-            {fiveCase &&
-              !hasDraft &&
-              nextStages.map((stage) => (
+        <div className="flex flex-wrap gap-2">
+          <CaseExportMenu businessCase={businessCase} version={version} />
+          {canEdit && (
+            <>
+              {version.status === "draft" && (
                 <Button
-                  key={stage}
                   size="sm"
-                  disabled={nextStage.isPending || awaiting}
-                  onClick={() => nextStage.mutate({ caseId: businessCase.id, stage })}
+                  disabled={submit.isPending}
+                  onClick={() => submit.mutate(version.id)}
+                >
+                  <Send />
+                  Submit
+                </Button>
+              )}
+              {!hasDraft && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={start.isPending || awaiting}
+                  title={awaiting ? "A version is awaiting a decision" : undefined}
+                  onClick={() => start.mutate(businessCase.id)}
                 >
                   <FilePlus2 />
-                  Start the {stageShort[stage]}
+                  Start a new version
                 </Button>
-              ))}
-          </div>
-        )}
+              )}
+              {fiveCase &&
+                !hasDraft &&
+                nextStages.map((stage) => (
+                  <Button
+                    key={stage}
+                    size="sm"
+                    disabled={nextStage.isPending || awaiting}
+                    onClick={() => nextStage.mutate({ caseId: businessCase.id, stage })}
+                  >
+                    <FilePlus2 />
+                    Start the {stageShort[stage]}
+                  </Button>
+                ))}
+            </>
+          )}
+        </div>
       </section>
 
       <section
@@ -408,6 +414,13 @@ export function BusinessCasePage({
         </div>
         <div className="space-y-5">
           <ApprovalRoutePanel owner={owner} version={version} />
+          {"projectId" in owner && (
+            <CaseBaselinePanel
+              projectId={owner.projectId}
+              workspaceId={businessCase.workspaceId}
+              version={version}
+            />
+          )}
           <DocumentsPanel
             owner={owner}
             businessCaseId={businessCase.id}

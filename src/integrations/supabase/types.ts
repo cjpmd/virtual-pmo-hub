@@ -1632,6 +1632,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "budget_baselines_business_case_version_fkey"
+            columns: ["business_case_version_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "business_case_versions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
             foreignKeyName: "budget_baselines_change_request_id_workspace_id_fkey"
             columns: ["change_request_id", "workspace_id"]
             isOneToOne: false
