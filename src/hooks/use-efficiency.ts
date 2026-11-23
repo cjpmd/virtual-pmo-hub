@@ -25,6 +25,12 @@ import {
   saveTarget,
   validateActuals,
 } from "@/services/efficiency";
+import {
+  importSchemes,
+  importValues,
+  type ImportValue,
+  type SchemeImportValues,
+} from "@/services/efficiency-import";
 import { qk } from "@/services/query-keys";
 import { errorMessage } from "@/services/service-error";
 
@@ -191,6 +197,19 @@ export function useEfficiencyMutations() {
     removeTarget: useMutation({
       ...options,
       mutationFn: (id: string) => removeTarget(id),
+      onSuccess: refresh,
+    }),
+    /** Part 5: the scheme and values imports (one insert each; all or none). The import panel
+     *  shows a failure itself, so these don't toast it. */
+    importSchemes: useMutation({
+      meta: { silent: true },
+      mutationFn: (input: { workspaceId: string; rows: SchemeImportValues[] }) =>
+        importSchemes(input.workspaceId, input.rows),
+      onSuccess: refresh,
+    }),
+    importValues: useMutation({
+      meta: { silent: true },
+      mutationFn: (values: ImportValue[]) => importValues(values),
       onSuccess: refresh,
     }),
   };

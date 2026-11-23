@@ -4,7 +4,7 @@
 // works by keyboard; the database's stage rules decide every move (a refused move says what the
 // scheme still needs). Shown in navigation only while the 'efficiency' module is on.
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Upload } from "lucide-react";
 import { useState } from "react";
 import { PageHeader, DataTable, type Column } from "@/components/pmo-ui";
 import { QueryState } from "@/components/query-state";
@@ -39,6 +39,7 @@ import { useModule, useModuleTerm } from "@/lib/modules";
 import { atLeast } from "@/services/auth";
 import type { EfficiencyScheme } from "@/services/efficiency";
 import { EfficiencyDashboard } from "./efficiency-dashboard";
+import { EfficiencyImport } from "./efficiency-import";
 import { EfficiencyTargetsEditor } from "./targets-editor";
 import { SchemeFormSheet } from "./scheme-form";
 
@@ -84,6 +85,7 @@ function Pipeline({ schemes }: { schemes: EfficiencyScheme[] }) {
   const [view, setView] = useState<View>("board");
   const [filter, setFilter] = useState<SchemeFilter>({});
   const [creating, setCreating] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [year, setYear] = useState(() => schemes[0]?.financialYear || currentYear(startMonth));
   const units = fmt.settings.lists.businessUnits ?? [];
   const categoryLabel = (value: string | null) =>
@@ -105,12 +107,20 @@ function Pipeline({ schemes }: { schemes: EfficiencyScheme[] }) {
         description={`${term("efficiency.schemePlural")} from idea to delivery, with this financial year's planned and risk-adjusted savings. Open a scheme to phase its monthly values, validate it and see its impact assessment.`}
         actions={
           canCreate && (
-            <ReadOnlyTip readOnly={!writable}>
-              <Button disabled={!writable} onClick={() => setCreating(true)}>
-                <Plus className="mr-1 h-4 w-4" aria-hidden />
-                New {term("efficiency.scheme").toLowerCase()}
-              </Button>
-            </ReadOnlyTip>
+            <div className="flex flex-wrap gap-2">
+              <ReadOnlyTip readOnly={!writable}>
+                <Button variant="outline" disabled={!writable} onClick={() => setImporting(true)}>
+                  <Upload className="mr-1 h-4 w-4" aria-hidden />
+                  Import
+                </Button>
+              </ReadOnlyTip>
+              <ReadOnlyTip readOnly={!writable}>
+                <Button disabled={!writable} onClick={() => setCreating(true)}>
+                  <Plus className="mr-1 h-4 w-4" aria-hidden />
+                  New {term("efficiency.scheme").toLowerCase()}
+                </Button>
+              </ReadOnlyTip>
+            </div>
           )
         }
       />
@@ -241,6 +251,13 @@ function Pipeline({ schemes }: { schemes: EfficiencyScheme[] }) {
         <EfficiencyTargetsEditor year={year} onYearChange={setYear} canEdit={canSetTargets} />
       )}
       <SchemeFormSheet open={creating} scheme={null} onClose={() => setCreating(false)} />
+      {importing && (
+        <EfficiencyImport
+          schemes={schemes}
+          financialYear={thisYear}
+          close={() => setImporting(false)}
+        />
+      )}
     </div>
   );
 }
