@@ -23,7 +23,7 @@ Each run reads this file on the newest package branch, does the next piece of wo
 
 - Lock: set `Lock:` below to the run's start time (UTC) and push before starting work; clear it when done. A run that finds a lock newer than 3 hours exits without changes.
 
-Lock: 2026-11-23 13:57 UTC
+Lock: none
 
 ## Status
 
@@ -32,11 +32,11 @@ Lock: 2026-11-23 13:57 UTC
 | NHS-0 | done (draft PR, awaiting review) | nhs/0 | [#140](https://github.com/cjpmd/virtual-pmo-hub/pull/140) | Migration `20261122150000_nhs_0_modules` (not applied). Settings › Modules, NHS sign-up choice, governance roles. Nav/report-block hiding helpers exist but nothing is wired yet: NHS-1 wires them with its first module-owned item. |
 | NHS-1 | done (draft PR, awaiting review) | nhs/1 | [#142](https://github.com/cjpmd/virtual-pmo-hub/pull/142) | Migrations `20261122170000_nhs_1_board_assurance`, `20261122190000_nhs_1b_assurance_blocks`, `20261122210000_nhs_1c_programme_assurance` and `20261123090000_nhs_1d_register_matrix` (not applied): BAF register; BAF report blocks; five committee templates; programme assurance ratings and the "Assurance by programme" block; register matrix and risk re-scoring tool. One-click pack reuses the forum "Create pack" button. |
 | NHS-2 | done (draft PR, awaiting review) | nhs/2 | [#146](https://github.com/cjpmd/virtual-pmo-hub/pull/146) | Migration `20261123100000_nhs_2_benefit_categories` (not applied): NHS categories, measure units and default classifications seeded by the module; notional value per unit; cash / non-cash split on every benefit total; `benefits_by_category` block. |
-| NHS-3 | not started | | | |
+| NHS-3 | in progress (part 1 of 3) | nhs/3 | [#148](https://github.com/cjpmd/virtual-pmo-hub/pull/148) | Migration `20261123140000_nhs_3_impact_assessments` (not applied): assessments, decisions, register view, sign-off RPCs, locked module gates, project phase gate; service and template rules. Next: part 2 screens (assessment tab, register, Settings template and gate, gaps list), part 3 approver notifications and report blocks. |
 | NHS-4 | not started | | | |
 | NHS-5 | lane B (see docs/nhs-run-log-b.md) | nhs-b/5 | | |
 | NHS-6 | not started | | | |
-| NHS-7 | lane B (see docs/nhs-run-log-b.md) | | | |
+| NHS-7 | lane B (see docs/nhs-run-log-b.md) | nhs-b/7 | | |
 | NHS-8 | not started | | | |
 
 ## Decisions for Chris
@@ -69,6 +69,13 @@ Lock: 2026-11-23 13:57 UTC
 - **NHS-2 / D2:** category defaults are `settings.benefits.categoryClassification` (lookup value → classification), edited by admins in Settings › Benefits; they only pre-select. Please validate the NHS defaults (quality categories qualitative, net zero and inequalities societal) in PR #146.
 - **NHS-2 / D3:** the notional value per unit and the `benefits_by_category` block are core (every organisation), partner-safe like `benefits_value`, and not added to the committee templates.
 - **NHS-2 / D4:** `private.seed_module_defaults` replaced again (NHS-1 body plus one branch): reconcile with lane B in NHS-8.
+- **NHS-3 / D1:** the template lives in `settings.impactAssessment.template` (no new table), written only by `set_impact_assessment_template` (admins; validated, version bumped) and copied onto each assessment, so a later change never alters a completed one.
+- **NHS-3 / D2:** one assessment per project or programme; each submission is a new version with its own sign-off gate; earlier gates and decisions stay as history.
+- **NHS-3 / D3:** `approval_steps.decision` stays approved / rejected (no constraint dropped). "Approve with conditions" and "return for revision" are kept in `impact_assessment_decisions`; returning closes the gate as rejected and puts the assessment back to draft; a rejected assessment can be revised and resubmitted.
+- **NHS-3 / D4 (settles NHS-0 D6 for module gates):** client writes can't add, change or remove gates / steps of type `impact_assessment` (`private.locked_gate_types()`; NHS-6 adds its type). `decide_approval_step` still works on them but records no conditions.
+- **NHS-3 / D5:** the delivery gate is a lifecycle phase an admin picks (`set_impact_assessment_gate`): moving into or past it, or creating a project there, needs an approved assessment. Sample projects are exempt, programmes aren't gated, module off = gate off; projects already past it are listed by `impact_assessment_gaps`, never blocked.
+- **NHS-3 / D6:** editors are project contributors and above (project) or workspace managers and above (programme); submitting is refused while any sign-off role has no holder.
+- **NHS-3 / D7:** please validate the defaults in PR #148: five quality domains, nine protected characteristics plus health inequalities and deprivation, Medical Director then Chief Nurse, a full assessment when a negative screening score is 8 or more or any equality impact is negative, review six months after submission, no QIA panel step by default.
 - **NHS-1 / note:** `nhs/0` and `nhs/1` (part 1) were merged to `main` before their migrations were applied to production. Nothing breaks while modules are off, but apply `20261122150000`, `20261122170000` and `20261122190000` before switching a module on.
 
 ## Run entries
@@ -116,3 +123,10 @@ Lock: 2026-11-23 13:57 UTC
   - Register Category column with default classification, cash / non-cash split on register, dashboard and business case, measure unit and notional value editor, Settings › Benefits defaults card, Settings › Lists measure units, block renderers. Types: `benefit_measures` spliced from the local generator.
   - tsc (app and scripts), vitest (723), lint (0 errors), vite build pass. e2e and advisors not run.
   - Next: NHS-3 on `nhs/3` (from `nhs/2`).
+- **23/11/2026 13:57–14:25 UTC, NHS-3 part 1:** new branch `nhs/3` from `nhs/2`, draft PR #148 (audit in the PR).
+  - Migration `20261123140000_nhs_3_impact_assessments` and `supabase/tests/impact_assessments.sql` (63 checks); `cross_tenant.sql` cases for the 7 RPCs, `ct_fixture.sql` rows for both tables.
+  - Local DB suites pass: cross_tenant (0 leaks), purge, read-only (46), export (29), closure (82), sample data (27), nhs_modules (55), board_assurance (40), assurance_blocks (25), programme_assurance (34), register_matrix (44), benefit_categories (29), approval_reminders, notifications, collections, reports 1–5. `reports_phase6` fails as on main.
+  - `data/impact-assessment.ts` (templates and rules mirroring the SQL) and `services/impact-assessments.ts`, with unit tests. Types spliced from the local generator. No screens yet.
+  - tsc (app and scripts), vitest (737), lint (0 errors), vite build pass. e2e and advisors not run.
+  - The lock was taken on `nhs/2` (commit 53011c5) before `nhs/3` existed; it is cleared here.
+  - Next: NHS-3 part 2 (screens) on `nhs/3`.
