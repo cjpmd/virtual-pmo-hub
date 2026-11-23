@@ -17973,6 +17973,7 @@ export type Database = {
         Args: { p_message?: string; p_organisation_id: string }
         Returns: string
       }
+      rescore_risks: { Args: { p_items: Json; p_org: string }; Returns: number }
       resend_invite: { Args: { p_invite_id: string }; Returns: undefined }
       return_report: {
         Args: { p_comment: string; p_report_id: string }
@@ -18068,6 +18069,34 @@ export type Database = {
       }
       revoke_invite: { Args: { p_invite_id: string }; Returns: undefined }
       risk_band: { Args: { p_risk_id: string }; Returns: Json }
+      risk_rescore_candidates: {
+        Args: { p_org: string }
+        Returns: {
+          band_changes: boolean
+          band_colour: string
+          band_label: string
+          from_matrix_key: string
+          from_matrix_name: string
+          impact: number
+          portfolio_id: string
+          probability: number
+          programme_id: string
+          project_id: string
+          proposed_band_colour: string
+          proposed_band_label: string
+          proposed_impact: number
+          proposed_probability: number
+          proposed_score: number
+          ref: string
+          risk_id: string
+          score: number
+          title: string
+          to_matrix_key: string
+          to_matrix_name: string
+          updated_at: string
+          workspace_id: string
+        }[]
+      }
       risk_score: { Args: { p_risk_id: string }; Returns: number }
       save_report_as_template: {
         Args: { p_description?: string; p_name: string; p_report_id: string }
@@ -18133,6 +18162,10 @@ export type Database = {
       }
       set_organisation_module: {
         Args: { p_enabled: boolean; p_key: string; p_org: string }
+        Returns: Json
+      }
+      set_register_risk_matrix: {
+        Args: { p_matrix_key: string; p_org: string }
         Returns: Json
       }
       set_report_inclusion: {

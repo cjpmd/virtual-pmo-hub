@@ -126,6 +126,8 @@ export const qk = {
   settings: (orgId: string) => ["org", orgId, "settings"] as const,
   /** NHS-0: governance roles list and holders; under settings so a settings reload refreshes them. */
   governanceRoles: (orgId: string) => ["org", orgId, "settings", "governance-roles"] as const,
+  /** NHS-1 part 4: the register matrix and the re-scoring candidates. */
+  registerMatrix: (orgId: string) => ["org", orgId, "settings", "register-matrix"] as const,
   /** NHS-1: board assurance (strategic risk register and its children). */
   strategicRisks: {
     all: (orgId: string) => ["org", orgId, "strategic-risks"] as const,

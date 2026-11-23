@@ -401,9 +401,9 @@ function ForumSettingsSheet({
               ))}
             </select>
             <p className="text-xs text-muted-foreground">
-              Your organisation's own matrices can be used here, but can't become the organisation
-              default yet: the risk register still scores from Settings › Risk, so reports and the
-              register would score the same risk differently.
+              The default is the risk register's matrix (Settings › Risk), so packs and the register
+              score risks the same way. Choose another matrix only when this forum deliberately
+              scores differently.
             </p>
           </div>
           <div className="flex items-center justify-between gap-2">

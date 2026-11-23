@@ -20,6 +20,7 @@ import { JoinableOrganisations } from "@/components/auth/joinable-organisations"
 import { defaultLifecyclePhases } from "@/data/lifecycle";
 import { financialYearStartFor, sectors, type Sector } from "@/data/sectors";
 import { applySectorPack } from "@/services/modules";
+import { setRegisterRiskMatrix } from "@/services/register-matrix";
 
 export const Route = createFileRoute("/signup/setup")({
   // Creating an organisation can be switched off with VITE_SELF_SIGNUP=false (lib/features.ts).
@@ -122,6 +123,9 @@ function Setup({ userId, email }: { userId: string; email: string }) {
         await applySectorPack(id, "nhs").catch((error: unknown) =>
           setPackResult(errorMessage(error)),
         );
+        // NHS-1 part 4: a new NHS organisation scores its register on the NHS 5×5 from the start
+        // (no risks exist yet). Best effort: an admin can choose it in Settings › Risk.
+        await setRegisterRiskMatrix(id, "nhs_5x5").catch(() => undefined);
       }
       if (withSample) {
         // A failure here doesn't undo the organisation: the admin can add it from Settings.

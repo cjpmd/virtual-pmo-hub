@@ -430,6 +430,11 @@ insert into ct_cases (fn, call, expect, note) values
   ('apply_sector_pack(uuid,text,text[])', $c$select public.apply_sector_pack('{a_org}', 'nhs')$c$, 'empty', null),
   ('apply_sector_pack(uuid,text,text[])', $c$select public.apply_sector_pack('{a_org}', 'general', array['efficiency'])$c$, 'empty', null),
   ('set_organisation_module(uuid,text,boolean)', $c$select public.set_organisation_module('{a_org}', 'efficiency', true)$c$, 'empty', null),
+  -- NHS-1 part 4: B's admin can't change A's register matrix, list or re-score A's risks.
+  ('set_register_risk_matrix(uuid,text)', $c$select public.set_register_risk_matrix('{a_org}', 'nhs_5x5')$c$, 'empty', null),
+  ('risk_rescore_candidates(uuid)', $c$select public.risk_rescore_candidates('{a_org}')$c$, 'empty', null),
+  ('rescore_risks(uuid,jsonb)', $c$select public.rescore_risks('{a_org}', jsonb_build_array(jsonb_build_object('id', '{a_risk}', 'probability', 1, 'impact', 1)))$c$, 'empty', null),
+  ('rescore_risks(uuid,jsonb)', $c$select public.rescore_risks('{b_org}', jsonb_build_array(jsonb_build_object('id', '{a_risk}', 'probability', 1, 'impact', 1)))$c$, 'empty', null),
   -- GL-13.
   ('mark_notifications_read(uuid,uuid[])', $c$select public.mark_notifications_read('{a_org}')$c$, 'empty', null),
   ('mark_notifications_read(uuid,uuid[])', $c$select public.mark_notifications_read('{a_org}', array['{a_notification}'::uuid])$c$, 'empty', null),

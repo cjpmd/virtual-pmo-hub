@@ -8,6 +8,7 @@ import { ListEditor, NumberField, SettingsCard } from "@/components/settings/set
 import { patch } from "./settings-helpers";
 import { bandForScore, resizedLabels } from "./settings-logic";
 import { FixedList } from "./fixed-list";
+import { RegisterMatrixCard, RescoreCard, useRegisterMatrix } from "./register-matrix-settings";
 
 export function RiskSettings() {
   const settings = useSettings();
@@ -21,11 +22,17 @@ export function RiskSettings() {
       impactLabels: resizedLabels(risk.impactLabels, size),
     });
   const bandFor = (score: number) => bandForScore(risk.bands, score);
+  // NHS-1 part 4: with the organisation's own register matrix, size, labels and bands come from it.
+  const { own, matrix } = useRegisterMatrix();
+  const fromMatrix = `Set by the register matrix ${matrix?.name ?? ""}: change the matrix to change these.`;
   return (
     <>
+      <RegisterMatrixCard />
+      <RescoreCard />
       <SettingsCard
         title="Risk matrix"
         description="Matrix size, axis labels and the score bands used on every heat map and register."
+        {...(own ? { editable: false, lockedNote: fromMatrix } : {})}
       >
         <div className="flex flex-wrap gap-2">
           {([3, 4, 5] as const).map((size) => (
@@ -124,6 +131,7 @@ export function RiskSettings() {
           <Button
             size="sm"
             variant="outline"
+            disabled={own}
             onClick={() =>
               set({
                 bands: [
@@ -138,7 +146,8 @@ export function RiskSettings() {
           </Button>
         }
       >
-        <div className="space-y-3">
+        {own && <p className="mb-3 text-xs text-muted-foreground">{fromMatrix}</p>}
+        <fieldset disabled={own} className="space-y-3 disabled:opacity-80">
           {risk.bands.map((band) => (
             <div key={band.id} className="flex flex-wrap items-center gap-3 rounded-md border p-3">
               <input
@@ -193,7 +202,7 @@ export function RiskSettings() {
               </Button>
             </div>
           ))}
-        </div>
+        </fieldset>
         <div className="mt-4 max-w-xs">
           <NumberField
             label="Risk appetite threshold"
