@@ -15,6 +15,9 @@ export const NOTIFICATION_KINDS = [
   "measurement_overdue",
   "dependency_off_track",
   "pack_drafted",
+  // NHS-3 (impact_assessment module): raised only while the module is on.
+  "assessment_signoff",
+  "assessment_decided",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -27,6 +30,8 @@ export const NOTIFICATION_EVENT: Record<NotificationKind, string> = {
   measurement_overdue: "Measurement overdue",
   dependency_off_track: "Dependency off track",
   pack_drafted: "Draft pack ready",
+  assessment_signoff: "Impact assessment awaiting my sign-off",
+  assessment_decided: "Impact assessment decided",
 };
 
 /** Short labels for the feed filter and the personal settings. */
@@ -38,6 +43,8 @@ export const NOTIFICATION_LABEL: Record<NotificationKind, string> = {
   measurement_overdue: "Measurement overdue",
   dependency_off_track: "Dependency off track",
   pack_drafted: "Draft pack ready",
+  assessment_signoff: "Sign-off needed",
+  assessment_decided: "Assessment decided",
 };
 
 export const isNotificationKind = (value: string): value is NotificationKind =>

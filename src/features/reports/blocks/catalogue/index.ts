@@ -49,6 +49,11 @@ import {
   _baf_linkage,
   _assurance_by_programme,
 } from "./assurance";
+import {
+  _impact_assessment_status,
+  _impact_assessments_awaiting,
+  _impact_negative_impacts,
+} from "./impact-assessment";
 
 /** Every registered block definition. Importing this ensures all blocks are in the registry. */
 export const ALL_BLOCKS = [
@@ -96,4 +101,7 @@ export const ALL_BLOCKS = [
   _baf_linkage,
   _assurance_by_programme,
   _benefits_by_category,
-]; // 44 total
+  _impact_assessment_status,
+  _impact_assessments_awaiting,
+  _impact_negative_impacts,
+]; // 47 total

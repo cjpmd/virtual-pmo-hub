@@ -8,6 +8,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useOrganisation } from "@/components/auth/organisation-provider";
 import { ReadOnlyTip } from "@/components/org-access-banner";
+import { ImpactAssessmentSettings } from "@/components/settings/impact-assessment-settings";
 import { SettingsCard, useCanEditSettings } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,6 +50,7 @@ export function ModulesSettings() {
       <PackCard />
       <ModulesCard />
       <GovernanceRolesCard />
+      <ImpactAssessmentSettings />
     </div>
   );
 }
@@ -282,10 +284,12 @@ function ModulesCard() {
                     Works best with {recommends.map((key) => moduleName(key, settings)).join(", ")}.
                   </p>
                 )}
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Screens for this module arrive in a later release ({module.builtIn}); switching it
-                  on now records your choice and sets up its defaults.
-                </p>
+                {!module.ready && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Screens for this module arrive in a later release ({module.builtIn}); switching
+                    it on now records your choice and sets up its defaults.
+                  </p>
+                )}
               </div>
               <ReadOnlyTip readOnly={!writable}>
                 <Switch

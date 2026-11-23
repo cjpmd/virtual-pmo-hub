@@ -6655,6 +6655,285 @@ export type Database = {
           },
         ]
       }
+      impact_assessment_decisions: {
+        Row: {
+          assessment_id: string
+          comment: string | null
+          conditions: string | null
+          decided_at: string
+          decided_by: string | null
+          decision: string
+          gate_id: string | null
+          governance_role: string | null
+          id: string
+          organisation_id: string
+          step_id: string | null
+          version: number
+          workspace_id: string
+        }
+        Insert: {
+          assessment_id: string
+          comment?: string | null
+          conditions?: string | null
+          decided_at?: string
+          decided_by?: string | null
+          decision: string
+          gate_id?: string | null
+          governance_role?: string | null
+          id?: string
+          organisation_id: string
+          step_id?: string | null
+          version: number
+          workspace_id: string
+        }
+        Update: {
+          assessment_id?: string
+          comment?: string | null
+          conditions?: string | null
+          decided_at?: string
+          decided_by?: string | null
+          decision?: string
+          gate_id?: string | null
+          governance_role?: string | null
+          id?: string
+          organisation_id?: string
+          step_id?: string | null
+          version?: number
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impact_assessment_decisions_assessment_id_workspace_id_fkey"
+            columns: ["assessment_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "impact_assessments"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessment_decisions_assessment_id_workspace_id_fkey"
+            columns: ["assessment_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_impact_assessments"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessment_decisions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "impact_assessment_decisions_gate_id_organisation_id_fkey"
+            columns: ["gate_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "approval_gates"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "impact_assessment_decisions_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      impact_assessments: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          created_by: string | null
+          entity_id: string
+          entity_type: string
+          equality: Json
+          full_required: boolean
+          gate_id: string | null
+          id: string
+          is_sample: boolean
+          material_change_at: string | null
+          material_change_reason: string | null
+          organisation_id: string
+          programme_id: string | null
+          project_id: string | null
+          quality: Json
+          review_date: string | null
+          screening: Json
+          screening_max_score: number
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          summary: string | null
+          template: Json
+          template_version: number
+          title: string
+          updated_at: string
+          version: number
+          workspace_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          entity_id: string
+          entity_type: string
+          equality?: Json
+          full_required?: boolean
+          gate_id?: string | null
+          id?: string
+          is_sample?: boolean
+          material_change_at?: string | null
+          material_change_reason?: string | null
+          organisation_id: string
+          programme_id?: string | null
+          project_id?: string | null
+          quality?: Json
+          review_date?: string | null
+          screening?: Json
+          screening_max_score?: number
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          summary?: string | null
+          template: Json
+          template_version?: number
+          title?: string
+          updated_at?: string
+          version?: number
+          workspace_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string
+          entity_type?: string
+          equality?: Json
+          full_required?: boolean
+          gate_id?: string | null
+          id?: string
+          is_sample?: boolean
+          material_change_at?: string | null
+          material_change_reason?: string | null
+          organisation_id?: string
+          programme_id?: string | null
+          project_id?: string | null
+          quality?: Json
+          review_date?: string | null
+          screening?: Json
+          screening_max_score?: number
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          summary?: string | null
+          template?: Json
+          template_version?: number
+          title?: string
+          updated_at?: string
+          version?: number
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impact_assessments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_gate_id_organisation_id_fkey"
+            columns: ["gate_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "approval_gates"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "programmes"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_financials"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_health"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_financials"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_task_stats"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       improvement_actions: {
         Row: {
           created_at: string
@@ -15700,6 +15979,117 @@ export type Database = {
           },
         ]
       }
+      v_impact_assessments: {
+        Row: {
+          approved_at: string | null
+          entity_id: string | null
+          entity_type: string | null
+          full_required: boolean | null
+          has_conditions: boolean | null
+          id: string | null
+          is_sample: boolean | null
+          material_change_at: string | null
+          negative_domains: number | null
+          negative_equality: number | null
+          organisation_id: string | null
+          programme_id: string | null
+          project_code: string | null
+          project_id: string | null
+          review_date: string | null
+          review_overdue: boolean | null
+          screening_max_score: number | null
+          status: string | null
+          steps: Json | null
+          steps_approved: number | null
+          steps_total: number | null
+          submitted_at: string | null
+          target_name: string | null
+          template_version: number | null
+          title: string | null
+          updated_at: string | null
+          version: number | null
+          workspace_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impact_assessments_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "programmes"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_financials"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_health"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_financials"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_task_stats"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "impact_assessments_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       v_issued_work_items: {
         Row: {
           acknowledgement_due_date: string | null
@@ -17522,6 +17912,51 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      decide_impact_assessment: {
+        Args: {
+          p_comment?: string
+          p_conditions?: string
+          p_decision: string
+          p_step: string
+        }
+        Returns: {
+          approved_at: string | null
+          created_at: string
+          created_by: string | null
+          entity_id: string
+          entity_type: string
+          equality: Json
+          full_required: boolean
+          gate_id: string | null
+          id: string
+          is_sample: boolean
+          material_change_at: string | null
+          material_change_reason: string | null
+          organisation_id: string
+          programme_id: string | null
+          project_id: string | null
+          quality: Json
+          review_date: string | null
+          screening: Json
+          screening_max_score: number
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          summary: string | null
+          template: Json
+          template_version: number
+          title: string
+          updated_at: string
+          version: number
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "impact_assessments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       decide_join_request: {
         Args: {
           p_approve: boolean
@@ -17601,6 +18036,46 @@ export type Database = {
           requested_at: string
         }[]
       }
+      flag_impact_assessment_change: {
+        Args: { p_id: string; p_reason: string }
+        Returns: {
+          approved_at: string | null
+          created_at: string
+          created_by: string | null
+          entity_id: string
+          entity_type: string
+          equality: Json
+          full_required: boolean
+          gate_id: string | null
+          id: string
+          is_sample: boolean
+          material_change_at: string | null
+          material_change_reason: string | null
+          organisation_id: string
+          programme_id: string | null
+          project_id: string | null
+          quality: Json
+          review_date: string | null
+          screening: Json
+          screening_max_score: number
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          summary: string | null
+          template: Json
+          template_version: number
+          title: string
+          updated_at: string
+          version: number
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "impact_assessments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_invite_preview: { Args: { p_token: string }; Returns: Json }
       get_portfolio_overview: {
         Args: {
@@ -17613,6 +18088,18 @@ export type Database = {
       }
       get_project_overview: { Args: { p_project: string }; Returns: Json }
       get_seat_usage: { Args: { p_organisation_id: string }; Returns: Json }
+      impact_assessment_gaps: {
+        Args: { p_org: string }
+        Returns: {
+          assessment_id: string
+          code: string
+          name: string
+          phase_name: string
+          project_id: string
+          status: string
+        }[]
+      }
+      impact_assessment_template: { Args: { p_org: string }; Returns: Json }
       issue_invite_token: {
         Args: { p_actor: string; p_invite_id: string; p_token_hash: string }
         Returns: Json
@@ -18155,6 +18642,14 @@ export type Database = {
         }
       }
       seed_sample_data: { Args: { p_org: string }; Returns: Json }
+      set_impact_assessment_gate: {
+        Args: { p_org: string; p_phase_id: string }
+        Returns: Json
+      }
+      set_impact_assessment_template: {
+        Args: { p_org: string; p_template: Json }
+        Returns: Json
+      }
       set_join_requests_enabled: {
         Args: { p_enabled: boolean; p_organisation_id: string }
         Returns: undefined
@@ -18207,6 +18702,46 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "business_case_versions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      submit_impact_assessment: {
+        Args: { p_id: string; p_updated_at?: string }
+        Returns: {
+          approved_at: string | null
+          created_at: string
+          created_by: string | null
+          entity_id: string
+          entity_type: string
+          equality: Json
+          full_required: boolean
+          gate_id: string | null
+          id: string
+          is_sample: boolean
+          material_change_at: string | null
+          material_change_reason: string | null
+          organisation_id: string
+          programme_id: string | null
+          project_id: string | null
+          quality: Json
+          review_date: string | null
+          screening: Json
+          screening_max_score: number
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          summary: string | null
+          template: Json
+          template_version: number
+          title: string
+          updated_at: string
+          version: number
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "impact_assessments"
           isOneToOne: true
           isSetofReturn: false
         }

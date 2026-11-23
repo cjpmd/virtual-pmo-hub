@@ -112,6 +112,12 @@ export interface OrgSettingsData {
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
+/** NHS-3: settings.impactAssessment.gate.phaseId, or null when no gate is set. Pure. */
+export function impactGatePhaseOf(value: unknown): string | null {
+  const gate = isObject(value) && isObject(value["gate"]) ? value["gate"] : {};
+  return typeof gate["phaseId"] === "string" && gate["phaseId"] ? gate["phaseId"] : null;
+}
+
 export async function loadOrgSettings(orgId: string, userId: string): Promise<OrgSettingsData> {
   const [
     org,
@@ -235,6 +241,7 @@ export async function loadOrgSettings(orgId: string, userId: string): Promise<Or
   settings.modules = {
     enabled: toModuleMap(stored["modules"]),
     pack: toSectorPack(stored["pack"]),
+    impactGatePhaseId: impactGatePhaseOf(stored["impactAssessment"]),
   };
 
   const benefits = isObject(stored["benefits"]) ? stored["benefits"] : {};

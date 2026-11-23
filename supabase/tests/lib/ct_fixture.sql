@@ -316,6 +316,15 @@ begin
     ('programme_assurance_ratings', $s$insert into public.programme_assurance_ratings (programme_id, rating, rated_on)
        select p.id, 'reasonable', current_date - 1 from public.programmes p
        where p.organisation_id = %1$L and p.archived_at is null order by p.created_at, p.id limit 1$s$),
+    -- NHS-3: the target type is checked by trigger; one draft assessment of a project and one decision on it.
+    ('impact_assessments', $s$insert into public.impact_assessments (entity_type, entity_id)
+       select 'project', p.id from public.projects p
+       where p.organisation_id = %1$L and p.archived_at is null
+         and not exists (select 1 from public.impact_assessments a where a.entity_id = p.id)
+       order by p.created_at, p.id limit 1$s$),
+    ('impact_assessment_decisions', $s$insert into public.impact_assessment_decisions (assessment_id, version, decision, comment)
+       select a.id, 0, 'returned', 'GL10' from public.impact_assessments a
+       where a.organisation_id = %1$L order by a.created_at, a.id limit 1$s$),
     ('user_favourites', $s$insert into public.user_favourites (organisation_id, profile_id, project_id)
        select %1$L, m.profile_id, p.id from public.organisation_members m, public.projects p
        where m.organisation_id = %1$L and m.role = 'admin' and p.organisation_id = %1$L limit 1$s$),

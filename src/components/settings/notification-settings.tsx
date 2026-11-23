@@ -3,12 +3,13 @@ import { Switch } from "@/components/ui/switch";
 import type { AppSettings } from "@/data/settings-types";
 import { useSettings } from "@/services/settings";
 import { SelectField, SettingsCard } from "@/components/settings/settings-shell";
-import { SUPPORTED_EVENTS } from "@/lib/notification-settings";
+import { availableEvents } from "@/lib/notification-settings";
 import { patch } from "./settings-helpers";
 
 export function NotificationSettings() {
   const settings = useSettings();
   const notifications = settings.notifications;
+  const events = availableEvents(settings);
   const set = (value: Partial<AppSettings["notifications"]>) => patch("notifications", value);
   return (
     <>
@@ -63,7 +64,7 @@ export function NotificationSettings() {
                 set({
                   events: {
                     ...notifications.events,
-                    ...Object.fromEntries(SUPPORTED_EVENTS.map((event) => [event, true])),
+                    ...Object.fromEntries(events.map((event) => [event, true])),
                   },
                 })
               }
@@ -77,7 +78,7 @@ export function NotificationSettings() {
                 set({
                   events: {
                     ...notifications.events,
-                    ...Object.fromEntries(SUPPORTED_EVENTS.map((event) => [event, false])),
+                    ...Object.fromEntries(events.map((event) => [event, false])),
                   },
                 })
               }
@@ -88,7 +89,7 @@ export function NotificationSettings() {
         }
       >
         <div className="grid gap-2 sm:grid-cols-2">
-          {SUPPORTED_EVENTS.map((event) => (
+          {events.map((event) => (
             <label
               key={event}
               className="flex items-center justify-between gap-3 rounded-md border px-3 py-2.5"

@@ -6,6 +6,7 @@ import { ProgrammeAssuranceCard } from "@/components/assurance/programme-assuran
 import { ProgrammeBenefits } from "@/components/project-benefits";
 import { BoardWorkspace } from "@/components/board-workspace";
 import { DependencyTab } from "@/components/dependency-tab";
+import { ImpactAssessmentPanel } from "@/components/impact-assessment/impact-assessment-panel";
 import { ProgrammeActions } from "@/components/entity-management";
 import { FavouriteButton } from "@/components/favourite-button";
 import { ArchivedWorkspaceBadge } from "@/components/workspace-badge";
@@ -349,6 +350,11 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
             </div>
           </div>
           <ProgrammeAssuranceCard programmeId={programme.id} workspaceId={programme.workspaceId} />
+          <ImpactAssessmentPanel
+            entityType="programme"
+            entityId={programme.id}
+            workspaceId={programme.workspaceId}
+          />
         </div>
       )}
       {tab === "notes" && <ProgrammeOfficeNote programme={programme} />}
