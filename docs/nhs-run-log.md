@@ -23,7 +23,7 @@ Each run reads this file on the newest package branch, does the next piece of wo
 
 - Lock: set `Lock:` below to the run's start time (UTC) and push before starting work; clear it when done. A run that finds a lock newer than 3 hours exits without changes.
 
-Lock: 2026-11-23T20:58Z
+Lock: none
 
 ## Status
 
@@ -33,7 +33,7 @@ Lock: 2026-11-23T20:58Z
 | NHS-1 | done (draft PR, awaiting review) | nhs/1 | [#142](https://github.com/cjpmd/virtual-pmo-hub/pull/142) | Migrations `20261122170000_nhs_1_board_assurance`, `20261122190000_nhs_1b_assurance_blocks`, `20261122210000_nhs_1c_programme_assurance` and `20261123090000_nhs_1d_register_matrix` (not applied): BAF register; BAF report blocks; five committee templates; programme assurance ratings and the "Assurance by programme" block; register matrix and risk re-scoring tool. One-click pack reuses the forum "Create pack" button. |
 | NHS-2 | done (draft PR, awaiting review) | nhs/2 | [#146](https://github.com/cjpmd/virtual-pmo-hub/pull/146) | Migration `20261123100000_nhs_2_benefit_categories` (not applied): NHS categories, measure units and default classifications seeded by the module; notional value per unit; cash / non-cash split on every benefit total; `benefits_by_category` block. |
 | NHS-3 | done (draft PR, awaiting review) | nhs/3 | [#148](https://github.com/cjpmd/virtual-pmo-hub/pull/148) | Migrations `20261123140000_nhs_3_impact_assessments` and `20261123160000_nhs_3b_assessment_notifications_blocks` (not applied; run section 0 of `docs/sql/nhs-3b-assessment-notifications-blocks.sql` by hand before the second, then redeploy `send-notification-email`). Assessments, sign-off, delivery gate, screens, approver notifications, three report blocks. |
-| NHS-4 | in progress (part 2 of ~4) | nhs/4 | [#149](https://github.com/cjpmd/virtual-pmo-hub/pull/149) | Migrations `20261123190000_nhs_4_efficiency` and `20261123200000_nhs_4b_efficiency_summary` (not applied): schemes, monthly values, targets, stage rules, finance validation, scheme impact assessments, year summary RPC; phasing grid and targets editor components. Next: pipeline board, scheme detail and routes. |
+| NHS-4 | in progress (part 3 of ~4) | nhs/4 | [#149](https://github.com/cjpmd/virtual-pmo-hub/pull/149) | Migrations `20261123190000_nhs_4_efficiency` and `20261123200000_nhs_4b_efficiency_summary` (not applied): schemes, monthly values, targets, stage rules, finance validation, scheme impact assessments, year summary RPC. Part 3: Portfolio › Efficiency (pipeline board, list, targets) and the scheme page. Next: dashboard, report blocks and CSV import. |
 | NHS-5 | lane B (see docs/nhs-run-log-b.md) | nhs-b/5 | | |
 | NHS-6 | not started | | | |
 | NHS-7 | lane B (see docs/nhs-run-log-b.md) | nhs-b/7 | | |
@@ -93,6 +93,9 @@ Lock: 2026-11-23T20:58Z
 - **NHS-4 / D8 (calculations, please validate):** forecast outturn = per scheme and month the actual where recorded, else the forecast, else the plan. Full-year effect = the scheme's stored value, else the run rate (last three planned recurrent months × 12). Recurrent carry-forward = the planned recurrent value of the year's last month × 12 (exit run rate). Rejected schemes never count; on hold schemes do. A workspace's target is its whole-workspace target, else the sum of its unit targets.
 - **NHS-4 / D9:** the year summary is one SQL function (`public.efficiency_summary`, invoker, RLS) that the dashboard, targets screen and (part 4) report blocks share; the browser only sums the one scheme being edited in the grid, mirroring the same rules. Non-members get null.
 - **NHS-4 / note for NHS-8:** `private.seed_module_defaults` replaced again (NHS-2 body plus an `efficiency` branch calling `private.seed_efficiency_defaults`); `private.impact_assessments_target`, `private.impact_assessments_finish` and `v_impact_assessments` replaced (lane A only).
+- **NHS-4 / D10:** the efficiency screens live under Portfolio › Efficiency (`/portfolio/efficiency`, scheme pages at `/portfolio/efficiency/<id>`); the nav label is "Efficiency" for every pack, the page titles use the organisation's terms ("CIP" for NHS). Say if you'd prefer it under Benefits.
+- **NHS-4 / D11:** a scheme's organisational unit is stored as the list label (as the part 2 targets are), its category as the `efficiency_category` lookup value (shown by label). Renaming a unit in Settings › Lists leaves existing schemes and targets on the old label.
+- **NHS-4 / D12:** stage moves on the board are back / forward buttons and a "Move to" menu (no drag and drop), shown to workspace managers and above; before each move the app asks `efficiency_stage_check` and says what's missing instead of failing. The board shows rejected and delivered schemes (rejected totals marked "not counted"); the list hides them unless "Show delivered and rejected" is ticked.
 - **NHS-1 / note:** `nhs/0` and `nhs/1` (part 1) were merged to `main` before their migrations were applied to production. Nothing breaks while modules are off, but apply `20261122150000`, `20261122170000` and `20261122190000` before switching a module on.
 
 ## Run entries
@@ -170,3 +173,9 @@ Lock: 2026-11-23T20:58Z
   - Pure helpers in `data/efficiency.ts` (grid, changes, outturn, carry-forward, targets, summary parser) with `data/efficiency-phasing.test.ts`; `getEfficiencySummary` / `saveGridChanges`; `hooks/use-efficiency.ts`; `components/efficiency/phasing-grid.tsx` and `targets-editor.tsx` (not on a route yet). Types: `efficiency_summary` spliced from the local generator.
   - tsc (app and scripts), vitest (774), lint (0 errors), vite build pass. e2e and advisors not run. Tracker updated.
   - Next: NHS-4 part 3 (pipeline board, scheme detail, routes and navigation) on `nhs/4`.
+- **23/11/2026 20:58–21:15 UTC, NHS-4 part 3:** continued on `nhs/4` (PR #149 updated). No database change.
+  - Routes `/portfolio/efficiency` (layout, index) and `/portfolio/efficiency/$schemeId`; nav page "Efficiency" owned by the module (`navPaths`), module marked ready.
+  - `components/efficiency/efficiency-pipeline.tsx` (summary tiles, filters, pipeline board with per-stage totals and keyboard stage mover, list, targets tab), `scheme-form.tsx` (create / edit sheet, links limited to the scheme's workspace, patient-data hints), `scheme-detail.tsx` (stage and next-stage needs, year figures, finance validation, details and links, phasing grid, impact assessment panel). The impact assessment register opens scheme rows on the scheme page.
+  - Pure helpers `pipelineColumns`, `adjacentStages`, `filterSchemes`, `schemePermissions` (data/efficiency.ts) and `draftToEdit` with tests (`data/efficiency-pipeline.test.ts`, `components/efficiency/scheme-form.test.ts`); `loadSchemeOptions` and scheme hooks.
+  - tsc (app and scripts), vitest (786), lint (0 errors), vite build pass. DB suites not re-run (no SQL change since part 2). e2e and advisors not run. Tracker updated.
+  - Next: NHS-4 part 4 (dashboard, report blocks, CSV import) on `nhs/4`.
