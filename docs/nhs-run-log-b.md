@@ -11,14 +11,14 @@ Lane B builds **NHS-5 (Five Case Model business cases)** and **NHS-7 (cross-orga
 - Migration file names use the real current UTC timestamp, as usual.
 - Lock: set `Lock:` below to the run's start time (UTC) and push before starting work; clear it when done. A run that finds a lock newer than 90 minutes exits without changes.
 
-Lock: none
+Lock: 2026-11-23 10:28 UTC
 
 ## Status
 
 | Package | Status | Branch | PR | Notes |
 |---|---|---|---|---|
 | NHS-5 | done (draft PR, awaiting review) | nhs-b/5 | [#145](https://github.com/cjpmd/virtual-pmo-hub/pull/145) | Migrations `20261123084500_nhs_5_five_case` and `20261123091727_nhs_5_five_case_baseline` (not applied). Stages, objectives, appraisal aid, approval routes and gates, route editor in Settings › Modules, Word/PDF export, budget baseline from an approved case. |
-| NHS-7 | not started | | | |
+| NHS-7 | in progress | nhs-b/7 | | |
 
 ## Functions replaced in lane B
 
