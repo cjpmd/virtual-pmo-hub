@@ -1,4 +1,4 @@
-// Efficiency / savings programme (NHS-4 parts 2–3): queries and mutations for the pipeline board,
+// Efficiency / savings programme (NHS-4 parts 2–4): queries and mutations for the pipeline board,
 // the scheme page, the phasing grid, the targets editor and the year summary. Every change refreshes all of the organisation's efficiency
 // queries, since a value or target changes the scheme, the summary and the dashboard together.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -16,6 +16,7 @@ import {
   validateScheme,
   type SchemeEdit,
   getEfficiencySummary,
+  getSchemesAtRisk,
   listSchemeValues,
   listSchemes,
   listTargets,
@@ -88,6 +89,16 @@ export function useEfficiencySummary(year: number | null, workspaceId: string | 
   return useQuery({
     queryKey: qk.efficiency.summary(orgId, year, workspaceId),
     queryFn: () => getEfficiencySummary(orgId, year ?? undefined, workspaceId ?? undefined),
+    enabled: useModule("efficiency"),
+  });
+}
+
+/** Schemes off track this year (the "schemes at risk" report block's rules). */
+export function useSchemesAtRisk() {
+  const orgId = useOrgId();
+  return useQuery({
+    queryKey: qk.efficiency.atRisk(orgId),
+    queryFn: () => getSchemesAtRisk(orgId),
     enabled: useModule("efficiency"),
   });
 }

@@ -38,13 +38,20 @@ import { useFormat } from "@/lib/format";
 import { useModule, useModuleTerm } from "@/lib/modules";
 import { atLeast } from "@/services/auth";
 import type { EfficiencyScheme } from "@/services/efficiency";
+import { EfficiencyDashboard } from "./efficiency-dashboard";
 import { EfficiencyTargetsEditor } from "./targets-editor";
 import { SchemeFormSheet } from "./scheme-form";
 
 const selectClass =
   "h-9 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
-type View = "board" | "list" | "targets";
+type View = "board" | "list" | "dashboard" | "targets";
+const VIEW_LABELS: Record<View, string> = {
+  board: "Pipeline",
+  list: "List",
+  dashboard: "Dashboard",
+  targets: "Targets",
+};
 
 export function EfficiencyPipelinePage() {
   const enabled = useModule("efficiency");
@@ -125,7 +132,7 @@ function Pipeline({ schemes }: { schemes: EfficiencyScheme[] }) {
 
       <div className="flex flex-wrap items-end gap-3">
         <div role="tablist" aria-label="View" className="flex gap-1 rounded-md border p-1">
-          {(["board", "list", "targets"] as const).map((v) => (
+          {(["board", "list", "dashboard", "targets"] as const).map((v) => (
             <button
               key={v}
               type="button"
@@ -134,11 +141,11 @@ function Pipeline({ schemes }: { schemes: EfficiencyScheme[] }) {
               onClick={() => setView(v)}
               className={`rounded px-3 py-1 text-sm ${view === v ? "bg-primary/10 font-medium" : "text-muted-foreground"}`}
             >
-              {v === "board" ? "Pipeline" : v === "list" ? "List" : "Targets"}
+              {VIEW_LABELS[v]}
             </button>
           ))}
         </div>
-        {view !== "targets" && (
+        {(view === "board" || view === "list") && (
           <>
             {workspaces.length > 1 && (
               <label className="text-xs">
@@ -222,6 +229,14 @@ function Pipeline({ schemes }: { schemes: EfficiencyScheme[] }) {
 
       {view === "board" && <Board schemes={boardRows} categoryLabel={categoryLabel} />}
       {view === "list" && <SchemeList rows={listRows} categoryLabel={categoryLabel} />}
+      {view === "dashboard" && (
+        <EfficiencyDashboard
+          year={year}
+          onYearChange={setYear}
+          workspaceId={null}
+          categoryLabel={categoryLabel}
+        />
+      )}
       {view === "targets" && (
         <EfficiencyTargetsEditor year={year} onYearChange={setYear} canEdit={canSetTargets} />
       )}

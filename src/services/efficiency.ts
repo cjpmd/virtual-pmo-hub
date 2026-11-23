@@ -20,6 +20,7 @@ import {
   type ValueKind,
 } from "@/data/efficiency";
 import type { NewRow } from "./db";
+import { fetchBlockData } from "./reports";
 import { unwrap } from "./service-error";
 import { deleteRow, insertRow, updateRow, type Written } from "./write";
 
@@ -425,6 +426,72 @@ export async function getEfficiencySummary(
     "Couldn't load the efficiency summary",
   );
   return toSummary(data);
+}
+
+/** One scheme the "schemes at risk" check flags (private.rb_efficiency_schemes_at_risk). */
+export interface SchemeAtRisk {
+  id: string;
+  ref: string;
+  title: string;
+  stage: string;
+  plan: number;
+  forecastOutturn: number;
+  shortfall: number;
+  planToDate: number;
+  actualToDate: number;
+  reasons: string[];
+  isSample: boolean;
+}
+
+interface RawAtRisk {
+  id?: unknown;
+  ref?: unknown;
+  title?: unknown;
+  stage?: unknown;
+  plan?: unknown;
+  forecast_outturn?: unknown;
+  shortfall?: unknown;
+  plan_to_date?: unknown;
+  actual_to_date?: unknown;
+  reasons?: unknown;
+  is_sample?: unknown;
+}
+
+/** The organisation's schemes off track this financial year, largest shortfall first, worked out
+ *  in the database by the same function as the "Efficiency schemes at risk" report block (a
+ *  preview with no projects in scope; the efficiency blocks ignore the project scope). */
+export async function getSchemesAtRisk(
+  orgId: string,
+  tolerancePct = 10,
+): Promise<{ count: number; rows: SchemeAtRisk[] }> {
+  const data = (await fetchBlockData(
+    { organisation_id: orgId, scope_type: "custom", scope_items: [] },
+    {
+      id: "efficiency-dashboard-at-risk",
+      blockKey: "efficiency_schemes_at_risk",
+      blockVersion: 1,
+      config: { limit: 50, tolerance_pct: tolerancePct, whole_organisation: true },
+      placement: "report",
+    },
+    null,
+  )) as { count?: number; rows?: RawAtRisk[] } | null;
+  const n = (v: unknown) => Number(v) || 0;
+  return {
+    count: n(data?.count),
+    rows: (data?.rows ?? []).map((r) => ({
+      id: String(r.id),
+      ref: String(r.ref ?? ""),
+      title: String(r.title ?? ""),
+      stage: String(r.stage ?? ""),
+      plan: n(r.plan),
+      forecastOutturn: n(r.forecast_outturn),
+      shortfall: n(r.shortfall),
+      planToDate: n(r.plan_to_date),
+      actualToDate: n(r.actual_to_date),
+      reasons: Array.isArray(r.reasons) ? r.reasons.map(String) : [],
+      isSample: r.is_sample === true,
+    })),
+  };
 }
 
 /** Saves the phasing grid's changed cells one by one, in order, through the shared write helper

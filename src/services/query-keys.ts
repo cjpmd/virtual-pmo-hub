@@ -158,6 +158,7 @@ export const qk = {
     settings: (orgId: string) => ["org", orgId, "efficiency", "settings"] as const,
     summary: (orgId: string, year: number | null, workspaceId: string | null) =>
       ["org", orgId, "efficiency", "summary", year, workspaceId] as const,
+    atRisk: (orgId: string) => ["org", orgId, "efficiency", "at-risk"] as const,
   },
   /** NHS-1 part 3: a programme's assurance ratings (history and the latest). */
   programmeAssurance: (orgId: string, programmeId: string) =>

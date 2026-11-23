@@ -54,6 +54,12 @@ import {
   _impact_assessments_awaiting,
   _impact_negative_impacts,
 } from "./impact-assessment";
+import {
+  _efficiency_summary,
+  _efficiency_breakdown,
+  _efficiency_schemes_at_risk,
+  _efficiency_recurrent,
+} from "./efficiency";
 
 /** Every registered block definition. Importing this ensures all blocks are in the registry. */
 export const ALL_BLOCKS = [
@@ -104,4 +110,8 @@ export const ALL_BLOCKS = [
   _impact_assessment_status,
   _impact_assessments_awaiting,
   _impact_negative_impacts,
-]; // 47 total
+  _efficiency_summary,
+  _efficiency_breakdown,
+  _efficiency_schemes_at_risk,
+  _efficiency_recurrent,
+]; // 51 total

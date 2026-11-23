@@ -106,7 +106,12 @@ export const MODULES: ModuleDefinition[] = [
     builtIn: "NHS-4",
     ready: true,
     navPaths: ["/portfolio/efficiency"],
-    reportBlocks: [],
+    reportBlocks: [
+      "efficiency_summary",
+      "efficiency_breakdown",
+      "efficiency_schemes_at_risk",
+      "efficiency_recurrent",
+    ],
   },
   {
     key: "five_case",

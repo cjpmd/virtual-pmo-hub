@@ -489,6 +489,43 @@ export function toSummary(value: unknown): EfficiencySummary | null {
 }
 
 // ---------------------------------------------------------------------------------------------
+// NHS-4 part 4: the dashboard.
+// ---------------------------------------------------------------------------------------------
+
+/** One month of the cumulative chart (the shape of charts/plots CurvePoint). */
+export interface CumulativePoint {
+  period: string;
+  planned: number;
+  actual?: number | undefined;
+  band?: [number, number] | undefined;
+}
+
+/**
+ * The dashboard's cumulative chart: planned, actual up to the last month with an actual recorded
+ * (no line after it), and a band from the risk-adjusted to the forecast outturn position.
+ * `label` names each month (e.g. "Apr 26").
+ */
+export function cumulativePoints(
+  summary: EfficiencySummary,
+  label: (month: string) => string,
+): CumulativePoint[] {
+  const lastActual = summary.months.reduce((last, m, i) => (m.hasActual ? i : last), -1);
+  return summary.months.map((m, i) => ({
+    period: label(m.month),
+    planned: m.cumPlan,
+    actual: i <= lastActual ? m.cumActual : undefined,
+    band: [
+      Math.min(m.cumRiskAdjusted, m.cumForecastOutturn),
+      Math.max(m.cumRiskAdjusted, m.cumForecastOutturn),
+    ],
+  }));
+}
+
+/** Recurrent share of the year's plan, as a percentage (null without a plan). */
+export const recurrentShare = (totals: EfficiencySummary["totals"]): number | null =>
+  totals.plan > 0 ? Math.round((totals.planRecurrent / totals.plan) * 1000) / 10 : null;
+
+// ---------------------------------------------------------------------------------------------
 // NHS-4 part 3: the pipeline board and the scheme list.
 // ---------------------------------------------------------------------------------------------
 
