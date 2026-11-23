@@ -4,13 +4,16 @@ import { ChevronRight } from "lucide-react";
 import { findPage, findSection, type SubPage } from "@/lib/navigation";
 import { useSettings, term } from "@/services/settings";
 import { cn } from "@/lib/utils";
+import { isPathEnabled } from "@/lib/modules";
 
 /** The current section's pages, as tabs in the dark header band. */
 export function SectionTabs() {
   const path = useRouterState({ select: (state) => state.location.pathname });
   const settings = useSettings();
   const section = findSection(path);
-  if (!section || section.pages.length < 2) return null;
+  // NHS-1: pages a switched-off module controls are hidden (lib/modules.ts navPaths).
+  const pages = section?.pages.filter((page) => isPathEnabled(page.to, settings)) ?? [];
+  if (!section || pages.length < 2) return null;
   const active = findPage(section, path);
   const label = (page: SubPage) => (page.termKey ? term(page.termKey, settings) : page.label);
   return (
@@ -18,7 +21,7 @@ export function SectionTabs() {
       aria-label={`${section.label} pages`}
       className="flex min-w-0 gap-0.5 overflow-x-auto [scrollbar-width:none]"
     >
-      {section.pages.map((page) => {
+      {pages.map((page) => {
         const current = active?.to === page.to;
         return (
           <Link

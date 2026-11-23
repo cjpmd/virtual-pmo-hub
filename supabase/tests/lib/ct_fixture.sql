@@ -312,6 +312,10 @@ begin
        insert into public.governance_role_holders (organisation_id, role_key, profile_id)
        select %1$L, r.value, m.profile_id from public.organisation_members m, r
        where m.organisation_id = %1$L and m.role = 'admin' order by m.profile_id limit 1$s$),
+    -- NHS-1 part 3: the rating must be a level of an assurance scheme; left to the stamped default.
+    ('programme_assurance_ratings', $s$insert into public.programme_assurance_ratings (programme_id, rating, rated_on)
+       select p.id, 'reasonable', current_date - 1 from public.programmes p
+       where p.organisation_id = %1$L and p.archived_at is null order by p.created_at, p.id limit 1$s$),
     ('user_favourites', $s$insert into public.user_favourites (organisation_id, profile_id, project_id)
        select %1$L, m.profile_id, p.id from public.organisation_members m, public.projects p
        where m.organisation_id = %1$L and m.role = 'admin' and p.organisation_id = %1$L limit 1$s$),

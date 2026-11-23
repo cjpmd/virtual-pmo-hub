@@ -1,0 +1,517 @@
+{
+ "baf_linkage": {
+  "groups": [
+   {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "ref": "BAF-001",
+    "band": "Extreme",
+    "count": 1,
+    "risks": [
+     {
+      "id": "00000000-0000-4000-8000-000000000002",
+      "ref": "RSK-001",
+      "band": "Elevated",
+      "score": 12,
+      "title": "Supplier staff may not be available for data migration",
+      "status": "open",
+      "band_colour": "#b7791f",
+      "project_code": "CMR",
+      "project_name": "Case management replacement",
+      "programme_name": "Digital public services"
+     }
+    ],
+    "title": "Financial sustainability",
+    "assurance": "Limited assurance",
+    "open_count": 1,
+    "band_colour": "#b3261e",
+    "current_score": 20,
+    "above_appetite": true
+   }
+  ],
+  "unlinked": [
+   {
+    "id": "00000000-0000-4000-8000-000000000003",
+    "ref": "BAF-002",
+    "title": "Workforce"
+   },
+   {
+    "id": "00000000-0000-4000-8000-000000000004",
+    "ref": "BAF-003",
+    "title": "Digital resilience"
+   }
+  ],
+  "linked_total": 1,
+  "in_scope_only": true
+ },
+ "baf_summary": {
+  "rows": [
+   {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "ref": "BAF-001",
+    "band": "Extreme",
+    "lead": null,
+    "forum": null,
+    "title": "Financial sustainability",
+    "trend": "new",
+    "assurance": "Limited assurance",
+    "is_sample": false,
+    "band_colour": "#b3261e",
+    "review_date": "2026-11-19",
+    "target_score": 8,
+    "current_score": 20,
+    "above_appetite": true,
+    "appetite_score": 8,
+    "review_overdue": true,
+    "assurance_colour": "#c2410c"
+   },
+   {
+    "id": "00000000-0000-4000-8000-000000000004",
+    "ref": "BAF-003",
+    "band": "High",
+    "lead": null,
+    "forum": null,
+    "title": "Digital resilience",
+    "trend": "new",
+    "assurance": null,
+    "is_sample": false,
+    "band_colour": "#c2410c",
+    "review_date": null,
+    "target_score": null,
+    "current_score": 9,
+    "above_appetite": false,
+    "appetite_score": null,
+    "review_overdue": null,
+    "assurance_colour": null
+   },
+   {
+    "id": "00000000-0000-4000-8000-000000000003",
+    "ref": "BAF-002",
+    "band": "Moderate",
+    "lead": null,
+    "forum": null,
+    "title": "Workforce",
+    "trend": "new",
+    "assurance": null,
+    "is_sample": false,
+    "band_colour": "#ca8a04",
+    "review_date": null,
+    "target_score": null,
+    "current_score": 4,
+    "above_appetite": false,
+    "appetite_score": 6,
+    "review_overdue": null,
+    "assurance_colour": null
+   }
+  ],
+  "cells": [
+   {
+    "c": 1,
+    "l": 5,
+    "band": "moderate",
+    "refs": [],
+    "count": 0,
+    "score": 5,
+    "colour": "#ca8a04"
+   },
+   {
+    "c": 2,
+    "l": 5,
+    "band": "high",
+    "refs": [],
+    "count": 0,
+    "score": 10,
+    "colour": "#c2410c"
+   },
+   {
+    "c": 3,
+    "l": 5,
+    "band": "extreme",
+    "refs": [],
+    "count": 0,
+    "score": 15,
+    "colour": "#b3261e"
+   },
+   {
+    "c": 4,
+    "l": 5,
+    "band": "extreme",
+    "refs": [],
+    "count": 0,
+    "score": 20,
+    "colour": "#b3261e"
+   },
+   {
+    "c": 5,
+    "l": 5,
+    "band": "extreme",
+    "refs": [],
+    "count": 0,
+    "score": 25,
+    "colour": "#b3261e"
+   },
+   {
+    "c": 1,
+    "l": 4,
+    "band": "moderate",
+    "refs": [],
+    "count": 0,
+    "score": 4,
+    "colour": "#ca8a04"
+   },
+   {
+    "c": 2,
+    "l": 4,
+    "band": "high",
+    "refs": [],
+    "count": 0,
+    "score": 8,
+    "colour": "#c2410c"
+   },
+   {
+    "c": 3,
+    "l": 4,
+    "band": "high",
+    "refs": [],
+    "count": 0,
+    "score": 12,
+    "colour": "#c2410c"
+   },
+   {
+    "c": 4,
+    "l": 4,
+    "band": "extreme",
+    "refs": [],
+    "count": 0,
+    "score": 16,
+    "colour": "#b3261e"
+   },
+   {
+    "c": 5,
+    "l": 4,
+    "band": "extreme",
+    "refs": [
+     "BAF-001"
+    ],
+    "count": 1,
+    "score": 20,
+    "colour": "#b3261e"
+   },
+   {
+    "c": 1,
+    "l": 3,
+    "band": "low",
+    "refs": [],
+    "count": 0,
+    "score": 3,
+    "colour": "#2e7d52"
+   },
+   {
+    "c": 2,
+    "l": 3,
+    "band": "moderate",
+    "refs": [],
+    "count": 0,
+    "score": 6,
+    "colour": "#ca8a04"
+   },
+   {
+    "c": 3,
+    "l": 3,
+    "band": "high",
+    "refs": [
+     "BAF-003"
+    ],
+    "count": 1,
+    "score": 9,
+    "colour": "#c2410c"
+   },
+   {
+    "c": 4,
+    "l": 3,
+    "band": "high",
+    "refs": [],
+    "count": 0,
+    "score": 12,
+    "colour": "#c2410c"
+   },
+   {
+    "c": 5,
+    "l": 3,
+    "band": "extreme",
+    "refs": [],
+    "count": 0,
+    "score": 15,
+    "colour": "#b3261e"
+   },
+   {
+    "c": 1,
+    "l": 2,
+    "band": "low",
+    "refs": [],
+    "count": 0,
+    "score": 2,
+    "colour": "#2e7d52"
+   },
+   {
+    "c": 2,
+    "l": 2,
+    "band": "moderate",
+    "refs": [
+     "BAF-002"
+    ],
+    "count": 1,
+    "score": 4,
+    "colour": "#ca8a04"
+   },
+   {
+    "c": 3,
+    "l": 2,
+    "band": "moderate",
+    "refs": [],
+    "count": 0,
+    "score": 6,
+    "colour": "#ca8a04"
+   },
+   {
+    "c": 4,
+    "l": 2,
+    "band": "high",
+    "refs": [],
+    "count": 0,
+    "score": 8,
+    "colour": "#c2410c"
+   },
+   {
+    "c": 5,
+    "l": 2,
+    "band": "high",
+    "refs": [],
+    "count": 0,
+    "score": 10,
+    "colour": "#c2410c"
+   },
+   {
+    "c": 1,
+    "l": 1,
+    "band": "low",
+    "refs": [],
+    "count": 0,
+    "score": 1,
+    "colour": "#2e7d52"
+   },
+   {
+    "c": 2,
+    "l": 1,
+    "band": "low",
+    "refs": [],
+    "count": 0,
+    "score": 2,
+    "colour": "#2e7d52"
+   },
+   {
+    "c": 3,
+    "l": 1,
+    "band": "low",
+    "refs": [],
+    "count": 0,
+    "score": 3,
+    "colour": "#2e7d52"
+   },
+   {
+    "c": 4,
+    "l": 1,
+    "band": "moderate",
+    "refs": [],
+    "count": 0,
+    "score": 4,
+    "colour": "#ca8a04"
+   },
+   {
+    "c": 5,
+    "l": 1,
+    "band": "moderate",
+    "refs": [],
+    "count": 0,
+    "score": 5,
+    "colour": "#ca8a04"
+   }
+  ],
+  "total": 3,
+  "counts": {
+   "no_rating": 2,
+   "low_assurance": 1,
+   "above_appetite": 1,
+   "review_overdue": 1,
+   "overdue_actions": 1
+  },
+  "matrix": {
+   "name": "NHS 5×5",
+   "bands": [
+    {
+     "key": "low",
+     "max": 3,
+     "min": 1,
+     "label": "Low",
+     "colour": "#2e7d52"
+    },
+    {
+     "key": "moderate",
+     "max": 6,
+     "min": 4,
+     "label": "Moderate",
+     "colour": "#ca8a04"
+    },
+    {
+     "key": "high",
+     "max": 12,
+     "min": 8,
+     "label": "High",
+     "colour": "#c2410c"
+    },
+    {
+     "key": "extreme",
+     "max": 25,
+     "min": 15,
+     "label": "Extreme",
+     "colour": "#b3261e"
+    }
+   ],
+   "likelihood": [
+    {
+     "label": "Rare",
+     "value": 1
+    },
+    {
+     "label": "Unlikely",
+     "value": 2
+    },
+    {
+     "label": "Possible",
+     "value": 3
+    },
+    {
+     "label": "Likely",
+     "value": 4
+    },
+    {
+     "label": "Almost certain",
+     "value": 5
+    }
+   ],
+   "consequence": [
+    {
+     "label": "Negligible",
+     "value": 1
+    },
+    {
+     "label": "Minor",
+     "value": 2
+    },
+    {
+     "label": "Moderate",
+     "value": 3
+    },
+    {
+     "label": "Major",
+     "value": 4
+    },
+    {
+     "label": "Catastrophic",
+     "value": 5
+    }
+   ]
+  },
+  "on_other_matrix": 0
+ },
+ "baf_above_appetite": {
+  "rows": [
+   {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "gap": 12,
+    "ref": "BAF-001",
+    "band": "Extreme",
+    "lead": null,
+    "title": "Financial sustainability",
+    "trend": "new",
+    "appetite": null,
+    "assurance": "Limited assurance",
+    "band_colour": "#b3261e",
+    "open_actions": 1,
+    "target_score": 8,
+    "current_score": 20,
+    "appetite_score": 8,
+    "gaps_in_control": "No recurrent plan yet",
+    "overdue_actions": 1,
+    "gaps_in_assurance": null
+   }
+  ],
+  "count": 1,
+  "total_open": 3,
+  "no_appetite": 1
+ },
+ "assurance_by_programme": {
+  "rows": [
+   {
+    "id": "prog-1",
+    "name": "Digital public services",
+    "rank": 3,
+    "forum": null,
+    "label": "Limited assurance",
+    "colour": "#c2410c",
+    "rating": "limited",
+    "previous": "Reasonable assurance",
+    "rated_on": "2026-11-22",
+    "direction": "worse",
+    "is_sample": true,
+    "portfolio": "Sample portfolio",
+    "rationale": "Two milestones missed; recovery plan not agreed"
+   }
+  ],
+  "rated": 1,
+  "total": 1,
+  "worse": 1,
+  "counts": {
+   "limited": 1
+  },
+  "scheme": {
+   "name": "NHS assurance levels",
+   "levels": [
+    {
+     "key": "substantial",
+     "rag": "green",
+     "rank": 1,
+     "label": "Substantial assurance",
+     "colour": "#2e7d52"
+    },
+    {
+     "key": "reasonable",
+     "rag": "amber",
+     "rank": 2,
+     "label": "Reasonable assurance",
+     "colour": "#ca8a04"
+    },
+    {
+     "key": "limited",
+     "rag": "red",
+     "rank": 3,
+     "label": "Limited assurance",
+     "colour": "#c2410c"
+    },
+    {
+     "key": "no_assurance",
+     "rag": null,
+     "rank": 4,
+     "label": "No assurance",
+     "colour": "#7f1d1d"
+    },
+    {
+     "key": "not_reported",
+     "rag": "not_set",
+     "rank": 5,
+     "label": "Not reported",
+     "colour": "#6b7280"
+    }
+   ]
+  }
+ }
+}

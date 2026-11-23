@@ -153,6 +153,14 @@ function PackCard() {
 }
 
 /** What a pack will do, from preview_sector_pack. */
+const SEED_KINDS: Record<string, string> = {
+  governance_role: "Governance role",
+  risk_appetite: "Risk appetite level",
+  "assurance.matrixKey": "Setting",
+};
+const seedLabel = (item: PackPlan["seeded"][number]) =>
+  `${SEED_KINDS[item.list] ?? "List value"}: ${item.label}`;
+
 export function PackPlanSummary({ plan }: { plan: PackPlan }) {
   const settings = useSettings();
   const terms = Object.entries(plan.termsAdded);
@@ -199,11 +207,11 @@ export function PackPlanSummary({ plan }: { plan: PackPlan }) {
         )}
       </section>
       <section>
-        <h3 className="font-medium">Added to your lists</h3>
+        <h3 className="font-medium">Added to your lists and settings</h3>
         {plan.seeded.length ? (
           <ul className="mt-1 list-disc pl-5">
             {plan.seeded.map((item) => (
-              <li key={`${item.list}:${item.value}`}>Governance role: {item.label}</li>
+              <li key={`${item.list}:${item.value}`}>{seedLabel(item)}</li>
             ))}
           </ul>
         ) : (

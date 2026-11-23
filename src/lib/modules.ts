@@ -55,8 +55,8 @@ export const MODULES: ModuleDefinition[] = [
     ],
     recommends: [],
     builtIn: "NHS-1",
-    navPaths: [],
-    reportBlocks: [],
+    navPaths: ["/governance/assurance"],
+    reportBlocks: ["baf_summary", "baf_above_appetite", "baf_linkage", "assurance_by_programme"],
   },
   {
     key: "benefit_categories_nhs",
@@ -175,6 +175,11 @@ export function isReportBlockEnabled(blockKey: string, settings: AppSettings = g
   const owner = MODULES.find((item) => item.reportBlocks.includes(blockKey));
   return !owner || isModuleEnabled(owner.key, settings);
 }
+/** A template is shown only while every block in it is enabled (its modules are on). */
+export const templateModulesOn = (
+  blocks: readonly { blockKey: string }[],
+  settings: AppSettings = getSettings(),
+) => blocks.every((block) => isReportBlockEnabled(block.blockKey, settings));
 /** Report templates declare the modules they need; hidden if any is off. */
 export const modulesSatisfied = (
   required: readonly string[] | undefined,

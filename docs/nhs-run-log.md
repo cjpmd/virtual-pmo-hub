@@ -30,13 +30,13 @@ Lock: none
 | Package | Status | Branch | PR | Notes |
 |---|---|---|---|---|
 | NHS-0 | done (draft PR, awaiting review) | nhs/0 | [#140](https://github.com/cjpmd/virtual-pmo-hub/pull/140) | Migration `20261122150000_nhs_0_modules` (not applied). Settings › Modules, NHS sign-up choice, governance roles. Nav/report-block hiding helpers exist but nothing is wired yet: NHS-1 wires them with its first module-owned item. |
-| NHS-1 | not started | | | |
+| NHS-1 | done (draft PR, awaiting review) | nhs/1 | [#142](https://github.com/cjpmd/virtual-pmo-hub/pull/142) | Migrations `20261122170000_nhs_1_board_assurance`, `20261122190000_nhs_1b_assurance_blocks`, `20261122210000_nhs_1c_programme_assurance` and `20261123090000_nhs_1d_register_matrix` (not applied): BAF register; BAF report blocks; five committee templates; programme assurance ratings and the "Assurance by programme" block; register matrix and risk re-scoring tool. One-click pack reuses the forum "Create pack" button. |
 | NHS-2 | not started | | | |
 | NHS-3 | not started | | | |
 | NHS-4 | not started | | | |
-| NHS-5 | not started | | | |
+| NHS-5 | lane B (see docs/nhs-run-log-b.md) | nhs-b/5 | | |
 | NHS-6 | not started | | | |
-| NHS-7 | not started | | | |
+| NHS-7 | lane B (see docs/nhs-run-log-b.md) | | | |
 | NHS-8 | not started | | | |
 
 ## Decisions for Chris
@@ -48,6 +48,24 @@ Lock: none
 - **NHS-0 / D5:** direct client writes to approval decision fields are refused for every step. The UI already uses `decide_approval_step`.
 - **NHS-0 / D6 (for NHS-3):** contributors can still delete or edit undecided approval steps. Module-created gates (QIA sign-off) need locking so a required step can't be removed.
 - **NHS-0 / D7:** module switches can be turned on before their screens exist. Settings › Modules says each arrives in its package.
+
+- **NHS-1 / D1:** the NHS 5×5 is the matrix for strategic risks (`settings.assurance.matrixKey`, set by the NHS pack), not yet for project and programme risks. The RB-13a guard refuses an organisation default matrix until the register scores from `risk_matrices`; part 2 proposes that change together with the re-scoring tool.
+- **NHS-1 / D2:** `strategic_risks`, `strategic_risk_actions` and `strategic_risk_scores` are organisation-scoped (no `workspace_id`), added to the AGENTS.md exception list pending your approval.
+- **NHS-1 / D3:** strategic risks are closed, never deleted; PMO and admins can delete actions.
+- **NHS-1 / D4:** with the module off, BAF data stays readable; writes and new links are refused.
+- **NHS-1 / D5:** the committee templates are global system rows (like "Funding committee") with the NHS names from the plan. The app hides any template containing a block whose module is off, so they only appear with board assurance on. A non-NHS organisation that switches board assurance on sees the NHS names; it can duplicate and rename them.
+- **NHS-1 / D6:** the committee templates use the `nhs_assurance` rating scheme but set no risk matrix, so project risks in a pack keep the register's matrix (RB-13a). The BAF blocks use the BAF matrix (`settings.assurance.matrixKey`).
+- **NHS-1 / D7:** the BAF blocks are partner-unsafe (added to `private.partner_unsafe_blocks`). `baf_summary` and `baf_above_appetite` show the whole organisation's BAF whatever the report's scope; `baf_linkage` shows only linked risks in scope unless its "in scope only" option is off.
+- **NHS-1 / D8:** no separate pack engine. A forum's "Create pack for <meeting>" already makes a pack from the forum's default template, and Export to PDF prints it. Set the forum's default template to a committee template in its Report settings.
+- **NHS-1 / D9:** programme assurance ratings are a history (`programme_assurance_ratings`, workspace-scoped): the newest by date is current. Workspace PMO and admins record them while the module is on (not programme managers: the rating is the board's judgement); a rating can't be edited, only removed as a mistake. Say if programme managers or forum chairs should rate too.
+- **NHS-1 / D10:** `assurance_by_programme` is partner-unsafe and was added to the Trust Board (after the rating distribution) and Executive Management / PMO Board (after the status grid) system templates, by updating those two system rows; reports already made keep their blocks.
+- **NHS-1 / D11:** the risk re-scoring tool and scoring the project/programme register from `risk_matrices` (D1) moved to a part 4: it touches the RAID screens, health thresholds and the RB-13a guard, so it gets its own run.
+- **NHS-1 / D12 (part 4, supersedes D1 for the register):** an organisation's own matrix may now be its default when it is 5 × 5 and scored by product (the register's `risks.score` is the generated product of 1–5 levels). The organisation default is the "register matrix": Settings › Risk's size, labels and bands are copied from it by trigger and locked in the UI; the appetite threshold stays editable. Other matrices still work on forums and templates. Organisations that never choose one behave exactly as before.
+- **NHS-1 / D13:** choosing a system matrix (the NHS 5×5) copies it into the organisation, because a system row can't be one organisation's default; the forum matrix list then shows "NHS 5×5 (your organisation)" beside the system one.
+- **NHS-1 / D14:** changing the register matrix stamps every existing risk that followed the old default with the old matrix (`risks.risk_matrix_id`), so scores, bands and pack history don't change. This bumps those risks' `updated_at` and writes one row-change audit entry per risk.
+- **NHS-1 / D15:** re-scoring is open to workspace PMO and admins (per risk's workspace), not only organisation admins; closed risks are never offered. Between two 5 × 5 matrices the proposal keeps likelihood and consequence (only the band can change); other sizes are scaled by level position. Accepted risks follow the register matrix again.
+- **NHS-1 / D16:** the NHS pack doesn't switch an existing organisation's register matrix (rule 2: nothing changes existing scoring automatically). New organisations choosing NHS at sign-up get the NHS 5×5 as their register matrix (the setup wizard calls `set_register_risk_matrix` after applying the pack); others choose it in Settings › Risk. `private.seed_module_defaults` was not changed, to avoid a conflict with lane B.
+- **NHS-1 / note:** `nhs/0` and `nhs/1` (part 1) were merged to `main` before their migrations were applied to production. Nothing breaks while modules are off, but apply `20261122150000`, `20261122170000` and `20261122190000` before switching a module on.
 
 ## Run entries
 
@@ -63,3 +81,28 @@ Lock: none
   - e2e and Supabase advisors not run.
   - Types: the new objects were spliced in from the local generator, because a full local regeneration re-adds the hand-dropped `committee_packs`.
   - Next: NHS-1 (from `nhs/0`).
+- **22/11/2026 15:54–16:15 UTC, NHS-1 part 1:** audit in PR #142.
+  - Migration (BAF tables, view, links trigger, assurance seeding) and `supabase/tests/board_assurance.sql` (40 checks); `nhs_modules.sql` adjusted for the new seeds.
+  - Local DB suites pass (cross_tenant, purge, read-only, export, closure, reports 1–5); `reports_phase6` fails as on main.
+  - Board assurance page, nav hiding wired (section tabs, flyout, command palette), Risk appetite list, unit tests.
+  - tsc (app and scripts), vitest (683), lint (0 errors), vite build pass. e2e and advisors not run.
+  - Note: `nhs/0` was merged to `main` (#141) before this run.
+  - Next: NHS-1 part 2 on `nhs/1`.
+- **22/11/2026 18:53–19:15 UTC, NHS-1 part 2:** continued on `nhs/1` (PR #142 updated).
+  - Migration `20261122190000_nhs_1b_assurance_blocks` (BAF blocks, partner-unsafe list, five committee templates) and `supabase/tests/assurance_blocks.sql` (25 checks, including a published Trust Board pack).
+  - Local DB suites pass: cross_tenant, purge, read-only (46), export, closure, sample data, nhs_modules (55), board_assurance (40), reports 1–5. `reports_phase6` fails as on main.
+  - Block renderers, module ownership of the blocks, block library and template lists filtered by module, unit tests.
+  - tsc (app and scripts), vitest (693), lint (0 errors), vite build pass. e2e and advisors not run. Types unchanged (no new public objects).
+  - Next: NHS-1 part 3 on `nhs/1`.
+- **22/11/2026 20:58–21:15 UTC, NHS-1 part 3:** continued on `nhs/1` (PR #142 updated).
+  - Migration `20261122210000_nhs_1c_programme_assurance` (rating history table, `v_programme_assurance`, `assurance_by_programme` block, partner-unsafe list, two templates) and `supabase/tests/programme_assurance.sql` (34 checks); `ct_fixture.sql` gets a hand row for the new table.
+  - Local DB suites pass: cross_tenant, purge, read-only (46), export (29), closure (82), sample data (27), nhs_modules (55), board_assurance (40), assurance_blocks (25), reports 1–5. `reports_phase6` fails as on main.
+  - Assurance rating card on the programme Status tab (module on only), block renderer, unit tests. Types spliced from the local generator (table and view only).
+  - tsc (app and scripts), vitest (700), lint (0 errors), vite build pass. e2e and advisors not run.
+  - Next: NHS-1 part 4 (re-scoring tool, register matrix) on `nhs/1`.
+- **23/11/2026 08:57–09:20 UTC, NHS-1 part 4 (package done):** continued on `nhs/1` (PR #142 updated).
+  - Migration `20261123090000_nhs_1d_register_matrix` (RB-13a guard relaxed for 5 × 5 product matrices, settings.risk sync triggers, `set_register_risk_matrix`, `risk_rescore_candidates`, `rescore_risks`) and `supabase/tests/register_matrix.sql` (44 checks); `cross_tenant.sql` cases for the three RPCs.
+  - Local DB suites pass: cross_tenant, purge, read-only (46), export (29), closure (82), sample data (27), nhs_modules (55), board_assurance (40), assurance_blocks (25), programme_assurance (34), reports 1–5. `reports_phase6` fails as on main.
+  - Settings › Risk: Risk register matrix card (admins), Re-score risks card (PMO / admins), labels and bands locked while the organisation has its own matrix; NHS sign-up sets the NHS 5×5; forum report settings copy updated. Types spliced from the local generator (three RPCs).
+  - tsc (app and scripts), vitest (707), lint (0 errors), vite build pass. e2e and advisors not run.
+  - Next: NHS-2 on `nhs/2` (from `nhs/1`).
