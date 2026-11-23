@@ -64,7 +64,10 @@ export const MODULES: ModuleDefinition[] = [
     nhsName: "NHS benefit categories",
     description:
       "Benefit categories in NHS language, such as bed days saved, staff time released and waiting list.",
-    adds: ["NHS benefit categories and measure units"],
+    adds: [
+      "Twelve NHS benefit categories, each with a default cash-releasing or non-cash classification",
+      "Measure unit presets such as bed days, WTE and staff hours",
+    ],
     recommends: [],
     healthOnly: true,
     builtIn: "NHS-2",

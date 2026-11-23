@@ -1,6 +1,10 @@
 import type { Sector } from "./sectors";
 import type { SectorPack } from "./sector-packs";
 import type { ModuleKey } from "@/lib/modules";
+
+/** benefit_classification as stored (NHS-2 category defaults). */
+export type BenefitClassificationValue =
+  "cash_releasing" | "non_cash_releasing" | "qualitative" | "societal";
 import type {
   BenefitCategory,
   BenefitClassification,
@@ -143,6 +147,13 @@ export interface BenefitSettings {
   optimismBias: Array<{ category: BenefitCategory; percentage: number }>;
   defaultMeasurementFrequency: "Monthly" | "Quarterly" | "Annually";
   appraisalYears: number;
+  /**
+   * NHS-2: default classification by benefit category (lookup value → benefit_classification
+   * enum value). Pre-selected when a category is chosen; people can change it.
+   */
+  categoryClassification?: Record<string, BenefitClassificationValue>;
+  /** NHS-2: derived on load (category label → lookup value); never saved. */
+  categoryKeys?: Record<string, string>;
 }
 
 // ---- 8. Lists & categories ----
@@ -162,6 +173,8 @@ export interface ListSettings {
   governanceRoles: string[];
   /** NHS-1: lookup list risk_appetite (strategic risk appetite levels). */
   riskAppetite: string[];
+  /** NHS-2: lookup list measure_unit (unit presets offered on benefit measures). */
+  measureUnits: string[];
 }
 
 // ---- 9. Users, roles & permissions ----

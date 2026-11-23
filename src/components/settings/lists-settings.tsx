@@ -64,6 +64,14 @@ export function ListsSettings() {
             onChange={(values) => patch("lists", { riskAppetite: values })}
           />
         )}
+        {/* NHS-2: unit presets offered on benefit measures (free text still allowed). */}
+        {(isModuleEnabled("benefit_categories_nhs", settings) || lists.measureUnits.length > 0) && (
+          <ListEditor
+            label="Measure units"
+            values={lists.measureUnits}
+            onChange={(values) => patch("lists", { measureUnits: values })}
+          />
+        )}
       </div>
     </SettingsCard>
   );

@@ -73,6 +73,7 @@ export const LIST_KEYS = {
   fundingSources: "funding_source",
   governanceRoles: "governance_role",
   riskAppetite: "risk_appetite",
+  measureUnits: "measure_unit",
 } as const;
 type ListName = keyof typeof LIST_KEYS;
 
@@ -241,6 +242,12 @@ export async function loadOrgSettings(orgId: string, userId: string): Promise<Or
     ...(benefits as unknown as AppSettings["benefits"]),
     categories: activeLabels("benefit_category") as AppSettings["benefits"]["categories"],
     classifications: ["Cash-releasing", "Non-cash-releasing", "Qualitative", "Societal"],
+    // NHS-2: derived (label → lookup value) so the category defaults can be keyed by value; never saved.
+    categoryKeys: Object.fromEntries(
+      lookupRows
+        .filter((row) => row.listKey === "benefit_category" && row.isActive)
+        .map((row) => [row.label, row.value]),
+    ),
   };
 
   const regional = isObject(stored["regional"]) ? stored["regional"] : {};
@@ -524,6 +531,7 @@ async function saveJsonb(
       ...settings.benefits,
       categories: undefined,
       classifications: undefined,
+      categoryKeys: undefined,
       optimismBias: undefined,
     },
     notifications: settings.notifications,

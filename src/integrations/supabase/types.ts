@@ -944,6 +944,7 @@ export type Database = {
           measurement_method: string | null
           name: string
           next_due_date: string | null
+          notional_unit_value: number | null
           organisation_id: string
           sort_order: number
           unit: string | null
@@ -963,6 +964,7 @@ export type Database = {
           measurement_method?: string | null
           name: string
           next_due_date?: string | null
+          notional_unit_value?: number | null
           organisation_id: string
           sort_order?: number
           unit?: string | null
@@ -982,6 +984,7 @@ export type Database = {
           measurement_method?: string | null
           name?: string
           next_due_date?: string | null
+          notional_unit_value?: number | null
           organisation_id?: string
           sort_order?: number
           unit?: string | null

@@ -102,13 +102,13 @@ function DashboardBody({ data }: { data: BenefitsData }) {
         <KpiCard
           label="Planned value (whole life)"
           value={money(metrics.planned)}
-          detail={`${items.filter((item) => item.type === "Benefit").length} benefits · ${money(metrics.disbenefitValue)} disbenefits`}
+          detail={`${money(metrics.cashReleasingPlanned)} cash-releasing · ${money(metrics.nonCashPlanned)} non-cash · ${money(metrics.disbenefitValue)} disbenefits`}
           icon="budget"
         />
         <KpiCard
           label="Realised to date"
           value={money(metrics.realised)}
-          detail={`${metrics.percent}% of the planned profile`}
+          detail={`${metrics.percent}% of plan · ${money(metrics.nonCashRealised)} non-cash`}
           icon="forecast"
         />
         <KpiCard

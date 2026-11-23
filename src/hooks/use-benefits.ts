@@ -10,6 +10,7 @@ import {
   saveHandover,
   submitMeasurement,
   updateBenefit,
+  updateMeasureUnit,
   type BenefitInput,
   type HandoverInput,
   type MeasurementInput,
@@ -65,6 +66,18 @@ export function useBenefitMutations() {
       onSettled,
     }),
     reviewMeasurement: useMutation({ mutationFn: reviewMeasurement, onSettled }),
+    updateMeasureUnit: useMutation({
+      mutationFn: ({
+        id,
+        input,
+        lastSeen,
+      }: {
+        id: string;
+        input: { unit: string; notionalUnitValue: number | null };
+        lastSeen?: string | null;
+      }) => updateMeasureUnit(id, input, lastSeen),
+      onSettled,
+    }),
     saveHandover: useMutation({
       mutationFn: (input: HandoverInput) => saveHandover(input),
       onSettled,

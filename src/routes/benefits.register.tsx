@@ -5,7 +5,9 @@ import { TriangleAlert } from "lucide-react";
 import { benefitAutomationRecipes, BoardWorkspace } from "@/components/board-workspace";
 import { PageHeader, KpiCard } from "@/components/pmo-ui";
 import { useSampleAdornment } from "@/components/sample-badge";
-import { benefitColumns, benefitsToRows, benefitViews } from "@/lib/benefit-board-data";
+import { benefitColumnsFor, benefitsToRows, benefitViews } from "@/lib/benefit-board-data";
+import { defaultClassification } from "@/lib/benefit-classification";
+import { useSettings } from "@/services/settings";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { QueryState } from "@/components/query-state";
@@ -63,10 +65,13 @@ function Register({ data }: { data: BenefitsData }) {
   const mutations = useBenefitMutations();
   const rows = useMemo(() => benefitsToRows(data), [data]);
   const sampleChip = useSampleAdornment("benefit");
+  const benefitSettings = useSettings().benefits;
+  const columns = useMemo(() => benefitColumnsFor(data.categories), [data.categories]);
   const onRecordChange = useBoardRecordSync<BenefitInput>({
-    toInput: (patch) => benefitInputFromBoard(patch, data.people),
+    toInput: (patch) => benefitInputFromBoard(patch, data.people, data.categories, benefitSettings),
     create: (input) => {
-      const category = data.categories[0];
+      const category =
+        data.categories.find((item) => item.id === input.categoryId) ?? data.categories[0];
       if (!input.title) return void toast.error("Give the benefit a title.");
       if (!portfolio || !category)
         return void toast.error("Set up a portfolio and benefit categories first.");
@@ -75,7 +80,10 @@ function Register({ data }: { data: BenefitsData }) {
         portfolioId: portfolio.id,
         ownerId: input.ownerId ?? null,
         categoryId: category.id,
-        classification: input.classification ?? "Non-cash-releasing",
+        classification:
+          input.classification ??
+          defaultClassification(category, benefitSettings) ??
+          "Non-cash-releasing",
       });
     },
     update: (id, input, lastSeen) => mutations.update.mutateAsync({ id, input, lastSeen }),
@@ -100,13 +108,13 @@ function Register({ data }: { data: BenefitsData }) {
         <KpiCard
           label="Planned value"
           value={money(metrics.planned)}
-          detail="Quantified portfolio value"
+          detail={`${money(metrics.split.cashPlanned)} cash-releasing · ${money(metrics.split.nonCashPlanned)} non-cash`}
           icon="budget"
         />
         <KpiCard
           label="Realised"
           value={`${metrics.percent}%`}
-          detail={money(metrics.realised)}
+          detail={`${money(metrics.split.cashRealised)} cash-releasing · ${money(metrics.split.nonCashRealised)} non-cash`}
           icon="forecast"
         />
         <KpiCard
@@ -136,15 +144,18 @@ function Register({ data }: { data: BenefitsData }) {
         itemLabel="benefit"
         seededAutomations={benefitAutomationRecipes}
         rows={rows}
-        columns={
-          canEdit
-            ? benefitColumns
-            : benefitColumns.map((column) => ({ ...column, editable: false }))
-        }
+        columns={canEdit ? columns : columns.map((column) => ({ ...column, editable: false }))}
         manage={canEdit}
         canDelete={canDelete}
         onRecordChange={onRecordChange}
-        groupOptions={["objective", "programme", "classification", "status", "confidence"]}
+        groupOptions={[
+          "objective",
+          "programme",
+          "classification",
+          "category",
+          "status",
+          "confidence",
+        ]}
         seededViews={benefitViews}
         titleAdornment={sampleChip}
         renderTitle={(row) => (

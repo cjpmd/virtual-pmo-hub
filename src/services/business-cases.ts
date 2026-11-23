@@ -335,7 +335,7 @@ export async function listBenefitCategories(orgId: string) {
   return unwrap(
     await supabase
       .from("lookup_values")
-      .select("id, label")
+      .select("id, label, value")
       .eq("organisation_id", orgId)
       .eq("list_key", "benefit_category")
       .eq("is_active", true)

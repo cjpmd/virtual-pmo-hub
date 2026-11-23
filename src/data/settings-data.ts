@@ -418,6 +418,7 @@ export const defaultSettings: AppSettings = {
     fundingSources: [],
     governanceRoles: [],
     riskAppetite: [],
+    measureUnits: [],
   },
   // Filled from organisation_members when the organisation loads.
   users: [],
