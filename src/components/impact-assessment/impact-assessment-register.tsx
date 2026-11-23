@@ -46,17 +46,20 @@ function Register({ rows }: { rows: AssessmentRegisterRow[] }) {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<Filter>("all");
   const visible = filterRegister(rows, filter);
+  // Scheme assessments (NHS-4) open from the scheme page once it exists (NHS-4 part c).
   const open = (row: AssessmentRegisterRow) =>
-    row.entityType === "project" && row.projectCode
-      ? navigate({
-          to: "/portfolio/projects/$projectCode",
-          params: { projectCode: row.projectCode },
-          search: { tab: "plan", sub: "gates" },
-        })
-      : navigate({
-          to: "/portfolio/programmes/$programmeId",
-          params: { programmeId: row.entityId },
-        });
+    row.entityType === "efficiency_scheme"
+      ? undefined
+      : row.entityType === "project" && row.projectCode
+        ? navigate({
+            to: "/portfolio/projects/$projectCode",
+            params: { projectCode: row.projectCode },
+            search: { tab: "plan", sub: "gates" },
+          })
+        : navigate({
+            to: "/portfolio/programmes/$programmeId",
+            params: { programmeId: row.entityId },
+          });
 
   const columns: Column<AssessmentRegisterRow>[] = [
     {
@@ -71,9 +74,9 @@ function Register({ rows }: { rows: AssessmentRegisterRow[] }) {
             {row.projectCode && <span className="text-muted-foreground">{row.projectCode} · </span>}
             {row.targetName}
           </span>
-          {row.entityType === "programme" && (
+          {row.entityType !== "project" && (
             <span className="rounded border px-1.5 text-[11px] text-muted-foreground">
-              Programme
+              {row.entityType === "programme" ? "Programme" : term("efficiency.scheme")}
             </span>
           )}
           {row.isSample && <SampleChip />}

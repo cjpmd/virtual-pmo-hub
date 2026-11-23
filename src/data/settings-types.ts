@@ -175,6 +175,8 @@ export interface ListSettings {
   riskAppetite: string[];
   /** NHS-2: lookup list measure_unit (unit presets offered on benefit measures). */
   measureUnits: string[];
+  /** NHS-4: efficiency (CIP) scheme categories. */
+  efficiencyCategories: string[];
 }
 
 // ---- 9. Users, roles & permissions ----

@@ -158,6 +158,7 @@ function PackCard() {
 const SEED_KINDS: Record<string, string> = {
   governance_role: "Governance role",
   risk_appetite: "Risk appetite level",
+  efficiency_category: "Scheme category",
   "assurance.matrixKey": "Setting",
 };
 const seedLabel = (item: PackPlan["seeded"][number]) =>
