@@ -64,6 +64,16 @@ describe("notificationEmail", () => {
     expect(email.html).toContain("/notifications/unsubscribe?token=");
     expect(email.text).toContain("- “Build <it>” (RD01) was due on 10/11/2026. https://pmo.example.org/home/my-work");
   });
+  it("groups impact assessment kinds, and keeps kinds it doesn't know under Other", () => {
+    const items = [
+      { id: "a", kind: "assessment_signoff" as const, text: "Sign-off", link: null, due_date: "2026-11-23" },
+      { id: "b", kind: "future_kind" as unknown as "task_overdue", text: "New", link: null, due_date: "2026-11-23" },
+    ];
+    expect(groupItems(items).map((g) => g.label)).toEqual([
+      "Impact assessments awaiting your sign-off",
+      "Other",
+    ]);
+  });
   it("uses the single item as the subject of an immediate email, and counts what was left out", () => {
     const one = entry({ total: 1, items: [entry().items[1]!] });
     expect(notificationEmail(one, APP, "immediate").subject).toBe("ORMO PMO: “Build <it>” (RD01) was due on 10/11/2026.");

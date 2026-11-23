@@ -4,10 +4,14 @@
 import { Switch } from "@/components/ui/switch";
 import { SelectField, SettingsCard } from "@/components/settings/settings-shell";
 import { useNotificationPreferences } from "@/hooks/use-notifications";
-import { DIGEST_LABEL, effectiveDigest, orgDefaultDigest } from "@/lib/notification-settings";
+import {
+  availableNotificationKinds,
+  DIGEST_LABEL,
+  effectiveDigest,
+  orgDefaultDigest,
+} from "@/lib/notification-settings";
 import {
   NOTIFICATION_EVENT,
-  NOTIFICATION_KINDS,
   NOTIFICATION_LABEL,
   type Digest,
   type NotificationKind,
@@ -20,8 +24,10 @@ export function MyNotificationSettings() {
   const { preferences, save } = useNotificationPreferences();
   const emailAllowed = org.channels.email !== false;
   const digest = effectiveDigest(org, preferences.digest);
-  // Kinds the organisation has switched off aren't offered.
-  const kinds = NOTIFICATION_KINDS.filter((kind) => org.events[NOTIFICATION_EVENT[kind]] !== false);
+  // Kinds the organisation has switched off, or whose module is off, aren't offered.
+  const kinds = availableNotificationKinds(settings).filter(
+    (kind) => org.events[NOTIFICATION_EVENT[kind]] !== false,
+  );
   const toggle = (channel: "inApp" | "email", kind: NotificationKind, on: boolean) =>
     save.mutate({ [channel]: { [kind]: on } });
   return (

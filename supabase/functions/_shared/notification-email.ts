@@ -19,7 +19,9 @@ export type NotificationKind =
   | "decision_recorded"
   | "measurement_overdue"
   | "dependency_off_track"
-  | "pack_drafted";
+  | "pack_drafted"
+  | "assessment_signoff"
+  | "assessment_decided";
 
 export interface PendingNotificationEmail {
   organisation_id: string;
@@ -61,6 +63,8 @@ const KIND_LABEL: Record<NotificationKind, string> = {
   measurement_overdue: "Overdue measurements",
   dependency_off_track: "Dependencies off track",
   pack_drafted: "Draft packs",
+  assessment_signoff: "Impact assessments awaiting your sign-off",
+  assessment_decided: "Impact assessments decided",
 };
 const KIND_ORDER = Object.keys(KIND_LABEL) as NotificationKind[];
 const ADDRESS = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -79,11 +83,14 @@ export const settingsLink = (appUrl: string) => `${base(appUrl)}/settings/accoun
 export const itemLink = (appUrl: string, link: string | null) =>
   link && link.startsWith("/") && !link.startsWith("//") ? `${base(appUrl)}${link}` : null;
 
-/** Items grouped by kind, in a fixed order. */
+/** Items grouped by kind, in a fixed order; kinds this module doesn't know yet (a database
+ *  ahead of the deployed function) go last under "Other", so nothing is dropped. */
 export function groupItems(items: PendingNotificationEmail["items"]) {
-  return KIND_ORDER.map((kind) => ({ kind, label: KIND_LABEL[kind], items: items.filter((i) => i.kind === kind) })).filter(
-    (group) => group.items.length > 0,
-  );
+  const known = new Set<string>(KIND_ORDER);
+  return [
+    ...KIND_ORDER.map((kind) => ({ kind, label: KIND_LABEL[kind], items: items.filter((i) => i.kind === kind) })),
+    { kind: "other" as const, label: "Other", items: items.filter((i) => !known.has(i.kind)) },
+  ].filter((group) => group.items.length > 0);
 }
 
 export function notificationEmail(entry: PendingNotificationEmail, appUrl: string, mode: "immediate" | "digest") {

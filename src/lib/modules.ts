@@ -89,7 +89,11 @@ export const MODULES: ModuleDefinition[] = [
     builtIn: "NHS-3",
     ready: true,
     navPaths: ["/governance/impact-assessments"],
-    reportBlocks: [],
+    reportBlocks: [
+      "impact_assessment_status",
+      "impact_assessments_awaiting",
+      "impact_negative_impacts",
+    ],
   },
   {
     key: "efficiency",

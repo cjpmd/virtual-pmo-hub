@@ -500,6 +500,25 @@ describe("Phase 3 and 4 blocks", () => {
       category_count: 0,
       categories: [],
     },
+    impact_assessment_status: {
+      total: 0,
+      counts: { draft: 0, in_review: 0, approved: 0, rejected: 0, reassessment_required: 0 },
+      review_overdue: 0,
+      with_conditions: 0,
+      full_required: 0,
+      gate_on: false,
+      rows: [],
+      gaps: [],
+    },
+    impact_assessments_awaiting: { count: 0, rows: [] },
+    impact_negative_impacts: {
+      assessments: 0,
+      quality_count: 0,
+      equality_count: 0,
+      unmitigated: 0,
+      quality: [],
+      equality: [],
+    },
   };
   for (const [key, data] of Object.entries(EMPTY34)) {
     it(`${key} renders empty data`, () => {
@@ -516,10 +535,10 @@ describe("Phase 3 and 4 blocks", () => {
 });
 
 describe("ALL_BLOCKS registry (tree-shaking guard)", () => {
-  it("ALL_BLOCKS contains exactly 44 definitions", () => {
+  it("ALL_BLOCKS contains exactly 47 definitions", () => {
     // This test fails if a new block is added without updating catalogue/index.ts,
     // or if the explicit import chain is broken and blocks get tree-shaken.
-    expect(ALL_BLOCKS).toHaveLength(44);
+    expect(ALL_BLOCKS).toHaveLength(47);
   });
   it("ALL_BLOCKS matches what the registry contains", () => {
     const registryKeys = listBlocks()

@@ -131,6 +131,8 @@ export const notificationEvents = [
   "Benefit behind profile",
   "Lessons review outstanding",
   "Draft pack ready",
+  "Impact assessment awaiting my sign-off",
+  "Impact assessment decided",
 ];
 
 /**
