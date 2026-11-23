@@ -42,6 +42,7 @@ import { _changes_since_last, _raid_movement } from "./phase3";
 import { _lessons_learned, _linked_records } from "./phase4";
 import { _project_overview } from "./project-overview";
 import { _programme_coverage, _benefits_value } from "./funding";
+import { _partner_contributions } from "./partners";
 
 /** Every registered block definition. Importing this ensures all blocks are in the registry. */
 export const ALL_BLOCKS = [
@@ -84,4 +85,5 @@ export const ALL_BLOCKS = [
   _project_overview,
   _programme_coverage,
   _benefits_value,
-]; // 39 total
+  _partner_contributions,
+]; // 40 total

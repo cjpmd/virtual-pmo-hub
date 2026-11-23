@@ -129,8 +129,8 @@ export const MODULES: ModuleDefinition[] = [
     adds: ["Shared programmes", "Partner-contributed projects", "System-level programme pack"],
     recommends: [],
     builtIn: "NHS-7",
-    navPaths: [],
-    reportBlocks: [],
+    navPaths: ["/portfolio/partner-programmes"],
+    reportBlocks: ["partner_contributions"],
   },
 ];
 

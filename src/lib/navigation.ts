@@ -11,6 +11,7 @@ import {
   Gauge,
   GitFork,
   Gift,
+  Handshake,
   Home,
   Landmark,
   LayoutDashboard,
@@ -86,6 +87,8 @@ export const sections: Section[] = [
         icon: Landmark,
         termKey: "collectionPlural",
       },
+      // NHS-7: hidden while the cross_org module is off (modules.ts navPaths).
+      { to: "/portfolio/partner-programmes", label: "Partner programmes", icon: Handshake },
       { to: "/portfolio/roadmap", label: "Roadmap", icon: CalendarRange },
       { to: "/portfolio/requests", label: "Requests", icon: ListTodo },
     ],

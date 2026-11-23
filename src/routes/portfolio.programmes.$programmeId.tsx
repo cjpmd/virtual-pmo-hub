@@ -16,6 +16,8 @@ import { EntityHeader, Fact, KpiCard } from "@/components/pmo-ui";
 import { RollupFinancials } from "@/components/rollup-financials";
 import { ProgrammeDecisions } from "@/components/programme-decisions";
 import { ProgrammeOfficeNote } from "@/components/programme-office-note";
+import { ProgrammePartnersPanel } from "@/components/partners/programme-partners-panel";
+import { useModule } from "@/lib/modules";
 import { QueryState } from "@/components/query-state";
 import { Breadcrumbs } from "@/components/section-nav";
 import { Button } from "@/components/ui/button";
@@ -88,6 +90,9 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
   const settings = useSettings();
   const format = useFormat();
   const [tab, setTab] = useState("overview");
+  // NHS-7: the Partners tab shows while partner programmes (cross_org) are on.
+  const partnersOn = useModule("cross_org");
+  const visibleTabs = partnersOn ? [...tabs, "partners"] : tabs;
   const portfolios = usePortfolioNames();
   const allProjects = useProjects();
   const people = usePeople();
@@ -170,7 +175,7 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
         </EntityHeader>
       </div>
       <div className="flex overflow-x-auto border-b border-border">
-        {tabs.map((item) => (
+        {visibleTabs.map((item) => (
           <Button
             key={item}
             variant="ghost"
@@ -348,6 +353,7 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
         </div>
       )}
       {tab === "notes" && <ProgrammeOfficeNote programme={programme} />}
+      {tab === "partners" && partnersOn && <ProgrammePartnersPanel programmeId={programme.id} />}
     </div>
   );
 }

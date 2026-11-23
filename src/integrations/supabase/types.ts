@@ -8992,6 +8992,124 @@ export type Database = {
           },
         ]
       }
+      partner_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          accepted_organisation_id: string | null
+          access: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          organisation_id: string
+          programme_id: string
+          revoked_at: string | null
+          revoked_by: string | null
+          token_hash: string
+          workspace_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          accepted_organisation_id?: string | null
+          access?: string
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          invited_by?: string | null
+          organisation_id: string
+          programme_id: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          token_hash: string
+          workspace_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          accepted_organisation_id?: string | null
+          access?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          organisation_id?: string
+          programme_id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          token_hash?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_invites_accepted_by_fkey"
+            columns: ["accepted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_invites_accepted_organisation_id_fkey"
+            columns: ["accepted_organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_invites_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_invites_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "programmes"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "partner_invites_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_financials"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "partner_invites_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_health"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "partner_invites_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_invites_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       pathway_snapshots: {
         Row: {
           benefit_id: string | null
@@ -9531,6 +9649,151 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organisations"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      programme_contributions: {
+        Row: {
+          contributed_at: string
+          contributed_by: string | null
+          host_organisation_id: string
+          host_programme_id: string
+          id: string
+          organisation_id: string
+          project_id: string
+          withdrawn_at: string | null
+          withdrawn_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          contributed_at?: string
+          contributed_by?: string | null
+          host_organisation_id: string
+          host_programme_id: string
+          id?: string
+          organisation_id: string
+          project_id: string
+          withdrawn_at?: string | null
+          withdrawn_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          contributed_at?: string
+          contributed_by?: string | null
+          host_organisation_id?: string
+          host_programme_id?: string
+          id?: string
+          organisation_id?: string
+          project_id?: string
+          withdrawn_at?: string | null
+          withdrawn_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programme_contributions_contributed_by_fkey"
+            columns: ["contributed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_host_organisation_id_fkey"
+            columns: ["host_organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_host_programme_id_fkey"
+            columns: ["host_programme_id"]
+            isOneToOne: false
+            referencedRelation: "programmes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_host_programme_id_fkey"
+            columns: ["host_programme_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_financials"
+            referencedColumns: ["programme_id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_host_programme_id_fkey"
+            columns: ["host_programme_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_health"
+            referencedColumns: ["programme_id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_financials"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_task_stats"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_withdrawn_by_fkey"
+            columns: ["withdrawn_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
           },
         ]
       }
@@ -16896,6 +17159,10 @@ export type Database = {
     }
     Functions: {
       accept_invite: { Args: { p_token: string }; Returns: Json }
+      accept_partner_invite: {
+        Args: { p_organisation: string; p_token: string }
+        Returns: Json
+      }
       accept_terms: {
         Args: {
           p_method: string
@@ -17051,6 +17318,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      contribute_project: {
+        Args: { p_programme: string; p_project: string }
+        Returns: string
+      }
       convert_request_to_project: {
         Args: { p_overrides?: Json; p_request_id: string }
         Returns: string
@@ -17087,6 +17358,10 @@ export type Database = {
             }
             Returns: string
           }
+      create_partner_invite: {
+        Args: { p_access?: string; p_email: string; p_programme: string }
+        Returns: Json
+      }
       create_report: { Args: { p: Json }; Returns: string }
       decide_approval_step: {
         Args: { p_comment?: string; p_decision: string; p_step_id: string }
@@ -17291,6 +17566,7 @@ export type Database = {
         Args: { p_organisation_id: string }
         Returns: boolean
       }
+      partner_invite_preview: { Args: { p_token: string }; Returns: Json }
       pending_approval_reminders: { Args: never; Returns: Json }
       pending_billing_notices: { Args: never; Returns: Json }
       pending_notification_emails: { Args: { p_mode: string }; Returns: Json }
@@ -17299,6 +17575,7 @@ export type Database = {
         Args: { p_modules?: string[]; p_org: string; p_pack: string }
         Returns: Json
       }
+      programme_partners: { Args: { p_programme: string }; Returns: Json }
       project_metrics: {
         Args: {
           p_as_at: string
@@ -17660,6 +17937,8 @@ export type Database = {
         }
       }
       revoke_invite: { Args: { p_invite_id: string }; Returns: undefined }
+      revoke_partner_invite: { Args: { p_invite: string }; Returns: undefined }
+      revoke_programme_share: { Args: { p_share: string }; Returns: undefined }
       risk_band: { Args: { p_risk_id: string }; Returns: Json }
       risk_score: { Args: { p_risk_id: string }; Returns: number }
       save_report_as_template: {
@@ -17732,10 +18011,19 @@ export type Database = {
         Args: { p_enabled: boolean; p_key: string; p_org: string }
         Returns: Json
       }
+      set_programme_share_access: {
+        Args: { p_access: string; p_share: string }
+        Returns: undefined
+      }
       set_report_inclusion: {
         Args: { p_entity_id: string; p_mode: string; p_report_id: string }
         Returns: undefined
       }
+      shared_programme_overview: {
+        Args: { p_programme: string }
+        Returns: Json
+      }
+      shared_programmes: { Args: never; Returns: Json }
       start_business_case_stage: {
         Args: { p_business_case_id: string; p_stage: string }
         Returns: string
@@ -18016,6 +18304,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      withdraw_contribution: {
+        Args: { p_contribution: string }
+        Returns: undefined
       }
       withdraw_decision: {
         Args: {

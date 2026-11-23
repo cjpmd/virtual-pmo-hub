@@ -465,6 +465,7 @@ describe("Phase 3 and 4 blocks", () => {
       overdue_count: 0,
       overdue: [],
     },
+    partner_contributions: { organisations: [], projects: [] },
   };
   for (const [key, data] of Object.entries(EMPTY34)) {
     it(`${key} renders empty data`, () => {
@@ -481,10 +482,10 @@ describe("Phase 3 and 4 blocks", () => {
 });
 
 describe("ALL_BLOCKS registry (tree-shaking guard)", () => {
-  it("ALL_BLOCKS contains exactly 39 definitions", () => {
+  it("ALL_BLOCKS contains exactly 40 definitions", () => {
     // This test fails if a new block is added without updating catalogue/index.ts,
     // or if the explicit import chain is broken and blocks get tree-shaken.
-    expect(ALL_BLOCKS).toHaveLength(39);
+    expect(ALL_BLOCKS).toHaveLength(40);
   });
   it("ALL_BLOCKS matches what the registry contains", () => {
     const registryKeys = listBlocks()

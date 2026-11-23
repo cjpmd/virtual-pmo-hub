@@ -18,7 +18,7 @@ Lock: none
 | Package | Status | Branch | PR | Notes |
 |---|---|---|---|---|
 | NHS-5 | done (draft PR, awaiting review) | nhs-b/5 | [#145](https://github.com/cjpmd/virtual-pmo-hub/pull/145) | Migrations `20261123084500_nhs_5_five_case` and `20261123091727_nhs_5_five_case_baseline` (not applied). Stages, objectives, appraisal aid, approval routes and gates, route editor in Settings › Modules, Word/PDF export, budget baseline from an approved case. |
-| NHS-7 | not started | | | |
+| NHS-7 | done (draft PR, awaiting review) | nhs-b/7 | [#147](https://github.com/cjpmd/virtual-pmo-hub/pull/147) | Migrations `20261123133252_nhs_7_partner_programmes` and `20261123134927_nhs_7b_ics_template` (not applied). Invitations (link), programme shares, partner-contributed projects, read-only roll-up over stored health, Partners tab, Partner programmes pages, `partner_contributions` block, ICS system programme board template. Sharing stays paused (GL-10). |
 
 ## Functions replaced in lane B
 
@@ -27,6 +27,14 @@ Lock: none
 - `private.budget_baseline_guard()` (NHS-5 part 2, `20261123091727_nhs_5_five_case_baseline`): previous body (financials) with the `business_case` branch filled in and one added check in the `initial` branch. Financials only; lane A shouldn't need it unless NHS-4 touches budget baselines.
 - Shared front-end files touched: `src/components/settings/modules-settings.tsx` (one import and the route card shown when `five_case` is on), `src/services/financials.ts` (`BaselineInput` takes `business_case`; `listCaseBaselines`), `src/styles.css` (a new print block at the end). New dependency `docx` 9.15.3 (package.json, package-lock.json, bun.lock).
 - Shared front-end file touched: `src/features/reports/project/ApprovalGatesPanel.tsx` (business case gates read-only; one label). Two small hunks.
+- NHS-7: no shared database function replaced. New block `private.rb_partner_contributions` is a new function (the dispatcher `private.report_block_resolve` is unchanged); `private.partner_unsafe_blocks` is unchanged (the block is partner-safe).
+- NHS-7 shared front-end files touched (expect small merge conflicts with lane A):
+  - `src/lib/modules.ts`: `cross_org` gets `navPaths: ["/portfolio/partner-programmes"]` and `reportBlocks: ["partner_contributions"]`.
+  - `src/lib/navigation.ts`: a "Partner programmes" entry under Portfolio, plus the `Handshake` icon import. Nav hiding by module isn't wired on this branch; lane A's NHS-1 wiring hides it while the module is off.
+  - `src/features/reports/blocks/catalogue/index.ts`: one import and one entry.
+  - `src/features/reports/blocks/blocks.test.tsx`: count 39 → 40, plus one empty fixture. Lane A's integration must add its own blocks to the count.
+  - `src/routes/portfolio.programmes.$programmeId.tsx`: a Partners tab while `cross_org` is on (NHS-1 also touches this file).
+  - `src/routeTree.gen.ts`: regenerate after merging.
 
 ## Decisions for Chris
 
@@ -43,6 +51,28 @@ Lock: none
 - **NHS-5 / B10: PDF is the browser's print dialog** (A4 portrait, one page per case), not a server PDF, like the 1.2 pack export. Word is built in the browser with the `docx` library (new dependency, loaded on demand, ~67 kB gzip). Headings use Word heading styles; numbered lists are plain numbered paragraphs.
 - **NHS-5 / B11: routes editor changes apply to versions submitted afterwards**; open gates keep their steps. A stage with no steps opens no approval, so its versions can't be approved: the editor says so.
 - **NHS-5 / B12:** Settings › Modules still shows "Screens for this module arrive in a later release" for every module (NHS-0 text in a shared file); lane A's integration should drop it for built modules.
+
+- **NHS-7 / B13: partners see a curated read-only roll-up through definer RPCs** (`shared_programme_overview`, `shared_programmes`, block `partner_contributions`), not wider table RLS.
+  - The roll-up shows the programme, its projects, stored health, next milestone, overdue milestones, open risks and benefit totals (cash / non-cash).
+  - No partner can read any other host table, and the host can't read the partner's tables.
+  - Published programme packs were already visible to partners through `can_view_report` (scope share), with partner-unsafe and `hidden_block_keys` blocks withheld.
+  - There's no editor for `hidden_block_keys` yet.
+- **NHS-7 / B14: projects added by partners don't change the host programme's stored health** (no cross-organisation work in the health refresh). They show beside it in the roll-up and the pack block.
+- **NHS-7 / B15: invitations are a link the host copies and sends** (shown once, sha256 at rest, 14 days). No email is sent: that would need an edge function (not deployable from these runs). Say if you want a `send-partner-invite` function like `send-invite`.
+- **NHS-7 / B16: while sharing is paused (as shipped), creating and accepting invitations are refused** (hint `sharing_paused`), and the UI says so.
+  - Existing shares and revoking still work.
+  - The migration never switches sharing on; the tests switch it on inside their own transaction.
+- **NHS-7 / B17: who can do what:**
+  - Host workspace PMO / admin: invite, change access, end sharing, take projects out.
+  - An admin of the partner organisation, signed in with the invited address (confirmed): accept on behalf of that organisation, or leave later.
+  - Partner workspace PMO / admin: add or take out their own projects.
+  - Every member of the partner organisation, free viewers included: read the roll-up.
+- **NHS-7 / B18: the module must be on in both organisations.**
+  - Host module off: partners lose the roll-up, and nothing can be shared.
+  - Partner module off: its projects stop showing.
+  - A contribution counts only while the share has contribute access. Dropping to view-only, or ending the share, hides it at once; the row is kept and reappears if access returns.
+- **NHS-7 / B19: ending a share deletes the `entity_shares` grant row** (it is a permission, not a record; audited in both organisations). A host that is read-only (lapsed trial or subscription) can't end shares, because `zz_org_read_only` is on `entity_shares`. Say if ending a share should be allowed while read-only, as removing members is.
+- **NHS-7 / B20: the "ICS system programme board" template is a global system row** (like "Funding committee"), shown only with the module on (lane A's template filter). Organisations that switch the module on but don't use NHS wording also see the ICS name; they can duplicate and rename it. Its deep-dive rules are copied from the system Programme Board.
 
 ## Run entries
 
@@ -63,3 +93,12 @@ Lock: none
   - Types: the new foreign key spliced in from a local generation.
   - tsc (app and scripts), vitest (700), lint (0 errors) and vite build pass. Word output checked with python-docx and the print layout as a PDF. e2e, Supabase advisors and a signed-in browser check not run.
   - Next run: NHS-7 on `nhs-b/7` from `nhs-b/5`.
+- **23/11/2026 13:31–14:05 UTC, NHS-7 (package done):** the 10:28 lock was stale (no work pushed), so this run took over.
+  - Audit in PR #147.
+  - Migrations `20261123133252_nhs_7_partner_programmes` and `20261123134927_nhs_7b_ics_template` (`docs/sql/nhs-7-*.sql`).
+  - `supabase/tests/nhs_partner_programmes.sql` (72 checks) and 11 `cross_tenant.sql` cases.
+  - Local DB: `nhs_partner_programmes`, `cross_tenant`, `organisation_purge`, `read_only_mode`, `organisation_export`, `account_closure`, `nhs_modules`, `nhs_five_case`, `sample_data`, `entity_shares_paused`, `financials`, `tenant_guard`, `project_writes` and reports 1–5 pass. `reports_phase6` fails as on main.
+  - Types: the new tables and RPCs spliced in from a before/after local generation.
+  - Front end: Partners tab, Partner programmes list, system roll-up page, `/partner-invite`, block renderer, service tests.
+  - tsc (app and scripts), vitest (709), lint (0 errors) and vite build pass. e2e, Supabase advisors and a signed-in browser check not run.
+  - Lane B is complete.
