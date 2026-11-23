@@ -23,7 +23,7 @@ Each run reads this file on the newest package branch, does the next piece of wo
 
 - Lock: set `Lock:` below to the run's start time (UTC) and push before starting work; clear it when done. A run that finds a lock newer than 3 hours exits without changes.
 
-Lock: none
+Lock: 2026-11-23 09:58 UTC (lane A, NHS-2)
 
 ## Status
 
@@ -31,7 +31,7 @@ Lock: none
 |---|---|---|---|---|
 | NHS-0 | done (draft PR, awaiting review) | nhs/0 | [#140](https://github.com/cjpmd/virtual-pmo-hub/pull/140) | Migration `20261122150000_nhs_0_modules` (not applied). Settings › Modules, NHS sign-up choice, governance roles. Nav/report-block hiding helpers exist but nothing is wired yet: NHS-1 wires them with its first module-owned item. |
 | NHS-1 | done (draft PR, awaiting review) | nhs/1 | [#142](https://github.com/cjpmd/virtual-pmo-hub/pull/142) | Migrations `20261122170000_nhs_1_board_assurance`, `20261122190000_nhs_1b_assurance_blocks`, `20261122210000_nhs_1c_programme_assurance` and `20261123090000_nhs_1d_register_matrix` (not applied): BAF register; BAF report blocks; five committee templates; programme assurance ratings and the "Assurance by programme" block; register matrix and risk re-scoring tool. One-click pack reuses the forum "Create pack" button. |
-| NHS-2 | not started | | | |
+| NHS-2 | in progress | nhs/2 | | |
 | NHS-3 | not started | | | |
 | NHS-4 | not started | | | |
 | NHS-5 | lane B (see docs/nhs-run-log-b.md) | nhs-b/5 | | |
