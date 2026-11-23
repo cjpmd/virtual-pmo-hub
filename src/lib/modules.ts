@@ -130,7 +130,7 @@ export const MODULES: ModuleDefinition[] = [
     recommends: [],
     builtIn: "NHS-7",
     navPaths: ["/portfolio/partner-programmes"],
-    reportBlocks: [],
+    reportBlocks: ["partner_contributions"],
   },
 ];
 

@@ -7,6 +7,7 @@ import {
   createPartnerInvite,
   getProgrammePartners,
   getSharedProgrammeOverview,
+  listMyContributions,
   listSharedProgrammes,
   previewPartnerInvite,
   revokePartnerInvite,
@@ -22,6 +23,7 @@ export const partnerKeys = {
   list: () => [...partnerKeys.all, "list"] as const,
   overview: (programmeId: string) => [...partnerKeys.all, "overview", programmeId] as const,
   partners: (programmeId: string) => [...partnerKeys.all, "partners", programmeId] as const,
+  mine: (programmeId: string) => [...partnerKeys.all, "mine", programmeId] as const,
   preview: (token: string, userId: string | null) =>
     [...partnerKeys.all, "preview", token, userId] as const,
 };
@@ -40,6 +42,13 @@ export const useProgrammePartners = (programmeId: string, enabled = true) =>
   useQuery({
     queryKey: partnerKeys.partners(programmeId),
     queryFn: () => getProgrammePartners(programmeId),
+    enabled,
+  });
+
+export const useMyContributions = (programmeId: string, enabled = true) =>
+  useQuery({
+    queryKey: partnerKeys.mine(programmeId),
+    queryFn: () => listMyContributions(programmeId),
     enabled,
   });
 

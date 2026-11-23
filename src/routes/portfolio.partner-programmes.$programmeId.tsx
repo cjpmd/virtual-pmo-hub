@@ -16,8 +16,10 @@ import { useProjects } from "@/hooks/use-hierarchy";
 import { useOrgWritable } from "@/hooks/use-org-access";
 import {
   useContributeProject,
+  useMyContributions,
   useRevokeShare,
   useSharedProgrammeOverview,
+  useWithdrawContribution,
 } from "@/hooks/use-partner-programmes";
 import { useOrgRole, useWorkspaceRoles } from "@/hooks/use-permissions";
 import { useFormat } from "@/lib/format";
@@ -189,6 +191,7 @@ function SharedProgrammePage() {
         rows={data.contributedProjects}
         showOrganisation
       />
+      {isMyShare && <MyContributions programmeId={programme.id} rows={data.contributedProjects} />}
       {canContribute && (
         <ContributeCard
           programmeId={programme.id}
@@ -197,6 +200,63 @@ function SharedProgrammePage() {
         />
       )}
     </div>
+  );
+}
+
+/** The partner's own projects in the programme, with Take out for its PMO / admin. */
+function MyContributions({
+  programmeId,
+  rows,
+}: {
+  programmeId: string;
+  rows: PartnerProjectRollup[];
+}) {
+  const mine = useMyContributions(programmeId);
+  const roles = useWorkspaceRoles().data;
+  const projects = useProjects();
+  const withdraw = useWithdrawContribution();
+  const writable = useOrgWritable();
+  const pmo = new Set(
+    (roles ?? []).filter((r) => atLeast(r.role, "pmo")).map((r) => r.workspaceId),
+  );
+  const items = (mine.data ?? []).map((item) => {
+    const project = (projects.data ?? []).find((p) => p.id === item.projectId);
+    const shown = rows.some((r) => r.id === item.projectId);
+    return { ...item, project, shown, canWithdraw: !!project && pmo.has(project.workspaceId) };
+  });
+  if (items.length === 0) return null;
+  return (
+    <section className="rounded-lg border border-border/70 bg-card p-6 shadow-sm">
+      <h2 className="font-display text-lg font-semibold">Your projects in this programme</h2>
+      <ul className="mt-3 divide-y divide-border/70">
+        {items.map((item) => (
+          <li key={item.id} className="flex flex-wrap items-center gap-3 py-2 text-sm">
+            <span className="font-mono text-xs text-muted-foreground">
+              {item.project?.code ?? ""}
+            </span>
+            <span className="font-medium">{item.project?.name ?? "Project"}</span>
+            {!item.shown && (
+              <span className="text-xs text-muted-foreground">
+                Not shown while your access is view only
+              </span>
+            )}
+            {item.canWithdraw && (
+              <ReadOnlyTip readOnly={!writable}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="ml-auto"
+                  disabled={!writable || withdraw.isPending}
+                  onClick={() => withdraw.mutate(item.id)}
+                >
+                  Take out
+                </Button>
+              </ReadOnlyTip>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

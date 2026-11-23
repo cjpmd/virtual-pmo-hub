@@ -243,6 +243,30 @@ select pg_temp.as_owner();
 select pg_temp.ok('contributions don''t change the host programme''s stored health rows',
   not exists (select 1 from public.project_health_current where project_id = pg_temp.c('pproj') and organisation_id <> pg_temp.c('partner')));
 
+-- 7b. Report block partner_contributions (NHS-7 part 2) and the ICS template.
+select pg_temp.as_user(pg_temp.c('hviewer'));
+select pg_temp.ok('block: host member sees both organisations and the contributed project',
+  (select jsonb_array_length(x -> 'organisations') = 2 and jsonb_array_length(x -> 'projects') = 1
+     and x -> 'projects' -> 0 ->> 'organisation' = 'NHS7 Partner Trust'
+     and (select (o ->> 'projects')::integer from jsonb_array_elements(x -> 'organisations') o where o ->> 'role' = 'partner') = 1
+   from (select private.rb_partner_contributions(jsonb_build_object('scope_type', 'programme', 'scope_entity_id', pg_temp.c('hprog')), '{}') x) s));
+select pg_temp.ok('block: other scopes say programme only',
+  (private.rb_partner_contributions(jsonb_build_object('scope_type', 'project', 'scope_entity_id', pg_temp.c('hproj')), '{}')
+     ->> 'programme_scope_only')::boolean);
+select pg_temp.as_user(pg_temp.c('oadmin'));
+select pg_temp.ok('block: an outsider gets nothing',
+  (select (x ->> 'unavailable')::boolean and jsonb_array_length(x -> 'projects') = 0
+   from (select private.rb_partner_contributions(jsonb_build_object('scope_type', 'programme', 'scope_entity_id', pg_temp.c('hprog')), '{}') x) s));
+select pg_temp.as_anon();
+select pg_temp.raises('block: anon can''t run it',
+  $$select private.rb_partner_contributions(jsonb_build_object('scope_type', 'programme', 'scope_entity_id', pg_temp.c('hprog')), '{}')$$, '42501');
+select pg_temp.as_owner();
+select pg_temp.ok('ICS template: one system row with the block',
+  (select count(*) from public.report_templates where is_system and name = 'ICS system programme board'
+     and blocks @> '[{"blockKey":"partner_contributions"}]') = 1);
+select pg_temp.ok('block is partner-safe (not in the unsafe list)',
+  not ('partner_contributions' = any (private.partner_unsafe_blocks())));
+
 -- 8. Access changes hide and restore contributions.
 select pg_temp.as_user(pg_temp.c('padmin'));
 select pg_temp.raises('partner can''t change the share''s access',

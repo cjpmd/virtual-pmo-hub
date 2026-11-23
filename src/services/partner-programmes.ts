@@ -447,3 +447,16 @@ export const withdrawContribution = (contributionId: string) =>
     supabase.rpc("withdraw_contribution", { p_contribution: contributionId }),
     "Taking the project out",
   );
+
+/** The caller's own active contributions to a programme (their workspace rows, through RLS). */
+export async function listMyContributions(programmeId: string) {
+  const rows = await call(
+    supabase
+      .from("programme_contributions")
+      .select("id, project_id")
+      .eq("host_programme_id", programmeId)
+      .is("withdrawn_at", null),
+    "Loading your projects in the programme",
+  );
+  return (rows ?? []).map((row) => ({ id: row.id, projectId: row.project_id }));
+}
