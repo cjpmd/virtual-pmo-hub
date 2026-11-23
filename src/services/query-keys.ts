@@ -145,6 +145,17 @@ export const qk = {
     template: (orgId: string) => ["org", orgId, "impact-assessments", "template"] as const,
     gaps: (orgId: string) => ["org", orgId, "impact-assessments", "gaps"] as const,
   },
+  /** NHS-4: efficiency / savings schemes (CIP), their values, targets, settings and summaries. */
+  efficiency: {
+    all: (orgId: string) => ["org", orgId, "efficiency"] as const,
+    schemes: (orgId: string) => ["org", orgId, "efficiency", "schemes"] as const,
+    values: (orgId: string, schemeId: string) =>
+      ["org", orgId, "efficiency", "values", schemeId] as const,
+    targets: (orgId: string) => ["org", orgId, "efficiency", "targets"] as const,
+    settings: (orgId: string) => ["org", orgId, "efficiency", "settings"] as const,
+    summary: (orgId: string, year: number | null, workspaceId: string | null) =>
+      ["org", orgId, "efficiency", "summary", year, workspaceId] as const,
+  },
   /** NHS-1 part 3: a programme's assurance ratings (history and the latest). */
   programmeAssurance: (orgId: string, programmeId: string) =>
     ["org", orgId, "programme-assurance", programmeId] as const,

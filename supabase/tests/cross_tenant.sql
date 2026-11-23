@@ -445,6 +445,7 @@ insert into ct_cases (fn, call, expect, note) values
   ('efficiency_settings(uuid)', $c$select public.efficiency_settings('{a_org}')$c$, 'empty', null),
   ('set_efficiency_settings(uuid,jsonb)', $c$select public.set_efficiency_settings('{a_org}', '{"requireAssessment": false}')$c$, 'empty', null),
   ('efficiency_stage_check(uuid,text)', $c$select public.efficiency_stage_check('{a_efficiency_scheme}', 'in_delivery')$c$, 'empty', null),
+  ('efficiency_summary(uuid,integer,uuid)', $c$select public.efficiency_summary('{a_org}', 2026)$c$, 'empty', null),
   ('efficiency_run_rate_fye(uuid)', $c$select public.efficiency_run_rate_fye('{a_efficiency_scheme}')$c$, 'empty', null),
   ('validate_efficiency_scheme(uuid,boolean,text,timestamp with time zone)', $c$select public.validate_efficiency_scheme('{a_efficiency_scheme}')$c$, 'empty', null),
   ('validate_efficiency_actuals(uuid,date[])', $c$select public.validate_efficiency_actuals('{a_efficiency_scheme}')$c$, 'empty', null),

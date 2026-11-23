@@ -197,3 +197,293 @@ export function defaultCategories(
         { value: "income", label: "Income" },
       ];
 }
+
+// ---------------------------------------------------------------------------------------------
+// NHS-4 part 2: phasing grid, forecast outturn, carry-forward and the year summary
+// (public.efficiency_summary in migration 20261123200000_nhs_4b_efficiency_summary mirrors these;
+// change both together).
+// ---------------------------------------------------------------------------------------------
+
+export const VALUE_KINDS: ValueKind[] = ["plan", "forecast", "actual"];
+export const VALUE_KIND_LABELS: Record<ValueKind, string> = {
+  plan: "Plan",
+  forecast: "Forecast",
+  actual: "Actual",
+};
+
+/** One cell pair of the phasing grid (a month and kind), with the stored row when there is one. */
+export interface GridCell {
+  recurrent: number;
+  nonRecurrent: number;
+  id?: string;
+  updatedAt?: string;
+  validated?: boolean;
+}
+
+export type PhasingGrid = Record<string, GridCell>;
+
+export const gridKey = (kind: ValueKind, month: string) => `${kind}:${month.slice(0, 7)}`;
+
+/** The stored values of one financial year (its months) as a grid; missing cells are zero. */
+export function buildGrid(
+  values: (MonthValue & { id?: string; updatedAt?: string; validatedAt?: string | null })[],
+  months: string[],
+): PhasingGrid {
+  const grid: PhasingGrid = {};
+  for (const kind of VALUE_KINDS)
+    for (const month of months) grid[gridKey(kind, month)] = { recurrent: 0, nonRecurrent: 0 };
+  for (const v of values) {
+    const key = gridKey(v.kind, v.month);
+    if (!(key in grid)) continue;
+    grid[key] = {
+      recurrent: v.recurrent,
+      nonRecurrent: v.nonRecurrent,
+      ...(v.id ? { id: v.id } : {}),
+      ...(v.updatedAt ? { updatedAt: v.updatedAt } : {}),
+      validated: Boolean(v.validatedAt),
+    };
+  }
+  return grid;
+}
+
+export interface GridChange {
+  kind: ValueKind;
+  month: string;
+  recurrent: number;
+  nonRecurrent: number;
+  existing?: { id: string; updatedAt: string };
+}
+
+/** The cells whose amounts differ from the stored grid, in month then kind order. New cells that
+ *  are still zero are left out (nothing to store). */
+export function gridChanges(stored: PhasingGrid, edited: PhasingGrid): GridChange[] {
+  const changes: GridChange[] = [];
+  for (const key of Object.keys(edited).sort((a, b) => {
+    const [ka, ma] = a.split(":");
+    const [kb, mb] = b.split(":");
+    return (
+      (ma ?? "").localeCompare(mb ?? "") ||
+      VALUE_KINDS.indexOf(ka as ValueKind) - VALUE_KINDS.indexOf(kb as ValueKind)
+    );
+  })) {
+    const before = stored[key];
+    const after = edited[key];
+    if (!after) continue;
+    if (
+      before &&
+      before.recurrent === after.recurrent &&
+      before.nonRecurrent === after.nonRecurrent
+    )
+      continue;
+    if (!before?.id && after.recurrent === 0 && after.nonRecurrent === 0) continue;
+    const [kind, month] = key.split(":") as [ValueKind, string];
+    changes.push({
+      kind,
+      month: `${month}-01`,
+      recurrent: after.recurrent,
+      nonRecurrent: after.nonRecurrent,
+      ...(before?.id && before.updatedAt
+        ? { existing: { id: before.id, updatedAt: before.updatedAt } }
+        : {}),
+    });
+  }
+  return changes;
+}
+
+/** Copies one kind's row onto another for the given months (e.g. plan → forecast). Pure. */
+export function copyKind(
+  grid: PhasingGrid,
+  from: ValueKind,
+  to: ValueKind,
+  months: string[],
+): PhasingGrid {
+  const next = { ...grid };
+  for (const month of months) {
+    const source = grid[gridKey(from, month)];
+    const target = grid[gridKey(to, month)];
+    if (!source) continue;
+    next[gridKey(to, month)] = {
+      ...(target ?? {}),
+      recurrent: source.recurrent,
+      nonRecurrent: source.nonRecurrent,
+    };
+  }
+  return next;
+}
+
+/** An amount typed into the grid: "£1,250.50", "1250", "" (zero). Null when it isn't a number or
+ *  has more than two decimals, or is beyond the column's range. */
+export function parseAmount(text: string): number | null {
+  const cleaned = text.replace(/[£€$,\s]/g, "");
+  if (cleaned === "" || cleaned === "-") return 0;
+  if (!/^-?\d+(\.\d{1,2})?$/.test(cleaned)) return null;
+  const value = Number(cleaned);
+  return Math.abs(value) < 1e12 ? value : null;
+}
+
+export interface YearTotals {
+  plan: number;
+  planRecurrent: number;
+  planNonRecurrent: number;
+  forecast: number;
+  forecastOutturn: number;
+  actual: number;
+  /** Planned recurrent value of the year's last month × 12. */
+  carryForward: number;
+}
+
+/** One scheme's totals for a year's months from its grid: the in-year effect of each kind, the
+ *  forecast outturn (actual where recorded, else forecast, else plan, month by month) and the
+ *  recurrent carry-forward. "Recorded" means a stored row, so an actual of zero counts. */
+export function yearTotals(grid: PhasingGrid, months: string[]): YearTotals {
+  const sum = (c: GridCell | undefined) => (c ? c.recurrent + c.nonRecurrent : 0);
+  const recorded = (c: GridCell | undefined) =>
+    Boolean(c && (c.id || c.recurrent !== 0 || c.nonRecurrent !== 0));
+  const totals: YearTotals = {
+    plan: 0,
+    planRecurrent: 0,
+    planNonRecurrent: 0,
+    forecast: 0,
+    forecastOutturn: 0,
+    actual: 0,
+    carryForward: 0,
+  };
+  for (const month of months) {
+    const plan = grid[gridKey("plan", month)];
+    const forecast = grid[gridKey("forecast", month)];
+    const actual = grid[gridKey("actual", month)];
+    totals.plan += sum(plan);
+    totals.planRecurrent += plan?.recurrent ?? 0;
+    totals.planNonRecurrent += plan?.nonRecurrent ?? 0;
+    totals.forecast += sum(forecast);
+    totals.actual += sum(actual);
+    totals.forecastOutturn += recorded(actual)
+      ? sum(actual)
+      : recorded(forecast)
+        ? sum(forecast)
+        : sum(plan);
+  }
+  const last = months[months.length - 1];
+  totals.carryForward = last ? (grid[gridKey("plan", last)]?.recurrent ?? 0) * 12 : 0;
+  const round = (n: number) => Math.round(n * 100) / 100;
+  return Object.fromEntries(
+    Object.entries(totals).map(([k, v]) => [k, round(v)]),
+  ) as unknown as YearTotals;
+}
+
+/** Target − value: positive means short of target; null without a target. */
+export const gapToTarget = (target: number | null, value: number): number | null =>
+  target == null ? null : Math.round((target - value) * 100) / 100;
+
+/** A workspace's target for a year: its whole-workspace target, else the sum of its unit targets. */
+export function workspaceTarget(
+  targets: {
+    workspaceId: string;
+    financialYear: number;
+    businessUnit: string | null;
+    amount: number;
+  }[],
+  workspaceId: string,
+  year: number,
+): number | null {
+  const rows = targets.filter((t) => t.workspaceId === workspaceId && t.financialYear === year);
+  const whole = rows.find((t) => !t.businessUnit);
+  if (whole) return whole.amount;
+  return rows.length ? rows.reduce((s, t) => s + t.amount, 0) : null;
+}
+
+// The year summary returned by public.efficiency_summary.
+export interface SummaryMeasures {
+  schemes: number;
+  plan: number;
+  riskAdjusted: number;
+  forecastOutturn: number;
+  actual: number;
+}
+export interface EfficiencySummary {
+  year: number;
+  startMonth: number;
+  totals: SummaryMeasures & {
+    target: number | null;
+    planRecurrent: number;
+    fullYearEffect: number;
+    carryForward: number;
+  };
+  months: {
+    month: string;
+    plan: number;
+    riskAdjusted: number;
+    forecastOutturn: number;
+    actual: number;
+    hasActual: boolean;
+    cumPlan: number;
+    cumRiskAdjusted: number;
+    cumForecastOutturn: number;
+    cumActual: number;
+  }[];
+  byUnit: (SummaryMeasures & { key: string | null; target: number | null })[];
+  byCategory: (SummaryMeasures & { key: string | null; planRecurrent: number })[];
+  byStage: { stage: EfficiencyStage; schemes: number; plan: number; riskAdjusted: number }[];
+}
+
+const asObj = (v: unknown): Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+const asNum = (v: unknown): number => (typeof v === "number" ? v : Number(v) || 0);
+const asNumOrNull = (v: unknown): number | null => (v == null ? null : asNum(v));
+const asKey = (v: unknown): string | null => (typeof v === "string" ? v : null);
+const asArr = (v: unknown): Record<string, unknown>[] => (Array.isArray(v) ? v.map(asObj) : []);
+
+/** The RPC's JSON as typed values (missing fields read as zero). Null when there is no summary. */
+export function toSummary(value: unknown): EfficiencySummary | null {
+  if (value == null || typeof value !== "object") return null;
+  const raw = asObj(value);
+  const t = asObj(raw["totals"]);
+  const measures = (r: Record<string, unknown>): SummaryMeasures => ({
+    schemes: asNum(r["schemes"]),
+    plan: asNum(r["plan"]),
+    riskAdjusted: asNum(r["riskAdjusted"]),
+    forecastOutturn: asNum(r["forecastOutturn"]),
+    actual: asNum(r["actual"]),
+  });
+  return {
+    year: asNum(raw["year"]),
+    startMonth: asNum(raw["startMonth"]) || 4,
+    totals: {
+      ...measures(t),
+      target: asNumOrNull(t["target"]),
+      planRecurrent: asNum(t["planRecurrent"]),
+      fullYearEffect: asNum(t["fullYearEffect"]),
+      carryForward: asNum(t["carryForward"]),
+    },
+    months: asArr(raw["months"]).map((m) => ({
+      month: String(m["month"] ?? ""),
+      plan: asNum(m["plan"]),
+      riskAdjusted: asNum(m["riskAdjusted"]),
+      forecastOutturn: asNum(m["forecastOutturn"]),
+      actual: asNum(m["actual"]),
+      hasActual: m["hasActual"] === true,
+      cumPlan: asNum(m["cumPlan"]),
+      cumRiskAdjusted: asNum(m["cumRiskAdjusted"]),
+      cumForecastOutturn: asNum(m["cumForecastOutturn"]),
+      cumActual: asNum(m["cumActual"]),
+    })),
+    byUnit: asArr(raw["byUnit"]).map((u) => ({
+      ...measures(u),
+      key: asKey(u["key"]),
+      target: asNumOrNull(u["target"]),
+    })),
+    byCategory: asArr(raw["byCategory"]).map((c) => ({
+      ...measures(c),
+      key: asKey(c["key"]),
+      planRecurrent: asNum(c["planRecurrent"]),
+    })),
+    byStage: asArr(raw["byStage"])
+      .filter((s) => isStage(s["stage"]))
+      .map((s) => ({
+        stage: s["stage"] as EfficiencyStage,
+        schemes: asNum(s["schemes"]),
+        plan: asNum(s["plan"]),
+        riskAdjusted: asNum(s["riskAdjusted"]),
+      })),
+  };
+}

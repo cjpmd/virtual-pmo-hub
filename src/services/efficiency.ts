@@ -9,6 +9,9 @@ import {
   isConfidence,
   isStage,
   toEfficiencySettings,
+  toSummary,
+  type EfficiencySummary,
+  type GridChange,
   type Confidence,
   type EfficiencySettings,
   type EfficiencyStage,
@@ -404,4 +407,47 @@ export async function setEfficiencySettings(
     "Couldn't save the efficiency settings",
   );
   return toEfficiencySettings(data);
+}
+
+/** The year summary (part 2): totals, months, units with targets, categories and stages. Null for
+ *  a caller who isn't a member. `year` is the calendar year the financial year starts in. */
+export async function getEfficiencySummary(
+  orgId: string,
+  year?: number,
+  workspaceId?: string,
+): Promise<EfficiencySummary | null> {
+  const data = unwrap(
+    await supabase.rpc("efficiency_summary", {
+      p_org: orgId,
+      ...(year ? { p_year: year } : {}),
+      ...(workspaceId ? { p_workspace: workspaceId } : {}),
+    }),
+    "Couldn't load the efficiency summary",
+  );
+  return toSummary(data);
+}
+
+/** Saves the phasing grid's changed cells one by one, in order, through the shared write helper
+ *  (each keeps its own optimistic-concurrency check). Stops at the first failure and reports how
+ *  many were saved before it, so the screen can reload and show what stuck. */
+export async function saveGridChanges(
+  schemeId: string,
+  changes: GridChange[],
+): Promise<{ saved: number; error: unknown | null }> {
+  let saved = 0;
+  for (const change of changes) {
+    try {
+      await saveValue(
+        schemeId,
+        change.month,
+        change.kind,
+        { recurrent: change.recurrent, nonRecurrent: change.nonRecurrent },
+        change.existing,
+      );
+      saved += 1;
+    } catch (error) {
+      return { saved, error };
+    }
+  }
+  return { saved, error: null };
 }

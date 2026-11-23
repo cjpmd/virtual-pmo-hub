@@ -18660,6 +18660,10 @@ export type Database = {
         Args: { p_id: string; p_stage: string }
         Returns: string[]
       }
+      efficiency_summary: {
+        Args: { p_org: string; p_workspace?: string; p_year?: number }
+        Returns: Json
+      }
       fail_snapshot_overflow: {
         Args: { p_error: string; p_snapshot_id: string }
         Returns: number
