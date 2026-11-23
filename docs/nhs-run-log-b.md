@@ -11,19 +11,21 @@ Lane B builds **NHS-5 (Five Case Model business cases)** and **NHS-7 (cross-orga
 - Migration file names use the real current UTC timestamp, as usual.
 - Lock: set `Lock:` below to the run's start time (UTC) and push before starting work; clear it when done. A run that finds a lock newer than 90 minutes exits without changes.
 
-Lock: 2026-11-23 09:16 UTC
+Lock: none
 
 ## Status
 
 | Package | Status | Branch | PR | Notes |
 |---|---|---|---|---|
-| NHS-5 | in progress (part 1 of 2 done) | nhs-b/5 | [#145](https://github.com/cjpmd/virtual-pmo-hub/pull/145) | Migration `20261123084500_nhs_5_five_case` (not applied). Schema, stages, objectives, appraisal years, approval routes and gates, services, business case page. Next: approval-route editor in Settings, Word/PDF export, business case → budget baseline. |
+| NHS-5 | done (draft PR, awaiting review) | nhs-b/5 | [#145](https://github.com/cjpmd/virtual-pmo-hub/pull/145) | Migrations `20261123084500_nhs_5_five_case` and `20261123091727_nhs_5_five_case_baseline` (not applied). Stages, objectives, appraisal aid, approval routes and gates, route editor in Settings › Modules, Word/PDF export, budget baseline from an approved case. |
 | NHS-7 | not started | | | |
 
 ## Functions replaced in lane B
 
 - `public.start_business_case_version(uuid)` (NHS-5, `20261123084500_nhs_5_five_case`): previous body (F4) plus the template set, stage, appraisal settings, option list fields, objectives and option years. Business cases only; lane A shouldn't need it.
 - Not replaced, on purpose: `private.seed_module_defaults` (the five-case set and routes are seeded by a new trigger, `organisations_15_seed_five_case`, when `modules.five_case` turns on), `public.decide_approval_step` and `public.submit_business_case` (new triggers on `business_case_versions` and `approval_gates` do the work).
+- `private.budget_baseline_guard()` (NHS-5 part 2, `20261123091727_nhs_5_five_case_baseline`): previous body (financials) with the `business_case` branch filled in and one added check in the `initial` branch. Financials only; lane A shouldn't need it unless NHS-4 touches budget baselines.
+- Shared front-end files touched: `src/components/settings/modules-settings.tsx` (one import and the route card shown when `five_case` is on), `src/services/financials.ts` (`BaselineInput` takes `business_case`; `listCaseBaselines`), `src/styles.css` (a new print block at the end). New dependency `docx` 9.15.3 (package.json, package-lock.json, bun.lock).
 - Shared front-end file touched: `src/features/reports/project/ApprovalGatesPanel.tsx` (business case gates read-only; one label). Two small hunks.
 
 ## Decisions for Chris
@@ -37,6 +39,11 @@ Lock: 2026-11-23 09:16 UTC
 - **NHS-5 / B7: template set names come from the app** (Standard, Five Case Model), not a lookup list; adding a lookup list changed the NHS-0 test's "existing lists unchanged" fingerprint.
 - **NHS-5 / B8: with the module switched off**, existing staged cases can still be revised (the stage carries forward), but objectives and appraisal years aren't copied into the new version (they stay on the earlier one) and can't be edited.
 
+- **NHS-5 / B9: budget baseline from a business case follows docs/financials-and-business-cases.md**: the total defaults to the preferred option's delivery cost (a different total needs the PMO and a reason); a manager or PMO sets the first baseline, replacing one from a later case (FBC after OBC) is the PMO's; each version once; an SOC can't set one. An `initial` baseline is now refused when the project has an approved (non-SOC) business case, as that document's D5 says. This applies to every organisation, but only bites once a case is approved, which today needs the `five_case` module.
+- **NHS-5 / B10: PDF is the browser's print dialog** (A4 portrait, one page per case), not a server PDF, like the 1.2 pack export. Word is built in the browser with the `docx` library (new dependency, loaded on demand, ~67 kB gzip). Headings use Word heading styles; numbered lists are plain numbered paragraphs.
+- **NHS-5 / B11: routes editor changes apply to versions submitted afterwards**; open gates keep their steps. A stage with no steps opens no approval, so its versions can't be approved: the editor says so.
+- **NHS-5 / B12:** Settings › Modules still shows "Screens for this module arrive in a later release" for every module (NHS-0 text in a shared file); lane A's integration should drop it for built modules.
+
 ## Run entries
 
 (newest last)
@@ -49,3 +56,10 @@ Lock: 2026-11-23 09:16 UTC
   - Front end: `services/five-case.ts` (+ tests), business case page panels.
   - tsc (app and scripts), vitest (688), lint (0 errors) and vite build pass. e2e, Supabase advisors and a signed-in browser check not run.
   - Next run (NHS-5 part 2): approval-route editor in Settings › Modules, Word/PDF export in Five Case structure, business case → budget baseline (financial case).
+- **23/11/2026 09:16–09:50 UTC, NHS-5 part 2 (package done):**
+  - Migration `20261123091727_nhs_5_five_case_baseline` (`docs/sql/nhs-5-five-case-baseline.sql`): business case → budget baseline, FK to `business_case_versions`.
+  - Settings › Modules › Business case approval routes (`five-case-routes-settings.tsx`); business case page Export (Word, PDF) and Budget baseline panel.
+  - Local DB: `nhs_five_case` (69), `financials` (0 failures; one label updated), `project_writes`, `tenant_guard`, `nhs_modules`, `read_only_mode`, `organisation_export`, `account_closure`, `sample_data`, `cross_tenant`, `organisation_purge` pass.
+  - Types: the new foreign key spliced in from a local generation.
+  - tsc (app and scripts), vitest (700), lint (0 errors) and vite build pass. Word output checked with python-docx and the print layout as a PDF. e2e, Supabase advisors and a signed-in browser check not run.
+  - Next run: NHS-7 on `nhs-b/7` from `nhs-b/5`.
