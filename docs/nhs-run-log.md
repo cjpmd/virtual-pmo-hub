@@ -23,7 +23,7 @@ Each run reads this file on the newest package branch, does the next piece of wo
 
 - Lock: set `Lock:` below to the run's start time (UTC) and push before starting work; clear it when done. A run that finds a lock newer than 3 hours exits without changes.
 
-Lock: 2026-11-23T19:58Z
+Lock: none
 
 ## Status
 
@@ -33,7 +33,7 @@ Lock: 2026-11-23T19:58Z
 | NHS-1 | done (draft PR, awaiting review) | nhs/1 | [#142](https://github.com/cjpmd/virtual-pmo-hub/pull/142) | Migrations `20261122170000_nhs_1_board_assurance`, `20261122190000_nhs_1b_assurance_blocks`, `20261122210000_nhs_1c_programme_assurance` and `20261123090000_nhs_1d_register_matrix` (not applied): BAF register; BAF report blocks; five committee templates; programme assurance ratings and the "Assurance by programme" block; register matrix and risk re-scoring tool. One-click pack reuses the forum "Create pack" button. |
 | NHS-2 | done (draft PR, awaiting review) | nhs/2 | [#146](https://github.com/cjpmd/virtual-pmo-hub/pull/146) | Migration `20261123100000_nhs_2_benefit_categories` (not applied): NHS categories, measure units and default classifications seeded by the module; notional value per unit; cash / non-cash split on every benefit total; `benefits_by_category` block. |
 | NHS-3 | done (draft PR, awaiting review) | nhs/3 | [#148](https://github.com/cjpmd/virtual-pmo-hub/pull/148) | Migrations `20261123140000_nhs_3_impact_assessments` and `20261123160000_nhs_3b_assessment_notifications_blocks` (not applied; run section 0 of `docs/sql/nhs-3b-assessment-notifications-blocks.sql` by hand before the second, then redeploy `send-notification-email`). Assessments, sign-off, delivery gate, screens, approver notifications, three report blocks. |
-| NHS-4 | in progress (part 1 of ~4) | nhs/4 | [#149](https://github.com/cjpmd/virtual-pmo-hub/pull/149) | Migration `20261123190000_nhs_4_efficiency` (not applied): schemes, monthly values, targets, stage rules, finance validation, scheme impact assessments, services. Next: phasing grid, targets and calculations. |
+| NHS-4 | in progress (part 2 of ~4) | nhs/4 | [#149](https://github.com/cjpmd/virtual-pmo-hub/pull/149) | Migrations `20261123190000_nhs_4_efficiency` and `20261123200000_nhs_4b_efficiency_summary` (not applied): schemes, monthly values, targets, stage rules, finance validation, scheme impact assessments, year summary RPC; phasing grid and targets editor components. Next: pipeline board, scheme detail and routes. |
 | NHS-5 | lane B (see docs/nhs-run-log-b.md) | nhs-b/5 | | |
 | NHS-6 | not started | | | |
 | NHS-7 | lane B (see docs/nhs-run-log-b.md) | nhs-b/7 | | |
@@ -90,6 +90,8 @@ Lock: 2026-11-23T19:58Z
 - **NHS-4 / D5:** stage rules apply only when a scheme newly crosses a threshold; back, on hold and rejected are free; back from hold into delivery needs a current approved assessment. Sample schemes are exempt.
 - **NHS-4 / D6:** changing a validated actual clears its validation; changing planned values after finance validation doesn't clear the scheme's validation (say if it should).
 - **NHS-4 / D7:** please validate the categories and the confidence weights (100 / 80 / 50 / 20%) in PR #149.
+- **NHS-4 / D8 (calculations, please validate):** forecast outturn = per scheme and month the actual where recorded, else the forecast, else the plan. Full-year effect = the scheme's stored value, else the run rate (last three planned recurrent months × 12). Recurrent carry-forward = the planned recurrent value of the year's last month × 12 (exit run rate). Rejected schemes never count; on hold schemes do. A workspace's target is its whole-workspace target, else the sum of its unit targets.
+- **NHS-4 / D9:** the year summary is one SQL function (`public.efficiency_summary`, invoker, RLS) that the dashboard, targets screen and (part 4) report blocks share; the browser only sums the one scheme being edited in the grid, mirroring the same rules. Non-members get null.
 - **NHS-4 / note for NHS-8:** `private.seed_module_defaults` replaced again (NHS-2 body plus an `efficiency` branch calling `private.seed_efficiency_defaults`); `private.impact_assessments_target`, `private.impact_assessments_finish` and `v_impact_assessments` replaced (lane A only).
 - **NHS-1 / note:** `nhs/0` and `nhs/1` (part 1) were merged to `main` before their migrations were applied to production. Nothing breaks while modules are off, but apply `20261122150000`, `20261122170000` and `20261122190000` before switching a module on.
 
@@ -162,3 +164,9 @@ Lock: 2026-11-23T19:58Z
   - `data/efficiency.ts`, `services/efficiency.ts` with unit tests; Settings › Lists category list; register handles scheme assessments. Types spliced from the local generator. No scheme screens yet.
   - tsc (app and scripts), vitest (766), lint (0 errors), vite build pass. e2e and advisors not run. Tracker updated.
   - Next: NHS-4 part 2 (phasing grid, targets and calculations) on `nhs/4`.
+- **23/11/2026 19:58–20:15 UTC, NHS-4 part 2:** continued on `nhs/4` (PR #149 updated).
+  - Migration `20261123200000_nhs_4b_efficiency_summary` (`public.efficiency_summary`, `private.efficiency_year_months`) and `supabase/tests/efficiency_summary.sql` (24 checks); `cross_tenant.sql` case for the new RPC.
+  - Local DB suites pass (migrate from scratch, seed): cross_tenant (0 leaks), purge, read-only (46), efficiency (48), efficiency_summary (24), export (29), closure (82), nhs_modules, board_assurance, impact_assessments, notifications (72), sample data, benefit_categories, register_matrix, reports 1–5. `reports_phase6` fails as on main.
+  - Pure helpers in `data/efficiency.ts` (grid, changes, outturn, carry-forward, targets, summary parser) with `data/efficiency-phasing.test.ts`; `getEfficiencySummary` / `saveGridChanges`; `hooks/use-efficiency.ts`; `components/efficiency/phasing-grid.tsx` and `targets-editor.tsx` (not on a route yet). Types: `efficiency_summary` spliced from the local generator.
+  - tsc (app and scripts), vitest (774), lint (0 errors), vite build pass. e2e and advisors not run. Tracker updated.
+  - Next: NHS-4 part 3 (pipeline board, scheme detail, routes and navigation) on `nhs/4`.
