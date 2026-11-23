@@ -23,7 +23,7 @@ Each run reads this file on the newest package branch, does the next piece of wo
 
 - Lock: set `Lock:` below to the run's start time (UTC) and push before starting work; clear it when done. A run that finds a lock newer than 3 hours exits without changes.
 
-Lock: 2026-11-23T18:58Z (NHS-4 part 1; previous 16:58Z run left no work)
+Lock: none
 
 ## Status
 
@@ -33,7 +33,7 @@ Lock: 2026-11-23T18:58Z (NHS-4 part 1; previous 16:58Z run left no work)
 | NHS-1 | done (draft PR, awaiting review) | nhs/1 | [#142](https://github.com/cjpmd/virtual-pmo-hub/pull/142) | Migrations `20261122170000_nhs_1_board_assurance`, `20261122190000_nhs_1b_assurance_blocks`, `20261122210000_nhs_1c_programme_assurance` and `20261123090000_nhs_1d_register_matrix` (not applied): BAF register; BAF report blocks; five committee templates; programme assurance ratings and the "Assurance by programme" block; register matrix and risk re-scoring tool. One-click pack reuses the forum "Create pack" button. |
 | NHS-2 | done (draft PR, awaiting review) | nhs/2 | [#146](https://github.com/cjpmd/virtual-pmo-hub/pull/146) | Migration `20261123100000_nhs_2_benefit_categories` (not applied): NHS categories, measure units and default classifications seeded by the module; notional value per unit; cash / non-cash split on every benefit total; `benefits_by_category` block. |
 | NHS-3 | done (draft PR, awaiting review) | nhs/3 | [#148](https://github.com/cjpmd/virtual-pmo-hub/pull/148) | Migrations `20261123140000_nhs_3_impact_assessments` and `20261123160000_nhs_3b_assessment_notifications_blocks` (not applied; run section 0 of `docs/sql/nhs-3b-assessment-notifications-blocks.sql` by hand before the second, then redeploy `send-notification-email`). Assessments, sign-off, delivery gate, screens, approver notifications, three report blocks. |
-| NHS-4 | not started | | | |
+| NHS-4 | in progress (part 1 of ~4) | nhs/4 | [#149](https://github.com/cjpmd/virtual-pmo-hub/pull/149) | Migration `20261123190000_nhs_4_efficiency` (not applied): schemes, monthly values, targets, stage rules, finance validation, scheme impact assessments, services. Next: phasing grid, targets and calculations. |
 | NHS-5 | lane B (see docs/nhs-run-log-b.md) | nhs-b/5 | | |
 | NHS-6 | not started | | | |
 | NHS-7 | lane B (see docs/nhs-run-log-b.md) | nhs-b/7 | | |
@@ -83,6 +83,14 @@ Lock: 2026-11-23T18:58Z (NHS-4 part 1; previous 16:58Z run left no work)
 - **NHS-3 / D12:** the three impact assessment blocks are not added to the NHS-1 committee templates: a template is hidden while any block's module is off, so they would hide Quality Committee from organisations with board assurance only. Say if you want a separate "Quality and equality" template.
 - **NHS-3 / D13:** widening `notifications_kind_check` / `notifications_entity_type_check` follows GL-14a: section 0 of `docs/sql/nhs-3b-assessment-notifications-blocks.sql` by hand first; the migration repeats it only where still needed.
 - **NHS-3 / note for NHS-8:** part 3 replaced `private.notification_event_label`, `public.set_my_notification_preferences` and `private.partner_unsafe_blocks` (lane B doesn't touch them). Lane B replaces `decide_approval_step` (NHS-5); NHS-8 must reconcile it with NHS-0's version.
+- **NHS-4 / D1:** schemes are a new entity (`efficiency_schemes`), not a benefit subtype: benefits have no monthly plan / forecast / actual phasing, recurrent split, pipeline or gate. A scheme can link to a project, programme and benefit.
+- **NHS-4 / D2:** schemes, values and targets are workspace-scoped (not organisation-scoped like the BAF), so they link to projects / programmes / benefits with composite keys and can carry an impact assessment. No AGENTS.md exception needed.
+- **NHS-4 / D3:** schemes are edited by workspace managers and above; values also by the scheme's lead and finance lead (as workspace contributors); targets by workspace PMO / admin. Schemes are never deleted (rejected / on hold).
+- **NHS-4 / D4:** stage keys are fixed (labels from terminology); "configurable" means the two delivery rules (finance validation, approved impact assessment) can be switched off by admins and the confidence weights edited (`settings.efficiency`).
+- **NHS-4 / D5:** stage rules apply only when a scheme newly crosses a threshold; back, on hold and rejected are free; back from hold into delivery needs a current approved assessment. Sample schemes are exempt.
+- **NHS-4 / D6:** changing a validated actual clears its validation; changing planned values after finance validation doesn't clear the scheme's validation (say if it should).
+- **NHS-4 / D7:** please validate the categories and the confidence weights (100 / 80 / 50 / 20%) in PR #149.
+- **NHS-4 / note for NHS-8:** `private.seed_module_defaults` replaced again (NHS-2 body plus an `efficiency` branch calling `private.seed_efficiency_defaults`); `private.impact_assessments_target`, `private.impact_assessments_finish` and `v_impact_assessments` replaced (lane A only).
 - **NHS-1 / note:** `nhs/0` and `nhs/1` (part 1) were merged to `main` before their migrations were applied to production. Nothing breaks while modules are off, but apply `20261122150000`, `20261122170000` and `20261122190000` before switching a module on.
 
 ## Run entries
@@ -148,3 +156,9 @@ Lock: 2026-11-23T18:58Z (NHS-4 part 1; previous 16:58Z run left no work)
   - Front end: notification kinds and labels (module-owned kinds shown only while the module is on), block renderers `catalogue/impact-assessment.tsx` with a fixture captured locally, email module grouping (unknown kinds under "Other"). Types unchanged.
   - tsc (app and scripts), vitest (756), lint (0 errors), vite build pass. e2e and advisors not run. Tracker updated.
   - Next: NHS-4 on `nhs/4` (from `nhs/3`).
+- **23/11/2026 18:58–19:25 UTC, NHS-4 part 1:** new branch content on `nhs/4` (from `nhs/3`), draft PR #149 (audit in the PR). The 16:58 run took the lock but pushed no work; its lock was stale and is cleared here.
+  - Migration `20261123190000_nhs_4_efficiency` (tables, RLS, stage-rule trigger, finance validation and settings RPCs, views, scheme impact assessments, category seeding) and `supabase/tests/efficiency.sql` (48 checks); `cross_tenant.sql` cases for the 6 RPCs, `ct_fixture.sql` row for targets; `nhs_modules` / `board_assurance` fingerprints skip the new list.
+  - Local DB suites pass (migrate from scratch, seed): cross_tenant (0 leaks), purge, read-only (46), export (29), closure (82), sample data (27), notifications (72), approval_reminders, collections, nhs_modules, board_assurance, assurance_blocks, programme_assurance, register_matrix, benefit_categories, impact_assessments, impact_assessment_notifications, reports 1–5. `reports_phase6` fails as on main.
+  - `data/efficiency.ts`, `services/efficiency.ts` with unit tests; Settings › Lists category list; register handles scheme assessments. Types spliced from the local generator. No scheme screens yet.
+  - tsc (app and scripts), vitest (766), lint (0 errors), vite build pass. e2e and advisors not run. Tracker updated.
+  - Next: NHS-4 part 2 (phasing grid, targets and calculations) on `nhs/4`.
