@@ -184,6 +184,9 @@ export interface BenefitsValueData {
   percent: number;
   cash_releasing_realised: Money;
   cash_releasing_planned: Money;
+  /** NHS-2: absent in snapshots published before it. */
+  non_cash_realised?: Money;
+  non_cash_planned?: Money;
   at_risk: number;
   disbenefit_value: Money;
   objectives: Array<{ id: string; name: string; planned: Money; realised: Money; count: number }>;
@@ -228,7 +231,7 @@ function BenefitsValue({
     total > shown ? <BlockNote>and {total - shown} more</BlockNote> : null;
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Stat label="Planned value" value={f.money(data.planned)} />
         <Stat label="Realised" value={f.money(data.realised)} tone="good" />
         <Stat label="% realised" value={`${data.percent}%`} />
@@ -237,6 +240,13 @@ function BenefitsValue({
           value={f.money(data.cash_releasing_realised)}
           note={`of ${f.money(data.cash_releasing_planned)} planned`}
         />
+        {data.non_cash_planned !== undefined && (
+          <Stat
+            label="Non-cash realised"
+            value={f.money(data.non_cash_realised ?? 0)}
+            note={`of ${f.money(data.non_cash_planned)} planned`}
+          />
+        )}
         <Stat
           label="Benefits at risk"
           value={data.at_risk}
@@ -322,7 +332,7 @@ export const _benefits_value = registerBlock({
   name: "Benefits value",
   category: "benefits",
   description:
-    "Planned and realised value, cash-releasing, at risk, by strategic objective, benefits behind profile and overdue measurements.",
+    "Planned and realised value, cash-releasing and non-cash, at risk, by strategic objective, benefits behind profile and overdue measurements.",
   supportedScopes: ["project", "programme", "portfolio", "custom", "collection"],
   perEntity: true,
   configSchema: valueSchema,

@@ -136,6 +136,9 @@ export interface MeasureView {
   targetProfile: Array<{ period: string; value: number }>;
   nextDue: string;
   records: MeasurementView[];
+  /** NHS-2: notional £ per unit (non-cash), null when not set. */
+  notionalUnitValue: number | null;
+  updatedAt: string;
 }
 export interface BenefitReviewView {
   id: string;
@@ -214,7 +217,7 @@ export interface BenefitsData {
   outcomes: Outcome[];
   maps: Array<{ id: string; programmeId: string; name: string; description: string }>;
   people: Person[];
-  categories: Array<{ id: string; label: string }>;
+  categories: Array<{ id: string; label: string; value: string }>;
 }
 
 const BENEFIT_SELECT = `
@@ -224,7 +227,7 @@ const BENEFIT_SELECT = `
   category_id, updated_at,
   benefit_measures(
     id, name, unit, measurement_method, data_source, frequency, data_provider, baseline_value,
-    baseline_date, next_due_date, sort_order,
+    baseline_date, next_due_date, sort_order, notional_unit_value, updated_at,
     benefit_measure_targets(period_id, value),
     benefit_measurements(
       id, period_id, actual_value, evidence, notes, submitted_by_id, submitted_date,
@@ -308,7 +311,7 @@ export async function loadBenefits(orgId: string): Promise<BenefitsData> {
       .order("name"),
     supabase
       .from("lookup_values")
-      .select("id, label")
+      .select("id, label, value")
       .eq("organisation_id", orgId)
       .eq("list_key", "benefit_category")
       .order("sort_order"),
@@ -403,6 +406,9 @@ export async function loadBenefits(orgId: string): Promise<BenefitsData> {
           baselineValue: Number(measure.baseline_value ?? 0),
           baselineDate: measure.baseline_date ?? "",
           nextDue: measure.next_due_date ?? "",
+          notionalUnitValue:
+            measure.notional_unit_value === null ? null : Number(measure.notional_unit_value),
+          updatedAt: measure.updated_at,
           targetProfile: (measure.benefit_measure_targets ?? [])
             .map((target) => ({
               period: periodLabel.get(target.period_id) ?? "",
@@ -557,6 +563,28 @@ export async function loadMeasurementsDue(
   }));
 }
 
+/**
+ * NHS-2: a measure's unit (a preset from Settings › Lists › Measure units, or free text) and its
+ * optional notional £ value per unit. Contributors (RLS); the value can't be negative (database).
+ */
+export async function updateMeasureUnit(
+  id: string,
+  input: { unit: string; notionalUnitValue: number | null },
+  lastSeen?: string | null,
+) {
+  if (input.notionalUnitValue !== null && !(input.notionalUnitValue >= 0))
+    throw new ServiceError(
+      "invalid",
+      "Enter the notional value as zero or more, or leave it blank.",
+    );
+  return updateRow(
+    "benefit_measures",
+    id,
+    { unit: input.unit.trim() || null, notional_unit_value: input.notionalUnitValue },
+    { context: "Saving the measure", lastSeen },
+  );
+}
+
 export function periodFor(periods: BenefitPeriod[], isoDate: string): BenefitPeriod | undefined {
   return (
     periods.find((period) => period.start <= isoDate && period.end >= isoDate) ??
@@ -666,6 +694,8 @@ export interface BenefitInput {
   classification?: BenefitClassification;
   ownerId?: string | null;
   plannedTotalValue?: number;
+  /** NHS-2: a benefit_category lookup id. */
+  categoryId?: string;
 }
 
 /** Register edits by id (the board's column → field mapping lives in lib/benefit-board-data.ts). */
@@ -681,6 +711,7 @@ export async function updateBenefit(id: string, input: BenefitInput, lastSeen?: 
       classification: classificationValue[input.classification],
     }),
     ...(input.ownerId !== undefined && { owner_id: input.ownerId }),
+    ...(input.categoryId !== undefined && { category_id: input.categoryId }),
     ...(input.plannedTotalValue !== undefined && { planned_total_value: input.plannedTotalValue }),
   };
   if (!Object.keys(fields).length) return;

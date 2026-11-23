@@ -42,6 +42,7 @@ import { _changes_since_last, _raid_movement } from "./phase3";
 import { _lessons_learned, _linked_records } from "./phase4";
 import { _project_overview } from "./project-overview";
 import { _programme_coverage, _benefits_value } from "./funding";
+import { _benefits_by_category } from "./benefit-categories";
 import {
   _baf_summary,
   _baf_above_appetite,
@@ -94,4 +95,5 @@ export const ALL_BLOCKS = [
   _baf_above_appetite,
   _baf_linkage,
   _assurance_by_programme,
-]; // 43 total
+  _benefits_by_category,
+]; // 44 total

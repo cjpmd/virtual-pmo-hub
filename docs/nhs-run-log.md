@@ -23,7 +23,7 @@ Each run reads this file on the newest package branch, does the next piece of wo
 
 - Lock: set `Lock:` below to the run's start time (UTC) and push before starting work; clear it when done. A run that finds a lock newer than 3 hours exits without changes.
 
-Lock: none
+Lock: 2026-11-23 13:57 UTC
 
 ## Status
 
@@ -31,7 +31,7 @@ Lock: none
 |---|---|---|---|---|
 | NHS-0 | done (draft PR, awaiting review) | nhs/0 | [#140](https://github.com/cjpmd/virtual-pmo-hub/pull/140) | Migration `20261122150000_nhs_0_modules` (not applied). Settings › Modules, NHS sign-up choice, governance roles. Nav/report-block hiding helpers exist but nothing is wired yet: NHS-1 wires them with its first module-owned item. |
 | NHS-1 | done (draft PR, awaiting review) | nhs/1 | [#142](https://github.com/cjpmd/virtual-pmo-hub/pull/142) | Migrations `20261122170000_nhs_1_board_assurance`, `20261122190000_nhs_1b_assurance_blocks`, `20261122210000_nhs_1c_programme_assurance` and `20261123090000_nhs_1d_register_matrix` (not applied): BAF register; BAF report blocks; five committee templates; programme assurance ratings and the "Assurance by programme" block; register matrix and risk re-scoring tool. One-click pack reuses the forum "Create pack" button. |
-| NHS-2 | not started | | | |
+| NHS-2 | done (draft PR, awaiting review) | nhs/2 | [#146](https://github.com/cjpmd/virtual-pmo-hub/pull/146) | Migration `20261123100000_nhs_2_benefit_categories` (not applied): NHS categories, measure units and default classifications seeded by the module; notional value per unit; cash / non-cash split on every benefit total; `benefits_by_category` block. |
 | NHS-3 | not started | | | |
 | NHS-4 | not started | | | |
 | NHS-5 | lane B (see docs/nhs-run-log-b.md) | nhs-b/5 | | |
@@ -65,6 +65,10 @@ Lock: none
 - **NHS-1 / D14:** changing the register matrix stamps every existing risk that followed the old default with the old matrix (`risks.risk_matrix_id`), so scores, bands and pack history don't change. This bumps those risks' `updated_at` and writes one row-change audit entry per risk.
 - **NHS-1 / D15:** re-scoring is open to workspace PMO and admins (per risk's workspace), not only organisation admins; closed risks are never offered. Between two 5 × 5 matrices the proposal keeps likelihood and consequence (only the band can change); other sizes are scaled by level position. Accepted risks follow the register matrix again.
 - **NHS-1 / D16:** the NHS pack doesn't switch an existing organisation's register matrix (rule 2: nothing changes existing scoring automatically). New organisations choosing NHS at sign-up get the NHS 5×5 as their register matrix (the setup wizard calls `set_register_risk_matrix` after applying the pack); others choose it in Settings › Risk. `private.seed_module_defaults` was not changed, to avoid a conflict with lane B.
+- **NHS-2 / D1:** no `is_cash_releasing` column: `benefits`, `business_case_benefits` and `request_benefit_drafts` already carry `classification` (cash_releasing / non_cash_releasing / qualitative / societal). Cash-releasing = `cash_releasing`; everything else is non-cash.
+- **NHS-2 / D2:** category defaults are `settings.benefits.categoryClassification` (lookup value → classification), edited by admins in Settings › Benefits; they only pre-select. Please validate the NHS defaults (quality categories qualitative, net zero and inequalities societal) in PR #146.
+- **NHS-2 / D3:** the notional value per unit and the `benefits_by_category` block are core (every organisation), partner-safe like `benefits_value`, and not added to the committee templates.
+- **NHS-2 / D4:** `private.seed_module_defaults` replaced again (NHS-1 body plus one branch): reconcile with lane B in NHS-8.
 - **NHS-1 / note:** `nhs/0` and `nhs/1` (part 1) were merged to `main` before their migrations were applied to production. Nothing breaks while modules are off, but apply `20261122150000`, `20261122170000` and `20261122190000` before switching a module on.
 
 ## Run entries
@@ -106,3 +110,9 @@ Lock: none
   - Settings › Risk: Risk register matrix card (admins), Re-score risks card (PMO / admins), labels and bands locked while the organisation has its own matrix; NHS sign-up sets the NHS 5×5; forum report settings copy updated. Types spliced from the local generator (three RPCs).
   - tsc (app and scripts), vitest (707), lint (0 errors), vite build pass. e2e and advisors not run.
   - Next: NHS-2 on `nhs/2` (from `nhs/1`).
+- **23/11/2026 09:58–10:20 UTC, NHS-2 (package done):** new branch `nhs/2` from `nhs/1`, draft PR #146 (audit in the PR).
+  - Migration `20261123100000_nhs_2_benefit_categories` and `supabase/tests/benefit_categories.sql` (29 checks); `nhs_modules.sql` and `board_assurance.sql` fingerprints leave out what the module adds.
+  - Local DB suites pass: cross_tenant, purge, read-only (46), export (29), closure (82), sample data (27), nhs_modules (55), board_assurance (40), assurance_blocks (25), programme_assurance (34), register_matrix (44), reports 1–5. `reports_phase6` fails as on main.
+  - Register Category column with default classification, cash / non-cash split on register, dashboard and business case, measure unit and notional value editor, Settings › Benefits defaults card, Settings › Lists measure units, block renderers. Types: `benefit_measures` spliced from the local generator.
+  - tsc (app and scripts), vitest (723), lint (0 errors), vite build pass. e2e and advisors not run.
+  - Next: NHS-3 on `nhs/3` (from `nhs/2`).
