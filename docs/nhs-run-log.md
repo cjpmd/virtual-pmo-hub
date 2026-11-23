@@ -23,7 +23,7 @@ Each run reads this file on the newest package branch, does the next piece of wo
 
 - Lock: set `Lock:` below to the run's start time (UTC) and push before starting work; clear it when done. A run that finds a lock newer than 3 hours exits without changes.
 
-Lock: none
+Lock: 2026-11-23 08:57 UTC
 
 ## Status
 
