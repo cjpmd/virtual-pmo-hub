@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { HealthPill } from "@/components/health-pill";
 import { Fact, KpiCard } from "@/components/pmo-ui";
 import { MeasureUnitFacts } from "@/components/benefits/measure-unit-editor";
+import { BenefitSchemesPanel } from "@/components/efficiency/benefit-schemes";
 const lifecycle = ["Identified", "Validated", "Planned", "In realisation", "Realised", "Closed"];
 const money = (value: number) => formatCurrency(Math.abs(value));
 export function BenefitProfile({ benefit, data }: { benefit: BenefitView; data: BenefitsData }) {
@@ -231,6 +232,7 @@ export function BenefitProfile({ benefit, data }: { benefit: BenefitView; data: 
           ))}
         </div>
       </Section>
+      <BenefitSchemesPanel benefitId={benefit.id} />
       <section className="space-y-4">
         <div className="flex items-end justify-between">
           <div>

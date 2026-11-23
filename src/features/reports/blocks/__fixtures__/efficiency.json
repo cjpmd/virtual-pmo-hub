@@ -1,0 +1,385 @@
+{
+  "efficiency_summary": {
+    "gap": {
+      "plan": 395000.0,
+      "risk_adjusted": 419900.0,
+      "forecast_outturn": 423000.0
+    },
+    "plan": 105000.0,
+    "year": 2026,
+    "actual": 29000.0,
+    "months": [
+      {
+        "plan": 30000.0,
+        "month": "2026-04-01",
+        "actual": 19000.0,
+        "cum_plan": 30000.0,
+        "cum_actual": 19000.0,
+        "has_actual": true,
+        "cum_risk_adjusted": 25000.0,
+        "cum_forecast_outturn": 19000.0
+      },
+      {
+        "plan": 35000.0,
+        "month": "2026-05-01",
+        "actual": 10000.0,
+        "cum_plan": 65000.0,
+        "cum_actual": 29000.0,
+        "has_actual": true,
+        "cum_risk_adjusted": 52500.0,
+        "cum_forecast_outturn": 37000.0
+      },
+      {
+        "plan": 25000.0,
+        "month": "2026-06-01",
+        "actual": 0,
+        "cum_plan": 90000.0,
+        "cum_actual": 29000.0,
+        "has_actual": false,
+        "cum_risk_adjusted": 73500.0,
+        "cum_forecast_outturn": 62000.0
+      },
+      {
+        "plan": 0,
+        "month": "2026-07-01",
+        "actual": 0,
+        "cum_plan": 90000.0,
+        "cum_actual": 29000.0,
+        "has_actual": false,
+        "cum_risk_adjusted": 73500.0,
+        "cum_forecast_outturn": 62000.0
+      },
+      {
+        "plan": 0,
+        "month": "2026-08-01",
+        "actual": 0,
+        "cum_plan": 90000.0,
+        "cum_actual": 29000.0,
+        "has_actual": false,
+        "cum_risk_adjusted": 73500.0,
+        "cum_forecast_outturn": 62000.0
+      },
+      {
+        "plan": 3000.0,
+        "month": "2026-09-01",
+        "actual": 0,
+        "cum_plan": 93000.0,
+        "cum_actual": 29000.0,
+        "has_actual": false,
+        "cum_risk_adjusted": 74100.0,
+        "cum_forecast_outturn": 65000.0
+      },
+      {
+        "plan": 0,
+        "month": "2026-10-01",
+        "actual": 0,
+        "cum_plan": 93000.0,
+        "cum_actual": 29000.0,
+        "has_actual": false,
+        "cum_risk_adjusted": 74100.0,
+        "cum_forecast_outturn": 65000.0
+      },
+      {
+        "plan": 0,
+        "month": "2026-11-01",
+        "actual": 0,
+        "cum_plan": 93000.0,
+        "cum_actual": 29000.0,
+        "has_actual": false,
+        "cum_risk_adjusted": 74100.0,
+        "cum_forecast_outturn": 65000.0
+      },
+      {
+        "plan": 0,
+        "month": "2026-12-01",
+        "actual": 0,
+        "cum_plan": 93000.0,
+        "cum_actual": 29000.0,
+        "has_actual": false,
+        "cum_risk_adjusted": 74100.0,
+        "cum_forecast_outturn": 65000.0
+      },
+      {
+        "plan": 0,
+        "month": "2027-01-01",
+        "actual": 0,
+        "cum_plan": 93000.0,
+        "cum_actual": 29000.0,
+        "has_actual": false,
+        "cum_risk_adjusted": 74100.0,
+        "cum_forecast_outturn": 65000.0
+      },
+      {
+        "plan": 0,
+        "month": "2027-02-01",
+        "actual": 0,
+        "cum_plan": 93000.0,
+        "cum_actual": 29000.0,
+        "has_actual": false,
+        "cum_risk_adjusted": 74100.0,
+        "cum_forecast_outturn": 65000.0
+      },
+      {
+        "plan": 12000.0,
+        "month": "2027-03-01",
+        "actual": 0,
+        "cum_plan": 105000.0,
+        "cum_actual": 29000.0,
+        "has_actual": false,
+        "cum_risk_adjusted": 80100.0,
+        "cum_forecast_outturn": 77000.0
+      }
+    ],
+    "target": 500000.0,
+    "schemes": 4,
+    "to_date": {
+      "plan": 90000.0,
+      "actual": 29000.0,
+      "months": 3,
+      "variance": -61000.0,
+      "months_reported": 2
+    },
+    "currency": "GBP",
+    "start_month": 4,
+    "carry_forward": 144000.0,
+    "risk_adjusted": 80100.0,
+    "plan_recurrent": 100000.0,
+    "forecast_outturn": 77000.0,
+    "full_year_effect": 464000.0,
+    "whole_organisation": true
+  },
+  "efficiency_breakdown": {
+    "rows": [
+      {
+        "key": "Estates",
+        "plan": 3000.0,
+        "label": "Estates",
+        "actual": 0,
+        "target": 30000.0,
+        "schemes": 1,
+        "gap_plan": 27000.0,
+        "gap_forecast": 27000.0,
+        "risk_adjusted": 600.0,
+        "forecast_outturn": 3000.0
+      },
+      {
+        "key": "Medicine",
+        "plan": 5000.0,
+        "label": "Medicine",
+        "actual": 0,
+        "target": null,
+        "schemes": 1,
+        "gap_plan": null,
+        "gap_forecast": null,
+        "risk_adjusted": 1000.0,
+        "forecast_outturn": 5000.0
+      },
+      {
+        "key": "Surgery",
+        "plan": 97000.0,
+        "label": "Surgery",
+        "actual": 29000.0,
+        "target": 120000.0,
+        "schemes": 2,
+        "gap_plan": 23000.0,
+        "gap_forecast": 51000.0,
+        "risk_adjusted": 78500.0,
+        "forecast_outturn": 69000.0
+      }
+    ],
+    "year": 2026,
+    "target": 500000.0,
+    "currency": "GBP",
+    "group_by": "unit",
+    "start_month": 4,
+    "whole_organisation": true
+  },
+  "efficiency_recurrent": {
+    "plan": {
+      "recurrent": 100000.0,
+      "non_recurrent": 5000.0
+    },
+    "rows": [
+      {
+        "key": "agency_bank",
+        "label": "Agency and bank",
+        "recurrent_pct": 86.5,
+        "plan_recurrent": 32000.0,
+        "forecast_recurrent": 29000.0,
+        "plan_non_recurrent": 5000.0,
+        "forecast_non_recurrent": 0.0
+      },
+      {
+        "key": "clinical_productivity",
+        "label": "Clinical productivity",
+        "recurrent_pct": 100.0,
+        "plan_recurrent": 60000.0,
+        "forecast_recurrent": 40000.0,
+        "plan_non_recurrent": 0.0,
+        "forecast_non_recurrent": 0.0
+      },
+      {
+        "key": "estates",
+        "label": "Estates and facilities",
+        "recurrent_pct": 100.0,
+        "plan_recurrent": 3000.0,
+        "forecast_recurrent": 3000.0,
+        "plan_non_recurrent": 0.0,
+        "forecast_non_recurrent": 0.0
+      },
+      {
+        "key": "medicines",
+        "label": "Medicines",
+        "recurrent_pct": 100.0,
+        "plan_recurrent": 5000.0,
+        "forecast_recurrent": 5000.0,
+        "plan_non_recurrent": 0.0,
+        "forecast_non_recurrent": 0.0
+      }
+    ],
+    "year": 2026,
+    "actual": {
+      "recurrent": 29000.0,
+      "non_recurrent": 0.0
+    },
+    "currency": "GBP",
+    "start_month": 4,
+    "carry_forward": 144000.0,
+    "recurrent_pct": 95.2,
+    "forecast_outturn": {
+      "recurrent": 77000.0,
+      "non_recurrent": 0.0
+    },
+    "full_year_effect": 464000.0,
+    "whole_organisation": true,
+    "forecast_recurrent_pct": 100.0
+  },
+  "efficiency_breakdown_stage": {
+    "rows": [
+      {
+        "key": "opportunity",
+        "plan": 5000.0,
+        "label": "opportunity",
+        "actual": null,
+        "target": null,
+        "schemes": 1,
+        "gap_plan": null,
+        "gap_forecast": null,
+        "risk_adjusted": 1000.0,
+        "forecast_outturn": null
+      },
+      {
+        "key": "plan_in_progress",
+        "plan": 37000.0,
+        "label": "plan_in_progress",
+        "actual": null,
+        "target": null,
+        "schemes": 1,
+        "gap_plan": null,
+        "gap_forecast": null,
+        "risk_adjusted": 18500.0,
+        "forecast_outturn": null
+      },
+      {
+        "key": "in_delivery",
+        "plan": 60000.0,
+        "label": "in_delivery",
+        "actual": null,
+        "target": null,
+        "schemes": 1,
+        "gap_plan": null,
+        "gap_forecast": null,
+        "risk_adjusted": 60000.0,
+        "forecast_outturn": null
+      },
+      {
+        "key": "on_hold",
+        "plan": 3000.0,
+        "label": "on_hold",
+        "actual": null,
+        "target": null,
+        "schemes": 1,
+        "gap_plan": null,
+        "gap_forecast": null,
+        "risk_adjusted": 600.0,
+        "forecast_outturn": null
+      }
+    ],
+    "year": 2026,
+    "target": 500000.0,
+    "currency": "GBP",
+    "group_by": "stage",
+    "start_month": 4,
+    "whole_organisation": true
+  },
+  "efficiency_schemes_at_risk": {
+    "rows": [
+      {
+        "id": "00000000-0000-4000-8000-000000000001",
+        "ref": "EFF-004",
+        "lead": null,
+        "plan": 60000.0,
+        "unit": "Surgery",
+        "stage": "in_delivery",
+        "title": "Theatre productivity",
+        "reasons": [
+          "forecast_below_plan",
+          "actual_below_plan",
+          "assessment_not_approved"
+        ],
+        "category": "Clinical productivity",
+        "is_sample": false,
+        "shortfall": 20000.0,
+        "plan_to_date": 60000.0,
+        "actual_to_date": 20000.0,
+        "forecast_outturn": 40000.0,
+        "assessment_status": null
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000002",
+        "ref": "EFF-001",
+        "lead": null,
+        "plan": 37000.0,
+        "unit": "Surgery",
+        "stage": "plan_in_progress",
+        "title": "Agency reduction",
+        "reasons": [
+          "forecast_below_plan"
+        ],
+        "category": "Agency and bank",
+        "is_sample": false,
+        "shortfall": 8000.0,
+        "plan_to_date": 25000.0,
+        "actual_to_date": 9000.0,
+        "forecast_outturn": 29000.0,
+        "assessment_status": null
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000003",
+        "ref": "EFF-005",
+        "lead": null,
+        "plan": 3000.0,
+        "unit": "Estates",
+        "stage": "on_hold",
+        "title": "Estates rationalisation",
+        "reasons": [
+          "on_hold"
+        ],
+        "category": "Estates and facilities",
+        "is_sample": false,
+        "shortfall": 0.0,
+        "plan_to_date": 0,
+        "actual_to_date": 0,
+        "forecast_outturn": 3000.0,
+        "assessment_status": null
+      }
+    ],
+    "year": 2026,
+    "count": 3,
+    "currency": "GBP",
+    "shortfall": 28000.0,
+    "start_month": 4,
+    "tolerance_pct": 10.0,
+    "whole_organisation": true
+  }
+}

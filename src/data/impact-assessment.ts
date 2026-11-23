@@ -262,6 +262,10 @@ export function signoffRoute(template: ImpactTemplate, fullRequired: boolean): s
 export type AssessmentStatus =
   "draft" | "in_review" | "approved" | "rejected" | "reassessment_required";
 
+export const isAssessmentStatus = (value: unknown): value is AssessmentStatus =>
+  typeof value === "string" &&
+  ["draft", "in_review", "approved", "rejected", "reassessment_required"].includes(value);
+
 export const ASSESSMENT_STATUS_LABELS: Record<AssessmentStatus, string> = {
   draft: "Draft",
   in_review: "Awaiting sign-off",

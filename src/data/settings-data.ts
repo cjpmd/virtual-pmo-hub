@@ -421,6 +421,7 @@ export const defaultSettings: AppSettings = {
     governanceRoles: [],
     riskAppetite: [],
     measureUnits: [],
+    efficiencyCategories: [],
   },
   // Filled from organisation_members when the organisation loads.
   users: [],

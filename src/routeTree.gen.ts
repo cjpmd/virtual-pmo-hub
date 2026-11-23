@@ -95,6 +95,7 @@ import { Route as LessonsActionsRouteImport } from './routes/lessons.actions'
 import { Route as NotificationsUnsubscribeRouteImport } from './routes/notifications.unsubscribe'
 import { Route as PortfolioIndexRouteImport } from './routes/portfolio.index'
 import { Route as PortfolioCollectionsRouteImport } from './routes/portfolio.collections'
+import { Route as PortfolioEfficiencyRouteImport } from './routes/portfolio.efficiency'
 import { Route as PortfolioProgrammesRouteImport } from './routes/portfolio.programmes'
 import { Route as PortfolioProjectsRouteImport } from './routes/portfolio.projects'
 import { Route as PortfolioRequestsRouteImport } from './routes/portfolio.requests'
@@ -117,6 +118,8 @@ import { Route as DeliveryDependenciesMapRouteImport } from './routes/delivery.d
 import { Route as GovernanceReportsIndexRouteImport } from './routes/governance.reports.index'
 import { Route as PortfolioCollectionsIndexRouteImport } from './routes/portfolio.collections.index'
 import { Route as PortfolioCollectionsCollectionIdRouteImport } from './routes/portfolio.collections.$collectionId'
+import { Route as PortfolioEfficiencyIndexRouteImport } from './routes/portfolio.efficiency.index'
+import { Route as PortfolioEfficiencySchemeIdRouteImport } from './routes/portfolio.efficiency.$schemeId'
 import { Route as PortfolioProgrammesIndexRouteImport } from './routes/portfolio.programmes.index'
 import { Route as PortfolioProgrammesProgrammeIdRouteImport } from './routes/portfolio.programmes.$programmeId'
 import { Route as PortfolioProjectsIndexRouteImport } from './routes/portfolio.projects.index'
@@ -564,6 +567,11 @@ const PortfolioCollectionsRoute = PortfolioCollectionsRouteImport.update({
   path: '/collections',
   getParentRoute: () => PortfolioRoute,
 } as any)
+const PortfolioEfficiencyRoute = PortfolioEfficiencyRouteImport.update({
+  id: '/efficiency',
+  path: '/efficiency',
+  getParentRoute: () => PortfolioRoute,
+} as any)
 const PortfolioProgrammesRoute = PortfolioProgrammesRouteImport.update({
   id: '/programmes',
   path: '/programmes',
@@ -676,6 +684,18 @@ const PortfolioCollectionsCollectionIdRoute =
     id: '/$collectionId',
     path: '/$collectionId',
     getParentRoute: () => PortfolioCollectionsRoute,
+  } as any)
+const PortfolioEfficiencyIndexRoute =
+  PortfolioEfficiencyIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => PortfolioEfficiencyRoute,
+  } as any)
+const PortfolioEfficiencySchemeIdRoute =
+  PortfolioEfficiencySchemeIdRouteImport.update({
+    id: '/$schemeId',
+    path: '/$schemeId',
+    getParentRoute: () => PortfolioEfficiencyRoute,
   } as any)
 const PortfolioProgrammesIndexRoute =
   PortfolioProgrammesIndexRouteImport.update({
@@ -826,6 +846,7 @@ export interface FileRoutesByFullPath {
   '/lessons/actions': typeof LessonsActionsRoute
   '/notifications/unsubscribe': typeof NotificationsUnsubscribeRoute
   '/portfolio/collections': typeof PortfolioCollectionsRouteWithChildren
+  '/portfolio/efficiency': typeof PortfolioEfficiencyRouteWithChildren
   '/portfolio/programmes': typeof PortfolioProgrammesRouteWithChildren
   '/portfolio/projects': typeof PortfolioProjectsRouteWithChildren
   '/portfolio/requests': typeof PortfolioRequestsRoute
@@ -855,11 +876,13 @@ export interface FileRoutesByFullPath {
   '/signup/': typeof SignupIndexRoute
   '/delivery/dependencies/map': typeof DeliveryDependenciesMapRoute
   '/portfolio/collections/$collectionId': typeof PortfolioCollectionsCollectionIdRoute
+  '/portfolio/efficiency/$schemeId': typeof PortfolioEfficiencySchemeIdRoute
   '/portfolio/programmes/$programmeId': typeof PortfolioProgrammesProgrammeIdRoute
   '/portfolio/projects/$projectCode': typeof PortfolioProjectsProjectCodeRoute
   '/delivery/dependencies/': typeof DeliveryDependenciesIndexRoute
   '/governance/reports/': typeof GovernanceReportsIndexRoute
   '/portfolio/collections/': typeof PortfolioCollectionsIndexRoute
+  '/portfolio/efficiency/': typeof PortfolioEfficiencyIndexRoute
   '/portfolio/programmes/': typeof PortfolioProgrammesIndexRoute
   '/portfolio/projects/': typeof PortfolioProjectsIndexRoute
   '/governance/reports/$reportId/edit': typeof GovernanceReportsReportIdEditRoute
@@ -958,11 +981,13 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupIndexRoute
   '/delivery/dependencies/map': typeof DeliveryDependenciesMapRoute
   '/portfolio/collections/$collectionId': typeof PortfolioCollectionsCollectionIdRoute
+  '/portfolio/efficiency/$schemeId': typeof PortfolioEfficiencySchemeIdRoute
   '/portfolio/programmes/$programmeId': typeof PortfolioProgrammesProgrammeIdRoute
   '/portfolio/projects/$projectCode': typeof PortfolioProjectsProjectCodeRoute
   '/delivery/dependencies': typeof DeliveryDependenciesIndexRoute
   '/governance/reports': typeof GovernanceReportsIndexRoute
   '/portfolio/collections': typeof PortfolioCollectionsIndexRoute
+  '/portfolio/efficiency': typeof PortfolioEfficiencyIndexRoute
   '/portfolio/programmes': typeof PortfolioProgrammesIndexRoute
   '/portfolio/projects': typeof PortfolioProjectsIndexRoute
   '/governance/reports/$reportId/edit': typeof GovernanceReportsReportIdEditRoute
@@ -1052,6 +1077,7 @@ export interface FileRoutesById {
   '/lessons/actions': typeof LessonsActionsRoute
   '/notifications/unsubscribe': typeof NotificationsUnsubscribeRoute
   '/portfolio/collections': typeof PortfolioCollectionsRouteWithChildren
+  '/portfolio/efficiency': typeof PortfolioEfficiencyRouteWithChildren
   '/portfolio/programmes': typeof PortfolioProgrammesRouteWithChildren
   '/portfolio/projects': typeof PortfolioProjectsRouteWithChildren
   '/portfolio/requests': typeof PortfolioRequestsRoute
@@ -1081,11 +1107,13 @@ export interface FileRoutesById {
   '/signup/': typeof SignupIndexRoute
   '/delivery/dependencies/map': typeof DeliveryDependenciesMapRoute
   '/portfolio/collections/$collectionId': typeof PortfolioCollectionsCollectionIdRoute
+  '/portfolio/efficiency/$schemeId': typeof PortfolioEfficiencySchemeIdRoute
   '/portfolio/programmes/$programmeId': typeof PortfolioProgrammesProgrammeIdRoute
   '/portfolio/projects/$projectCode': typeof PortfolioProjectsProjectCodeRoute
   '/delivery/dependencies/': typeof DeliveryDependenciesIndexRoute
   '/governance/reports/': typeof GovernanceReportsIndexRoute
   '/portfolio/collections/': typeof PortfolioCollectionsIndexRoute
+  '/portfolio/efficiency/': typeof PortfolioEfficiencyIndexRoute
   '/portfolio/programmes/': typeof PortfolioProgrammesIndexRoute
   '/portfolio/projects/': typeof PortfolioProjectsIndexRoute
   '/governance/reports/$reportId/edit': typeof GovernanceReportsReportIdEditRoute
@@ -1176,6 +1204,7 @@ export interface FileRouteTypes {
     | '/lessons/actions'
     | '/notifications/unsubscribe'
     | '/portfolio/collections'
+    | '/portfolio/efficiency'
     | '/portfolio/programmes'
     | '/portfolio/projects'
     | '/portfolio/requests'
@@ -1205,11 +1234,13 @@ export interface FileRouteTypes {
     | '/signup/'
     | '/delivery/dependencies/map'
     | '/portfolio/collections/$collectionId'
+    | '/portfolio/efficiency/$schemeId'
     | '/portfolio/programmes/$programmeId'
     | '/portfolio/projects/$projectCode'
     | '/delivery/dependencies/'
     | '/governance/reports/'
     | '/portfolio/collections/'
+    | '/portfolio/efficiency/'
     | '/portfolio/programmes/'
     | '/portfolio/projects/'
     | '/governance/reports/$reportId/edit'
@@ -1308,11 +1339,13 @@ export interface FileRouteTypes {
     | '/signup'
     | '/delivery/dependencies/map'
     | '/portfolio/collections/$collectionId'
+    | '/portfolio/efficiency/$schemeId'
     | '/portfolio/programmes/$programmeId'
     | '/portfolio/projects/$projectCode'
     | '/delivery/dependencies'
     | '/governance/reports'
     | '/portfolio/collections'
+    | '/portfolio/efficiency'
     | '/portfolio/programmes'
     | '/portfolio/projects'
     | '/governance/reports/$reportId/edit'
@@ -1401,6 +1434,7 @@ export interface FileRouteTypes {
     | '/lessons/actions'
     | '/notifications/unsubscribe'
     | '/portfolio/collections'
+    | '/portfolio/efficiency'
     | '/portfolio/programmes'
     | '/portfolio/projects'
     | '/portfolio/requests'
@@ -1430,11 +1464,13 @@ export interface FileRouteTypes {
     | '/signup/'
     | '/delivery/dependencies/map'
     | '/portfolio/collections/$collectionId'
+    | '/portfolio/efficiency/$schemeId'
     | '/portfolio/programmes/$programmeId'
     | '/portfolio/projects/$projectCode'
     | '/delivery/dependencies/'
     | '/governance/reports/'
     | '/portfolio/collections/'
+    | '/portfolio/efficiency/'
     | '/portfolio/programmes/'
     | '/portfolio/projects/'
     | '/governance/reports/$reportId/edit'
@@ -2101,6 +2137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortfolioCollectionsRouteImport
       parentRoute: typeof PortfolioRoute
     }
+    '/portfolio/efficiency': {
+      id: '/portfolio/efficiency'
+      path: '/efficiency'
+      fullPath: '/portfolio/efficiency'
+      preLoaderRoute: typeof PortfolioEfficiencyRouteImport
+      parentRoute: typeof PortfolioRoute
+    }
     '/portfolio/programmes': {
       id: '/portfolio/programmes'
       path: '/programmes'
@@ -2254,6 +2297,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/portfolio/collections/$collectionId'
       preLoaderRoute: typeof PortfolioCollectionsCollectionIdRouteImport
       parentRoute: typeof PortfolioCollectionsRoute
+    }
+    '/portfolio/efficiency/': {
+      id: '/portfolio/efficiency/'
+      path: '/'
+      fullPath: '/portfolio/efficiency/'
+      preLoaderRoute: typeof PortfolioEfficiencyIndexRouteImport
+      parentRoute: typeof PortfolioEfficiencyRoute
+    }
+    '/portfolio/efficiency/$schemeId': {
+      id: '/portfolio/efficiency/$schemeId'
+      path: '/$schemeId'
+      fullPath: '/portfolio/efficiency/$schemeId'
+      preLoaderRoute: typeof PortfolioEfficiencySchemeIdRouteImport
+      parentRoute: typeof PortfolioEfficiencyRoute
     }
     '/portfolio/programmes/': {
       id: '/portfolio/programmes/'
@@ -2559,6 +2616,19 @@ const PortfolioCollectionsRouteChildren: PortfolioCollectionsRouteChildren = {
 const PortfolioCollectionsRouteWithChildren =
   PortfolioCollectionsRoute._addFileChildren(PortfolioCollectionsRouteChildren)
 
+interface PortfolioEfficiencyRouteChildren {
+  PortfolioEfficiencySchemeIdRoute: typeof PortfolioEfficiencySchemeIdRoute
+  PortfolioEfficiencyIndexRoute: typeof PortfolioEfficiencyIndexRoute
+}
+
+const PortfolioEfficiencyRouteChildren: PortfolioEfficiencyRouteChildren = {
+  PortfolioEfficiencySchemeIdRoute: PortfolioEfficiencySchemeIdRoute,
+  PortfolioEfficiencyIndexRoute: PortfolioEfficiencyIndexRoute,
+}
+
+const PortfolioEfficiencyRouteWithChildren =
+  PortfolioEfficiencyRoute._addFileChildren(PortfolioEfficiencyRouteChildren)
+
 interface PortfolioProgrammesRouteChildren {
   PortfolioProgrammesProgrammeIdRoute: typeof PortfolioProgrammesProgrammeIdRoute
   PortfolioProgrammesIndexRoute: typeof PortfolioProgrammesIndexRoute
@@ -2590,6 +2660,7 @@ const PortfolioProjectsRouteWithChildren =
 
 interface PortfolioRouteChildren {
   PortfolioCollectionsRoute: typeof PortfolioCollectionsRouteWithChildren
+  PortfolioEfficiencyRoute: typeof PortfolioEfficiencyRouteWithChildren
   PortfolioProgrammesRoute: typeof PortfolioProgrammesRouteWithChildren
   PortfolioProjectsRoute: typeof PortfolioProjectsRouteWithChildren
   PortfolioRequestsRoute: typeof PortfolioRequestsRoute
@@ -2600,6 +2671,7 @@ interface PortfolioRouteChildren {
 
 const PortfolioRouteChildren: PortfolioRouteChildren = {
   PortfolioCollectionsRoute: PortfolioCollectionsRouteWithChildren,
+  PortfolioEfficiencyRoute: PortfolioEfficiencyRouteWithChildren,
   PortfolioProgrammesRoute: PortfolioProgrammesRouteWithChildren,
   PortfolioProjectsRoute: PortfolioProjectsRouteWithChildren,
   PortfolioRequestsRoute: PortfolioRequestsRoute,

@@ -325,6 +325,10 @@ begin
     ('impact_assessment_decisions', $s$insert into public.impact_assessment_decisions (assessment_id, version, decision, comment)
        select a.id, 0, 'returned', 'GL10' from public.impact_assessments a
        where a.organisation_id = %1$L order by a.created_at, a.id limit 1$s$),
+    -- NHS-4: the filler's year is out of range; one workspace-wide target.
+    ('efficiency_targets', $s$insert into public.efficiency_targets (workspace_id, financial_year, amount)
+       select w.id, 2026, 1000 from public.workspaces w where w.organisation_id = %1$L
+       order by w.created_at, w.id limit 1$s$),
     ('user_favourites', $s$insert into public.user_favourites (organisation_id, profile_id, project_id)
        select %1$L, m.profile_id, p.id from public.organisation_members m, public.projects p
        where m.organisation_id = %1$L and m.role = 'admin' and p.organisation_id = %1$L limit 1$s$),

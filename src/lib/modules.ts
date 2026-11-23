@@ -104,8 +104,14 @@ export const MODULES: ModuleDefinition[] = [
     adds: ["Savings scheme pipeline", "Monthly phasing and targets", "Efficiency dashboard"],
     recommends: ["impact_assessment"],
     builtIn: "NHS-4",
-    navPaths: [],
-    reportBlocks: [],
+    ready: true,
+    navPaths: ["/portfolio/efficiency"],
+    reportBlocks: [
+      "efficiency_summary",
+      "efficiency_breakdown",
+      "efficiency_schemes_at_risk",
+      "efficiency_recurrent",
+    ],
   },
   {
     key: "five_case",

@@ -519,6 +519,11 @@ describe("Phase 3 and 4 blocks", () => {
       quality: [],
       equality: [],
     },
+    // Efficiency blocks: the empty object a caller outside the organisation gets, too.
+    efficiency_summary: {},
+    efficiency_breakdown: {},
+    efficiency_schemes_at_risk: {},
+    efficiency_recurrent: {},
   };
   for (const [key, data] of Object.entries(EMPTY34)) {
     it(`${key} renders empty data`, () => {
@@ -535,10 +540,10 @@ describe("Phase 3 and 4 blocks", () => {
 });
 
 describe("ALL_BLOCKS registry (tree-shaking guard)", () => {
-  it("ALL_BLOCKS contains exactly 47 definitions", () => {
+  it("ALL_BLOCKS contains exactly 51 definitions", () => {
     // This test fails if a new block is added without updating catalogue/index.ts,
     // or if the explicit import chain is broken and blocks get tree-shaken.
-    expect(ALL_BLOCKS).toHaveLength(47);
+    expect(ALL_BLOCKS).toHaveLength(51);
   });
   it("ALL_BLOCKS matches what the registry contains", () => {
     const registryKeys = listBlocks()

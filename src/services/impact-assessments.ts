@@ -18,7 +18,7 @@ import { forInsert, type Row } from "./db";
 import { unwrap, unwrapMaybe } from "./service-error";
 import { insertRow, updateRow, type Written } from "./write";
 
-export type ImpactTarget = "project" | "programme";
+export type ImpactTarget = "project" | "programme" | "efficiency_scheme";
 
 export interface AssessmentStep {
   stepId: string;
@@ -110,7 +110,7 @@ const STATUSES: AssessmentStatus[] = [
 const toStatus = (value: unknown): AssessmentStatus =>
   STATUSES.includes(value as AssessmentStatus) ? (value as AssessmentStatus) : "draft";
 const toTarget = (value: unknown): ImpactTarget =>
-  value === "programme" ? "programme" : "project";
+  value === "programme" || value === "efficiency_scheme" ? value : "project";
 
 /** Stored answers (jsonb keyed by template keys), keeping only well-formed fields. Pure. */
 export function toAnswers(row: {
