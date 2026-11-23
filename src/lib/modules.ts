@@ -35,6 +35,8 @@ export interface ModuleDefinition {
   healthOnly?: boolean;
   /** Work package that builds it; until then the switch only records the choice. */
   builtIn: string;
+  /** Its screens are built (Settings › Modules stops saying they arrive later). */
+  ready?: boolean;
   /** Sidebar paths (lib/navigation.ts) this module controls. */
   navPaths: string[];
   /** Report block keys (features/reports/blocks) this module controls. */
@@ -55,6 +57,7 @@ export const MODULES: ModuleDefinition[] = [
     ],
     recommends: [],
     builtIn: "NHS-1",
+    ready: true,
     navPaths: ["/governance/assurance"],
     reportBlocks: ["baf_summary", "baf_above_appetite", "baf_linkage", "assurance_by_programme"],
   },
@@ -71,6 +74,7 @@ export const MODULES: ModuleDefinition[] = [
     recommends: [],
     healthOnly: true,
     builtIn: "NHS-2",
+    ready: true,
     navPaths: [],
     reportBlocks: [],
   },
@@ -83,7 +87,8 @@ export const MODULES: ModuleDefinition[] = [
     adds: ["Impact assessment register", "Sign-off by named governance roles", "Delivery gate"],
     recommends: [],
     builtIn: "NHS-3",
-    navPaths: [],
+    ready: true,
+    navPaths: ["/governance/impact-assessments"],
     reportBlocks: [],
   },
   {

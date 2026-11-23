@@ -136,6 +136,15 @@ export const qk = {
     detail: (orgId: string, id: string) => ["org", orgId, "strategic-risks", "detail", id] as const,
     linkable: (orgId: string) => ["org", orgId, "strategic-risks", "linkable"] as const,
   },
+  /** NHS-3: impact assessments (register, one target's assessment, template, gaps). */
+  impactAssessments: {
+    all: (orgId: string) => ["org", orgId, "impact-assessments"] as const,
+    register: (orgId: string) => ["org", orgId, "impact-assessments", "register"] as const,
+    target: (orgId: string, entityType: string, entityId: string) =>
+      ["org", orgId, "impact-assessments", "target", entityType, entityId] as const,
+    template: (orgId: string) => ["org", orgId, "impact-assessments", "template"] as const,
+    gaps: (orgId: string) => ["org", orgId, "impact-assessments", "gaps"] as const,
+  },
   /** NHS-1 part 3: a programme's assurance ratings (history and the latest). */
   programmeAssurance: (orgId: string, programmeId: string) =>
     ["org", orgId, "programme-assurance", programmeId] as const,

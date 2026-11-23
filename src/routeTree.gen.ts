@@ -76,6 +76,7 @@ import { Route as GovernanceAssuranceRouteImport } from './routes/governance.ass
 import { Route as GovernanceChangesRouteImport } from './routes/governance.changes'
 import { Route as GovernanceCommitteePacksRouteImport } from './routes/governance.committee-packs'
 import { Route as GovernanceForumRouteImport } from './routes/governance.forum'
+import { Route as GovernanceImpactAssessmentsRouteImport } from './routes/governance.impact-assessments'
 import { Route as GovernanceImprovementActionsRouteImport } from './routes/governance.improvement-actions'
 import { Route as GovernanceLessonsRouteImport } from './routes/governance.lessons'
 import { Route as GovernanceRaiddRouteImport } from './routes/governance.raidd'
@@ -465,6 +466,12 @@ const GovernanceForumRoute = GovernanceForumRouteImport.update({
   path: '/forum',
   getParentRoute: () => GovernanceRoute,
 } as any)
+const GovernanceImpactAssessmentsRoute =
+  GovernanceImpactAssessmentsRouteImport.update({
+    id: '/impact-assessments',
+    path: '/impact-assessments',
+    getParentRoute: () => GovernanceRoute,
+  } as any)
 const GovernanceImprovementActionsRoute =
   GovernanceImprovementActionsRouteImport.update({
     id: '/improvement-actions',
@@ -804,6 +811,7 @@ export interface FileRoutesByFullPath {
   '/governance/changes': typeof GovernanceChangesRoute
   '/governance/committee-packs': typeof GovernanceCommitteePacksRoute
   '/governance/forum': typeof GovernanceForumRoute
+  '/governance/impact-assessments': typeof GovernanceImpactAssessmentsRoute
   '/governance/improvement-actions': typeof GovernanceImprovementActionsRoute
   '/governance/lessons': typeof GovernanceLessonsRoute
   '/governance/raidd': typeof GovernanceRaiddRoute
@@ -910,6 +918,7 @@ export interface FileRoutesByTo {
   '/governance/changes': typeof GovernanceChangesRoute
   '/governance/committee-packs': typeof GovernanceCommitteePacksRoute
   '/governance/forum': typeof GovernanceForumRoute
+  '/governance/impact-assessments': typeof GovernanceImpactAssessmentsRoute
   '/governance/improvement-actions': typeof GovernanceImprovementActionsRoute
   '/governance/lessons': typeof GovernanceLessonsRoute
   '/governance/raidd': typeof GovernanceRaiddRoute
@@ -1028,6 +1037,7 @@ export interface FileRoutesById {
   '/governance/changes': typeof GovernanceChangesRoute
   '/governance/committee-packs': typeof GovernanceCommitteePacksRoute
   '/governance/forum': typeof GovernanceForumRoute
+  '/governance/impact-assessments': typeof GovernanceImpactAssessmentsRoute
   '/governance/improvement-actions': typeof GovernanceImprovementActionsRoute
   '/governance/lessons': typeof GovernanceLessonsRoute
   '/governance/raidd': typeof GovernanceRaiddRoute
@@ -1151,6 +1161,7 @@ export interface FileRouteTypes {
     | '/governance/changes'
     | '/governance/committee-packs'
     | '/governance/forum'
+    | '/governance/impact-assessments'
     | '/governance/improvement-actions'
     | '/governance/lessons'
     | '/governance/raidd'
@@ -1257,6 +1268,7 @@ export interface FileRouteTypes {
     | '/governance/changes'
     | '/governance/committee-packs'
     | '/governance/forum'
+    | '/governance/impact-assessments'
     | '/governance/improvement-actions'
     | '/governance/lessons'
     | '/governance/raidd'
@@ -1374,6 +1386,7 @@ export interface FileRouteTypes {
     | '/governance/changes'
     | '/governance/committee-packs'
     | '/governance/forum'
+    | '/governance/impact-assessments'
     | '/governance/improvement-actions'
     | '/governance/lessons'
     | '/governance/raidd'
@@ -1955,6 +1968,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GovernanceForumRouteImport
       parentRoute: typeof GovernanceRoute
     }
+    '/governance/impact-assessments': {
+      id: '/governance/impact-assessments'
+      path: '/impact-assessments'
+      fullPath: '/governance/impact-assessments'
+      preLoaderRoute: typeof GovernanceImpactAssessmentsRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
     '/governance/improvement-actions': {
       id: '/governance/improvement-actions'
       path: '/improvement-actions'
@@ -2452,6 +2472,7 @@ interface GovernanceRouteChildren {
   GovernanceChangesRoute: typeof GovernanceChangesRoute
   GovernanceCommitteePacksRoute: typeof GovernanceCommitteePacksRoute
   GovernanceForumRoute: typeof GovernanceForumRoute
+  GovernanceImpactAssessmentsRoute: typeof GovernanceImpactAssessmentsRoute
   GovernanceImprovementActionsRoute: typeof GovernanceImprovementActionsRoute
   GovernanceLessonsRoute: typeof GovernanceLessonsRoute
   GovernanceRaiddRoute: typeof GovernanceRaiddRoute
@@ -2464,6 +2485,7 @@ const GovernanceRouteChildren: GovernanceRouteChildren = {
   GovernanceChangesRoute: GovernanceChangesRoute,
   GovernanceCommitteePacksRoute: GovernanceCommitteePacksRoute,
   GovernanceForumRoute: GovernanceForumRoute,
+  GovernanceImpactAssessmentsRoute: GovernanceImpactAssessmentsRoute,
   GovernanceImprovementActionsRoute: GovernanceImprovementActionsRoute,
   GovernanceLessonsRoute: GovernanceLessonsRoute,
   GovernanceRaiddRoute: GovernanceRaiddRoute,

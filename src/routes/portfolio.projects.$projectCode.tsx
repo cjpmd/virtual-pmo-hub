@@ -12,6 +12,7 @@ import { DecisionPanel } from "@/components/decision-panel";
 import { DecisionLog } from "@/components/decision-log";
 import { DeliveryWorkspace } from "@/components/delivery-workspace";
 import { DependencyTab } from "@/components/dependency-tab";
+import { ImpactAssessmentPanel } from "@/components/impact-assessment/impact-assessment-panel";
 import { ChangeBaselineAction } from "@/components/change-baseline";
 import { toBaselineChange } from "@/services/financials";
 import { ProjectFinancials } from "@/components/project-financials";
@@ -391,6 +392,14 @@ function ProjectBody({ project }: { project: ProjectDetail }) {
       )}
       {tab === "plan" && sub === "gates" && (
         <ApprovalGatesPanel projectId={project.id} canEdit={permissions.canEdit} />
+      )}
+      {tab === "plan" && sub === "gates" && (
+        // NHS-3: shown only while the impact_assessment module is on.
+        <ImpactAssessmentPanel
+          entityType="project"
+          entityId={project.id}
+          workspaceId={project.workspaceId}
+        />
       )}
       {tab === "plan" && sub === "dependencies" && (
         <LinksPanel projectId={project.id} canEdit={permissions.canEdit} />

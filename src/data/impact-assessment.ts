@@ -276,3 +276,26 @@ export const EDITABLE_STATUSES: AssessmentStatus[] = ["draft", "rejected", "reas
 export type AssessmentDecision = "approved" | "approved_with_conditions" | "rejected" | "returned";
 
 export const PATIENT_DATA_HINT = "Do not enter patient-identifiable information.";
+
+/** Review periods the database accepts (months). */
+export const REVIEW_MONTH_CHOICES = [1, 2, 3, 4, 5, 6, 9, 12, 18, 24];
+
+/**
+ * A key for a new domain or characteristic from its label: lower case, letters, digits and
+ * underscores, starting with a letter, at most 40 characters, unique among `taken`
+ * (private.impact_assessment_check_template's rule). Pure.
+ */
+export function templateKey(label: string, taken: readonly string[]): string {
+  let base = label
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^[^a-z]+/, "")
+    .replace(/_+$/, "")
+    .slice(0, 36);
+  if (base.length < 2) base = `item_${base}`.replace(/_+$/, "") || "item";
+  if (base.length < 2) base = "item";
+  let key = base;
+  for (let n = 2; taken.includes(key); n++) key = `${base}_${n}`;
+  return key;
+}

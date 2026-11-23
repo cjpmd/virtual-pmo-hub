@@ -4,7 +4,7 @@
 // screening score, decides who may edit and refuses edits while an assessment is awaiting sign-off
 // or approved. Status changes go through the RPCs; answers through the shared write helper.
 import { supabase } from "@/integrations/supabase/client";
-import type { Json } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 import {
   isImpact,
   toImpactTemplate,
@@ -150,6 +150,37 @@ export function toAnswers(row: {
   };
 }
 
+/**
+ * Answers as the form holds them, tidied for saving: text trimmed, blank indicator lines dropped,
+ * and only the template's keys kept. Pure.
+ */
+export function cleanAnswers(
+  template: ImpactTemplate,
+  answers: AssessmentAnswers,
+): AssessmentAnswers {
+  const trim = (v: string | undefined) => (v === undefined ? undefined : v.trim() || undefined);
+  const keep = <T>(keys: string[], map: Record<string, T>, tidy: (a: T) => T) =>
+    Object.fromEntries(keys.filter((k) => map[k]).map((k) => [k, tidy(map[k] as T)]));
+  const domainKeys = template.domains.map((d) => d.key);
+  return {
+    screening: keep(domainKeys, answers.screening, (a) => ({ ...a, note: trim(a.note) })),
+    quality: keep(domainKeys, answers.quality, (a) => {
+      const indicators = a.indicators?.map((i) => i.trim()).filter(Boolean);
+      return {
+        ...a,
+        description: trim(a.description),
+        mitigations: trim(a.mitigations),
+        indicators: indicators?.length ? indicators : undefined,
+      };
+    }),
+    equality: keep(
+      template.equality.map((d) => d.key),
+      answers.equality,
+      (a) => ({ ...a, evidence: trim(a.evidence), mitigation: trim(a.mitigation) }),
+    ),
+  };
+}
+
 /** Drops undefined fields so the stored jsonb stays tidy. Pure. */
 export function answersToJson(answers: Record<string, object>): Json {
   return Object.fromEntries(
@@ -249,14 +280,10 @@ export async function listAssessmentDecisions(
   }));
 }
 
-export async function listAssessmentRegister(): Promise<AssessmentRegisterRow[]> {
-  const rows = unwrap(
-    await supabase.from("v_impact_assessments").select("*").order("updated_at", {
-      ascending: false,
-    }),
-    "Couldn't load the impact assessments",
-  );
-  return rows.map((r) => ({
+type RegisterViewRow = Database["public"]["Views"]["v_impact_assessments"]["Row"];
+
+export function toRegisterRow(r: RegisterViewRow): AssessmentRegisterRow {
+  return {
     id: r.id ?? "",
     entityType: toTarget(r.entity_type),
     entityId: r.entity_id ?? "",
@@ -276,7 +303,50 @@ export async function listAssessmentRegister(): Promise<AssessmentRegisterRow[]>
     steps: toSteps(r.steps),
     hasConditions: r.has_conditions ?? false,
     isSample: r.is_sample ?? false,
-  }));
+  };
+}
+
+export async function listAssessmentRegister(): Promise<AssessmentRegisterRow[]> {
+  const rows = unwrap(
+    await supabase.from("v_impact_assessments").select("*").order("updated_at", {
+      ascending: false,
+    }),
+    "Couldn't load the impact assessments",
+  );
+  return rows.map(toRegisterRow);
+}
+
+/** One assessment's register row: its sign-off steps and counts. */
+export async function getAssessmentSummary(id: string): Promise<AssessmentRegisterRow | null> {
+  const row = unwrapMaybe(
+    await supabase.from("v_impact_assessments").select("*").eq("id", id).maybeSingle(),
+    "Couldn't load the sign-off steps",
+  );
+  return row ? toRegisterRow(row) : null;
+}
+
+/** Register rows that need attention: awaiting sign-off, re-assessment due or review overdue. Pure. */
+export function needsAttention(row: AssessmentRegisterRow): boolean {
+  return row.status === "in_review" || row.status === "reassessment_required" || row.reviewOverdue;
+}
+
+export type RegisterFilter = "attention" | "all" | AssessmentStatus;
+
+/** Register rows matching a filter chip. Pure. */
+export function filterRegister(rows: AssessmentRegisterRow[], filter: RegisterFilter) {
+  if (filter === "all") return rows;
+  if (filter === "attention") return rows.filter(needsAttention);
+  return rows.filter((row) => row.status === filter);
+}
+
+/** Steps the person can decide now: awaiting sign-off, undecided, and a role they hold. Pure. */
+export function decidableSteps(
+  status: AssessmentStatus,
+  steps: AssessmentStep[],
+  heldRoles: ReadonlySet<string>,
+): AssessmentStep[] {
+  if (status !== "in_review") return [];
+  return steps.filter((s) => s.decision === null && s.role !== null && heldRoles.has(s.role));
 }
 
 export async function listAssessmentGaps(orgId: string): Promise<AssessmentGap[]> {

@@ -22,6 +22,7 @@ import {
   Settings,
   ShieldAlert,
   ShieldCheck,
+  ClipboardCheck,
   Target,
   Workflow,
   UsersRound,
@@ -140,6 +141,8 @@ export const sections: Section[] = [
       { to: "/governance/forum", label: "Boards", icon: Landmark },
       // NHS-1: shown only while the assurance module is on (lib/modules.ts navPaths).
       { to: "/governance/assurance", label: "Board assurance", icon: ShieldCheck },
+      // NHS-3: shown only while the impact_assessment module is on.
+      { to: "/governance/impact-assessments", label: "Impact assessments", icon: ClipboardCheck },
       { to: "/governance/reports", label: "Reports", icon: FileBarChart },
       { to: "/governance/changes", label: "Changes", icon: GitFork },
       { to: "/governance/lessons", label: "Lessons", icon: BookOpenCheck, termKey: "lesson" },

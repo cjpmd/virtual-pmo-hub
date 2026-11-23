@@ -271,6 +271,11 @@ export interface ModuleSettings {
   enabled: Partial<Record<ModuleKey, boolean>>;
   /** organisations.settings.pack. */
   pack: SectorPack;
+  /**
+   * NHS-3: settings.impactAssessment.gate.phaseId, the lifecycle phase projects can't enter without
+   * an approved impact assessment (null = no gate). Written only by set_impact_assessment_gate.
+   */
+  impactGatePhaseId?: string | null;
 }
 
 export interface AppSettings {
