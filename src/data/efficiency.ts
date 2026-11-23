@@ -487,3 +487,105 @@ export function toSummary(value: unknown): EfficiencySummary | null {
       })),
   };
 }
+
+// ---------------------------------------------------------------------------------------------
+// NHS-4 part 3: the pipeline board and the scheme list.
+// ---------------------------------------------------------------------------------------------
+
+/** What the board needs of a scheme. */
+export interface PipelineScheme {
+  stage: EfficiencyStage;
+  planInYear: number;
+  riskAdjustedInYear: number;
+}
+
+export interface PipelineColumn<T extends PipelineScheme> {
+  stage: EfficiencyStage;
+  schemes: T[];
+  plan: number;
+  riskAdjusted: number;
+  /** Rejected schemes never count towards the programme's totals. */
+  counted: boolean;
+}
+
+/** One column per stage (pipeline order, then on hold and rejected), with this year's planned and
+ *  risk-adjusted totals. Empty columns are kept so the board's shape never changes. Pure. */
+export function pipelineColumns<T extends PipelineScheme>(schemes: T[]): PipelineColumn<T>[] {
+  const round = (n: number) => Math.round(n * 100) / 100;
+  return STAGES.map((stage) => {
+    const inStage = schemes.filter((s) => s.stage === stage);
+    return {
+      stage,
+      schemes: inStage,
+      plan: round(inStage.reduce((sum, s) => sum + s.planInYear, 0)),
+      riskAdjusted: round(inStage.reduce((sum, s) => sum + s.riskAdjustedInYear, 0)),
+      counted: stage !== "rejected",
+    };
+  });
+}
+
+/** The pipeline stage before and after a scheme's (null at the ends). On hold and rejected sit
+ *  outside the pipeline, so they have neither; they move with the stage menu. */
+export function adjacentStages(stage: EfficiencyStage): {
+  back: EfficiencyStage | null;
+  forward: EfficiencyStage | null;
+} {
+  const i = PIPELINE_STAGES.indexOf(stage);
+  if (i < 0) return { back: null, forward: null };
+  return { back: PIPELINE_STAGES[i - 1] ?? null, forward: PIPELINE_STAGES[i + 1] ?? null };
+}
+
+export interface SchemeFilter {
+  workspaceId?: string | undefined;
+  businessUnit?: string | undefined;
+  category?: string | undefined;
+  search?: string | undefined;
+  /** Show rejected and delivered / closed schemes (hidden by default on the list). */
+  showClosed?: boolean;
+}
+
+/** Schemes matching a filter. Search matches the reference and title, ignoring case. Pure. */
+export function filterSchemes<
+  T extends {
+    workspaceId: string;
+    businessUnit: string | null;
+    category: string | null;
+    ref: string;
+    title: string;
+    stage: EfficiencyStage;
+  },
+>(schemes: T[], filter: SchemeFilter): T[] {
+  const q = filter.search?.trim().toLowerCase() ?? "";
+  return schemes.filter(
+    (s) =>
+      (!filter.workspaceId || s.workspaceId === filter.workspaceId) &&
+      (!filter.businessUnit || s.businessUnit === filter.businessUnit) &&
+      (!filter.category || s.category === filter.category) &&
+      (filter.showClosed || (s.stage !== "rejected" && s.stage !== "delivered")) &&
+      (!q || s.ref.toLowerCase().includes(q) || s.title.toLowerCase().includes(q)),
+  );
+}
+
+/** Who may do what on one scheme, mirroring the RLS policies and validate RPCs (the database
+ *  still decides). Workspace managers edit the scheme; its lead and finance lead (as workspace
+ *  contributors) edit its values; the finance lead or workspace PMO / admin validate. */
+export function schemePermissions(input: {
+  role: "viewer" | "contributor" | "manager" | "pmo" | "admin" | null;
+  myResourceId: string | null;
+  schemeLeadId: string | null;
+  financeLeadId: string | null;
+  moduleOn: boolean;
+  writable: boolean;
+}): { canEdit: boolean; canEditValues: boolean; canValidate: boolean } {
+  const rank = { viewer: 1, contributor: 2, manager: 3, pmo: 4, admin: 5 } as const;
+  const r = input.role ? rank[input.role] : 0;
+  const open = input.moduleOn && input.writable;
+  const me = input.myResourceId;
+  const isLead = Boolean(me) && r >= 2 && (me === input.schemeLeadId || me === input.financeLeadId);
+  const isFinance = Boolean(me) && r >= 2 && me === input.financeLeadId;
+  return {
+    canEdit: open && r >= 3,
+    canEditValues: open && (r >= 3 || isLead),
+    canValidate: open && (r >= 4 || isFinance),
+  };
+}

@@ -46,10 +46,10 @@ function Register({ rows }: { rows: AssessmentRegisterRow[] }) {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<Filter>("all");
   const visible = filterRegister(rows, filter);
-  // Scheme assessments (NHS-4) open from the scheme page once it exists (NHS-4 part c).
+  // Scheme assessments (NHS-4) open on the scheme page.
   const open = (row: AssessmentRegisterRow) =>
     row.entityType === "efficiency_scheme"
-      ? undefined
+      ? navigate({ to: "/portfolio/efficiency/$schemeId", params: { schemeId: row.entityId } })
       : row.entityType === "project" && row.projectCode
         ? navigate({
             to: "/portfolio/projects/$projectCode",

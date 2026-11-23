@@ -1,13 +1,20 @@
-// Efficiency / savings programme (NHS-4 part 2): queries and mutations for the phasing grid, the
-// targets editor and the year summary. Every change refreshes all of the organisation's efficiency
+// Efficiency / savings programme (NHS-4 parts 2–3): queries and mutations for the pipeline board,
+// the scheme page, the phasing grid, the targets editor and the year summary. Every change refreshes all of the organisation's efficiency
 // queries, since a value or target changes the scheme, the summary and the dashboard together.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useOrgId } from "@/components/auth/organisation-provider";
 import { useModule } from "@/lib/modules";
-import type { GridChange } from "@/data/efficiency";
+import { STAGE_LABELS, type EfficiencyStage, type GridChange } from "@/data/efficiency";
 import {
+  createScheme,
   getEfficiencySettings,
+  getScheme,
+  loadSchemeOptions,
+  stageCheck,
+  updateScheme,
+  validateScheme,
+  type SchemeEdit,
   getEfficiencySummary,
   listSchemeValues,
   listSchemes,
@@ -26,6 +33,26 @@ export function useEfficiencySchemes() {
     queryKey: qk.efficiency.schemes(orgId),
     queryFn: () => listSchemes(orgId),
     enabled: useModule("efficiency"),
+  });
+}
+
+export function useScheme(schemeId: string) {
+  const orgId = useOrgId();
+  return useQuery({
+    queryKey: qk.efficiency.scheme(orgId, schemeId),
+    queryFn: () => getScheme(schemeId),
+    enabled: Boolean(schemeId),
+  });
+}
+
+/** People, categories and linkable records for the scheme form. */
+export function useSchemeOptions(enabled = true) {
+  const orgId = useOrgId();
+  return useQuery({
+    queryKey: qk.efficiency.options(orgId),
+    queryFn: () => loadSchemeOptions(orgId),
+    enabled,
+    staleTime: 60_000,
   });
 }
 
@@ -95,6 +122,47 @@ export function useEfficiencyMutations() {
       onSuccess: async (count) => {
         await refresh();
         toast.success(count === 1 ? "1 actual validated." : `${count} actuals validated.`);
+      },
+    }),
+    createScheme: useMutation({
+      ...options,
+      mutationFn: (input: { workspaceId: string; edit: SchemeEdit & { title: string } }) =>
+        createScheme(input.workspaceId, input.edit),
+      onSuccess: refresh,
+    }),
+    updateScheme: useMutation({
+      ...options,
+      mutationFn: (input: { id: string; edit: SchemeEdit; lastSeen: string }) =>
+        updateScheme(input.id, input.edit, input.lastSeen),
+      onSuccess: async () => {
+        await refresh();
+        toast.success("Scheme saved.");
+      },
+    }),
+    /** Moves a scheme to a stage. Asks the database what's missing first, so a refused move says
+     *  what to add instead of failing; the stage trigger still decides. */
+    moveStage: useMutation({
+      ...options,
+      mutationFn: async (input: { id: string; stage: EfficiencyStage; lastSeen: string }) => {
+        const missing = await stageCheck(input.id, input.stage);
+        if (missing.length)
+          throw new Error(
+            `Before ${STAGE_LABELS[input.stage]} this scheme needs ${missing.join(", ")}.`,
+          );
+        return updateScheme(input.id, { stage: input.stage }, input.lastSeen);
+      },
+      onSuccess: async (_written, input) => {
+        await refresh();
+        toast.success(`Moved to ${STAGE_LABELS[input.stage]}.`);
+      },
+    }),
+    validateScheme: useMutation({
+      ...options,
+      mutationFn: (input: { id: string; validate: boolean; comment?: string; lastSeen?: string }) =>
+        validateScheme(input.id, input.validate, input.comment, input.lastSeen),
+      onSuccess: async (_v, input) => {
+        await refresh();
+        toast.success(input.validate ? "Scheme validated." : "Validation withdrawn.");
       },
     }),
     saveTarget: useMutation({

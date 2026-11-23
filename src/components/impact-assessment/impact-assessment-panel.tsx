@@ -97,8 +97,9 @@ export function ImpactAssessmentPanel({
         {term("impactAssessment.name")}
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        The quality and equality impact of this {entityType}, signed off by the named governance
-        roles.
+        The quality and equality impact of this{" "}
+        {entityType === "efficiency_scheme" ? "scheme" : entityType}, signed off by the named
+        governance roles.
       </p>
       <QueryState query={data}>
         {(value) =>

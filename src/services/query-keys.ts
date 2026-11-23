@@ -149,6 +149,9 @@ export const qk = {
   efficiency: {
     all: (orgId: string) => ["org", orgId, "efficiency"] as const,
     schemes: (orgId: string) => ["org", orgId, "efficiency", "schemes"] as const,
+    scheme: (orgId: string, schemeId: string) =>
+      ["org", orgId, "efficiency", "scheme", schemeId] as const,
+    options: (orgId: string) => ["org", orgId, "efficiency", "options"] as const,
     values: (orgId: string, schemeId: string) =>
       ["org", orgId, "efficiency", "values", schemeId] as const,
     targets: (orgId: string) => ["org", orgId, "efficiency", "targets"] as const,

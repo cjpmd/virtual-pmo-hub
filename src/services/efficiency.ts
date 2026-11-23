@@ -451,3 +451,75 @@ export async function saveGridChanges(
   }
   return { saved, error: null };
 }
+
+// ---- NHS-4 part 3: options for the scheme form -------------------------------------------------
+
+export interface SchemeOptions {
+  people: { id: string; name: string }[];
+  /** The 'efficiency_category' list (value stored on the scheme, label shown). */
+  categories: { value: string; label: string }[];
+  projects: { id: string; workspaceId: string; label: string }[];
+  programmes: { id: string; workspaceId: string; label: string }[];
+  benefits: { id: string; workspaceId: string; label: string; cashReleasing: boolean }[];
+}
+
+/** People, categories and the records a scheme can link to (non-archived projects and
+ *  programmes; open benefits). The form filters the links by the scheme's workspace, because the
+ *  database's composite keys only accept records in the same workspace. */
+export async function loadSchemeOptions(orgId: string): Promise<SchemeOptions> {
+  const [people, categories, projects, programmes, benefits] = await Promise.all([
+    supabase
+      .from("resources")
+      .select("id, name")
+      .eq("organisation_id", orgId)
+      .eq("is_active", true)
+      .order("name"),
+    supabase
+      .from("lookup_values")
+      .select("value, label, sort_order")
+      .eq("organisation_id", orgId)
+      .eq("list_key", "efficiency_category")
+      .eq("is_active", true)
+      .order("sort_order"),
+    supabase
+      .from("projects")
+      .select("id, workspace_id, code, name")
+      .eq("organisation_id", orgId)
+      .is("archived_at", null)
+      .order("code"),
+    supabase
+      .from("programmes")
+      .select("id, workspace_id, name")
+      .eq("organisation_id", orgId)
+      .is("archived_at", null)
+      .order("name"),
+    supabase
+      .from("benefits")
+      .select("id, workspace_id, ref, title, classification")
+      .eq("organisation_id", orgId)
+      .order("ref"),
+  ]);
+  return {
+    people: unwrap(people, "Couldn't load people").map((r) => ({ id: r.id, name: r.name })),
+    categories: unwrap(categories, "Couldn't load the categories").map((r) => ({
+      value: r.value,
+      label: r.label,
+    })),
+    projects: unwrap(projects, "Couldn't load projects").map((r) => ({
+      id: r.id,
+      workspaceId: r.workspace_id,
+      label: `${r.code} · ${r.name}`,
+    })),
+    programmes: unwrap(programmes, "Couldn't load programmes").map((r) => ({
+      id: r.id,
+      workspaceId: r.workspace_id,
+      label: r.name,
+    })),
+    benefits: unwrap(benefits, "Couldn't load benefits").map((r) => ({
+      id: r.id,
+      workspaceId: r.workspace_id,
+      label: r.ref ? `${r.ref} · ${r.title}` : r.title,
+      cashReleasing: r.classification === "cash_releasing",
+    })),
+  };
+}

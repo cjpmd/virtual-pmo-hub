@@ -28,6 +28,7 @@ import {
   UsersRound,
   Waypoints,
   FileBarChart,
+  PiggyBank,
 } from "lucide-react";
 import type { TermKey } from "@/data/settings-types";
 
@@ -90,6 +91,8 @@ export const sections: Section[] = [
       },
       { to: "/portfolio/roadmap", label: "Roadmap", icon: CalendarRange },
       { to: "/portfolio/requests", label: "Requests", icon: ListTodo },
+      // NHS-4: shown only while the efficiency module is on (lib/modules.ts navPaths).
+      { to: "/portfolio/efficiency", label: "Efficiency", icon: PiggyBank },
     ],
   },
   {
