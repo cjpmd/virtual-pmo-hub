@@ -42,7 +42,24 @@ import { _changes_since_last, _raid_movement } from "./phase3";
 import { _lessons_learned, _linked_records } from "./phase4";
 import { _project_overview } from "./project-overview";
 import { _programme_coverage, _benefits_value } from "./funding";
-import { _baf_summary, _baf_above_appetite, _baf_linkage } from "./assurance";
+import { _benefits_by_category } from "./benefit-categories";
+import {
+  _baf_summary,
+  _baf_above_appetite,
+  _baf_linkage,
+  _assurance_by_programme,
+} from "./assurance";
+import {
+  _impact_assessment_status,
+  _impact_assessments_awaiting,
+  _impact_negative_impacts,
+} from "./impact-assessment";
+import {
+  _efficiency_summary,
+  _efficiency_breakdown,
+  _efficiency_schemes_at_risk,
+  _efficiency_recurrent,
+} from "./efficiency";
 
 /** Every registered block definition. Importing this ensures all blocks are in the registry. */
 export const ALL_BLOCKS = [
@@ -88,4 +105,13 @@ export const ALL_BLOCKS = [
   _baf_summary,
   _baf_above_appetite,
   _baf_linkage,
-]; // 42 total
+  _assurance_by_programme,
+  _benefits_by_category,
+  _impact_assessment_status,
+  _impact_assessments_awaiting,
+  _impact_negative_impacts,
+  _efficiency_summary,
+  _efficiency_breakdown,
+  _efficiency_schemes_at_risk,
+  _efficiency_recurrent,
+]; // 51 total

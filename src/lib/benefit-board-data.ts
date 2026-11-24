@@ -5,6 +5,8 @@ import type { BenefitClassification, BenefitStatus } from "@/data/types";
 import { fromIsoDate } from "@/lib/format";
 import type { BenefitInput, BenefitsData, BenefitView } from "@/services/benefits";
 import type { Person } from "@/services/hierarchy";
+import type { AppSettings } from "@/data/settings-types";
+import { defaultClassification } from "@/lib/benefit-classification";
 
 const statuses: BenefitStatus[] = [
   "Identified",
@@ -56,6 +58,22 @@ export const benefitColumns: BoardColumn[] = [
   { key: "atRisk", label: "At risk", type: "status" },
 ];
 
+/**
+ * NHS-2: the columns with an editable Category (the organisation's benefit categories) after
+ * Classification. Choosing a category pre-selects its default classification (Settings › Benefits).
+ */
+export function benefitColumnsFor(categories: Array<{ label: string }>): BoardColumn[] {
+  const index = benefitColumns.findIndex((column) => column.key === "classification");
+  const category: BoardColumn = {
+    key: "category",
+    label: "Category",
+    type: "status",
+    editable: categories.length > 0,
+    options: categories.map((item) => item.label),
+  };
+  return [...benefitColumns.slice(0, index + 1), category, ...benefitColumns.slice(index + 1)];
+}
+
 /** Board rows. "At risk" is the view's benefit health (At Risk or Off Track), not a client rule. */
 export function benefitsToRows(
   data: BenefitsData,
@@ -79,6 +97,7 @@ export function benefitsToRows(
       title: item.title,
       type: item.type,
       classification: item.classification,
+      category: item.category,
       people: item.owner ? [item.owner] : [],
       owner: item.owner,
       projects: links.map((project) => project.name),
@@ -105,8 +124,18 @@ export function benefitsToRows(
 export function benefitInputFromBoard(
   patch: Partial<BoardRow>,
   people: Person[],
+  categories: Array<{ id: string; label: string; value?: string }> = [],
+  benefitSettings?: Pick<AppSettings["benefits"], "categoryClassification" | "categoryKeys">,
 ): BenefitInput | undefined {
   const input: BenefitInput = {};
+  if (typeof patch["category"] === "string") {
+    const category = categories.find((item) => item.label === patch["category"]);
+    if (!category) return undefined;
+    input.categoryId = category.id;
+    // A category change suggests its default classification, unless one came with the edit.
+    const suggested = defaultClassification(category, benefitSettings);
+    if (suggested && patch["classification"] === undefined) input.classification = suggested;
+  }
   if (typeof patch.title === "string") {
     if (!patch.title.trim()) return undefined;
     input.title = patch.title;

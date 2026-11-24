@@ -10,6 +10,7 @@ import type {
 import { getOptimismBias, optimismBiasFor } from "@/data/settings";
 import { formatCurrency, formatNumber, parseDate } from "@/lib/format";
 import { today } from "@/lib/today";
+import { cashSplit } from "@/lib/benefit-classification";
 import type {
   BenefitPeriod,
   BenefitProjectRef,
@@ -201,10 +202,23 @@ export function getBenefitsInRealisation(data: BenefitsData, items: BenefitView[
 }
 
 /** Register headline figures. Overdue and at-risk come from v_benefit_realisation. */
+/** NHS-2: positive benefits' value, cash-releasing and non-cash apart (lib/benefit-classification). */
+export const getCashSplit = (items: BenefitView[]) =>
+  cashSplit(
+    items
+      .filter((item) => item.type === "Benefit")
+      .map((item) => ({
+        classification: item.classification,
+        planned: item.plannedTotalValue,
+        realised: item.realisation.realised,
+      })),
+  );
+
 export function getBenefitMetrics(items: BenefitView[]) {
   const planned = items.reduce((sum, item) => sum + Math.max(0, item.plannedTotalValue), 0);
   const realised = items.reduce((sum, item) => sum + Math.max(0, item.realisation.realised), 0);
   return {
+    split: getCashSplit(items),
     count: items.length,
     planned,
     realised,
@@ -277,7 +291,10 @@ export function getValueMetrics(items: BenefitView[]) {
   const planned = positive.reduce((sum, item) => sum + Math.max(0, item.plannedTotalValue), 0);
   const realised = positive.reduce((sum, item) => sum + Math.max(0, item.realisation.realised), 0);
   const cashReleasing = positive.filter((item) => item.classification === "Cash-releasing");
+  const split = getCashSplit(items);
   return {
+    nonCashPlanned: split.nonCashPlanned,
+    nonCashRealised: split.nonCashRealised,
     planned,
     realised,
     percent: planned ? Math.round((realised / planned) * 100) : 0,

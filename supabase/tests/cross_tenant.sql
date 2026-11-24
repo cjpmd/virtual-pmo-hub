@@ -393,6 +393,9 @@ union all select 'a_status_report', (select id::text from public.status_reports 
 union all select 'a_phases', (select 'array[' || string_agg(quote_literal(id) || '::uuid', ', ' order by sort_order) || ']'
                               from public.lifecycle_phases where organisation_id = pg_temp.ct_org('A'))
 union all select 'a_notification', (select id::text from public.notifications where organisation_id = pg_temp.ct_org('A') limit 1)
+union all select 'a_impact_assessment', (select id::text from public.impact_assessments where organisation_id = pg_temp.ct_org('A') limit 1)
+union all select 'a_efficiency_scheme', (select id::text from public.efficiency_schemes where organisation_id = pg_temp.ct_org('A') limit 1)
+union all select 'a_phase', (select id::text from public.lifecycle_phases where organisation_id = pg_temp.ct_org('A') order by sort_order limit 1)
 union all select 'month', quote_literal(date_trunc('month', current_date)::date);
 do $$ declare missing text; begin
   select string_agg(key, ', ') into missing from ct_ctx where value is null;
@@ -430,6 +433,27 @@ insert into ct_cases (fn, call, expect, note) values
   ('apply_sector_pack(uuid,text,text[])', $c$select public.apply_sector_pack('{a_org}', 'nhs')$c$, 'empty', null),
   ('apply_sector_pack(uuid,text,text[])', $c$select public.apply_sector_pack('{a_org}', 'general', array['efficiency'])$c$, 'empty', null),
   ('set_organisation_module(uuid,text,boolean)', $c$select public.set_organisation_module('{a_org}', 'efficiency', true)$c$, 'empty', null),
+  -- NHS-3: B's admin can't read A's template or gaps, submit, decide or flag A's assessments, or set A's template or gate.
+  ('impact_assessment_template(uuid)', $c$select public.impact_assessment_template('{a_org}')$c$, 'empty', null),
+  ('impact_assessment_gaps(uuid)', $c$select * from public.impact_assessment_gaps('{a_org}')$c$, 'empty', null),
+  ('submit_impact_assessment(uuid,timestamp with time zone)', $c$select public.submit_impact_assessment('{a_impact_assessment}')$c$, 'empty', null),
+  ('decide_impact_assessment(uuid,text,text,text)', $c$select public.decide_impact_assessment('{a_step}', 'approved')$c$, 'empty', null),
+  ('flag_impact_assessment_change(uuid,text)', $c$select public.flag_impact_assessment_change('{a_impact_assessment}', 'GL10')$c$, 'empty', null),
+  ('set_impact_assessment_template(uuid,jsonb)', $c$select public.set_impact_assessment_template('{a_org}', null)$c$, 'empty', null),
+  ('set_impact_assessment_gate(uuid,uuid)', $c$select public.set_impact_assessment_gate('{a_org}', '{a_phase}')$c$, 'empty', null),
+  -- NHS-4
+  ('efficiency_settings(uuid)', $c$select public.efficiency_settings('{a_org}')$c$, 'empty', null),
+  ('set_efficiency_settings(uuid,jsonb)', $c$select public.set_efficiency_settings('{a_org}', '{"requireAssessment": false}')$c$, 'empty', null),
+  ('efficiency_stage_check(uuid,text)', $c$select public.efficiency_stage_check('{a_efficiency_scheme}', 'in_delivery')$c$, 'empty', null),
+  ('efficiency_summary(uuid,integer,uuid)', $c$select public.efficiency_summary('{a_org}', 2026)$c$, 'empty', null),
+  ('efficiency_run_rate_fye(uuid)', $c$select public.efficiency_run_rate_fye('{a_efficiency_scheme}')$c$, 'empty', null),
+  ('validate_efficiency_scheme(uuid,boolean,text,timestamp with time zone)', $c$select public.validate_efficiency_scheme('{a_efficiency_scheme}')$c$, 'empty', null),
+  ('validate_efficiency_actuals(uuid,date[])', $c$select public.validate_efficiency_actuals('{a_efficiency_scheme}')$c$, 'empty', null),
+  -- NHS-1 part 4: B's admin can't change A's register matrix, list or re-score A's risks.
+  ('set_register_risk_matrix(uuid,text)', $c$select public.set_register_risk_matrix('{a_org}', 'nhs_5x5')$c$, 'empty', null),
+  ('risk_rescore_candidates(uuid)', $c$select public.risk_rescore_candidates('{a_org}')$c$, 'empty', null),
+  ('rescore_risks(uuid,jsonb)', $c$select public.rescore_risks('{a_org}', jsonb_build_array(jsonb_build_object('id', '{a_risk}', 'probability', 1, 'impact', 1)))$c$, 'empty', null),
+  ('rescore_risks(uuid,jsonb)', $c$select public.rescore_risks('{b_org}', jsonb_build_array(jsonb_build_object('id', '{a_risk}', 'probability', 1, 'impact', 1)))$c$, 'empty', null),
   -- GL-13.
   ('mark_notifications_read(uuid,uuid[])', $c$select public.mark_notifications_read('{a_org}')$c$, 'empty', null),
   ('mark_notifications_read(uuid,uuid[])', $c$select public.mark_notifications_read('{a_org}', array['{a_notification}'::uuid])$c$, 'empty', null),

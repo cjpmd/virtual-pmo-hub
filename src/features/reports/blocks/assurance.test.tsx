@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import fixtures from "./__fixtures__/assurance.json";
 import "./catalogue";
-import { trendText, riskWhere, type LinkedRisk } from "./catalogue/assurance";
+import { directionText, trendText, riskWhere, type LinkedRisk } from "./catalogue/assurance";
 import { getBlock, resolveConfig } from "./registry";
 import type { BlockInstance, RenderContext } from "./types";
 import { FALLBACK_SCHEME } from "@/services/reports";
@@ -95,5 +95,28 @@ describe("board assurance blocks", () => {
     } as LinkedRisk;
     expect(riskWhere(risk)).toBe("Digital");
     expect(riskWhere({ ...risk, project_code: "CMR", project_name: "Case" })).toBe("CMR Case");
+  });
+
+  it("assurance_by_programme lists each programme's rating in words", () => {
+    renderBlock("assurance_by_programme", fixtures.assurance_by_programme);
+    expect(screen.getByText("Digital public services")).toBeTruthy();
+    expect(screen.getAllByText(/Limited assurance/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/↓ Worse/)).toBeTruthy();
+    expect(screen.getByText(/was Reasonable assurance/)).toBeTruthy();
+    expect(screen.getByText(/Two milestones missed/)).toBeTruthy();
+    cleanup();
+    renderBlock("assurance_by_programme", {
+      ...fixtures.assurance_by_programme,
+      total: 0,
+      rows: [],
+    });
+    expect(screen.getByText(/No programmes in this report's scope/)).toBeTruthy();
+  });
+
+  it("describes the direction of a programme rating in words", () => {
+    expect(directionText("better")).toBe("↑ Improved");
+    expect(directionText("worse")).toBe("↓ Worse");
+    expect(directionText("new")).toBe("First rating");
+    expect(directionText(null)).toBe("—");
   });
 });

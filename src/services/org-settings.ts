@@ -73,6 +73,8 @@ export const LIST_KEYS = {
   fundingSources: "funding_source",
   governanceRoles: "governance_role",
   riskAppetite: "risk_appetite",
+  measureUnits: "measure_unit",
+  efficiencyCategories: "efficiency_category",
 } as const;
 type ListName = keyof typeof LIST_KEYS;
 
@@ -110,6 +112,12 @@ export interface OrgSettingsData {
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
+
+/** NHS-3: settings.impactAssessment.gate.phaseId, or null when no gate is set. Pure. */
+export function impactGatePhaseOf(value: unknown): string | null {
+  const gate = isObject(value) && isObject(value["gate"]) ? value["gate"] : {};
+  return typeof gate["phaseId"] === "string" && gate["phaseId"] ? gate["phaseId"] : null;
+}
 
 export async function loadOrgSettings(orgId: string, userId: string): Promise<OrgSettingsData> {
   const [
@@ -234,6 +242,7 @@ export async function loadOrgSettings(orgId: string, userId: string): Promise<Or
   settings.modules = {
     enabled: toModuleMap(stored["modules"]),
     pack: toSectorPack(stored["pack"]),
+    impactGatePhaseId: impactGatePhaseOf(stored["impactAssessment"]),
   };
 
   const benefits = isObject(stored["benefits"]) ? stored["benefits"] : {};
@@ -241,6 +250,12 @@ export async function loadOrgSettings(orgId: string, userId: string): Promise<Or
     ...(benefits as unknown as AppSettings["benefits"]),
     categories: activeLabels("benefit_category") as AppSettings["benefits"]["categories"],
     classifications: ["Cash-releasing", "Non-cash-releasing", "Qualitative", "Societal"],
+    // NHS-2: derived (label → lookup value) so the category defaults can be keyed by value; never saved.
+    categoryKeys: Object.fromEntries(
+      lookupRows
+        .filter((row) => row.listKey === "benefit_category" && row.isActive)
+        .map((row) => [row.label, row.value]),
+    ),
   };
 
   const regional = isObject(stored["regional"]) ? stored["regional"] : {};
@@ -524,6 +539,7 @@ async function saveJsonb(
       ...settings.benefits,
       categories: undefined,
       classifications: undefined,
+      categoryKeys: undefined,
       optimismBias: undefined,
     },
     notifications: settings.notifications,

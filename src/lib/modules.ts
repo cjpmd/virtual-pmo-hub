@@ -35,6 +35,8 @@ export interface ModuleDefinition {
   healthOnly?: boolean;
   /** Work package that builds it; until then the switch only records the choice. */
   builtIn: string;
+  /** Its screens are built (Settings › Modules stops saying they arrive later). */
+  ready?: boolean;
   /** Sidebar paths (lib/navigation.ts) this module controls. */
   navPaths: string[];
   /** Report block keys (features/reports/blocks) this module controls. */
@@ -55,8 +57,9 @@ export const MODULES: ModuleDefinition[] = [
     ],
     recommends: [],
     builtIn: "NHS-1",
+    ready: true,
     navPaths: ["/governance/assurance"],
-    reportBlocks: ["baf_summary", "baf_above_appetite", "baf_linkage"],
+    reportBlocks: ["baf_summary", "baf_above_appetite", "baf_linkage", "assurance_by_programme"],
   },
   {
     key: "benefit_categories_nhs",
@@ -64,10 +67,14 @@ export const MODULES: ModuleDefinition[] = [
     nhsName: "NHS benefit categories",
     description:
       "Benefit categories in NHS language, such as bed days saved, staff time released and waiting list.",
-    adds: ["NHS benefit categories and measure units"],
+    adds: [
+      "Twelve NHS benefit categories, each with a default cash-releasing or non-cash classification",
+      "Measure unit presets such as bed days, WTE and staff hours",
+    ],
     recommends: [],
     healthOnly: true,
     builtIn: "NHS-2",
+    ready: true,
     navPaths: [],
     reportBlocks: [],
   },
@@ -80,8 +87,13 @@ export const MODULES: ModuleDefinition[] = [
     adds: ["Impact assessment register", "Sign-off by named governance roles", "Delivery gate"],
     recommends: [],
     builtIn: "NHS-3",
-    navPaths: [],
-    reportBlocks: [],
+    ready: true,
+    navPaths: ["/governance/impact-assessments"],
+    reportBlocks: [
+      "impact_assessment_status",
+      "impact_assessments_awaiting",
+      "impact_negative_impacts",
+    ],
   },
   {
     key: "efficiency",
@@ -92,8 +104,14 @@ export const MODULES: ModuleDefinition[] = [
     adds: ["Savings scheme pipeline", "Monthly phasing and targets", "Efficiency dashboard"],
     recommends: ["impact_assessment"],
     builtIn: "NHS-4",
-    navPaths: [],
-    reportBlocks: [],
+    ready: true,
+    navPaths: ["/portfolio/efficiency"],
+    reportBlocks: [
+      "efficiency_summary",
+      "efficiency_breakdown",
+      "efficiency_schemes_at_risk",
+      "efficiency_recurrent",
+    ],
   },
   {
     key: "five_case",

@@ -2,9 +2,11 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { HealthUpdating } from "@/components/health-updating";
 import { useMemo, useState } from "react";
 import { AssumptionsWorkspace } from "@/components/assumptions-workspace";
+import { ProgrammeAssuranceCard } from "@/components/assurance/programme-assurance-card";
 import { ProgrammeBenefits } from "@/components/project-benefits";
 import { BoardWorkspace } from "@/components/board-workspace";
 import { DependencyTab } from "@/components/dependency-tab";
+import { ImpactAssessmentPanel } from "@/components/impact-assessment/impact-assessment-panel";
 import { ProgrammeActions } from "@/components/entity-management";
 import { FavouriteButton } from "@/components/favourite-button";
 import { ArchivedWorkspaceBadge } from "@/components/workspace-badge";
@@ -334,17 +336,25 @@ function ProgrammeBody({ programme }: { programme: ProgrammeSummary }) {
 
       {tab === "financials" && <RollupFinancials scope={{ programmeId: programme.id }} />}
       {tab === "status" && (
-        <div className="rounded-lg border border-border/70 bg-card p-6 shadow-sm">
-          <h2 className="font-display text-lg font-semibold">Programme status</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Roll-up as at {format.date(todayIso())}
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <HealthPill health={programme.health} />
-            <span className="text-sm text-muted-foreground">
-              Benefit health: {programme.benefitHealth}
-            </span>
+        <div className="space-y-6">
+          <div className="rounded-lg border border-border/70 bg-card p-6 shadow-sm">
+            <h2 className="font-display text-lg font-semibold">Programme status</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Roll-up as at {format.date(todayIso())}
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <HealthPill health={programme.health} />
+              <span className="text-sm text-muted-foreground">
+                Benefit health: {programme.benefitHealth}
+              </span>
+            </div>
           </div>
+          <ProgrammeAssuranceCard programmeId={programme.id} workspaceId={programme.workspaceId} />
+          <ImpactAssessmentPanel
+            entityType="programme"
+            entityId={programme.id}
+            workspaceId={programme.workspaceId}
+          />
         </div>
       )}
       {tab === "notes" && <ProgrammeOfficeNote programme={programme} />}

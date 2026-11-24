@@ -131,6 +131,8 @@ export const notificationEvents = [
   "Benefit behind profile",
   "Lessons review outstanding",
   "Draft pack ready",
+  "Impact assessment awaiting my sign-off",
+  "Impact assessment decided",
 ];
 
 /**
@@ -418,6 +420,8 @@ export const defaultSettings: AppSettings = {
     fundingSources: [],
     governanceRoles: [],
     riskAppetite: [],
+    measureUnits: [],
+    efficiencyCategories: [],
   },
   // Filled from organisation_members when the organisation loads.
   users: [],

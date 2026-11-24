@@ -1,0 +1,95 @@
+{
+ "impact_negative_impacts": {
+  "quality": [
+   {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "score": 6,
+    "title": "Impact assessment: Ward reconfiguration",
+    "domain": "Workforce and staff wellbeing",
+    "status": "in_review",
+    "target": "WAR Ward reconfiguration",
+    "indicators": null,
+    "likelihood": 3,
+    "consequence": 2,
+    "description": "Rota gaps on nights",
+    "mitigations": "Bank staff cover"
+   }
+  ],
+  "equality": [
+   {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "title": "Impact assessment: Ward reconfiguration",
+    "status": "in_review",
+    "target": "WAR Ward reconfiguration",
+    "evidence": "Older patients travel further",
+    "mitigation": "Patient transport",
+    "characteristic": "Age"
+   }
+  ],
+  "assessments": 1,
+  "unmitigated": 0,
+  "quality_count": 1,
+  "equality_count": 1
+ },
+ "impact_assessment_status": {
+  "gaps": [
+   {
+    "id": "00000000-0000-4000-8000-000000000002",
+    "code": "OUT",
+    "name": "Outpatient redesign",
+    "phase": "Phase 4 - Build & Test"
+   }
+  ],
+  "rows": [
+   {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "title": "Impact assessment: Ward reconfiguration",
+    "status": "in_review",
+    "target": "WAR Ward reconfiguration",
+    "version": 3,
+    "is_sample": false,
+    "max_score": 6,
+    "entity_type": "project",
+    "review_date": "2027-05-23",
+    "steps_total": 2,
+    "full_required": true,
+    "has_conditions": false,
+    "review_overdue": false,
+    "steps_approved": 0
+   }
+  ],
+  "total": 1,
+  "counts": {
+   "draft": 0,
+   "approved": 0,
+   "rejected": 0,
+   "in_review": 1,
+   "reassessment_required": 0
+  },
+  "gate_on": true,
+  "full_required": 1,
+  "review_overdue": 0,
+  "with_conditions": 0
+ },
+ "impact_assessments_awaiting": {
+  "rows": [
+   {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "title": "Impact assessment: Ward reconfiguration",
+    "target": "WAR Ward reconfiguration",
+    "version": 3,
+    "is_sample": false,
+    "steps_total": 2,
+    "days_waiting": 400,
+    "submitted_on": "2026-11-23",
+    "full_required": true,
+    "pending_roles": [
+     "Medical Director",
+     "Chief Nurse / Director of Nursing"
+    ],
+    "steps_approved": 0
+   }
+  ],
+  "count": 1
+ }
+}

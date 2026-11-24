@@ -87,6 +87,7 @@ const NO_UPDATED_AT = new Set<TableName>([
   "outcome_benefits",
   "outcome_capabilities",
   "phase_lessons_review_attendees",
+  "programme_assurance_ratings",
   "record_links",
   "resource_skills",
   "roadmap_item_collections",

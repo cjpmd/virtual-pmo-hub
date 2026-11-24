@@ -126,6 +126,8 @@ export const qk = {
   settings: (orgId: string) => ["org", orgId, "settings"] as const,
   /** NHS-0: governance roles list and holders; under settings so a settings reload refreshes them. */
   governanceRoles: (orgId: string) => ["org", orgId, "settings", "governance-roles"] as const,
+  /** NHS-1 part 4: the register matrix and the re-scoring candidates. */
+  registerMatrix: (orgId: string) => ["org", orgId, "settings", "register-matrix"] as const,
   /** NHS-1: board assurance (strategic risk register and its children). */
   strategicRisks: {
     all: (orgId: string) => ["org", orgId, "strategic-risks"] as const,
@@ -134,6 +136,33 @@ export const qk = {
     detail: (orgId: string, id: string) => ["org", orgId, "strategic-risks", "detail", id] as const,
     linkable: (orgId: string) => ["org", orgId, "strategic-risks", "linkable"] as const,
   },
+  /** NHS-3: impact assessments (register, one target's assessment, template, gaps). */
+  impactAssessments: {
+    all: (orgId: string) => ["org", orgId, "impact-assessments"] as const,
+    register: (orgId: string) => ["org", orgId, "impact-assessments", "register"] as const,
+    target: (orgId: string, entityType: string, entityId: string) =>
+      ["org", orgId, "impact-assessments", "target", entityType, entityId] as const,
+    template: (orgId: string) => ["org", orgId, "impact-assessments", "template"] as const,
+    gaps: (orgId: string) => ["org", orgId, "impact-assessments", "gaps"] as const,
+  },
+  /** NHS-4: efficiency / savings schemes (CIP), their values, targets, settings and summaries. */
+  efficiency: {
+    all: (orgId: string) => ["org", orgId, "efficiency"] as const,
+    schemes: (orgId: string) => ["org", orgId, "efficiency", "schemes"] as const,
+    scheme: (orgId: string, schemeId: string) =>
+      ["org", orgId, "efficiency", "scheme", schemeId] as const,
+    options: (orgId: string) => ["org", orgId, "efficiency", "options"] as const,
+    values: (orgId: string, schemeId: string) =>
+      ["org", orgId, "efficiency", "values", schemeId] as const,
+    targets: (orgId: string) => ["org", orgId, "efficiency", "targets"] as const,
+    settings: (orgId: string) => ["org", orgId, "efficiency", "settings"] as const,
+    summary: (orgId: string, year: number | null, workspaceId: string | null) =>
+      ["org", orgId, "efficiency", "summary", year, workspaceId] as const,
+    atRisk: (orgId: string) => ["org", orgId, "efficiency", "at-risk"] as const,
+  },
+  /** NHS-1 part 3: a programme's assurance ratings (history and the latest). */
+  programmeAssurance: (orgId: string, programmeId: string) =>
+    ["org", orgId, "programme-assurance", programmeId] as const,
   /** GL-5: whether the organisation is writable, and the subscription row for its banner. */
   access: {
     all: (orgId: string) => ["org", orgId, "access"] as const,

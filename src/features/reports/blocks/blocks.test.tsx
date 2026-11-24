@@ -481,6 +481,49 @@ describe("Phase 3 and 4 blocks", () => {
     },
     baf_above_appetite: { total_open: 0, count: 0, no_appetite: 0, rows: [] },
     baf_linkage: { in_scope_only: true, linked_total: 0, groups: [], unlinked: [] },
+    assurance_by_programme: {
+      scheme: { name: "NHS assurance levels", levels: [] },
+      total: 0,
+      rated: 0,
+      worse: 0,
+      counts: {},
+      rows: [],
+    },
+    benefits_by_category: {
+      currency: "GBP",
+      benefits: 0,
+      disbenefits: 0,
+      cash_planned: 0,
+      cash_realised: 0,
+      non_cash_planned: 0,
+      non_cash_realised: 0,
+      category_count: 0,
+      categories: [],
+    },
+    impact_assessment_status: {
+      total: 0,
+      counts: { draft: 0, in_review: 0, approved: 0, rejected: 0, reassessment_required: 0 },
+      review_overdue: 0,
+      with_conditions: 0,
+      full_required: 0,
+      gate_on: false,
+      rows: [],
+      gaps: [],
+    },
+    impact_assessments_awaiting: { count: 0, rows: [] },
+    impact_negative_impacts: {
+      assessments: 0,
+      quality_count: 0,
+      equality_count: 0,
+      unmitigated: 0,
+      quality: [],
+      equality: [],
+    },
+    // Efficiency blocks: the empty object a caller outside the organisation gets, too.
+    efficiency_summary: {},
+    efficiency_breakdown: {},
+    efficiency_schemes_at_risk: {},
+    efficiency_recurrent: {},
   };
   for (const [key, data] of Object.entries(EMPTY34)) {
     it(`${key} renders empty data`, () => {
@@ -497,10 +540,10 @@ describe("Phase 3 and 4 blocks", () => {
 });
 
 describe("ALL_BLOCKS registry (tree-shaking guard)", () => {
-  it("ALL_BLOCKS contains exactly 42 definitions", () => {
+  it("ALL_BLOCKS contains exactly 51 definitions", () => {
     // This test fails if a new block is added without updating catalogue/index.ts,
     // or if the explicit import chain is broken and blocks get tree-shaken.
-    expect(ALL_BLOCKS).toHaveLength(42);
+    expect(ALL_BLOCKS).toHaveLength(51);
   });
   it("ALL_BLOCKS matches what the registry contains", () => {
     const registryKeys = listBlocks()
@@ -588,6 +631,51 @@ describe("funding pack blocks (GL-14)", () => {
     expect(screen.getByText(/10 days overdue, unowned/)).toBeTruthy();
     expect(screen.getByText("and 1 more")).toBeTruthy();
     expect(screen.getByText(/Disbenefits planned/)).toBeTruthy();
+  });
+  it("benefits value shows non-cash beside cash-releasing when the snapshot has it", () => {
+    renderBlock("benefits_value", {
+      ...fixturesFunding.benefits_value,
+      non_cash_realised: 1200,
+      non_cash_planned: 5000,
+    });
+    expect(screen.getByText("Non-cash realised")).toBeTruthy();
+  });
+  it("benefits by category keeps cash-releasing and non-cash apart", () => {
+    renderBlock("benefits_by_category", {
+      currency: "GBP",
+      benefits: 2,
+      disbenefits: 1,
+      cash_planned: 120000,
+      cash_realised: 30000,
+      non_cash_planned: 45000,
+      non_cash_realised: 0,
+      category_count: 3,
+      categories: [
+        {
+          id: "c1",
+          name: "Cash-releasing efficiency",
+          count: 1,
+          cash_planned: 120000,
+          cash_realised: 30000,
+          non_cash_planned: 0,
+          non_cash_realised: 0,
+          by_classification: { cash_releasing: 1 },
+        },
+        {
+          id: "c2",
+          name: "Bed days saved",
+          count: 1,
+          cash_planned: 0,
+          cash_realised: 0,
+          non_cash_planned: 45000,
+          non_cash_realised: 0,
+          by_classification: { non_cash_releasing: 1 },
+        },
+      ],
+    });
+    expect(screen.getByText("Bed days saved")).toBeTruthy();
+    expect(screen.getByText("and 1 more categories")).toBeTruthy();
+    expect(screen.getByText(/1 disbenefit not included/)).toBeTruthy();
   });
   it("realisedWidth caps at 100 and survives a zero plan", () => {
     expect(realisedWidth(200, 50)).toBe(25);

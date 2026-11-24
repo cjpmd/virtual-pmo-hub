@@ -2,6 +2,7 @@
 // version, Markdown sections with guidance (read-only once submitted), options with the
 // preferred radio, the benefits that will go to the register, and the documents panel.
 // Approve / reject and the hand-off actions arrive in F5.
+import { useSettings } from "@/services/settings";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   CheckCircle2,
@@ -186,6 +187,10 @@ export function BusinessCasePage({
   const awaiting = versions.some((v) => v.status === "submitted");
   const preferred = version.options.find((o) => o.isPreferred);
   const benefitTotal = version.benefits.reduce((sum, b) => sum + b.annualValue * b.yearsCounted, 0);
+  // NHS-2: cash-releasing and non-cash shown apart, never as one savings figure.
+  const cashTotal = version.benefits
+    .filter((b) => b.classification === "cash_releasing")
+    .reduce((sum, b) => sum + b.annualValue * b.yearsCounted, 0);
 
   return (
     <div className="space-y-5">
@@ -258,7 +263,7 @@ export function BusinessCasePage({
           {
             label: "Benefits counted",
             value: benefitTotal,
-            detail: `${version.benefits.length} benefit${version.benefits.length === 1 ? "" : "s"}`,
+            detail: `${format.currency(cashTotal)} cash-releasing · ${format.currency(benefitTotal - cashTotal)} non-cash`,
           },
           {
             label: "Options appraised",
@@ -784,7 +789,7 @@ function BenefitDialog({
   onSave,
   saving,
 }: {
-  categories: { id: string; label: string }[];
+  categories: { id: string; label: string; value?: string }[];
   initial: BenefitInput;
   isNew: boolean;
   onClose: () => void;
@@ -792,6 +797,8 @@ function BenefitDialog({
   saving: boolean;
 }) {
   const [form, setForm] = useState(initial);
+  // NHS-2: a category pre-selects its default classification (Settings › Benefits).
+  const categoryDefaults = useSettings().benefits.categoryClassification;
   const [annual, setAnnual] = useState(String(initial.annualValue));
   const [years, setYears] = useState(String(initial.yearsCounted));
   return (
@@ -833,7 +840,15 @@ function BenefitDialog({
             <Field label="Category">
               <Select
                 value={form.categoryId}
-                onValueChange={(value) => setForm({ ...form, categoryId: value })}
+                onValueChange={(value) => {
+                  const key = categories.find((c) => c.id === value)?.value;
+                  const suggested = key ? categoryDefaults?.[key] : undefined;
+                  setForm({
+                    ...form,
+                    categoryId: value,
+                    ...(suggested && { classification: suggested }),
+                  });
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Choose" />

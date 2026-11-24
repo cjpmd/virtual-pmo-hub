@@ -1,5 +1,5 @@
 import { useSettings } from "@/services/settings";
-import { anyModuleEnabled, isModuleEnabled } from "@/lib/modules";
+import { anyModuleEnabled, isModuleEnabled, moduleTerm } from "@/lib/modules";
 import { ListEditor, SettingsCard } from "@/components/settings/settings-shell";
 import { patch } from "./settings-helpers";
 
@@ -62,6 +62,22 @@ export function ListsSettings() {
             label="Risk appetite levels"
             values={lists.riskAppetite}
             onChange={(values) => patch("lists", { riskAppetite: values })}
+          />
+        )}
+        {/* NHS-2: unit presets offered on benefit measures (free text still allowed). */}
+        {(isModuleEnabled("benefit_categories_nhs", settings) || lists.measureUnits.length > 0) && (
+          <ListEditor
+            label="Measure units"
+            values={lists.measureUnits}
+            onChange={(values) => patch("lists", { measureUnits: values })}
+          />
+        )}
+        {/* NHS-4: efficiency (CIP) scheme categories. */}
+        {(isModuleEnabled("efficiency", settings) || lists.efficiencyCategories.length > 0) && (
+          <ListEditor
+            label={`${moduleTerm("efficiency.scheme", settings)} categories`}
+            values={lists.efficiencyCategories}
+            onChange={(values) => patch("lists", { efficiencyCategories: values })}
           />
         )}
       </div>
