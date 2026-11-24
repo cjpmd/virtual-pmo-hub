@@ -1635,6 +1635,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "budget_baselines_business_case_version_fkey"
+            columns: ["business_case_version_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "business_case_versions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
             foreignKeyName: "budget_baselines_change_request_id_workspace_id_fkey"
             columns: ["change_request_id", "workspace_id"]
             isOneToOne: false
@@ -1808,6 +1815,150 @@ export type Database = {
           },
         ]
       }
+      business_case_objectives: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          kind: string
+          measure: string | null
+          organisation_id: string
+          sort_order: number
+          title: string
+          updated_at: string
+          version_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          kind: string
+          measure?: string | null
+          organisation_id: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+          version_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          kind?: string
+          measure?: string | null
+          organisation_id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+          version_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_case_objectives_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_case_objectives_version_id_workspace_id_fkey"
+            columns: ["version_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "business_case_versions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "business_case_objectives_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      business_case_option_years: {
+        Row: {
+          capital_cost: number
+          cash_benefit: number
+          created_at: string
+          created_by: string | null
+          id: string
+          non_cash_benefit: number
+          option_id: string
+          organisation_id: string
+          revenue_cost: number
+          updated_at: string
+          version_id: string
+          workspace_id: string
+          year_index: number
+        }
+        Insert: {
+          capital_cost?: number
+          cash_benefit?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          non_cash_benefit?: number
+          option_id: string
+          organisation_id: string
+          revenue_cost?: number
+          updated_at?: string
+          version_id: string
+          workspace_id: string
+          year_index: number
+        }
+        Update: {
+          capital_cost?: number
+          cash_benefit?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          non_cash_benefit?: number
+          option_id?: string
+          organisation_id?: string
+          revenue_cost?: number
+          updated_at?: string
+          version_id?: string
+          workspace_id?: string
+          year_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_case_option_years_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_case_option_years_option_id_version_id_fkey"
+            columns: ["option_id", "version_id"]
+            isOneToOne: false
+            referencedRelation: "business_case_options"
+            referencedColumns: ["id", "version_id"]
+          },
+          {
+            foreignKeyName: "business_case_option_years_version_id_workspace_id_fkey"
+            columns: ["version_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "business_case_versions"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "business_case_option_years_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       business_case_options: {
         Row: {
           benefits_summary: string | null
@@ -1817,9 +1968,12 @@ export type Database = {
           description: string | null
           id: string
           is_preferred: boolean
+          list_stage: string
           name: string
+          optimism_bias_pct: number | null
           organisation_id: string
           risk_summary: string | null
+          shortlist_note: string | null
           sort_order: number
           updated_at: string
           version_id: string
@@ -1834,9 +1988,12 @@ export type Database = {
           description?: string | null
           id?: string
           is_preferred?: boolean
+          list_stage?: string
           name: string
+          optimism_bias_pct?: number | null
           organisation_id: string
           risk_summary?: string | null
+          shortlist_note?: string | null
           sort_order?: number
           updated_at?: string
           version_id: string
@@ -1851,9 +2008,12 @@ export type Database = {
           description?: string | null
           id?: string
           is_preferred?: boolean
+          list_stage?: string
           name?: string
+          optimism_bias_pct?: number | null
           organisation_id?: string
           risk_summary?: string | null
+          shortlist_note?: string | null
           sort_order?: number
           updated_at?: string
           version_id?: string
@@ -1963,6 +2123,7 @@ export type Database = {
       }
       business_case_templates: {
         Row: {
+          case_group: string | null
           created_at: string
           created_by: string | null
           guidance: string | null
@@ -1971,11 +2132,13 @@ export type Database = {
           is_required: boolean
           key: string
           organisation_id: string
+          set_key: string
           sort_order: number
           title: string
           updated_at: string
         }
         Insert: {
+          case_group?: string | null
           created_at?: string
           created_by?: string | null
           guidance?: string | null
@@ -1984,11 +2147,13 @@ export type Database = {
           is_required?: boolean
           key: string
           organisation_id: string
+          set_key?: string
           sort_order?: number
           title: string
           updated_at?: string
         }
         Update: {
+          case_group?: string | null
           created_at?: string
           created_by?: string | null
           guidance?: string | null
@@ -1997,6 +2162,7 @@ export type Database = {
           is_required?: boolean
           key?: string
           organisation_id?: string
+          set_key?: string
           sort_order?: number
           title?: string
           updated_at?: string
@@ -2020,16 +2186,20 @@ export type Database = {
       }
       business_case_versions: {
         Row: {
+          appraisal_years: number
           business_case_id: string
           created_at: string
           created_by: string | null
           decided_at: string | null
           decision_id: string | null
+          discount_rate: number
           funding_requested: number | null
           id: string
           organisation_id: string
           preferred_option_id: string | null
+          price_base_year: number | null
           recorded_by: string | null
+          stage: string
           status: Database["public"]["Enums"]["business_case_status"]
           submitted_at: string | null
           submitted_by: string | null
@@ -2039,16 +2209,20 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          appraisal_years?: number
           business_case_id: string
           created_at?: string
           created_by?: string | null
           decided_at?: string | null
           decision_id?: string | null
+          discount_rate?: number
           funding_requested?: number | null
           id?: string
           organisation_id: string
           preferred_option_id?: string | null
+          price_base_year?: number | null
           recorded_by?: string | null
+          stage?: string
           status?: Database["public"]["Enums"]["business_case_status"]
           submitted_at?: string | null
           submitted_by?: string | null
@@ -2058,16 +2232,20 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          appraisal_years?: number
           business_case_id?: string
           created_at?: string
           created_by?: string | null
           decided_at?: string | null
           decision_id?: string | null
+          discount_rate?: number
           funding_requested?: number | null
           id?: string
           organisation_id?: string
           preferred_option_id?: string | null
+          price_base_year?: number | null
           recorded_by?: string | null
+          stage?: string
           status?: Database["public"]["Enums"]["business_case_status"]
           submitted_at?: string | null
           submitted_by?: string | null
@@ -2157,6 +2335,7 @@ export type Database = {
           organisation_id: string
           project_id: string | null
           request_id: string | null
+          template_set: string
           title: string
           updated_at: string
           workspace_id: string
@@ -2168,6 +2347,7 @@ export type Database = {
           organisation_id: string
           project_id?: string | null
           request_id?: string | null
+          template_set?: string
           title: string
           updated_at?: string
           workspace_id: string
@@ -2179,6 +2359,7 @@ export type Database = {
           organisation_id?: string
           project_id?: string | null
           request_id?: string | null
+          template_set?: string
           title?: string
           updated_at?: string
           workspace_id?: string
@@ -9475,6 +9656,124 @@ export type Database = {
           },
         ]
       }
+      partner_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          accepted_organisation_id: string | null
+          access: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          organisation_id: string
+          programme_id: string
+          revoked_at: string | null
+          revoked_by: string | null
+          token_hash: string
+          workspace_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          accepted_organisation_id?: string | null
+          access?: string
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          invited_by?: string | null
+          organisation_id: string
+          programme_id: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          token_hash: string
+          workspace_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          accepted_organisation_id?: string | null
+          access?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          organisation_id?: string
+          programme_id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          token_hash?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_invites_accepted_by_fkey"
+            columns: ["accepted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_invites_accepted_organisation_id_fkey"
+            columns: ["accepted_organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_invites_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_invites_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "programmes"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "partner_invites_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_financials"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "partner_invites_programme_id_workspace_id_fkey"
+            columns: ["programme_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_health"
+            referencedColumns: ["programme_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "partner_invites_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_invites_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
       pathway_snapshots: {
         Row: {
           benefit_id: string | null
@@ -10112,6 +10411,151 @@ export type Database = {
           },
           {
             foreignKeyName: "programme_assurance_ratings_workspace_id_organisation_id_fkey"
+            columns: ["workspace_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      programme_contributions: {
+        Row: {
+          contributed_at: string
+          contributed_by: string | null
+          host_organisation_id: string
+          host_programme_id: string
+          id: string
+          organisation_id: string
+          project_id: string
+          withdrawn_at: string | null
+          withdrawn_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          contributed_at?: string
+          contributed_by?: string | null
+          host_organisation_id: string
+          host_programme_id: string
+          id?: string
+          organisation_id: string
+          project_id: string
+          withdrawn_at?: string | null
+          withdrawn_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          contributed_at?: string
+          contributed_by?: string | null
+          host_organisation_id?: string
+          host_programme_id?: string
+          id?: string
+          organisation_id?: string
+          project_id?: string
+          withdrawn_at?: string | null
+          withdrawn_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programme_contributions_contributed_by_fkey"
+            columns: ["contributed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_host_organisation_id_fkey"
+            columns: ["host_organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_host_programme_id_fkey"
+            columns: ["host_programme_id"]
+            isOneToOne: false
+            referencedRelation: "programmes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_host_programme_id_fkey"
+            columns: ["host_programme_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_financials"
+            referencedColumns: ["programme_id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_host_programme_id_fkey"
+            columns: ["host_programme_id"]
+            isOneToOne: false
+            referencedRelation: "v_programme_health"
+            referencedColumns: ["programme_id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_delivery_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_divergence"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_financials"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_health"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_project_task_stats"
+            referencedColumns: ["project_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_project_id_workspace_id_fkey"
+            columns: ["project_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "v_projects"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_withdrawn_by_fkey"
+            columns: ["withdrawn_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_contributions_workspace_id_organisation_id_fkey"
             columns: ["workspace_id", "organisation_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -15501,8 +15945,7 @@ export type Database = {
           external_etag?: string | null
           external_id?: string | null
           external_source?:
-            | Database["public"]["Enums"]["external_source"]
-            | null
+            Database["public"]["Enums"]["external_source"] | null
           finish_date?: string | null
           id?: string
           is_sample?: boolean
@@ -15537,8 +15980,7 @@ export type Database = {
           external_etag?: string | null
           external_id?: string | null
           external_source?:
-            | Database["public"]["Enums"]["external_source"]
-            | null
+            Database["public"]["Enums"]["external_source"] | null
           finish_date?: string | null
           id?: string
           is_sample?: boolean
@@ -16051,15 +16493,13 @@ export type Database = {
           superseded_by_id: string | null
           superseded_by_ref: string | null
           superseded_by_status:
-            | Database["public"]["Enums"]["decision_status"]
-            | null
+            Database["public"]["Enums"]["decision_status"] | null
           supersedes_id: string | null
           target_meeting_after_needed_by: boolean | null
           target_meeting_date: string | null
           target_meeting_id: string | null
           target_meeting_status:
-            | Database["public"]["Enums"]["meeting_status"]
-            | null
+            Database["public"]["Enums"]["meeting_status"] | null
           target_papers_deadline: string | null
           title: string | null
           today: string | null
@@ -16067,6 +16507,13 @@ export type Database = {
           workspace_id: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "decisions_chosen_option_fkey"
+            columns: ["chosen_option_id", "id"]
+            isOneToOne: false
+            referencedRelation: "decision_options"
+            referencedColumns: ["id", "decision_id"]
+          },
           {
             foreignKeyName: "decisions_chosen_option_fkey"
             columns: ["chosen_option_id", "pending_successor_id"]
@@ -16077,13 +16524,6 @@ export type Database = {
           {
             foreignKeyName: "decisions_chosen_option_fkey"
             columns: ["chosen_option_id", "superseded_by_id"]
-            isOneToOne: false
-            referencedRelation: "decision_options"
-            referencedColumns: ["id", "decision_id"]
-          },
-          {
-            foreignKeyName: "decisions_chosen_option_fkey"
-            columns: ["chosen_option_id", "id"]
             isOneToOne: false
             referencedRelation: "decision_options"
             referencedColumns: ["id", "decision_id"]
@@ -17140,8 +17580,7 @@ export type Database = {
           measurement_id: string | null
           measurement_overdue: boolean | null
           measurement_status:
-            | Database["public"]["Enums"]["measurement_status"]
-            | null
+            Database["public"]["Enums"]["measurement_status"] | null
           name: string | null
           organisation_id: string | null
           outcome_id: string | null
@@ -18327,6 +18766,10 @@ export type Database = {
     }
     Functions: {
       accept_invite: { Args: { p_token: string }; Returns: Json }
+      accept_partner_invite: {
+        Args: { p_organisation: string; p_token: string }
+        Returns: Json
+      }
       accept_terms: {
         Args: {
           p_method: string
@@ -18482,6 +18925,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      contribute_project: {
+        Args: { p_programme: string; p_project: string }
+        Returns: string
+      }
       convert_request_to_project: {
         Args: { p_overrides?: Json; p_request_id: string }
         Returns: string
@@ -18518,6 +18965,10 @@ export type Database = {
             }
             Returns: string
           }
+      create_partner_invite: {
+        Args: { p_access?: string; p_email: string; p_programme: string }
+        Returns: Json
+      }
       create_report: { Args: { p: Json }; Returns: string }
       decide_approval_step: {
         Args: { p_comment?: string; p_decision: string; p_step_id: string }
@@ -18831,6 +19282,7 @@ export type Database = {
         Args: { p_organisation_id: string }
         Returns: boolean
       }
+      partner_invite_preview: { Args: { p_token: string }; Returns: Json }
       pending_approval_reminders: { Args: never; Returns: Json }
       pending_billing_notices: { Args: never; Returns: Json }
       pending_notification_emails: { Args: { p_mode: string }; Returns: Json }
@@ -18839,6 +19291,7 @@ export type Database = {
         Args: { p_modules?: string[]; p_org: string; p_pack: string }
         Returns: Json
       }
+      programme_partners: { Args: { p_programme: string }; Returns: Json }
       project_metrics: {
         Args: {
           p_as_at: string
@@ -19201,6 +19654,8 @@ export type Database = {
         }
       }
       revoke_invite: { Args: { p_invite_id: string }; Returns: undefined }
+      revoke_partner_invite: { Args: { p_invite: string }; Returns: undefined }
+      revoke_programme_share: { Args: { p_share: string }; Returns: undefined }
       risk_band: { Args: { p_risk_id: string }; Returns: Json }
       risk_rescore_candidates: {
         Args: { p_org: string }
@@ -19285,6 +19740,10 @@ export type Database = {
         }
       }
       seed_sample_data: { Args: { p_org: string }; Returns: Json }
+      set_business_case_approval_routes: {
+        Args: { p_org: string; p_routes: Json }
+        Returns: Json
+      }
       set_efficiency_settings: {
         Args: { p_org: string; p_settings: Json }
         Returns: Json
@@ -19309,6 +19768,10 @@ export type Database = {
         Args: { p_enabled: boolean; p_key: string; p_org: string }
         Returns: Json
       }
+      set_programme_share_access: {
+        Args: { p_access: string; p_share: string }
+        Returns: undefined
+      }
       set_register_risk_matrix: {
         Args: { p_matrix_key: string; p_org: string }
         Returns: Json
@@ -19316,6 +19779,15 @@ export type Database = {
       set_report_inclusion: {
         Args: { p_entity_id: string; p_mode: string; p_report_id: string }
         Returns: undefined
+      }
+      shared_programme_overview: {
+        Args: { p_programme: string }
+        Returns: Json
+      }
+      shared_programmes: { Args: never; Returns: Json }
+      start_business_case_stage: {
+        Args: { p_business_case_id: string; p_stage: string }
+        Returns: string
       }
       start_business_case_version: {
         Args: { p_business_case_id: string }
@@ -19328,16 +19800,20 @@ export type Database = {
       submit_business_case: {
         Args: { p_version_id: string }
         Returns: {
+          appraisal_years: number
           business_case_id: string
           created_at: string
           created_by: string | null
           decided_at: string | null
           decision_id: string | null
+          discount_rate: number
           funding_requested: number | null
           id: string
           organisation_id: string
           preferred_option_id: string | null
+          price_base_year: number | null
           recorded_by: string | null
+          stage: string
           status: Database["public"]["Enums"]["business_case_status"]
           submitted_at: string | null
           submitted_by: string | null
@@ -19680,6 +20156,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      withdraw_contribution: {
+        Args: { p_contribution: string }
+        Returns: undefined
+      }
       withdraw_decision: {
         Args: {
           p_decision_id: string
@@ -19788,10 +20268,7 @@ export type Database = {
         | "pmo_adjustment"
         | "migration"
       benefit_classification:
-        | "cash_releasing"
-        | "non_cash_releasing"
-        | "qualitative"
-        | "societal"
+        "cash_releasing" | "non_cash_releasing" | "qualitative" | "societal"
       benefit_review_type: "scheduled" | "post_implementation"
       benefit_status:
         | "identified"
@@ -19805,53 +20282,28 @@ export type Database = {
       benefit_type: "benefit" | "disbenefit"
       booking_type: "soft" | "hard"
       business_case_status:
-        | "draft"
-        | "submitted"
-        | "approved"
-        | "rejected"
-        | "superseded"
+        "draft" | "submitted" | "approved" | "rejected" | "superseded"
       capability_status: "planned" | "in_progress" | "delivered" | "accepted"
       change_status: "proposed" | "approved" | "rejected"
       confidence: "low" | "medium" | "high"
       conflict_resolution: "kept_planner" | "reapplied"
       criticality: "low" | "medium" | "high"
       decision_event_type:
-        | "edited"
-        | "deferred"
-        | "made"
-        | "superseded"
-        | "reversed"
-        | "withdrawn"
+        "edited" | "deferred" | "made" | "superseded" | "reversed" | "withdrawn"
       decision_status:
-        | "pending"
-        | "made"
-        | "superseded"
-        | "reversed"
-        | "withdrawn"
+        "pending" | "made" | "superseded" | "reversed" | "withdrawn"
       delivery_status: "on_track" | "future" | "late" | "overdue" | "completed"
       dependency_type:
-        | "sequencing"
-        | "alignment"
-        | "information"
-        | "resource"
-        | "external"
+        "sequencing" | "alignment" | "information" | "resource" | "external"
       dependency_validation:
-        | "inferred"
-        | "proposed"
-        | "confirmed"
-        | "closed"
-        | "broken"
+        "inferred" | "proposed" | "confirmed" | "closed" | "broken"
       document_scope: "project" | "programme" | "capability" | "business_case"
       entity_state: "active" | "closed"
       external_source: "planner_basic" | "planner_premium" | "import"
       financial_kind: "budget" | "actual" | "forecast"
       forecast_capture_source: "close" | "scheduled"
       forum_cadence:
-        | "weekly"
-        | "fortnightly"
-        | "monthly"
-        | "quarterly"
-        | "ad_hoc"
+        "weekly" | "fortnightly" | "monthly" | "quarterly" | "ad_hoc"
       forum_level: "project" | "programme" | "portfolio" | "organisation"
       forum_role: "chair" | "secretary" | "member" | "contributor" | "observer"
       gate_check_key:
@@ -19870,16 +20322,9 @@ export type Database = {
       measurement_status: "submitted" | "validated" | "queried"
       meeting_status: "planned" | "held" | "cancelled"
       milestone_type:
-        | "delivery"
-        | "gate"
-        | "key_date"
-        | "external_dependency"
-        | "approval"
+        "delivery" | "gate" | "key_date" | "external_dependency" | "approval"
       ms_connection_status:
-        | "not_connected"
-        | "pending_approval"
-        | "connected"
-        | "needs_reconnect"
+        "not_connected" | "pending_approval" | "connected" | "needs_reconnect"
       offer_response: "accepted" | "declined" | "proposed_date"
       open_closed: "open" | "closed"
       outbox_status: "queued" | "sending" | "retrying" | "failed"
@@ -19895,11 +20340,7 @@ export type Database = {
       project_state: "proposed" | "active" | "on_hold" | "closed"
       project_tier: "small" | "medium" | "large"
       report_status:
-        | "draft"
-        | "in_review"
-        | "approved"
-        | "published"
-        | "withdrawn"
+        "draft" | "in_review" | "approved" | "published" | "withdrawn"
       reporting_cadence: "weekly" | "fortnightly" | "monthly"
       request_status: "new" | "in_review" | "on_hold" | "approved" | "rejected"
       risk_response: "avoid" | "reduce" | "transfer" | "accept"
@@ -19908,12 +20349,7 @@ export type Database = {
       status_report_status: "draft" | "submitted"
       sync_health: "healthy" | "warning" | "failing"
       sync_log_kind:
-        | "read"
-        | "write"
-        | "throttled"
-        | "failed"
-        | "deleted"
-        | "directory"
+        "read" | "write" | "throttled" | "failed" | "deleted" | "directory"
       sync_mode: "polling" | "live_updates" | "change_tracking"
       task_source: "native" | "planner_basic" | "planner_premium"
       work_item_status:
@@ -19966,8 +20402,7 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
@@ -19991,8 +20426,7 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
@@ -20016,8 +20450,7 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
   EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
@@ -20221,3 +20654,4 @@ export const Constants = {
     },
   },
 } as const
+

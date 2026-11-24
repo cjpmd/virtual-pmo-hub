@@ -402,8 +402,13 @@ export async function saveCell(cell: CellWrite) {
 export interface BaselineInput {
   projectId: string;
   total: number;
-  source: Extract<BaselineSource, "initial" | "change_request" | "pmo_adjustment">;
+  source: Extract<
+    BaselineSource,
+    "initial" | "business_case" | "change_request" | "pmo_adjustment"
+  >;
   changeRequestId?: string;
+  /** NHS-5: the approved business case version the baseline comes from (source business_case). */
+  businessCaseVersionId?: string;
   reason?: string;
 }
 
@@ -415,6 +420,7 @@ export async function addBaseline(input: BaselineInput) {
       total: input.total,
       source: input.source,
       change_request_id: input.changeRequestId ?? null,
+      business_case_version_id: input.businessCaseVersionId ?? null,
       reason: input.reason?.trim() || null,
     } as NewRow<"budget_baselines">,
     "Setting the budget baseline",
@@ -432,6 +438,23 @@ export async function listBaselinedChangeIds(orgId: string) {
     "Loading baselines",
   );
   return new Set(rows.map((row) => row.change_request_id as string));
+}
+
+/** NHS-5: the business case versions already used for this project's baselines. */
+export async function listCaseBaselines(projectId: string) {
+  const rows = unwrap(
+    await supabase
+      .from("budget_baselines")
+      .select("version, total, business_case_version_id")
+      .eq("project_id", projectId)
+      .not("business_case_version_id", "is", null),
+    "Loading baselines",
+  );
+  return rows.map((row) => ({
+    versionId: row.business_case_version_id as string,
+    baselineVersion: row.version,
+    total: num(row.total),
+  }));
 }
 
 /** The current baseline total, for the "previous + cost impact" arithmetic. */

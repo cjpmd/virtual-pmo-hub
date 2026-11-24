@@ -60,6 +60,7 @@ import {
   _efficiency_schemes_at_risk,
   _efficiency_recurrent,
 } from "./efficiency";
+import { _partner_contributions } from "./partners";
 
 /** Every registered block definition. Importing this ensures all blocks are in the registry. */
 export const ALL_BLOCKS = [
@@ -114,4 +115,5 @@ export const ALL_BLOCKS = [
   _efficiency_breakdown,
   _efficiency_schemes_at_risk,
   _efficiency_recurrent,
-]; // 51 total
+  _partner_contributions,
+]; // 52 total

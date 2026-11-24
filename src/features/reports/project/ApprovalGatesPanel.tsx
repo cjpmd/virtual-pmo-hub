@@ -21,6 +21,7 @@ const TYPE_LABEL: Record<string, string> = {
   soc: "SOC",
   obc: "OBC",
   fbc: "FBC",
+  business_case: "Business case",
 };
 
 export function ApprovalGatesPanel({
@@ -46,7 +47,15 @@ export function ApprovalGatesPanel({
         </p>
       </div>
       {(gates.data ?? []).map((gate) => (
-        <Gate key={gate.id} gate={gate} canEdit={canEdit} m={m} fail={fail} />
+        // NHS-5: business case gates follow their approval route; they are decided on the
+        // business case page, so they show read-only here.
+        <Gate
+          key={gate.id}
+          gate={gate}
+          canEdit={canEdit && gate.gateType !== "business_case"}
+          m={m}
+          fail={fail}
+        />
       ))}
       {gates.data?.length === 0 && (
         <p className="text-sm text-muted-foreground">No approval gates yet.</p>
