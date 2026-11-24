@@ -392,6 +392,9 @@ union all select 'a_request', (select id::text from public.project_requests wher
 union all select 'a_status_report', (select id::text from public.status_reports where organisation_id = pg_temp.ct_org('A') limit 1)
 union all select 'a_phases', (select 'array[' || string_agg(quote_literal(id) || '::uuid', ', ' order by sort_order) || ']'
                               from public.lifecycle_phases where organisation_id = pg_temp.ct_org('A'))
+union all select 'a_share', (select id::text from public.entity_shares where organisation_id = pg_temp.ct_org('A') limit 1)
+union all select 'a_partner_invite', (select id::text from public.partner_invites where organisation_id = pg_temp.ct_org('A') limit 1)
+union all select 'a_contribution', (select id::text from public.programme_contributions where organisation_id = pg_temp.ct_org('A') limit 1)
 union all select 'a_notification', (select id::text from public.notifications where organisation_id = pg_temp.ct_org('A') limit 1)
 union all select 'a_impact_assessment', (select id::text from public.impact_assessments where organisation_id = pg_temp.ct_org('A') limit 1)
 union all select 'a_efficiency_scheme', (select id::text from public.efficiency_schemes where organisation_id = pg_temp.ct_org('A') limit 1)
@@ -536,6 +539,22 @@ insert into ct_cases (fn, call, expect, note) values
   ('set_report_inclusion(uuid,uuid,text)', $c$select public.set_report_inclusion('{a_report}', '{a_project}', 'pinned')$c$, 'empty', null),
   ('start_business_case_version(uuid)', $c$select public.start_business_case_version('{a_business_case}')$c$, 'empty', null),
   ('submit_business_case(uuid)', $c$select public.submit_business_case('{a_bc_version}')$c$, 'empty', null),
+  -- NHS-5: B's admin can't start a stage of A's case or set A's approval routes.
+  ('start_business_case_stage(uuid,text)', $c$select public.start_business_case_stage('{a_business_case}', 'obc')$c$, 'empty', null),
+  ('set_business_case_approval_routes(uuid,jsonb)', $c$select public.set_business_case_approval_routes('{a_org}', '{}')$c$, 'empty', null),
+  -- NHS-7: B's admin can't invite partners to, share, or read the roll-up of A's programme, or
+  -- contribute A's project; a made-up token previews as not_found.
+  ('create_partner_invite(uuid,text,text)', $c$select public.create_partner_invite('{a_programme}', 'gl10@example.com', 'read')$c$, 'empty', null),
+  ('revoke_partner_invite(uuid)', $c$select public.revoke_partner_invite('{a_partner_invite}')$c$, 'empty', null),
+  ('partner_invite_preview(text)', $c$select public.partner_invite_preview('gl10-not-a-token-gl10-not-a-token-0000')$c$, 'own', 'an unknown token gives {"status":"not_found"}'),
+  ('accept_partner_invite(text,uuid)', $c$select public.accept_partner_invite('gl10-not-a-token-gl10-not-a-token-0000', '{a_org}')$c$, 'empty', null),
+  ('set_programme_share_access(uuid,text)', $c$select public.set_programme_share_access('{a_share}', 'contribute')$c$, 'empty', null),
+  ('revoke_programme_share(uuid)', $c$select public.revoke_programme_share('{a_share}')$c$, 'empty', null),
+  ('contribute_project(uuid,uuid)', $c$select public.contribute_project('{a_project}', '{a_programme}')$c$, 'empty', null),
+  ('withdraw_contribution(uuid)', $c$select public.withdraw_contribution('{a_contribution}')$c$, 'empty', null),
+  ('shared_programmes()', $c$select public.shared_programmes()$c$, 'own', 'programmes shared with the caller''s own organisations'),
+  ('programme_partners(uuid)', $c$select public.programme_partners('{a_programme}')$c$, 'empty', null),
+  ('shared_programme_overview(uuid)', $c$select public.shared_programme_overview('{a_programme}')$c$, 'empty', null),
   ('submit_report(uuid)', $c$select public.submit_report('{a_report}')$c$, 'empty', null),
   ('submit_status_report(uuid,jsonb,uuid[],uuid,timestamp with time zone)', $c$select public.submit_status_report('{a_project}', '{"summary":"GL10"}', null, null, null)$c$, 'empty', null),
   ('supersede_decision(uuid,date,timestamp with time zone)', $c$select public.supersede_decision('{a_decision}', current_date + 30, null)$c$, 'empty', null),
