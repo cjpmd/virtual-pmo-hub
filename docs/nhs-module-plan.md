@@ -236,6 +236,7 @@ Module: `efficiency` (neutral name "Efficiency programme" / "Savings scheme"; NH
 
 - A sample NHS trust dataset (`is_sample`): a few divisions, 15–20 CIP schemes across stages, QIAs at different stages, a digital project with a hazard log, a Five Case OBC, BAF risks, an ICS shared programme, and a Finance & Performance committee pack.
 - An "NHS overview" section on the public site describing the module (no claims of accreditation the product doesn't hold).
+- **NHS starter directorates (added 24/11/2026 at Chris's request).** Applying the NHS pack today only relabels the Business units list as "Directorate"; the values stay the university defaults seeded at creation (Digital & Technology Services, Student Services …). Seed NHS starter values into the `business_unit` list when the pack is applied (for example Medicine, Surgery, Women's & Children's, Clinical Support Services, Corporate Services; Chris to validate), through `private.seed_module_defaults` / the pack plan so the preview lists them. Follow NHS-0 rule 4: add only values that are missing, never rename, hide or remove the organisation's existing entries. Note in Settings › Lists that efficiency schemes store the directorate name as text, so renaming an entry doesn't update existing schemes.
 - Update this plan's status table and write release notes.
 
 ---
